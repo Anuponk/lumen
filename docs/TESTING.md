@@ -1898,7 +1898,7 @@ Any change to challenge behavior must additionally verify:
 - a finished link reopens on its result (lowercase server status), never on a second attempt;
 - “Mes défis” shows canonical visible quest numbers for historical, stable and revised challenges.
 
-#882 (Lot 3, PR A): see [DAILY_CHALLENGE.md §7](DAILY_CHALLENGE.md#7-tests-et-retour-arrière) — `daily-challenge-tests.mjs`, `fixtures/daily-challenge-882.sql`, `daily-concurrency.py` and the rollback rehearsal run in canonical-ledger CI.
+#882 (Lot 3, PR A): see [DAILY_CHALLENGE.md §7](DAILY_CHALLENGE.md#7-tests-et-retour-arrière) — `daily-challenge-tests.mjs`, `fixtures/daily-challenge-882.sql`, `daily-concurrency.py` and the rollback rehearsal run in canonical-ledger CI. `fixtures/supabase-default-anon-grants.sql` reproduces Supabase's default `anon` grants before `20261122100000_daily_anon_revoke_882.sql`; `fixtures/daily-anon-revoke-882.sql` then asserts only `lumen_daily_today` stays guest-callable (also covers #889 `lumen_create_qualifying_challenge`).
 
 #35 (Lot 2): `social-friends-tests.mjs` (client RPC names/arguments, French
 errors, statuses, escaped renderers without technical IDs), `friends-browser.mjs`

@@ -11,8 +11,10 @@ explicite du propriétaire.
 |---|---|
 | PR #899 (moteur, SQL), #902 (parcours, thème, classements), #904 (bilan, mesure) | Fusionnées, CI complète verte |
 | Client en production (o2switch) | Contient le mode ; entrée masquée car la RPC est absente |
-| Migration `20261122090000_daily_challenge_882.sql` en production | **Non appliquée** (sonde lecture seule : `lumen_daily_today` → `PGRST202`) |
-| Drapeau `daily_challenge` | Inexistant en production (créé à `false` par la migration) |
+| Migration `20261122090000_daily_challenge_882.sql` en production | **Appliquée le 21/11/2026** (éditeur SQL, par le propriétaire) ; contrôles §3 verts, empreinte du calendrier identique à `main` |
+| Migration `20261122100000_daily_anon_revoke_882.sql` en production | **Appliquée le 21/11/2026** : `anon` ne peut plus exécuter que `lumen_daily_today` |
+| Drapeau `daily_challenge` | `false` |
+| Comptes de recette | `daily_preview` accordé à un compte de test ; un second y a accès via `analytics_cockpit` |
 | Recette sur appareils réels | **Non effectuée** |
 
 ## 2. Prérequis avant migration 🔒
@@ -40,7 +42,12 @@ partiel**.
 ## 3. Application de la migration 🔒
 
 - Appliquer le fichier tel quel (éditeur SQL Supabase ou `psql -v ON_ERROR_STOP=1`).
-  Il est idempotent : la CI l'applique deux fois de suite.
+  Il est idempotent : la CI l'applique deux fois de suite. Le connecteur MCP
+  Supabase refuse cette migration sans confirmation interactive : utiliser
+  l'éditeur SQL.
+- Appliquer ensuite `20261122100000_daily_anon_revoke_882.sql`. Les privilèges
+  par défaut de Supabase accordent `EXECUTE` à `anon` sur toute nouvelle
+  fonction de `public` ; révoquer `PUBLIC` ne suffit pas.
 - Contrôles immédiats, en lecture seule :
 
 ```sql
@@ -49,7 +56,7 @@ select count(*), min(day), max(day) from lumen_commands.daily_puzzles;          
 select count(*) from lumen_commands.daily_runs;                                     -- 0
 select has_table_privilege('authenticated','lumen_commands.daily_runs','SELECT'),
        has_table_privilege('anon','lumen_commands.daily_standings','SELECT'),
-       has_function_privilege('anon','public.lumen_daily_begin(text)','EXECUTE');   -- false, false, false
+       has_function_privilege('anon','public.lumen_daily_begin(text)','EXECUTE');   -- false, false, false (après 20261122100000)
 select rel, action from lumen_privacy.policy() where rel like 'daily_%' order by rel; -- 4 lignes
 ```
 
