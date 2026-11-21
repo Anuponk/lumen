@@ -1932,6 +1932,8 @@ participation, inbox privacy, removal, privileges, Lumen erasure of both sides).
 PR #893 in a rolled-back transaction (tables and RPCs removed, erasure policy chain
 restored, erasure review still passing, #892 writer untouched).
 
+#887: `scripts/fixtures/challenge-grid-revision-887.sql` (canonical-ledger CI, after the migration applied twice) seeds numbered challenges as production stored them and replays the private repair: only the challenge with a sender run on revision 1 within 30 min is repaired; pre-switch, revision-0-run and stale-evidence rows keep revision 0; re-run changes nothing; old-board results keep status/time/badges and are flagged; get_v2/list_v2 expose the flag only to the participant and the sender; v1 reader/start refuse the repaired link; a v2 result on the pinned board is comparable; the writer pins revision 1 on the numbered path, refuses unknown revisions and corrects a stale client from its own run; helpers stay private. `challenge-rpc-contract-tests.mjs` now requires the same board and pinned revision for historical numbers too; `duel-view-tests.mjs` checks the `different-board` state (no winner, both times) and `social-challenge-tests.mjs` the played revision and the refusal on an old server.
+
 #883 (Lot 0): `challenge-rpc-contract-tests.mjs` checks, for historical, #650
 soft-revision, stable revision-0 and revised challenges, that each create/get/
 start/finish/list RPC chosen by the client exists in the migrations with

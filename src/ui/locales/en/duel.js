@@ -52,4 +52,6 @@ export default Object.freeze({
   'duel.secondsShort': "{count} s",
   'duel.share': "Share",
   'duel.shareChallenge': "Share the challenge · {quest}",
+  'duel.differentBoard': "Different board: no comparison",
+  'duel.noteDifferentBoard': "This result was played on another version of the board than the challenge. Both times stay recorded, with no winner.",
 });

@@ -134,4 +134,21 @@ const sent=renderFriendSent([{challenge_id:'c1',recipient:'Loutre',status:'compl
 assert.match(sent,/Défi contre Loutre.*Tu as gagné !.*Voir le duel.*Copier le lien.*Défi contre Cy.*En attente de Cy.*Copier le lien/s);
 assert.equal((sent.match(/data-duel-open/g)||[]).length,1);
 assert.match(renderFriendSent([{challenge_id:'q',recipient:'D',status:'completed',duration_seconds:50}],{...ctx,listRows:[]}),/D.*0:50.*Comparaison indisponible/s,'time without reference: no verdict');
+// #887: a result played on another board than the challenge is never compared.
+{
+ const flaggedRow={challenge_id:'b1',puzzle_id:3,grid_revision:1,source_duration_seconds:61,source_autonomy:true,participants:[{name:'Loutre',status:'completed',duration_seconds:58,autonomy:true,board_mismatch:true}]};
+ const sender=duelFromSentRow(flaggedRow,flaggedRow.participants[0]);
+ assert.equal(duelOutcome(sender).state,'different-board','sender side: no winner');
+ const html=renderDuelCard(sender,ctx);
+ assert.match(html,/Grille différente : pas de comparaison/);assert.match(html,/1:01.*0:58|0:58.*1:01/s,'both times stay visible');
+ assert.doesNotMatch(html,/duel-winner|👑/,'no crown on a different board');
+ assert.match(html,/autre version de la grille/);
+ const recipient=duelFromChallenge({challenge_id:'b1',puzzle_id:3,grid_revision:1,participant_status:'completed',participant_duration_seconds:58,participant_autonomy:true,source_duration_seconds:61,source_autonomy:true,participant_board_mismatch:true});
+ assert.equal(duelOutcome(recipient).state,'different-board','recipient side: no winner');
+ assert.equal(duelVerdictText(duelOutcome(recipient),'X',en),'Different board: no comparison');
+ // Unflagged results keep the existing verdict.
+ const fair=duelFromSentRow({...flaggedRow,participants:[]},{...flaggedRow.participants[0],board_mismatch:false});
+ assert.equal(duelOutcome(fair).state,'lost','an unflagged result is compared as before');
+ assert.doesNotMatch(renderMyChallenges([flaggedRow],ctx),/Tu as (gagné|perdu)/,'« Mes défis » shows no verdict either');
+}
 console.log('duel view tests passed');

@@ -38,7 +38,8 @@ const kinds={
 const expected={
  // #889: one versioned writer for every kind; start/finish routes unchanged.
  legacy:['lumen_create_qualifying_challenge','lumen_start_social_challenge','lumen_finish_social_challenge'],
- 'legacy-soft-revision':['lumen_create_qualifying_challenge','lumen_start_social_challenge','lumen_finish_social_challenge'],
+ // #887: a numbered quest on a soft revision pins the board its sender played.
+ 'legacy-soft-revision':['lumen_create_qualifying_challenge','lumen_start_quest_challenge_v2','lumen_finish_quest_challenge_v2'],
  'stable-zero':['lumen_create_qualifying_challenge','lumen_start_social_challenge','lumen_finish_social_challenge'],
  'stable-revised':['lumen_create_qualifying_challenge','lumen_start_quest_challenge_v2','lumen_finish_quest_challenge_v2']
 };
@@ -70,7 +71,10 @@ for(const [kind,quest] of Object.entries(kinds)){
  // Same grid on both sides: what the sender played is what the recipient resolves.
  const resolved=resolveChallengeQuest(row);
  assert.equal(resolved.id,quest.id,kind+': same quest');
- if(quest.legacyIndex===null)assert.deepEqual(resolved.reg,quest.reg,kind+': same revision board');
+ // #887: also for historical numbers (quests 3-7 moved to revision 1).
+ assert.deepEqual(resolved.reg,quest.reg,kind+': same revision board');
+ assert.deepEqual(resolved.sol,quest.sol,kind+': same solution');
+ assert.equal(row.grid_revision,quest.gridRevision??0,kind+': the played revision is pinned');
  assert.equal(challengeQuestLabel(row),'Quête '+quest.ordinal,kind+': inbox shows the visible quest number');
  matrix.push({kind,quest:quest.id,revision:row.grid_revision,rpc:calls.map(c=>c.name)});
 }
