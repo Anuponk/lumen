@@ -1,4 +1,4 @@
-// #932 Lot C: promotional social previews (FR/EN, 1200×630) built from real
+// #940 copy refresh: 100 free puzzles, ad-free (French and English).\n// #932 Lot C: promotional social previews (FR/EN, 1200×630) built from real
 // game assets: the app's own board capture (src/landing/board.webp, produced by
 // landing-assets.mjs) and an official constellation figure
 // (astronomicalIllumination, the same data the victory scene draws).
