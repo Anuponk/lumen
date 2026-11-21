@@ -5273,29 +5273,29 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
  const pendingStar=syncPending&&canonical.newlyCompleted&&canonicalCompleted<canonicalQuests.length?1:0;
  const canonicalLit=canonicalCompleted+pendingStar;
  const p=canonical?{name:canonicalEntry?.label||canonical.quest.constellationId,lit:canonicalLit,count:canonicalQuests.length,edges:[],pts:[]}:completedIndex>=0?{index:completedIndex,...CONSTELLATIONS[completedIndex],lit:CONSTELLATIONS[completedIndex].count}:checkpoint?{index:checkpoint.index,...CONSTELLATIONS[checkpoint.index],lit:checkpoint.lit}:constellationProgress();
- const idx=Math.max(0,p.lit-1),canvas=document.getElementById("skyRevealCanvas"),o=document.getElementById("skyReveal"),k=document.getElementById("skyRevealKicker"),t=document.getElementById("skyRevealTitle");
+ const idx=Math.max(0,p.lit-1),canvas=document.getElementById("skyRevealCanvas"),o=document.getElementById("skyReveal"),k=document.getElementById("skyRevealKicker"),title=document.getElementById("skyRevealTitle");
  const newlyCompleted=canonical?canonical.newlyCompleted:crossed;
  const constellationCompleted=canonical?newlyCompleted&&p.lit===p.count&&!syncPending:completedIndex>=0;
  if(syncPending){
    k.textContent="QUÊTE RÉSOLUE";
-   t.textContent=p.name;
+   title.textContent=p.name;
    document.getElementById("skyRevealName").textContent="Victoire conservée sur cet appareil";
  }else if(constellationCompleted){
    k.textContent="CONSTELLATION COMPLÉTÉE";
-   t.textContent="✦ "+p.name.replace(" · Grand Chariot","");
+   title.textContent="✦ "+p.name.replace(" · Grand Chariot","");
    document.getElementById("skyRevealName").textContent=completedIndex<CONSTELLATIONS.length-1?"La constellation suivante est maintenant à découvrir.":"Ton ciel est entièrement révélé.";
  }else if(checkpoint){
    k.textContent=checkpoint.stage===1?"TON CIEL PREND FORME":"PRESQUE RÉVÉLÉE";
-   t.textContent="✦ "+p.name.replace(" · Grand Chariot","");
+   title.textContent="✦ "+p.name.replace(" · Grand Chariot","");
    const remaining=p.count-p.lit;
    document.getElementById("skyRevealName").textContent=checkpoint.stage===1?"La constellation prend forme. Continue à l’illuminer.":remaining===1?"Plus qu’une étoile avant de la révéler.":"Plus que "+remaining+" étoiles avant de la révéler.";
  }else if(!newlyCompleted){
    k.textContent="QU\u00caTE ACCOMPLIE";
-   t.textContent=p.name;
+   title.textContent=p.name;
    document.getElementById("skyRevealName").textContent="Ta constellation et tes badges";
  }else{
    k.textContent="NOUVELLE ÉTOILE";
-   t.textContent="Une nouvelle étoile s’allume";
+   title.textContent="Une nouvelle étoile s’allume";
    document.getElementById("skyRevealName").textContent=starDisplayName(p,idx)+" · "+p.name;
  }
  let lines=p.edges.map(e=>{let on=e[0]<p.lit&&e[1]<p.lit,newLine=on&&(e[0]===idx||e[1]===idx);return '<line class="sky-line '+(on?'on ':'')+(newLine?'new-line':'')+'" x1="'+p.pts[e[0]][0]+'" y1="'+p.pts[e[0]][1]+'" x2="'+p.pts[e[1]][0]+'" y2="'+p.pts[e[1]][1]+'"/>'}).join("");
@@ -5326,7 +5326,7 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
    }
    const rankingExpected=!(socialChallenge||learningReplayActive()||qaActive||!lumenUser);
    document.getElementById('skyRevealPerformance')?.classList.toggle('victory-performance-ranked',rankingExpected);
-   const rankTile=document.getElementById('skyRevealRank');if(rankTile){rankTile.hidden=!rankingExpected;rankTile.className='victory-rank victory-rank-pending';rankTile.textContent=rankingExpected?(syncPending?'Classement après confirmation':'Classement…'):''}
+   const rankTile=document.getElementById('skyRevealRank');if(rankTile){rankTile.hidden=!rankingExpected;rankTile.className='victory-rank victory-rank-pending';rankTile.textContent=rankingExpected?(t(syncPending?'ranking.afterConfirmation':'ranking.shortLoading')):''}
    // No rank, podium or rank reward before the server confirms the victory.
    if(syncPending)renderPendingSyncStatus();else document.getElementById('skyRevealSync')?.remove();
    victoryFacts={questId:activeQuest().id,newRecord:!!record?.classList.contains('personal-record-new'),remarkableBadges:remarkableRewards(slots),constellationCompleted};

@@ -1,4 +1,5 @@
 export default Object.freeze({
+  'ranking.afterConfirmation': "Classement après confirmation",
   'ranking.board': "Classement de la grille",
   'ranking.top': "Les trois meilleurs temps",
   'ranking.echo': "Écho virtuel",

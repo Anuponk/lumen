@@ -15,6 +15,7 @@ try{
   const celebrationFits=await evaluate("[...document.querySelectorAll('#skyReveal .sky-reveal-actions button')].filter(e=>!e.hidden).every(e=>{e.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth&&(hit===e||e.contains(hit))})");assert.equal(celebrationFits,true,'Celebration navigation fits '+width+'x'+height);
   await evaluate(`document.getElementById('skyRevealTitle').click()`);
   await revealVictoryResults(evaluate);
+  if(locale==='en')assert.equal(await evaluate("document.querySelector('[data-reward=autonomy] .victory-reward-label')?.textContent"),'Independence');
   assert.equal(await evaluate('getComputedStyle(document.getElementById("autoCrossWrap")).display'),'none');
   await evaluate(`(async()=>{
    const {createRankingView}=await import('./src/ui/ranking.js');

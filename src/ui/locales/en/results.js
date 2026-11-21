@@ -1,4 +1,5 @@
 export default Object.freeze({
+  'ranking.afterConfirmation': "Leaderboard after confirmation",
   'ranking.board': "Puzzle leaderboard",
   'ranking.top': "Top three times",
   'ranking.echo': "Virtual echo",
