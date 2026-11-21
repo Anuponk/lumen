@@ -4936,9 +4936,11 @@ async function maybeRestorePlayPurchases(attempt=0){
  const outcome=await restorePlayForCurrentAccount();
  if(lumenUser?.id!==owner||lumenSupabase!==client)return;
  reportPlayRestore(outcome,owner,client);
- showPurchaseStatus(playRestoreMessage(outcome),owner,'play-restore');
- if(attempt<3&&outcome&&(outcome.rightsUnavailable||
-   outcome.results.some(result=>result.status==='pending'||result.status==='error'))){
+ const message=playRestoreMessage(outcome);
+ const unresolved=outcome&&(outcome.unavailable||outcome.rightsUnavailable||
+   outcome.results.some(result=>result.status==='pending'||result.status==='error'));
+ if(message||(outcome&&!unresolved))showPurchaseStatus(message,owner,'play-restore');
+ if(attempt<3&&unresolved&&!outcome.unavailable){
   clearTimeout(playRecoveryTimer);
   playRecoveryTimer=setTimeout(()=>{
    if(lumenUser?.id===owner&&lumenSupabase===client)void maybeRestorePlayPurchases(attempt+1);

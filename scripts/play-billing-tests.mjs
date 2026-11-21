@@ -575,6 +575,11 @@ console.log('play-billing-tests #864: Play-held SKU explained per Lumen account,
  await vm.runInContext('maybeRestorePlayPurchases()',recovery);
  assert.match(restoreNotices.filter(Boolean).at(-1),/confirmed the payment, but access hasn’t been verified yet/);
  await restore().onclick();assert.match(status(),/Try again without paying/);assert.equal(restore().textContent,'Try again');
+ const publishedNotices=restoreNotices.length;
+ purchaseState.status=502;purchaseState.body={error:'google_unavailable'};
+ await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ assert.equal(restoreNotices.length,publishedNotices,'An unreadable follow-up cannot retire a confirmed payment incident');
+ purchaseState.status=200;purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
  recovery.loadEntitlements=async()=>{recovery.lumenEntitlementsState='ready';recovery.lumenEntitlements=[{entitlement:'real-adventure-02',source:'purchase'}]};
  await restore().onclick();assert.equal(status(),'Your purchases have been restored.');
  assert.equal(restore().textContent,'Restore my purchases');
