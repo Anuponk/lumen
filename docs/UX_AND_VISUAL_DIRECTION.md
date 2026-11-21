@@ -359,8 +359,23 @@ Do not introduce parallel `MobileX` / `DesktopX` gameplay components. If a compa
 
 ## Social challenge UX
 
-« Amis et défis » (#35) is one optional entry next to « Mes défis », never on the
-game screen and never inside a grid. Guests see why friends need an account and
+**Espace social (#898, Lot 4).** One 👥 icon at the top right of the game header
+(`#openSocial`, accessible name « Espace social », `aria-expanded`) opens a single
+panel with, in order: Défi du jour (only when #882 reports it available), Mes
+défis, Classements, Mes amis, Notifications, Inviter des amis. The panel only
+routes to existing screens; it never opens by itself and nothing animates. One
+global badge adds the two validated #35 counters (pending friend requests and
+received friend challenges; unread link-challenge results), which now sit inside
+the panel rows, so nothing is counted twice. « Classements » keeps the quest
+rankings (#638, opened from a completed quest in Mon ciel) apart from the Défi du
+jour rankings (général / mes amis). The Défi du jour keeps its direct entry in
+« Mes quêtes ». Guests keep link challenges and the invitation and read why
+friends and notifications need an account. Copy lives in the `social.*` domain
+(`src/ui/locales/{fr,en}/social.js`, reviewed by `i18n-audit.mjs`). Captures:
+`docs/validation/social-hub-*.png`.
+
+« Amis et défis » (#35, row « Mes amis » of the panel) stays an optional screen,
+never on the game screen and never inside a grid. Guests see why friends need an account and
 keep playing link challenges. Friends are added by exact nickname; « Envoyer à un
 ami » appears in the challenge share dialog and on each « Mes défis » row. Statuses
 read « En attente / Commencé / Terminé / Abandonné ». The four intents stay
@@ -402,7 +417,7 @@ Enter/Space retain native button activation. Long future labels wrap inside the
 rail rather than requiring smaller fonts. Opening Mon ciel keeps its existing
 destination based on the active quest.
 
-“Mes défis” belongs under Mon ciel. New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
+“Mes défis” belongs to the Espace social panel (#898). New results use a small unread indicator. Push permission must be requested contextually (“Préviens-moi quand quelqu'un relève mes défis”), never as an unexplained first-launch permission prompt.
 
 
 ### Fluid onboarding (#569 / #576, product decision 25 October 2026)
