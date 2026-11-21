@@ -1,15 +1,16 @@
 import {createTranslator} from './i18n.js';
-import {discoveryUrl, inviteShareUrl, playerShareUrl} from '../analytics/acquisition.js';
+import {campaignUrl, discoveryUrl, discoveryUrlFor, inviteShareUrl, inviteShareUrlFor, isDiscoveryUrl, playerShareUrl, playerShareUrlFor} from '../analytics/acquisition.js';
 import {astronomicalIllumination} from './astronomical-reference-svg.js';
 
-export {discoveryUrl, inviteShareUrl};
+export {discoveryUrl, discoveryUrlFor, inviteShareUrl, inviteShareUrlFor, playerShareUrlFor};
 // Native result shares carry the Partager campaign; Inviter has its own code.
 export const resultShareUrl = playerShareUrl;
 
 const french = createTranslator().t;
 // #759: shared copy follows the player's language (#754); French stays the default.
-export function inviteShare(t = french) {
-  return { title: t('share.inviteTitle'), text: t('share.inviteText'), url: discoveryUrl };
+// #933: so does the destination (discover.html in English).
+export function inviteShare(t = french, locale = 'fr') {
+  return { title: t('share.inviteTitle'), text: t('share.inviteText'), url: discoveryUrlFor(locale) };
 }
 export const inviteShareData = Object.freeze(inviteShare());
 
@@ -26,7 +27,7 @@ const MILESTONES = {
   }),
 };
 
-export function resultShareData({ ordinal, constellation, time, badges, milestone, adventure }, t = french) {
+export function resultShareData({ ordinal, constellation, time, badges, milestone, adventure }, t = french, locale = 'fr') {
   const wording = MILESTONES[milestone]?.({ ordinal, constellation, adventure }, t) ??
     { title: t('share.resultTitle'), headline: t('share.resultHeadline', { ordinal, constellation }) };
   return {
@@ -37,7 +38,7 @@ export function resultShareData({ ordinal, constellation, time, badges, mileston
       badges.join(' · '),
       t('share.yourTurn'),
     ].filter(Boolean).join('\n'),
-    url: discoveryUrl,
+    url: discoveryUrlFor(locale),
   };
 }
 
@@ -72,7 +73,8 @@ export async function tryCopyShare(navigator, text) {
   }
 }
 
-export function createShareDialog(document, navigator, t = createTranslator().t) {
+// `locale` returns the language Lumen is displayed in (it can change at runtime).
+export function createShareDialog(document, navigator, t = createTranslator().t, { locale = () => 'fr' } = {}) {
   const dialog = document.getElementById('lumenShareDialog');
   const title = document.getElementById('lumenShareTitle');
   const preview = document.getElementById('lumenSharePreview');
@@ -115,9 +117,9 @@ export function createShareDialog(document, navigator, t = createTranslator().t)
   };
   native.onclick = async () => {
     const state = current;
-    // Only generic discovery links get the Partager campaign; a challenge or other
-    // specific link keeps its own destination (#759).
-    const url = state.data.url === discoveryUrl ? resultShareUrl : state.data.url;
+    // Only generic discovery links get the Partager campaign, on the same-language
+    // page; a challenge or other specific link keeps its own destination (#759, #933).
+    const url = isDiscoveryUrl(state.data.url) ? campaignUrl(state.data.url, 'player_share') : state.data.url;
     const outcome = await tryNativeShare(navigator, { ...state.data, url }, state.image);
     if (current !== state || !dialog.open) return;
     if (outcome === 'shared') dialog.close();
@@ -138,15 +140,17 @@ export function createShareDialog(document, navigator, t = createTranslator().t)
     text(data, origin) {
       open(data, { origin });
     },
+    // The discovery page in the current language, for any other generic share.
+    discoveryUrl: () => discoveryUrlFor(locale()),
     async invite(origin) {
-      const data = inviteShare(t);
-      const outcome = await tryNativeShare(navigator, { ...data, url: inviteShareUrl });
+      const data = inviteShare(t, locale());
+      const outcome = await tryNativeShare(navigator, { ...data, url: inviteShareUrlFor(locale()) });
       if (outcome === 'unavailable' && origin.getClientRects().length) {
         open(data, { invitation: true, origin });
       }
     },
     result(model, origin) {
-      const data = resultShareData(model, t);
+      const data = resultShareData(model, t, locale());
       open(data, { origin, makeImage: () => shareCardCanvas(document, model, data.url, shareCardCopy(model, t)) });
     },
   };

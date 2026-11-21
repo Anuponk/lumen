@@ -97,6 +97,14 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
  assert.equal(await evaluate(`!document.getElementById('socialHub').hidden`),true,'The panel stays behind the share sheet');
  await key(send,'Escape','Escape',27);
  assert.match(await evaluate('window.__shared.url'),/utm_source=player_invite/);
+ // #933: the destination follows the language of Lumen (French here).
+ assert.equal(await evaluate('window.__shared.url'),'https://lumen.nopuna.fr/decouvrir.html?utm_source=player_invite&utm_medium=referral');
+ // A manual switch to English in Lumen: the next invitation is English and opens discover.html.
+ await evaluate(`(()=>{const s=document.getElementById('gameLocaleMode');s.value='en';s.dispatchEvent(new Event('change'));window.__shared=null;document.getElementById('openSocial').click();document.getElementById('inviteLumenFriends').click()})()`);
+ await until(evaluate,`!!window.__shared`,'English invitation');
+ await key(send,'Escape','Escape',27);
+ assert.deepEqual(await evaluate('window.__shared'),{title:'Discover Lumen',text:'✨ I found Lumen, a logic puzzle where you relight the constellations. Want to try?',url:'https://lumen.nopuna.fr/discover.html?utm_source=player_invite&utm_medium=referral'},'English invitation → discover.html');
+ await evaluate(`(()=>{const s=document.getElementById('gameLocaleMode');s.value='fr';s.dispatchEvent(new Event('change'))})()`);
  assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)'),board,'The panel never touches the active grid');
  assert.equal((await evaluate('window.__socialCalls')).some(n=>/^lumen_friend/.test(n)),false,'No friend RPC for guests');
  results.push({kind:'guest',width:360});
