@@ -8,6 +8,7 @@ insert into public.lumen_sync_health(user_id,recorded_at,event,reason,outcome) v
  ('00000000-0000-0000-0000-000000000002',now()-interval '1 minute','hydration_failed','storage_quota','local_install');
 insert into lumen_commands.outbox_health values
  ('00000000-0000-0000-0000-000000000001',now()-interval '30 minutes','auth',5,8),
+ ('00000000-0000-0000-0000-000000000001',now()-interval '30 minutes','pending',5,0),
  ('00000000-0000-0000-0000-000000000003',now()-interval '30 minutes','critical',5,8);
 do $test$
 declare count_open integer; delivery record;
@@ -77,6 +78,21 @@ begin
  perform public.lumen_observe_critical_incidents(16,true);
  if not exists(select 1 from public.lumen_admin_critical_incidents() where signature='backlog' and severity='P2' and episode=1) then
   raise exception 'backlog P2 missing';end if;
+
+ insert into lumen_commands.adventure_packs values ('real-adventure-02','locked');
+ insert into lumen_commands.store_products values ('real-adventure-02','adventure','real-adventure-02');
+ insert into lumen_commands.purchases values(40,'play','fixture-only',
+  '00000000-0000-0000-0000-000000000002','real-adventure-02',100,'EUR','paid',now(),1.25,'CAD');
+ insert into lumen_commands.activity_mail(owner_id,kind,source_id,payload) values
+  ('00000000-0000-0000-0000-000000000002','purchase_missing_access','40','{"access":"missing"}');
+ perform public.lumen_observe_critical_incidents(17,true);
+ if exists(select 1 from lumen_commands.activity_mail where kind='purchase_access_restored') then
+  raise exception 'false payment recovery';end if;
+ insert into lumen.entitlements values ('00000000-0000-0000-0000-000000000002','real-adventure-02',null);
+ perform public.lumen_observe_critical_incidents(18,true);
+ perform public.lumen_observe_critical_incidents(19,true);
+ if (select count(*) from lumen_commands.activity_mail where kind='purchase_access_restored' and source_id='40')<>1 then
+  raise exception 'payment recovery was not emitted exactly once';end if;
 
  select * into delivery from public.lumen_claim_activity_mail(now()-interval '1 hour',array['incident_open'],1,100);
  if delivery.kind is distinct from 'incident_open' or delivery.payload ? 'user_id' then raise exception 'invalid delivery payload'; end if;

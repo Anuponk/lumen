@@ -11,7 +11,7 @@ from urllib.request import Request, build_opener
 from lumen_activity_mail import NoRedirect, clients, configuration, drain
 
 SITE = "https://lumen.nopuna.fr"
-KINDS = ["incident_open", "incident_resolved", "purchase_missing_access"]
+KINDS = ["incident_open", "incident_resolved", "purchase_missing_access", "purchase_access_restored"]
 
 
 class GameShell(HTMLParser):

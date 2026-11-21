@@ -15,6 +15,7 @@ SUBJECTS = {
     "signup": "Nouveau compte joueur",
     "purchase": "Achat confirmé",
     "purchase_missing_access": "P0 · Achat confirmé sans accès",
+    "purchase_access_restored": "P0 résolu · Accès à l’achat vérifié",
     "refund": "Achat remboursé",
     "revocation": "Achat contesté · vérifier le droit d’accès",
     "incident_open": "Incident ouvert",

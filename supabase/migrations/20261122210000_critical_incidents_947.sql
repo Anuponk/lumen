@@ -4,7 +4,7 @@ begin;
 alter table lumen_commands.activity_mail alter column owner_id drop not null;
 alter table lumen_commands.activity_mail drop constraint if exists activity_mail_kind_check;
 alter table lumen_commands.activity_mail add constraint activity_mail_kind_check check (
- kind in ('signup','purchase','purchase_missing_access','refund','revocation','incident_open','incident_resolved'));
+ kind in ('signup','purchase','purchase_missing_access','refund','revocation','purchase_access_restored','incident_open','incident_resolved'));
 alter table lumen_commands.activity_mail drop constraint if exists activity_mail_owner_scope;
 alter table lumen_commands.activity_mail add constraint activity_mail_owner_scope check (
  (owner_id is null)=(kind in ('incident_open','incident_resolved')));
@@ -97,13 +97,31 @@ begin
    where ready.user_id=h.user_id and ready.event='hydration_ready'
      and (ready.recorded_at,ready.id)>(h.recorded_at,h.id));
  select count(distinct o.user_id) filter (where o.state in ('critical','review')
-                            or (o.state='pending' and o.failures>=3))::integer,
+                            or (o.state='pending' and o.pending>0 and o.failures>=3))::integer,
         count(distinct o.user_id) filter (where o.state='pending' and o.failures<3 and o.pending>=p_backlog)::integer,
         coalesce(bool_or(o.state='auth' and o.pending>0),false)
    into outbox,backlog,unverified_outbox
  from lumen_commands.outbox_health o join auth.users u on u.id=o.user_id
  where o.oldest_pending_at<=cutoff and o.state in ('pending','critical','review','auth')
    and lumen_ops.activity_player(u);
+
+ -- A payment alarm recovers only when the paid product's rights can be read back.
+ insert into lumen_commands.activity_mail(owner_id,kind,source_id,payload)
+ select m.owner_id,'purchase_access_restored',m.source_id,
+   m.payload || jsonb_build_object('access','verified','event_at',now())
+ from lumen_commands.activity_mail m
+ join lumen_commands.purchases p on p.id::text=m.source_id and p.user_id=m.owner_id and p.status='paid'
+ join lumen_commands.store_products product on product.product_id=p.product_id
+ where m.kind='purchase_missing_access'
+   and not exists(select 1 from lumen_commands.activity_mail cleared
+     where cleared.kind='purchase_access_restored' and cleared.source_id=m.source_id)
+   and not exists(select 1 from lumen_commands.adventure_packs a
+     where a.access='locked' and (a.pack_id=product.pack_id or
+       (product.kind in ('sky','sky_upgrade') and a.pack_id ~ '^real-adventure-0[2-9]$'))
+     and not exists(select 1 from lumen.entitlements e where e.user_id=m.owner_id and e.entitlement=a.pack_id
+       and (e.expires_at is null or e.expires_at>now())))
+ order by m.observed_at,m.id limit 100
+ on conflict on constraint activity_mail_source_unique do nothing;
 
  perform lumen_ops.observe_incident('availability',p_sample,case when p_probe_ok then 0 else 1 end,p_failures,p_recoveries);
  perform lumen_ops.observe_incident('hydration',p_sample,hydration,1,p_recoveries);
