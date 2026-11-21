@@ -60,7 +60,7 @@ button{font:inherit;font-weight:700;background:#fff;border:1.8px solid #555;bord
 .victory-share-result{width:100%;margin-top:6px;font-size:13px;min-height:44px}
 .victory-share-result[hidden]{display:none}
 /* Reserve the confirmed action’s space while the same screen waits for the ACK. */
-.sky-reveal[data-sync="pending"] .victory-share-result[hidden]{display:block;visibility:hidden}
+/* #932: no space reserved while pending: the result share is now reserved for an Adventure. */
 #board.win{animation:boardWin .8s ease-in-out}
 #board.win{animation:boardWin .55s ease-out both}\n#board.win .lumen-orb{animation-play-state:paused}
 .confetti{position:fixed;z-index:1001;top:-24px;width:12px;height:18px;border-radius:3px;pointer-events:none;
@@ -1644,3 +1644,6 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 .analytics-table th,.analytics-table td{padding:6px 8px;border-bottom:1px solid rgba(104,231,255,.14);text-align:right;white-space:nowrap}
 .analytics-table th[scope=row],.analytics-table thead th:first-child{text-align:left}
 .analytics-table tr.analytics-row-alert th,.analytics-table tr.analytics-row-alert td{background:rgba(255,128,103,.12);color:#ffd6cc}
+/* #932 « Partager Lumen »: compact icon entry (header and Mon Ciel). */
+.share-lumen-entry svg{display:block}
+.map-head-actions{display:flex;align-items:center;gap:8px;flex:none}

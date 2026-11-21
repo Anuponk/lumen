@@ -76,7 +76,7 @@ try {
   await until(PENDING_VICTORY_SHOWN);
   const pending = await evaluate(`({zones:${ZONES},slots:${SLOTS},rank:document.getElementById('skyRevealRank').textContent,status:document.getElementById('skyRevealSync').textContent,
     kicker:document.getElementById('skyRevealKicker').textContent,progress:document.querySelector('.sky-reveal-progress').textContent,
-    publicShareHidden:document.getElementById('skyRevealShareResult').hidden&&getComputedStyle(document.getElementById('skyRevealShareResult')).visibility==='hidden',
+    publicShareHidden:document.getElementById('skyRevealShareResult').hidden,
     disabled:['skyRevealShare','skyRevealRetry'].map(id=>document.getElementById(id).disabled),nextEnabled:!document.getElementById('skyRevealNext').disabled,
     saved:!!window.__profile.canonicalQuestState[${JSON.stringify(next.id)}]?.solved,grants:window.__canonicalGrants})`);
   assert.equal(pending.saved, false, 'The pending screen appears before any server acknowledgement');
@@ -99,7 +99,8 @@ try {
   assert.equal(confirmed.slots[0], 'star:victory-reward-new', 'The confirmed first win earns its star');
   assert.notEqual(confirmed.rank, 'Classement après confirmation');
   assert.equal(confirmed.retry, false, 'Replay becomes available after confirmation');
-  assert.equal(await evaluate("document.getElementById('skyRevealShareResult').hidden"),false,'Public share becomes available after confirmation');
+  // #932: a confirmed ordinary first win offers « Défier », never « Partager ma réussite ».
+  assert.equal(await evaluate("document.getElementById('skyRevealShareResult').hidden"),true,'No result share for an ordinary quest, even after confirmation');
   assert(confirmed.diagnostics.includes('victory_pending_shown') && confirmed.diagnostics.includes('victory_pending_upgraded'));
   for (const zone of Object.keys(pending.zones))
     assert(

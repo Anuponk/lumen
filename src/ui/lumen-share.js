@@ -25,15 +25,27 @@ const MILESTONES = {
     title: t('share.adventureTitle'),
     headline: adventure ? t('share.adventureHeadline', { adventure, constellation }) : t('share.adventureHeadlinePlain', { constellation }),
   }),
+  // #932: a fully mastered Adventure (every quest's Maîtrise, confirmed).
+  adventureMastered: ({ constellation, adventure }, t) => ({
+    title: t('share.masteredTitle'),
+    headline: adventure ? t('share.masteredHeadline', { adventure }) : t('share.masteredHeadlinePlain', { constellation }),
+  }),
 };
+// #932: what the Adventure card states, from confirmed counts only.
+function achievementDetail({ milestone, constellations, quests }, t) {
+  if (milestone === 'adventureMastered' && quests > 0) return t('share.masteredDetail', { count: quests });
+  if (milestone === 'adventure' && constellations > 0) return t('share.adventureDetail', { count: constellations });
+  return '';
+}
 
-export function resultShareData({ ordinal, constellation, time, badges, milestone, adventure }, t = french, locale = 'fr') {
+export function resultShareData({ ordinal, constellation, time, badges, milestone, adventure, constellations = 0, quests = 0 }, t = french, locale = 'fr') {
   const wording = MILESTONES[milestone]?.({ ordinal, constellation, adventure }, t) ??
     { title: t('share.resultTitle'), headline: t('share.resultHeadline', { ordinal, constellation }) };
   return {
     title: wording.title,
     text: [
       wording.headline,
+      achievementDetail({ milestone, constellations, quests }, t),
       time && t('share.finalTime', { time }),
       badges.join(' · '),
       t('share.yourTurn'),
@@ -42,11 +54,21 @@ export function resultShareData({ ordinal, constellation, time, badges, mileston
   };
 }
 
+// #932: « Partager ma réussite » is reserved for the victory that completes or
+// fully masters an Adventure, read from the confirmed progression of its pack
+// (canonicalScopeProgress), never from the scene. Mastered wins when both apply.
+export function adventureShareMilestone(scope, { newlyCompleted = false, masteryNew = false } = {}) {
+  if (scope?.mastered && masteryNew) return 'adventureMastered';
+  return scope?.complete && newlyCompleted ? 'adventure' : null;
+}
+
 // Card copy (the canvas helper stays self-contained for its tests).
 export function shareCardCopy(model, t = french) {
   return {
     kicker: model.milestone === 'constellation' ? t('share.cardConstellation') : model.milestone === 'adventure' ? t('share.cardAdventure')
+      : model.milestone === 'adventureMastered' ? t('share.cardMastered')
       : t('share.cardQuest', { ordinal: model.ordinal, total: model.catalogueTotal }),
+    detail: achievementDetail(model, t),
     time: model.time ? t('share.finalTime', { time: model.time }) : '',
     cta: t('share.yourTurn'),
   };
@@ -188,12 +210,19 @@ function shareCardCanvas(document, model, url, copy = null) {
   }
 
   const { ordinal, catalogueTotal, constellation, time, badges, milestone, adventure } = model;
+  const adventureCard = (milestone === 'adventure' || milestone === 'adventureMastered') && adventure;
+  const mastered = milestone === 'adventureMastered';
   const canvas = document.createElement('canvas');
   canvas.width = 600;
   canvas.height = 750;
   const context = canvas.getContext('2d');
   context.fillStyle = '#101d2e';
   context.fillRect(0, 0, canvas.width, canvas.height);
+  if (mastered) {
+    context.strokeStyle = '#ffd678';
+    context.lineWidth = 6;
+    context.strokeRect(14, 14, canvas.width - 28, canvas.height - 28);
+  }
   context.textAlign = 'center';
   const line = (text, y, font, color) => {
     context.fillStyle = color;
@@ -208,9 +237,9 @@ function shareCardCanvas(document, model, url, copy = null) {
     context.fill();
     line('✦', 246, '96px sans-serif', '#ffe3a1');
   }
-  line(copy?.kicker || (CARD_KICKERS[milestone] ?? 'QUÊTE ' + ordinal + ' / ' + catalogueTotal + ' RÉUSSIE'), 372, 'bold 26px sans-serif', '#68e7ff');
-  line(milestone === 'adventure' && adventure ? adventure : constellation, 436, 'bold 46px sans-serif', '#f2fbff');
-  if (milestone === 'adventure' && adventure) line(constellation, 482, 'bold 26px sans-serif', '#a9bfd0');
+  line(copy?.kicker || (CARD_KICKERS[milestone] ?? 'QUÊTE ' + ordinal + ' / ' + catalogueTotal + ' RÉUSSIE'), 372, 'bold 26px sans-serif', mastered ? '#ffd678' : '#68e7ff');
+  line(adventureCard ? adventure : constellation, 436, 'bold 46px sans-serif', '#f2fbff');
+  if (adventureCard) line(copy?.detail || constellation, 482, 'bold 26px sans-serif', mastered ? '#ffe3a1' : '#a9bfd0');
   if (time) line(copy?.time || 'Temps final ' + time, 532, 'bold 28px sans-serif', '#f2fbff');
   if (badges.length) line(badges.join(' · '), 580, 'bold 23px sans-serif', '#ffe3a1');
   line(copy?.cta || 'À toi de jouer !', 650, 'bold 32px sans-serif', '#f2fbff');
