@@ -1,3 +1,4 @@
+import {createTranslator} from '../ui/i18n.js';
 // #729: Google Play Billing inside the Play-distributed app (TWA), through the
 // Digital Goods API and Payment Request. The purchase token is verified and recorded
 // by the server (Edge Function lumen-play-purchase → #728); this module never grants.
@@ -51,7 +52,7 @@ export async function verifyPlayPurchase({fetchImpl=fetch,endpoint,apiKey,access
   if(response.status===409&&body.error==='purchase_account_unverified')return {status:'account_unverified'};
   if(response.status===409&&body.error==='offer_not_eligible')return {status:'offer_not_eligible'}; // #865
   if(response.status===409&&body.status==='not_paid')return body.revoked===true?{status:'not_paid',revoked:true}:{status:'not_paid'};
-  if(response.status===400&&body.error==='invalid_purchase')return {status:'not_paid'}; // #864: Google no longer knows this token.
+  if(response.status===400&&body.error==='invalid_purchase')return {status:'not_paid',reason:'invalid_purchase'}; // #864: Google no longer knows this token.
   return {status:'error',reason:body.error||String(response.status)};
  }catch(_){return {status:'error',reason:'network'}}
 }
@@ -81,7 +82,10 @@ export async function restorePlayPurchases({service,verify,reportListFailure=fal
  if(!Array.isArray(items))return reportListFailure?[{itemId:null,status:'error',reason:'list'}]:[];
  const results=[];
  for(const item of items){
-  if(!item?.itemId||!item?.purchaseToken)continue;
+  if(!item?.itemId||!item?.purchaseToken){
+   if(reportListFailure)results.push({itemId:null,status:'error',reason:'invalid_inventory_item'});
+   continue;
+  }
   results.push({itemId:item.itemId,...await verify(item.itemId,item.purchaseToken)});
  }
  return results;
@@ -101,51 +105,41 @@ export async function findOwnedPlayPurchase(service,sku){
 
 // #864: what a server verification of a purchase already held by Google Play means for
 // the signed-in Lumen account. Never suggests a transfer between Lumen accounts.
-export function playOwnershipMessage(status,title){
- const name=title?'« '+title+' »':'cet article';
- if(status==='owned_elsewhere')return 'Ton compte Google Play possède déjà '+name+', mais cet achat est rattaché à un autre compte Lumen. Reconnecte-toi au compte Lumen utilisé lors de l’achat pour y accéder, sans nouveau paiement.';
- if(status==='account_unverified')return 'Ton compte Google Play possède déjà '+name+', mais cet achat n’est rattaché à aucun compte Lumen vérifiable. Contacte l’assistance : il sera rattaché après vérification, sans nouveau paiement.';
- if(status==='not_paid')return 'Google Play indique que l’achat de '+name+' a été annulé ou remboursé. Réessaie dans quelques minutes, le temps que Google Play le libère.';
- if(status==='pending')return 'Google Play traite encore le paiement de '+name+'. Tes droits seront actualisés après confirmation.';
- if(status==='offer_not_eligible')return 'Ton offre « Tout débloquer » a changé pendant le paiement. Cet achat n’est pas validé : Google Play le rembourse automatiquement sous 3 jours. Rouvre la boutique pour voir le prix à jour.';
- return 'Ton compte Google Play possède déjà '+name+', mais sa vérification est indisponible. Réessaie « Restaurer mes achats », sans nouveau paiement.';
+const playFrench=createTranslator().t;
+export function playOwnershipMessage(status,title,t=playFrench){
+ const name=title?t('store.playNamedItem',{title}):t('store.playThisItem');
+ if(status==='owned_elsewhere')return t('store.playOwnedElsewhere',{name});
+ if(status==='account_unverified')return t('store.playUnbound',{name});
+ if(status==='not_paid')return t('store.playOwnedRevoked',{name});
+ if(status==='pending')return t('store.playOwnedPending',{name});
+ if(status==='offer_not_eligible')return t('store.playOfferChanged');
+ return t('store.playOwnedUnavailable',{name});
 }
 
-// #878: a restore that finds several Play-held purchases gives one short sentence per
-// state, naming the items, each instruction once. `focus` (an SKU) puts the adventure
-// of the open offer first. A single purchase keeps its detailed sentence.
+// Group once per state and keep the open offer first (#878).
 const SUMMARY_STATES=['owned_elsewhere','account_unverified','not_paid'];
-export function playOwnershipSummary(results,titleOf=()=>'',{focus=null}={}){
+const SUMMARY_KEYS={owned_elsewhere:'Elsewhere',account_unverified:'Unbound',not_paid:'Revoked'};
+export function playOwnershipSummary(results,titleOf=()=>'',{focus=null,t=playFrench,locale='fr'}={}){
  const groups=new Map(SUMMARY_STATES.map(state=>[state,[]]));
  const ordered=[...(Array.isArray(results)?results:[])].sort((a,b)=>(b?.itemId===focus)-(a?.itemId===focus));
  for(const r of ordered){
   const group=groups.get(r?.status);
-  if(!group)continue;
+  if(!group||(r.status==='not_paid'&&!r.revoked))continue;
   const title=titleOf(r.itemId)||'';
   if(!group.includes(title))group.push(title);
  }
  if(!groups.get('owned_elsewhere').length&&!groups.get('account_unverified').length)return '';
  const total=[...groups.values()].reduce((n,g)=>n+g.length,0);
- if(total===1){const [state,[title]]=[...groups].find(([,g])=>g.length);return playOwnershipMessage(state,title)}
- const names=titles=>{
-  const quoted=titles.map(t=>t?'« '+t+' »':'un article');
-  return quoted.length>1?quoted.slice(0,-1).join(', ')+' et '+quoted.at(-1):quoted[0];
- };
- const sentences={
-  owned_elsewhere:g=>g.length>1
-   ?names(g)+' sont rattachés à un autre compte Lumen : reconnecte-toi au compte utilisé lors de leur achat pour y accéder.'
-   :names(g)+' est rattaché à un autre compte Lumen : reconnecte-toi au compte utilisé lors de son achat pour y accéder.',
-  account_unverified:g=>g.length>1
-   ?names(g)+' ne sont rattachés à aucun compte Lumen vérifiable : contacte l’assistance pour les rattacher.'
-   :names(g)+' n’est rattaché à aucun compte Lumen vérifiable : contacte l’assistance pour le rattacher.',
-  not_paid:g=>g.length>1?names(g)+' ont été annulés ou remboursés et ne donnent plus accès.'
-   :names(g)+' a été annulé ou remboursé et ne donne plus accès.',
- };
- // The open offer's adventure leads; otherwise the stable order of SUMMARY_STATES.
+ if(total===1){const [state,[title]]=[...groups].find(([,g])=>g.length);return playOwnershipMessage(state,title,t)}
+ const list=new Intl.ListFormat(locale);
  const focusTitle=focus?titleOf(focus)||null:null,leads=state=>focusTitle!==null&&groups.get(state).includes(focusTitle);
  const states=SUMMARY_STATES.filter(state=>groups.get(state).length).sort((a,b)=>leads(b)-leads(a));
- return 'Déjà sur ton compte Google Play, sans nouveau paiement : '
-  +states.map(state=>sentences[state](groups.get(state))).join(' ');
+ const details=states.map(state=>{
+  const titles=groups.get(state);
+  const items=list.format(titles.map(title=>title?t('store.playNamedItem',{title}):t('store.playAnItem')));
+  return t('store.playSummary'+SUMMARY_KEYS[state]+(titles.length>1?'Many':'One'),{items});
+ }).join(' ');
+ return t('store.playSummaryIntro',{details});
 }
 
 // Only validated provider prices. Never substitute catalogue prices in the Play app.

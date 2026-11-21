@@ -180,6 +180,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
    setBusy(true);setStatus(t('store.checkPlay'));
    try{
     const result=await onRestorePlay();
+    restoreButton.textContent=t(result?.retry?'app.retry':'store.restore');
     if(typeof result==='string')setStatus(result);else setStatus(result?.text||'',{transient:!!result?.transient});
    }finally{setBusy(false)}
   };

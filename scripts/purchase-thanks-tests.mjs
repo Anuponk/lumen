@@ -51,7 +51,8 @@ assert.equal(showPurchaseThanks(null,m),null);
 const screen=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 // #864: Play paths (new sheet or purchase already held by Play) share confirmPlayPurchase.
 assert.match(screen,/if\(result\.status==='paid'\)await confirmPlayPurchase\(productId,\{setStatus,owner,client\}\);/);
-assert.match(screen,/async function confirmPlayPurchase\(productId,\{setStatus,owner,client\}\)\{\n await loadEntitlements\(\);\n if\(lumenUser\?\.id!==owner\|\|lumenSupabase!==client\)return;[\s\S]*?const confirmed=lumenEntitlementsState==='ready'&&expected\.every[^\n]+\n if\(confirmed\)\{[^\n]+thankForPurchase\(productId\)\}/,'Play confirms only after the active account’s expected rights are present');
+assert.match(screen,/function playEntitlementsConfirmed\(productId\)\{[\s\S]*?return lumenEntitlementsState==='ready'&&expected\.every\(id=>lumenEntitlements\.some\(row=>row\.entitlement===id\)\)/,'Confirmed means every expected right was read back');
+assert.match(screen,/async function confirmPlayPurchase\(productId,\{setStatus,owner,client\}\)\{\n await loadEntitlements\(\);\n if\(lumenUser\?\.id!==owner\|\|lumenSupabase!==client\)return;\n if\(playEntitlementsConfirmed\(productId\)\)\{[^\n]+thankForPurchase\(productId\)\}/,'Play confirms only after the active account’s expected rights are present');
 assert.match(screen,/if\(result\.status==='paid'\)thankForPurchase\(result\.productId\);/,'Stripe');
 assert.match(screen,/function thankForPurchase\(productId\)\{\n if\(qaActive\|\|!productId\)return;/);
 assert.ok(fs.readFileSync(new URL('../src/ui/styles.css',import.meta.url),'utf8').includes('.purchase-thanks-card{'));
