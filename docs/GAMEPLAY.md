@@ -130,7 +130,7 @@ Hints are pedagogical: first draw attention, then explain the rule, then reveal 
 Group eliminations identify the reserved rows/columns and a certain exclusion
 from the first request. Further requests explain the same proof. Golden source
 cells show its premises; a brighter golden target names the cell to exclude.
-Neither deductions nor hint costs change (#516/#521).
+Neither deductions nor hint costs change (#516/#521). The active hint, including the rule, target coordinates and row or column list, follows the game’s FR/EN setting. Switching language re-renders the same deduction without recording another use.
 
 Halfway encouragement measures placed Guardians / board size without checking
 hidden correctness. It fires on a real placement crossing `ceil(size / 2)`,

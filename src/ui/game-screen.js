@@ -1757,6 +1757,7 @@ function setupGameLocaleSetting(){
   renderAuthUserCopy();renderMobileAuthCopy();
   LEARNING_INTRO=learningIntro(t);
   updateHintButton();updateVerifyButton();
+  if(!document.getElementById("hintCard")?.hidden)renderCurrentHint?.();
   const syncStatus=document.getElementById('cloudSyncStatus');
   if(syncStatus&&!syncStatus.hidden)renderSyncStatus({...syncPresentation.snapshot(),alert:syncStatus.getAttribute('role')==='alert'},{announce:false});
   if(!state)return;
@@ -2630,7 +2631,10 @@ function persistAttemptBoard(){attemptEngine.updateBoard(state)}
 
 const board=document.getElementById("board"),msg=document.getElementById("msg");
 let hiCells=[];
-const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianConflicts,conflictMessage,simpleForcedPlacement,proofEngine,directMissingCross,playerError,guardianOnlyState,guidedConflictForAction}=createGameEngine(()=>({n,puz,state}),()=>false);
+const {validateGuardians,key,solutions,isAutoCross,verificationErrors,guardianConflicts,conflictMessage,simpleForcedPlacement,proofEngine,directMissingCross,playerError,guardianOnlyState,guidedConflictForAction}=createGameEngine(()=>({n,puz,state}),()=>false,(key,params)=>()=>{
+ const {row,column}=params;
+ return t(key,row===undefined?params:{...params,cell:t("hint.cell",{row,column})});
+});
 function currentQuestLimit(){return extendedQuestLimit(lumenEntitlements,lumenProgress,attemptEngine.snapshot())}
 function currentQuestPosition(){return Math.min(extendedSequentialCount(lumenProgress.solved),currentQuestLimit()-1)}
 function legacyIndexForActiveChallenge(challenge){const quest=resolveChallengeQuest(challenge);return quest.legacyIndex??0}
@@ -4344,29 +4348,38 @@ function render(){
  }
 }
 
+const hintCell=([row,column])=>t("hint.cell",{row:row+1,column:column+1});
+const hintAxis=(axis,plural=false)=>t(axis==="col"?(plural?"hint.columns":"hint.column"):(plural?"hint.rows":"hint.row"));
+let renderCurrentHint=null;
+
 function broadClue(h){
  if(!h||!h.detail)return null;
  let d=h.detail;
  if(d.rule==="single"){
   const cells=(d.source&&d.source.length?d.source:[h.cell]).map(cell=>cell.slice());
-  if(d.axis==="row")return {text:`Sur la ligne ${d.index+1}, il ne reste qu’une possibilité : la case surlignée.`,cells};
-  if(d.axis==="col")return {text:`Dans la colonne ${d.index+1}, il ne reste qu’une possibilité : la case surlignée.`,cells};
-  if(d.axis==="region")return {text:"Dans ce territoire, il ne reste qu’une possibilité : la case surlignée.",cells};
+  if(d.axis==="row")return {text:()=>t("hint.clueRow",{index:d.index+1}),cells};
+  if(d.axis==="col")return {text:()=>t("hint.clueColumn",{index:d.index+1}),cells};
+  if(d.axis==="region")return {text:()=>t("hint.clueTerritory"),cells};
  }
  return null;
 }
 function clearHintDisplay(){
  board.querySelectorAll('.hi').forEach(cell=>cell.classList.remove('hi','hint-source','hint-target'));
- hi=null;hiCells=[];hintStage=0;hintFocus=null;const card=document.getElementById("hintCard");if(card)card.hidden=true;
+ hi=null;hiCells=[];hintStage=0;hintFocus=null;const card=document.getElementById("hintCard");if(card)card.hidden=true;renderCurrentHint=null;
 }
-function showHintMessage(text){
+function showHintMessage(title,body){
  learningTip=null;document.getElementById("scriptedLearn").hidden=true;
- const raw=String(text||""),card=document.getElementById("hintCard"),title=document.getElementById("hintTitle"),copy=document.getElementById("hintCopy");
- if(!card||!title||!copy){msg.textContent=raw;return}
- let label="Indice Lumen",body=raw;
- const match=raw.match(/^(Piste|Indice final|Indice|À jouer|Marquage manquant|⚠️ Erreur)\s*:\s*(.*)$/s);
- if(match){label=match[1]==="⚠️ Erreur"?"À vérifier":match[1]==="Marquage manquant"?"Marquage à compléter":match[1];body=match[2]}
- title.textContent=label;copy.textContent=body+(activeQuestOrdinal()===2&&hintUsesThisGame===1?" Tu peux demander une explication plus précise si tu en as besoin.":"");showAssistCard("hintCard");msg.textContent="";
+ const card=document.getElementById("hintCard"),heading=document.getElementById("hintTitle"),copy=document.getElementById("hintCopy");
+ const offerMore=activeQuestOrdinal()===2&&hintUsesThisGame===1;
+ renderCurrentHint=()=>{
+  const text=body();
+  if(!card||!heading||!copy){msg.textContent=text;return}
+  heading.textContent=title();
+  copy.textContent=offerMore?text+" "+t("hint.more"):text;
+ };
+ renderCurrentHint();
+ if(!card||!heading||!copy)return;
+ showAssistCard("hintCard");msg.textContent="";
 }
 function recordHintUse(){
  hintUsesThisGame++;
@@ -4384,7 +4397,7 @@ document.getElementById("hint").onclick=()=>{
  if(guardiansCompleteAndValid()){
   // No hint is counted: nothing remains to deduce.
   render();
-  if(!celebrated&&!pendingVictoryView)showHintMessage(authSessionPending?"Ta constellation est complète. La victoire sera validée dès que ton compte sera restauré.":"Ta constellation est complète.");
+  if(!celebrated&&!pendingVictoryView)showHintMessage(()=>t("hint.title"),()=>t(authSessionPending?"hint.completePending":"hint.complete"));
   return;
  }
  if(activeQuestOrdinal()===2&&hintUsesThisGame===0)showLearningTip("hint-learning",'tipHint');
@@ -4395,7 +4408,7 @@ document.getElementById("hint").onclick=()=>{
  let err=playerError();
  if(err){
   hi=err.cell; hintStage=0; hintFocus=null;
-  showHintMessage("⚠️ Erreur : "+err.text);
+  showHintMessage(()=>t("hint.review"),err.text);
   render(); return;
  }
 
@@ -4403,7 +4416,7 @@ document.getElementById("hint").onclick=()=>{
  let dx=directMissingCross();
  if(dx){
   hi=[dx[0],dx[1]]; hintStage=0; hintFocus=null;
-  showHintMessage("Marquage manquant : "+dx[2]+" Tu peux écarter la case surlignée.");
+  showHintMessage(()=>t("hint.missingMark"),()=>t("hint.markTarget",{reason:dx[2]()}));
   render(); return;
  }
 
@@ -4417,55 +4430,57 @@ document.getElementById("hint").onclick=()=>{
   if(d&&d.rule==="contradiction"){
    hi=h.cell;hiCells=[];
    if(hintStage===1){
-    showHintMessage(`Piste : teste mentalement la case L${h.cell[0]+1}C${h.cell[1]+1}. Suppose qu'elle accueille un Gardien et suis les contraintes : ligne, colonne, territoire et cases voisines.`);
+    showHintMessage(()=>t("hint.clue"),()=>t("hint.testCell",{cell:hintCell(h.cell)}));
     render();return;
    }
    if(hintStage===2){
-    showHintMessage(`Indice : cette hypothèse finit par rendre au moins une ligne, colonne ou territoire impossible à compléter. La case peut donc être éliminée sans choisir au hasard.`);
+    showHintMessage(()=>t("hint.explanation"),()=>t("hint.eliminationContradiction"));
     render();return;
    }
-   showHintMessage(`À jouer : tu peux écarter L${h.cell[0]+1}C${h.cell[1]+1}. C'est une élimination par contradiction.`);
+   showHintMessage(()=>t("hint.action"),()=>t("hint.excludeContradiction",{cell:hintCell(h.cell)}));
    render();return;
   }
 
   if(d&&d.rule==="group"){
    hi=h.cell;hiCells=d.source.slice();
-   let word=d.axis==="col"?"colonnes":"lignes";
-   let nums=d.indices.map(x=>x+1).join(" et ");
-   const action=`L${h.cell[0]+1}C${h.cell[1]+1} appartient à un autre territoire : tu peux l’écarter. La case à écarter est en doré plus lumineux.`;
+   const groupParams=()=>{
+    const list=new Intl.ListFormat(localePreference?.locale??"fr");
+    const numbers=new Intl.NumberFormat(localePreference?.locale??"fr");
+    return {count:d.regions.length,axis:hintAxis(d.axis),axes:hintAxis(d.axis,true),
+     indices:list.format(d.indices.map(index=>numbers.format(index+1))),action:t("hint.groupAction",{cell:hintCell(h.cell)})};
+   };
    if(hintStage===1){
-    showHintMessage(`Indice : ces ${d.regions.length} territoires surlignés réservent les ${word} ${nums}. ${action}`);
+    showHintMessage(()=>t("hint.explanation"),()=>t("hint.groupClue",groupParams()));
     render();return;
    }
    if(hintStage===2){
-    showHintMessage(`Indice : ces ${d.regions.length} territoires doivent placer ${d.regions.length} Gardiens dans exactement les ${word} ${nums}. Chaque ${d.axis==="col"?"colonne":"ligne"} n’accueille qu’un Gardien : elles sont entièrement réservées à ces territoires. ${action}`);
+    showHintMessage(()=>t("hint.explanation"),()=>t("hint.groupExplain",groupParams()));
     render();return;
    }
-   showHintMessage(`À jouer : les ${word} ${nums} sont réservées aux territoires surlignés. ${action}`);
+   showHintMessage(()=>t("hint.action"),()=>t("hint.groupNext",groupParams()));
    render();return;
   }
 
   if(d&&d.rule==="locked"){
    hiCells=d.source.slice();
-   let axisName=d.axis==="col"?"colonne":"ligne", num=d.index+1;
    if(hintStage===1){
-    showHintMessage(`Piste : observe les ${d.source.length} cases surlignées de ce territoire. Elles sont toutes sur la même ${axisName}. Qu'est-ce que cela implique pour le Gardien de ce territoire ?`);
+    showHintMessage(()=>t("hint.clue"),()=>t("hint.lockedClue",{count:d.source.length,axis:hintAxis(d.axis)}));
     render();return;
    }
    if(hintStage===2){
-    showHintMessage(`Indice : le Gardien de ce territoire sera forcément quelque part sur la ${axisName} ${num}. Comme une ${axisName} ne peut accueillir qu'un seul Gardien, aucune case de cette ${axisName} située hors du territoire ne peut en accueillir.`);
+    showHintMessage(()=>t("hint.explanation"),()=>t("hint.lockedExplain",{axis:hintAxis(d.axis),index:d.index+1}));
     render();return;
    }
    hiCells=d.source.concat([h.cell]);
-   showHintMessage(`À jouer : L${h.cell[0]+1}C${h.cell[1]+1} est hors de ce territoire mais sur la ${axisName} ${num}. Tu peux donc l’écarter.`);
+   showHintMessage(()=>t("hint.action"),()=>t("hint.lockedNext",{cell:hintCell(h.cell),axis:hintAxis(d.axis),index:d.index+1}));
    render();return;
   }
 
   hi=h.cell;hiCells=[];
   if(hintFocus!==id||hintStage<=1){
-   showHintMessage("Piste : regarde la case surlignée et la contrainte qui agit sur elle. Essaie d'identifier pourquoi elle ne peut pas accueillir de Gardien.");
+   showHintMessage(()=>t("hint.clue"),()=>t("hint.eliminateClue"));
   }else{
-   showHintMessage("Indice : "+h.text+` Tu peux donc écarter L${h.cell[0]+1}C${h.cell[1]+1}.`);
+   showHintMessage(()=>t("hint.explanation"),()=>t("hint.eliminateExplain",{reason:h.text(),cell:hintCell(h.cell)}));
   }
   render(); return;
  }
@@ -4476,14 +4491,14 @@ document.getElementById("hint").onclick=()=>{
    if(hintFocus!==id){hintFocus=id;hintStage=1}else hintStage++;
    hi=h.cell;hiCells=[];
    if(hintStage===1){
-    showHintMessage(`Piste : les déductions déjà faites réduisent fortement les configurations possibles. Regarde la case surlignée et vérifie ce qui se passe si tu essaies de l'éviter.`);
+    showHintMessage(()=>t("hint.clue"),()=>t("hint.placementClue"));
     render();return;
    }
    if(hintStage===2){
-    showHintMessage(`Indice : toutes les configurations encore compatibles imposent un Gardien sur cette case. Ce n'est pas un choix au hasard : l'alternative mène à une contradiction.`);
+    showHintMessage(()=>t("hint.explanation"),()=>t("hint.placementExplain"));
     render();return;
    }
-   showHintMessage(`À jouer : place un Gardien en L${h.cell[0]+1}C${h.cell[1]+1}.`);
+   showHintMessage(()=>t("hint.action"),()=>t("hint.placeNext",{cell:hintCell(h.cell)}));
    render();return;
   }
   let id=h.cell.join(",");
@@ -4494,22 +4509,22 @@ document.getElementById("hint").onclick=()=>{
    let clue=broadClue(h);
    if(!clue){
     hintStage=0;hintFocus=null;
-    showHintMessage("Indice refusé : le moteur connaît une case forcée mais ne possède pas une preuve pédagogique suffisante.");
+    showHintMessage(()=>t("hint.title"),()=>t("hint.noTeachingProof"));
     render();return;
    }
    hi=null;hiCells=clue.cells||[];
-   showHintMessage("Piste : "+clue.text);
+   showHintMessage(()=>t("hint.clue"),clue.text);
    render();return;
   }
   // 5. Second press: explain the logical rule, but don't say "place a diamond" yet.
   if(hintStage===2){
    hi=h.cell;hiCells=[];
-   showHintMessage("Indice : "+h.text+" Vérifie toi-même les autres possibilités avant de jouer.");
+   showHintMessage(()=>t("hint.explanation"),()=>t("hint.explainStep",{reason:h.text()}));
    render();return;
   }
   // 6. Third press: reveal the forced placement as last resort.
   hi=h.cell;hiCells=[];
-  showHintMessage(`Indice final : la case L${h.cell[0]+1}C${h.cell[1]+1} est forcée. Tu peux y placer un Gardien.`);
+  showHintMessage(()=>t("hint.final"),()=>t("hint.finalPlace",{cell:hintCell(h.cell)}));
   render();return;
  }
 
@@ -4517,7 +4532,7 @@ document.getElementById("hint").onclick=()=>{
  // #828: never expose an internal solver verdict to the player. The published
  // catalogue is audited (hint-catalogue-audit-tests.mjs); keep a bounded trace.
  recordCloudDiagnostic('hint_unavailable',{questId:String(activeQuest()?.id||'unknown').slice(0,64),placed:state.flat().filter(v=>v===2).length,size:n});
- showHintMessage("Aucun indice disponible pour cette position. Vérifie tes Gardiens avec « Vérifier », ou continue ta déduction.");
+ showHintMessage(()=>t("hint.title"),()=>t("hint.unavailable"));
 };
 
 const testModel={

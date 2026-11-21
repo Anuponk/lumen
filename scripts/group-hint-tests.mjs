@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import test from 'node:test';
 import {withNetworkContext} from './fixtures/network-context.mjs';
 import assert from 'node:assert/strict';
@@ -8,13 +9,14 @@ import {createGameEngine} from '../src/game/engine.js';
 
 const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const handler=source.slice(source.indexOf('document.getElementById("hint").onclick=()=>{'),source.indexOf('\nconst testModel='));
-function present(h,lesson=false,engine=null){
+const hintFormatters=source.slice(source.indexOf('const hintCell='),source.indexOf('let renderCurrentHint='));
+function present(h,lesson=false,engine=null,locale='fr'){
  const button={},messages=[],grants=[];
- const context={document:{getElementById:()=>button},scriptedLearningActive:()=>lesson,activeQuestOrdinal:()=>91,levelIndex:70,
+ const context={localePreference:{locale},t:createTranslator({locale}).t,document:{getElementById:()=>button},scriptedLearningActive:()=>lesson,activeQuestOrdinal:()=>91,levelIndex:70,
   celebrated:false,guidedPending:null,verifyPending:null,recordHintUse:()=>grants.push(true),playerError:()=>engine?.playerError()??null,directMissingCross:()=>engine?.directMissingCross()??null,
   simpleForcedPlacement:()=>engine?.simpleForcedPlacement()??null,proofEngine:()=>h,proofs:{},hi:null,hiCells:[],hintStage:0,hintFocus:null,
-  showHintMessage:t=>messages.push(t),render(){}};
- vm.createContext(withNetworkContext(context));vm.runInContext(handler,context);
+  showHintMessage:(_title,body)=>messages.push(body()),render(){}};
+ vm.createContext(withNetworkContext(context));vm.runInContext(hintFormatters+handler,context);
  return {context,messages,grants,click:()=>button.onclick()};
 }
 test('forced onboarding still gates hints before spending or displaying a deduction',()=>{
@@ -42,5 +44,9 @@ for(const axis of ['col','row'])for(const count of [2,3]){
   assert.match(f.messages[0],new RegExp(axis==='col'?'colonnes':'lignes'));
   assert.match(f.messages[0],/L5C5/);assert.match(f.messages[0],/écarter/);
   assert.deepEqual(Array.from(f.context.hi),[4,4]);
+  const english=present(h,false,null,'en');english.click();
+  assert.match(english.messages[0],new RegExp(axis==='col'?'columns':'rows'));
+  assert.match(english.messages[0],/R5C5/);assert.match(english.messages[0],/rule it out/);
+  assert.deepEqual(Array.from(english.context.hi),[4,4]);
  });
 }

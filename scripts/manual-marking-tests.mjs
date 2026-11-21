@@ -10,7 +10,7 @@ const board={n:3,puz:{reg:[[0,0,0],[1,1,1],[2,2,2]],sol:[0,2,1]},state:[[2,0,0],
 // The proof auditor retains its historical simulation API. Live play always
 // injects false, independently of the old checkbox/preference value.
 const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
-assert.ok(source.includes('createGameEngine(()=>({n,puz,state}),()=>false)'));
+assert.ok(source.includes('createGameEngine(()=>({n,puz,state}),()=>false,'));
 const engine=createGameEngine(()=>board,()=>false);
 for(let r=0;r<3;r++)for(let c=0;c<3;c++)assert.equal(engine.isAutoCross(r,c),false);
 assert.deepEqual(board.state,[[2,0,0],[0,0,0],[0,0,0]],'Retirement never mutates saved marks');
