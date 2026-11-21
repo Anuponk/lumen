@@ -166,6 +166,8 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
  await until(evaluate,`!!document.querySelector('#socialNotificationsList [data-kind="challenge-received"]')`,'received challenge row');
  await evaluate(`document.querySelector('#socialNotificationsList [data-kind="challenge-received"]').click()`);
  await until(evaluate,`new URL(location.href).searchParams.get('challenge')==='00000000-0000-4000-8000-000000089802'`,'challenge link opened');
+ // Leave the page settled for the next suite of the canonical replay.
+ for(let i=0;i<150;i++){try{if(await evaluate("document.readyState==='complete'&&!!window.lumenDiagnostics"))break}catch{}await sleep(100)}
  results.push({kind:'challenge-link'});
  return results;
 }

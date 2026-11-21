@@ -57,7 +57,11 @@ function fixture({locale='fr'}={}){
     return {data:[]};
    }})};`;
 }
+// A previous suite may end on a navigation (e.g. a challenge link): wait until
+// the page has settled, tolerating the destroyed execution context meanwhile.
+async function settle(evaluate){for(let i=0;i<150;i++){try{if(await evaluate("document.readyState==='complete'&&!!window.lumenDiagnostics"))return}catch{}await sleep(100)}}
 async function open({send,evaluate},url,{width=390,height=844,locale='fr'}={}){
+ await settle(evaluate);
  await send('Emulation.setDeviceMetricsOverride',{width,height,mobile:width<700,deviceScaleFactor:1});
  const {identifier}=await send('Page.addScriptToEvaluateOnNewDocument',{source:fixture({locale})});
  const target=new URL(url);for(const k of ['qa','challenge','daily','training'])target.searchParams.delete(k);
