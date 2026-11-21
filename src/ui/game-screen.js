@@ -4829,10 +4829,10 @@ async function purchaseAdventure(productId,{setStatus,setBusy,waiver}){
  else if(result.status==='pending'){setStatus('Google Play traite ton paiement. Tes droits seront actualisés après confirmation.');void maybeRestorePlayPurchases()}
  else if(result.status==='cancelled')setStatus('');
  else if(result.reason==='payment_unsupported'){console.info('[Lumen Play billing]',{reason:'payment_unsupported'});setStatus('Le paiement Google Play est indisponible sur cet appareil.');}
- else if(result.status==='owned_elsewhere'||result.status==='account_unverified')setStatus(playOwnershipMessage(result.status,playProductTitle(productId)));
- else if(result.status==='offer_not_eligible'){setStatus(playOwnershipMessage(result.status));void refreshAdventureOffer?.('mastery')} // #865: Google refunds it
- else if(result.status==='not_paid'){setStatus('Google Play indique que ce paiement a été annulé.');void maybeRestorePlayPurchases()}
- else {setStatus('La vérification est en cours. Tu peux restaurer tes achats Google Play sans repayer.');void maybeRestorePlayPurchases()}
+ else if(result.status==='owned_elsewhere'||result.status==='account_unverified')setStatus(playOwnershipMessage(result.status,playProductTitle(productId),t));
+ else if(result.status==='offer_not_eligible'){setStatus(playOwnershipMessage(result.status,undefined,t));void refreshAdventureOffer?.('mastery')} // #865: Google refunds it
+ else if(result.status==='not_paid'){setStatus(t(result.reason==='invalid_purchase'?'store.playVerifyFailed':'store.playCancelled'));void maybeRestorePlayPurchases()}
+ else {setStatus(t('store.playVerifyFailed'));void maybeRestorePlayPurchases()}
  setBusy(false);
 }
 function playProductTitle(productId){
@@ -4841,26 +4841,28 @@ function playProductTitle(productId){
 }
 function playProductFromSku(sku){return typeof sku==='string'?sku.replaceAll('_','-'):''}
 // Rights are announced only after the server confirmed and the entitlements were reread.
-async function confirmPlayPurchase(productId,{setStatus,owner,client}){
- await loadEntitlements();
- if(lumenUser?.id!==owner||lumenSupabase!==client)return;
+function playEntitlementsConfirmed(productId){
  const expected=isMainSkyProduct(productId)
   ?CONTENT_PACKS.filter(pack=>pack.skyId==='real-sky'&&pack.access==='locked').map(pack=>pack.id)
   :[productId];
- const confirmed=lumenEntitlementsState==='ready'&&expected.every(id=>lumenEntitlements.some(row=>row.entitlement===id));
- if(confirmed){setStatus('Achat confirmé ✓ Bonne exploration !');skyNavigation.render();thankForPurchase(productId)}
- else {setStatus('Google Play a confirmé le paiement. Tes droits sont en cours de synchronisation.');void maybeRestorePlayPurchases()}
+ return lumenEntitlementsState==='ready'&&expected.every(id=>lumenEntitlements.some(row=>row.entitlement===id));
+}
+async function confirmPlayPurchase(productId,{setStatus,owner,client}){
+ await loadEntitlements();
+ if(lumenUser?.id!==owner||lumenSupabase!==client)return;
+ if(playEntitlementsConfirmed(productId)){setStatus(t('store.playConfirmed'));skyNavigation.render();thankForPurchase(productId)}
+ else {setStatus(t('store.playRightsMissing'));void maybeRestorePlayPurchases()}
 }
 // #864: a purchase already held by Google Play is verified for this Lumen account only.
 // The server refuses a token bound to another account; nothing is ever transferred.
 async function settleOwnedPlayPurchase(productId,purchase,{setStatus,owner,client}){
- setStatus('Google Play indique que tu possèdes déjà cet article. Vérification pour ce compte Lumen…');
+ setStatus(t('store.playAlreadyChecking'));
  const result=await playVerify(purchase.itemId,purchase.purchaseToken,client,owner);
  // Non-sensitive diagnostic: product and server state only, never a token or an account.
  console.info('[Lumen Play billing]',{reason:'already_owned',productId,status:result.status});
  if(lumenUser?.id!==owner||lumenSupabase!==client)return;
  if(result.status==='paid'){await confirmPlayPurchase(productId,{setStatus,owner,client});return}
- setStatus(playOwnershipMessage(result.status,playProductTitle(productId)));
+ setStatus(result.status==='not_paid'&&!result.revoked?t(result.reason==='invalid_purchase'?'store.playVerifyFailed':'store.playCancelled'):playOwnershipMessage(result.status,playProductTitle(productId),t));
 }
 // Play recovery is independent of the price loader and never opens Payment Request.
 let playRestoreInFlight=null;
@@ -4879,7 +4881,9 @@ function restorePlayForCurrentAccount(){
   if(results.some(r=>r.status==='paid'||r.revoked)){
    await loadEntitlements();
    if(!current())return null;
-   if(lumenEntitlementsState!=='ready')return {results,rightsUnavailable:true};
+   if(lumenEntitlementsState!=='ready'||results.some(r=>r.status==='paid'&&!playEntitlementsConfirmed(playProductFromSku(r.itemId)))){
+    return {results,rightsUnavailable:true};
+   }
    skyNavigation.render();
   }
   return {results};
@@ -4891,24 +4895,34 @@ function playRestoreMessage(outcome,{manual=false,focus=null}={}){
  if(!outcome)return '';
  const {results,unavailable,rightsUnavailable}=outcome;
  const paid=results.some(r=>r.status==='paid');
- if(rightsUnavailable)return 'Google Play a répondu. Tes droits sont en cours de synchronisation.';
- // #863: an automatic restore that found the rights up to date stays silent.
- if(!manual&&paid&&!unavailable&&!results.some(r=>r.status==='error'||r.status==='pending'))return '';
- if(unavailable||results.some(r=>r.status==='error'||(r.status==='paid'&&!r.acknowledged))){
-  if(!manual&&!isPlayDistributedApp(window)&&!playPriceLoader.snapshot().playApp)return '';
-  return paid?'Tes droits sont à jour. L’accusé de réception Google Play sera repris automatiquement.'
-   :'Vérification Google Play indisponible. Tu peux réessayer sans nouveau paiement.';
- }
- if(paid)return 'Achats Google Play vérifiés. Tes droits sont à jour.';
- if(results.some(r=>r.status==='pending'))return 'Google Play traite encore un paiement. Nous vérifierons à nouveau son état.';
- if(manual&&results.some(r=>r.status==='account_unverified'||r.status==='owned_elsewhere')){
-  // #864/#878: name each purchase and why it stays on its original Lumen account,
-  // grouped per state so that the instruction is given once.
-  return playOwnershipSummary(results,sku=>playProductTitle(playProductFromSku(sku)),{focus});
- }
- if(manual&&results.some(r=>r.status==='offer_not_eligible'))return playOwnershipMessage('offer_not_eligible');
- if(results.some(r=>r.status==='not_paid'))return 'Google Play ne confirme aucun droit pour cet achat.';
- return manual?'Aucun achat Google Play à restaurer.':'';
+ // Only a confirmed receipt for this account can create an unsolicited notice.
+ if(!manual)return paid&&rightsUnavailable?t('store.playRightsMissing'):'';
+ if(rightsUnavailable&&paid)return t('store.playRightsRetry');
+ if(unavailable||rightsUnavailable||results.some(r=>r.status==='error'))return t('store.playVerifyFailed');
+ if(paid)return t(results.some(r=>r.status==='paid'&&!r.acknowledged)?'store.playAcknowledgementPending':'store.playRestored');
+ if(results.some(r=>r.status==='pending'))return t('store.playPending');
+ const summary=playOwnershipSummary(results,sku=>playProductTitle(playProductFromSku(sku)),{focus,t,locale:localePreference?.locale??'fr'});
+ if(summary)return summary;
+ if(results.some(r=>r.status==='offer_not_eligible'))return playOwnershipMessage('offer_not_eligible',undefined,t);
+ if(results.some(r=>r.revoked))return t('store.playRevoked');
+ return t(results.length?'store.playNoConfirmedPurchases':'store.playNoPurchases');
+}
+
+let playRestoreDiagnostic=null;
+function reportPlayRestore(outcome,owner,client){
+ if(!outcome)return;
+ const states=new Set(outcome.results.filter(r=>r.status!=='paid'||!r.acknowledged).map(r=>{
+  if(r.revoked)return 'revoked';
+  if(r.status==='not_paid'&&r.reason==='invalid_purchase')return 'invalid_purchase';
+  if(r.status==='error')return ['network','list','session','invalid_inventory_item'].includes(r.reason)?r.reason:'verify';
+  return r.status==='paid'?'acknowledgement_pending':r.status;
+ }));
+ if(outcome.rightsUnavailable)states.add('entitlements');
+ if(outcome.unavailable&&(isPlayDistributedApp(window)||playPriceLoader.snapshot().playApp))states.add('service_unavailable');
+ const reason=[...states].sort().join(',');
+ if(playRestoreDiagnostic?.owner===owner&&playRestoreDiagnostic.client===client&&playRestoreDiagnostic.reason===reason)return;
+ playRestoreDiagnostic={owner,client,reason};
+ if(reason)recordCloudDiagnostic('play_restore_check',{reason});
 }
 let playRecoveryTimer=null;
 async function maybeRestorePlayPurchases(attempt=0){
@@ -4917,10 +4931,8 @@ async function maybeRestorePlayPurchases(attempt=0){
  const owner=lumenUser.id,client=lumenSupabase;
  const outcome=await restorePlayForCurrentAccount();
  if(lumenUser?.id!==owner||lumenSupabase!==client)return;
- const message=playRestoreMessage(outcome);
- if(message)showPurchaseStatus(message,owner,'play-restore');
- // #863: rights now verified: retire an older automatic Play notice, never another alert.
- else if(outcome?.results?.some(r=>r.status==='paid'))showPurchaseStatus('',owner,'play-restore');
+ reportPlayRestore(outcome,owner,client);
+ showPurchaseStatus(playRestoreMessage(outcome),owner,'play-restore');
  if(attempt<3&&outcome&&(outcome.rightsUnavailable||
    outcome.results.some(result=>result.status==='pending'||result.status==='error'))){
   clearTimeout(playRecoveryTimer);
@@ -4965,7 +4977,8 @@ async function stripeTransport(){
 function showPurchaseStatus(text,owner,source=''){
  const el=document.getElementById('purchaseStatus');if(!el)return;
  // #863: a source may only clear its own notice (an automatic success never hides an error).
- if(!text&&source&&!el.hidden&&el.dataset.purchaseSource!==source)return;
+ if(source&&!el.hidden&&el.dataset.purchaseSource!==source&&(!text||source==='play-restore'))return;
+ if(el.textContent===(text||'')&&el.hidden===!text&&el.dataset.purchaseOwner===owner&&el.dataset.purchaseSource===(source||undefined))return;
  if(source)el.dataset.purchaseSource=source;else delete el.dataset.purchaseSource;
  if(owner)el.dataset.purchaseOwner=owner;else delete el.dataset.purchaseOwner;
  el.textContent=text||'';el.hidden=!text;
@@ -5059,13 +5072,15 @@ function renderAdventureOffer(container,pack,{close}={}){
   playCheckoutPaused:offer.pricesRequired&&!playCheckoutOpen({released:PLAY_CHECKOUT_AVAILABLE,capabilities:lumenCapabilities}),
   // #863: the manual result stays inside the shop; a clean success is shown briefly.
   onRestorePlay:offer.pricesRequired&&offer.signedIn?async()=>{
-   const owner=lumenUser?.id;
+   const owner=lumenUser?.id,client=lumenSupabase;
    const outcome=await restorePlayForCurrentAccount();
-   if(lumenUser?.id!==owner)return '';
+   if(lumenUser?.id!==owner||lumenSupabase!==client)return '';
+   reportPlayRestore(outcome,owner,client);
    const text=playRestoreMessage(outcome,{manual:true,focus:toPlayProductId(pack.id)});
    const clean=!!outcome&&!outcome.unavailable&&!outcome.rightsUnavailable&&outcome.results.some(r=>r.status==='paid')
     &&!outcome.results.some(r=>['error','pending','owned_elsewhere','account_unverified','offer_not_eligible'].includes(r.status)||(r.status==='paid'&&!r.acknowledged));
-   return {text,transient:clean};
+   const retry=!!outcome&&(!!outcome.unavailable||!!outcome.rightsUnavailable||outcome.results.some(r=>r.status==='error'));
+   return {text,transient:clean,retry};
   }:null,
   onBuy:purchaseAdventure,onClaim,onContinue
  });

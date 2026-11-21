@@ -27,7 +27,7 @@ assert.deepEqual(await v(reply(202,{status:'pending'})),{status:'pending'});
 assert.deepEqual(await v(reply(409,{error:'purchase_owned_elsewhere'})),{status:'owned_elsewhere'});
 assert.deepEqual(await v(reply(409,{status:'not_paid'})),{status:'not_paid'});
 assert.deepEqual(await v(reply(409,{error:'purchase_account_unverified'})),{status:'account_unverified'});
-assert.deepEqual(await v(reply(400,{error:'invalid_purchase'})),{status:'not_paid'},'#864: a token Google no longer knows is not a right');
+assert.deepEqual(await v(reply(400,{error:'invalid_purchase'})),{status:'not_paid',reason:'invalid_purchase'},'#864: a token Google no longer knows is not a right');
 // #864: Play ownership is read per SKU from the device's Google Play account.
 assert.deepEqual(await findOwnedPlayPurchase({listPurchases:async()=>[{itemId:'real_adventure_03',purchaseToken:'t3'},{itemId:'real_adventure_02',purchaseToken:''}]},'real_adventure_02'),{status:'not_owned'});
 assert.deepEqual(await findOwnedPlayPurchase({listPurchases:async()=>[{itemId:'real_adventure_03',purchaseToken:'t3'}]},'real_adventure_03'),{status:'owned',purchase:{itemId:'real_adventure_03',purchaseToken:'t3'}});
@@ -41,7 +41,7 @@ assert.doesNotMatch(playOwnershipMessage('owned_elsewhere','X')+playOwnershipMes
  const titles={real_adventure_03:'Au-delà de l’horizon',real_adventure_05:'Les chemins du firmament',real_adventure_02:'Horizons lointains',real_sky_all:'Tout le vrai ciel'};
  const titleOf=sku=>titles[sku]||'';
  const results=[{itemId:'real_adventure_03',status:'owned_elsewhere'},{itemId:'real_adventure_05',status:'owned_elsewhere'},
-  {itemId:'real_adventure_02',status:'account_unverified'},{itemId:'real_sky_all',status:'not_paid'},{itemId:'real_adventure_06',status:'paid'}];
+  {itemId:'real_adventure_02',status:'account_unverified'},{itemId:'real_sky_all',status:'not_paid',revoked:true},{itemId:'real_adventure_06',status:'paid'}];
  const text=playOwnershipSummary(results,titleOf);
  for(const title of Object.values(titles))assert.equal(text.split('« '+title+' »').length,2,'Each purchase is named once: '+title);
  for(const instruction of [/Reconnecte-toi/gi,/assistance/g,/autre compte Lumen/g,/aucun compte Lumen vérifiable/g,/rembours/g])
@@ -293,7 +293,7 @@ console.log('play-billing-tests P1: nine SKUs, validation, delayed DOM refresh, 
 assert.equal(PLAY_CHECKOUT_AVAILABLE,true,'The approved web release opens Play sales for eligible builds');
 const purchaseState={status:503,body:{error:'unavailable'}};
 let listings=0,reads=0,renders=0,playAttempts=0,changeDuringList=false,authChecks=0,paymentChecks=0;
-const verifyTokens=[],restoreNotices=[];
+const verifyTokens=[],restoreNotices=[],restoreDiagnostics=[];
 let storeTokens=['existing-purchase'];
 const authClient={auth:{getSession:async()=>{authChecks++;return {data:{session:{user:{id:'owner'},access_token:'synthetic-jwt'}}}}}};
 const originalProgress={solved:{0:1},stars:7,performances:{0:{badges:['speed']}},shards:50};
@@ -318,6 +318,7 @@ const recovery=vm.createContext({...context,PLAY_CHECKOUT_AVAILABLE:false,window
   if(purchaseToken==='another-purchase')return new Response(JSON.stringify({error:'purchase_owned_elsewhere'}),{status:409});
   return new Response(JSON.stringify(purchaseState.body),{status:purchaseState.status});
  }}),buyWithPlay:async()=>{playAttempts++;throw Error('A restoration opened checkout')},
+ localePreference:{locale:'fr'},t:(...args)=>createTranslator({locale:recovery.localePreference.locale}).t(...args),recordCloudDiagnostic:(event,data)=>restoreDiagnostics.push({event,...data}),
  showPurchaseStatus:message=>restoreNotices.push(message),lumenUser:{id:'owner'},lumenSupabase:authClient,lumenProgress:originalProgress,
  LUMEN_SUPABASE_URL:'https://synthetic.invalid',LUMEN_SUPABASE_KEY:'synthetic',
  loadEntitlements:async()=>{
@@ -349,7 +350,7 @@ assert.equal(reads,0,'An unavailable RPC must not be presented as confirmed acce
 purchaseState.status=200;
 purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
 await Promise.all([restore().onclick(),vm.runInContext('restorePlayForCurrentAccount()',recovery)]);
-assert.match(status(),/droits sont à jour/);
+assert.match(status(),/Vos achats ont été restaurés/);
 assert.equal(listings,2,'Automatic and manual calls share the same verification in flight');
 assert.equal(reads,1);
 assert.equal(renders,1);
@@ -383,12 +384,12 @@ for(const error of ['purchase_account_unverified','purchase_owned_elsewhere']){
  purchaseState.body={error};
  restoreNotices.length=0;
  await vm.runInContext('maybeRestorePlayPurchases()',recovery);
- assert.deepEqual(restoreNotices,[],'Automatic recovery must not suggest that a store purchase belongs to this Lumen account');
+ assert.deepEqual(restoreNotices.filter(Boolean),[],'Automatic recovery must not suggest that a store purchase belongs to this Lumen account');
  await restore().onclick();
  // #864: the manual restore names the purchase and the account it stays on.
  assert.match(status(),error==='purchase_owned_elsewhere'?/Horizon|« .+ ».*autre compte Lumen.*Reconnecte-toi/:/« .+ ».*aucun compte Lumen vérifiable/);
  assert.doesNotMatch(status(),/Aucun achat Google Play à restaurer/);
- assert.deepEqual(restoreNotices,[],'A manual result stays inside the offer');
+ assert.deepEqual(restoreNotices.filter(Boolean),[],'A manual result stays inside the offer');
 }
 assert.equal(reads,readsBeforeUnmatched,'Unmatched purchases never read back a newly granted right');
 assert.equal(scheduledRecovery,null,'Unmatched purchases do not schedule a retry');
@@ -397,7 +398,7 @@ storeTokens.push('another-purchase');
 purchaseState.status=200;
 purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
 await restore().onclick();
-assert.match(status(),/droits sont .* jour/,'A separate purchase must not hide a verified right for the current account');
+assert.match(status(),/Vos achats ont été restaurés/,'A separate purchase must not hide a verified right for the current account');
 assert.equal(reads,readsBeforeUnmatched+1);
 storeTokens.pop();
 
@@ -492,6 +493,16 @@ assert.deepEqual(verifyTokens.slice(-3),Array.from({length:3},()=>['Bearer synth
 }
 console.log('play-billing-tests #864: Play-held SKU explained per Lumen account, no sheet, no transfer OK');
 
+// #885: a stale Play inventory item is not evidence of a current Lumen purchase.
+{
+ recovery.lumenUser={id:'owner'};recovery.cloudProfileReady=true;recovery.lumenEntitlements=[];
+ storeTokens=['stale-inventory-item'];purchaseState.status=400;purchaseState.body={error:'invalid_purchase'};
+ restoreNotices.length=0;const previouslyRead=reads;
+ await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ assert.deepEqual(restoreNotices.filter(Boolean),[],'A stale Play record must not show a purchase banner on a Lumen account without purchases');
+ assert.equal(reads,previouslyRead,'A rejected token does not confer rights');
+}
+
 // #863: no permanent « Achats Google Play vérifiés » banner over the game.
 {
  recovery.lumenUser={id:'owner'};recovery.cloudProfileReady=true;
@@ -506,16 +517,21 @@ console.log('play-billing-tests #864: Play-held SKU explained per Lumen account,
  restoreNotices.length=0;
  await vm.runInContext('maybeRestorePlayPurchases()',recovery);
  assert.deepEqual(restoreNotices.filter(Boolean),[]);
- // An actionable failure stays visible.
+ // A temporary verifier failure is diagnosed silently in the background and actionable in the shop.
  purchaseState.status=503;purchaseState.body={error:'unavailable'};
- restoreNotices.length=0;
+ restoreNotices.length=0;restoreDiagnostics.length=0;
  await vm.runInContext('maybeRestorePlayPurchases()',recovery);
- assert.match(restoreNotices.join(' '),/indisponible/,'An automatic failure is still explained');
+ await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ assert.deepEqual(restoreNotices.filter(Boolean),[]);
+ assert.deepEqual(restoreDiagnostics,[{event:'play_restore_check',reason:'verify'}],'Repeated checks do not duplicate diagnostics');
+ await restore().onclick();
+ assert.match(status(),/Vérifiez votre connexion ou contactez le support/);
+ assert.equal(restore().textContent,'Réessayer');
  // Manual restore: in-shop confirmation only, cleared after about 3 s; no global banner.
  purchaseState.status=200;purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
  restoreNotices.length=0;
  await restore().onclick();
- assert.match(status(),/droits sont à jour/);
+ assert.match(status(),/Vos achats ont été restaurés/);
  assert.deepEqual(restoreNotices.filter(Boolean),[],'The manual result stays inside the shop');
  await new Promise(resolve=>setTimeout(resolve,3100));
  assert.equal(status(),'','The manual success disappears by itself');
@@ -525,6 +541,45 @@ console.log('play-billing-tests #864: Play-held SKU explained per Lumen account,
  await new Promise(resolve=>setTimeout(resolve,3100));
  assert.match(status(),/autre compte Lumen/,'An actionable message stays');
  storeTokens=[];
+}
+// #885: explicit context for empty inventory, revoked access and a paid receipt missing rights.
+{
+ recovery.lumenUser={id:'owner'};recovery.cloudProfileReady=true;recovery.lumenEntitlements=[];
+ restoreNotices.length=0;storeTokens=[];
+ for(const progress of [{},expectedProgress]){
+  recovery.lumenProgress=progress;
+  await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+  await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ }
+ assert.deepEqual(restoreNotices.filter(Boolean),[],'First launch and repeated recovery are quiet, even with progressed saves');
+ await restore().onclick();
+ assert.equal(status(),'Aucun achat à restaurer sur ce compte Google Play.');
+ recovery.localePreference.locale='en';
+ await restore().onclick();
+ assert.equal(status(),'There are no purchases to restore on this Google Play account.');
+ const originalProvider=recoveryWin.getDigitalGoodsService;
+ recoveryWin.getDigitalGoodsService=async()=>({listPurchases:async()=>{throw Error('offline')}});
+ await restore().onclick();assert.match(status(),/couldn’t confirm your purchase/);
+ assert.doesNotMatch(status(),/no purchases to restore/);assert.equal(restore().textContent,'Try again');
+ const originalReferrer=recoveryWin.document.referrer;
+ recoveryWin.document.referrer='';recoveryWin.getDigitalGoodsService=async()=>{throw Error('not a Play app')};
+ await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ assert.deepEqual(restoreNotices.filter(Boolean),[],'Chrome without a usable Play service has no purchase banner');
+ recoveryWin.document.referrer=originalReferrer;recoveryWin.getDigitalGoodsService=originalProvider;
+ storeTokens=['previously-refunded'];purchaseState.status=409;purchaseState.body={status:'not_paid',revoked:true};
+ recovery.loadEntitlements=async()=>{reads++;recovery.lumenEntitlements=[];recovery.lumenEntitlementsState='ready'};
+ await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ assert.deepEqual(recovery.lumenEntitlements,[]);assert.deepEqual(restoreNotices.filter(Boolean),[]);
+ await restore().onclick();assert.match(status(),/cancelled or refunded/);
+ storeTokens=['actually-paid'];purchaseState.status=200;purchaseState.body={status:'paid',acknowledged:true,adventures:['real-adventure-02']};
+ await vm.runInContext('maybeRestorePlayPurchases()',recovery);
+ assert.match(restoreNotices.filter(Boolean).at(-1),/confirmed the payment, but access hasn’t been verified yet/);
+ await restore().onclick();assert.match(status(),/Try again without paying/);assert.equal(restore().textContent,'Try again');
+ recovery.loadEntitlements=async()=>{recovery.lumenEntitlementsState='ready';recovery.lumenEntitlements=[{entitlement:'real-adventure-02',source:'purchase'}]};
+ await restore().onclick();assert.equal(status(),'Your purchases have been restored.');
+ assert.equal(restore().textContent,'Restore my purchases');
+ assert.equal(recovery.lumenEntitlements[0].entitlement,'real-adventure-02');
+ recovery.localePreference.locale='fr';recovery.lumenProgress=originalProgress;storeTokens=[];
 }
 // The real global notice: an automatic Play success may only clear its own notice.
 {
@@ -536,7 +591,10 @@ console.log('play-billing-tests #864: Play-held SKU explained per Lumen account,
  ctx.showPurchaseStatus('Paiement refusé.','owner');
  ctx.showPurchaseStatus('','owner','play-restore');
  assert.equal(notice.textContent,'Paiement refusé.','An automatic success never hides another alert');
- ctx.showPurchaseStatus('Vérification Google Play indisponible.','owner','play-restore');
+ ctx.showPurchaseStatus('Droits Play en attente.','owner','play-restore');
+ assert.equal(notice.textContent,'Paiement refusé.','A background Play alert never replaces Stripe');
+ ctx.showPurchaseStatus('');
+ ctx.showPurchaseStatus('Droits Play en attente.','owner','play-restore');
  ctx.showPurchaseStatus('','owner','play-restore');
  assert.equal(notice.hidden,true,'Its own stale notice is retired');
 }
