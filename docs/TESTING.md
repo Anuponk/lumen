@@ -1740,7 +1740,7 @@ catalogue size, sequentially and awaiting victory/reveal behavior. Coverage incl
 - cell cycle;
 - guided conflicts and solver use;
 - N x N board rendering;
-- mobile drag exclusions, including the #805 real Chrome swipe, a stationary tap whose pointer release remains uncancelled, and one-step undo in `ux-lot-browser-tests.mjs`;
+- mobile drag exclusions, including the #805 real Chrome swipe, a stationary tap whose pointer release remains uncancelled, and one-step undo in `ux-lot-browser-tests.mjs` (since HeadlessChrome 157 a synthesized CDP drag loses its page `touchend`, so one neutral tap outside the board resets the synthetic gesture before the asserted tap; real-device Android check: tap a Guardian right after a swipe);
 - Guardian terminology;
 - constellation/reward celebrations;
 - replay and reset/navigation;
