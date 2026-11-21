@@ -2160,10 +2160,10 @@ async function createSocialChallengeFromSuccess(){
  finally{challengeCreationPending=false}
 }
 async function sharePendingChallenge(){
- if(!pendingChallengeUrl)return;const text="Je te défie sur LUMEN. Tu as une tentative pour faire mieux !";
- try{if(navigator.share){await navigator.share({title:"Défi LUMEN",text,url:pendingChallengeUrl});trackAttemptEvent("challenge_share_completed",{method:"native"})}else{await navigator.clipboard.writeText(text+"\n"+pendingChallengeUrl);showShareToast("Lien du défi copié")}}catch(e){if(e?.name!=="AbortError")console.warn("challenge share",e)}
+ if(!pendingChallengeUrl)return;const text=t("share.challengeText");
+ try{if(navigator.share){await navigator.share({title:t("share.challengeTitle"),text,url:pendingChallengeUrl});trackAttemptEvent("challenge_share_completed",{method:"native"})}else{await navigator.clipboard.writeText(text+"\n"+pendingChallengeUrl);showShareToast(t("share.challengeCopied"))}}catch(e){if(e?.name!=="AbortError")console.warn("challenge share",e)}
 }
-async function copyPendingChallenge(){if(!pendingChallengeUrl)return;await navigator.clipboard.writeText(pendingChallengeUrl);showShareToast("Lien du défi copié");trackAttemptEvent("challenge_share_completed",{method:"copy"})}
+async function copyPendingChallenge(){if(!pendingChallengeUrl)return;await navigator.clipboard.writeText(pendingChallengeUrl);showShareToast(t("share.challengeCopied"));trackAttemptEvent("challenge_share_completed",{method:"copy"})}
 function maybeOfferSocialPush(){
  if(localStorage.getItem("lumenPushChoice")==="enabled"||!("Notification"in window)||Notification.permission==="denied")return;
  const box=document.getElementById("pushOptin");if(!box)return;box.querySelector("h2").textContent="Préviens-moi quand mon défi est relevé";box.querySelector("p").textContent="Active les notifications pour découvrir quand quelqu’un termine ton défi.";box.hidden=false;

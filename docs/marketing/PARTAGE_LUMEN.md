@@ -24,6 +24,22 @@ Les liens de partage général et de résultat ouvrent l’URL publique. Le part
 
 Hors périmètre : amis, classement hebdomadaire, parrainage, publication de campagnes externes. L’activation de la collecte produit reste une décision propriétaire (#316/#170).
 
+## Audit #759 du 21/11/2026 (base `efa708ed`, version `1.11.1+717`)
+
+| Parcours | Point d’entrée | Existant | Testé (auto) | Défaut identifié | Correction |
+| --- | --- | --- | --- | --- | --- |
+| Partager une victoire | Scène de victoire confirmée → « Partager ma réussite » | Texte + carte PNG (constellation réelle, temps, badges), natif `player_share`, copie canonique | `lumen-share-tests`, `late-game`, `quest-view`, `victory-layout` | Texte, titre et carte **en français même en anglais** (#754) | ✅ Copie `share.*` FR/EN, carte traduite (`shareCardCopy`) |
+| Défier depuis une quête | Victoire → « Défier » (#18, première performance) | Lien opaque, QR, natif, copie ; référence masquée jusqu’à la fin | `victory-challenge-browser`, `challenge-recipient-browser` | Texte « Je te défie sur LUMEN… » et toast **en français seulement** | ✅ `share.challenge*` FR/EN |
+| Copier un lien | Fenêtre de partage, « Copier le lien » de « Mes défis » (#896) | Presse-papiers puis sélection manuelle | `credits-browser`, `duel-browser` | Repli de #896 : en partage **natif**, la fenêtre remplaçait le lien de défi par la page de découverte (mauvaise destination) | ✅ Le natif ne remplace que l’URL de découverte générique |
+| Partage natif Android/iPhone | Bouton « Partager » si `navigator.share` | Fichier PNG joint si `canShare`, annulation silencieuse | `lumen-share-tests` (contrats) | — | Recette appareil (T1, T3) |
+| Inviter un nouvel utilisateur | Espace social → « Inviter des amis » (#898) | Natif `player_invite`, sinon fenêtre + copie | `credits-browser`, `social-hub-browser` | Texte **en français seulement** | ✅ `share.inviteTitle/inviteText` FR/EN |
+| Résultat du Défi du jour | Résultat #882 → « Partager ma performance » | Texte localisé (#909), ses seuls chiffres, natif `player_share` | `daily-challenge-browser`, `daily-view-tests` | — | — (recette #882) |
+| Bilan hebdomadaire | « Ta semaine dans les étoiles » → « Partager ma semaine » | Texte localisé, aucune donnée d’autrui | `daily-week-tests`, `daily-challenge-browser` | — | — |
+| Ouverture des liens | `decouvrir.html` / `discover.html`, `/?challenge=` | OG/Twitter FR et EN, hreflang, image 1200×630 (HTTP 200) ; défi isolé, one-shot (#18/#888) | `landing-seo-tests`, `challenge-recipient-browser` | — | Aperçu réel en messagerie à tester |
+| Confidentialité | Tous | Pseudonymes et chiffres du joueur seulement ; aucun email, UUID ni jeton ; solution jamais montrée | `lumen-share-tests` (champs privés ignorés), `duel-view-tests` | — | — |
+
+Liens de découverte générale : toujours `https://lumen.nopuna.fr/decouvrir.html` (paramètres UTM uniquement sur le partage natif, jamais dupliqués) ; les joueurs anglophones y trouvent le lien `discover.html` via hreflang.
+
 ## Recette après publication
 
 | Scénario | Appareil | Attendu | État |
