@@ -1860,14 +1860,32 @@ schema `lumen`; a stable revision-0 challenge is therefore valid on them.
 
 | Challenge kind | Snapshot identity | create | get / Mes défis | start / finish |
 |---|---|---|---|---|
-| Historical number (legacy index, incl. #650 soft revision 1 of quests 3–6) | `questId`=legacy+1 | `lumen_create_social_challenge` (rev 0) | `lumen_get_quest_challenge_v2` / `lumen_list_quest_challenges_v2` | `lumen_start/finish_social_challenge` |
+| Historical number (legacy index, incl. #650/#692 soft revision 1 of quests 3–7) | `questId`=legacy+1 + `gridRevision` played (#887) | `lumen_create_qualifying_challenge` (played revision) | `lumen_get_quest_challenge_v2` / `lumen_list_quest_challenges_v2` | revision 0: `lumen_start/finish_social_challenge`; revision > 0: `lumen_start/finish_quest_challenge_v2` |
 | Stable ID, grid revision 0 | `stableQuestId`, `puzzle_id` null | `lumen_create_quest_challenge` (rev 0) | same v2 reads | `lumen_start/finish_social_challenge` |
 | Stable ID, grid revision > 0 | `stableQuestId` + `gridRevision` | `lumen_create_quest_challenge_v2` | same v2 reads | `lumen_start/finish_quest_challenge_v2` |
 
 Reads fall back to `lumen_get_quest_challenge` then `lumen_get_social_challenge`
-only on `PGRST202` (older server). Historical numbers follow the live legacy
-board (`docs/GRID_CATALOG.md`, #650), so links created before 2026-11-14 for
-quests 3–6 are compared on the current onboarding board.
+only on `PGRST202` (older server).
+
+#887 (migration `20261122110000_challenge_grid_revision_887.sql`, additive,
+idempotent): a challenge is pinned to the board its sender **played**. The
+client sends the attempt's `gridRevision` on the numbered path too; the writer
+accepts 0 or the quest's registered revision. An older client that still sends
+0 on a revised quest is corrected from the sender's own official run on that
+quest (`lumen_commands.ranking_runs`, started ≤ 30 min before), the same
+evidence rule as the one-time repair `lumen.repair_challenge_grid_revisions_887`
+(private). Production audit 2026-11-21 (aggregates only): 5 numbered challenges
+on quests 3–7; the one from 2026-10-04 is revision 0 (correct); the 4 from
+2026-11-18/20 had a sender run on revision 1 started 0–2 min before and are
+repaired to revision 1. Recipients resolve revision 0 with the original board
+and revision 1 with the onboarding board (`resolveChallengeQuest`). Results that
+were already played on the other board keep every value and get
+`social_challenge_participations.board_mismatch=true`; `get_v2` exposes
+`participant_board_mismatch`, `list_v2` exposes `participants[].board_mismatch`,
+and `duelOutcome` returns `different-board` (both times shown, no winner).
+Limit: a guest on a stale client has no server run, so its declared revision 0
+is kept. Old clients cannot open repaired links (v1 readers and start/finish
+wrappers refuse revision > 0: `challenge_grid_update_required`).
 
 Recipient invariants (`challenge-recipient-browser.mjs`,
 `fixtures/challenge-rpc-matrix.sql`):

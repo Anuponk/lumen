@@ -34,12 +34,14 @@ export function challengeResumePlan({participantStatus,participantStartedAt,serv
  return {kind:'elapsed',elapsedMs:Math.max(0,now-started)};
 }
 
-export function challengeSnapshot({questIndex,quest,seconds,run,assistanceUsed=false,firstPlay=true}){
+// #887: gridRevision is the board actually played (the attempt's), never inferred.
+export function challengeSnapshot({questIndex,quest,seconds,run,assistanceUsed=false,firstPlay=true,gridRevision}){
+ const revision=gridRevision??quest?.gridRevision??0;
  const eligibility=performanceEligibility(quest?quest.ordinal-1:questIndex);
  return {
   questId:quest?(quest.legacyIndex===null?null:quest.legacyIndex+1):Number(questIndex)+1,
   ...(quest?{stableQuestId:quest.id,questOrdinal:quest.ordinal}:{}),
-  ...(quest?.gridRevision?{gridRevision:quest.gridRevision}:{}),
+  ...(revision?{gridRevision:revision}:{}),
   durationSeconds:Math.max(0,Number(seconds)||0),
   autonomy:!!run?.autonomy,
   speed:!!run?.speed,
@@ -96,7 +98,7 @@ export function createChallengeClient(supabase,{getUserId=()=>null,getAnonymousI
   if(!supabase)throw new Error("cloud_unavailable");
   const stableOnly=snapshot.questId===null&&!!snapshot.stableQuestId;
   const result=await supabase.rpc('lumen_create_qualifying_challenge',{...identity(),
-   p_puzzle_id:stableOnly?null:snapshot.questId,p_quest_id:stableOnly?snapshot.stableQuestId:null,p_grid_revision:stableOnly?snapshot.gridRevision||0:0,
+   p_puzzle_id:stableOnly?null:snapshot.questId,p_quest_id:stableOnly?snapshot.stableQuestId:null,p_grid_revision:snapshot.gridRevision||0,
    p_duration_seconds:Math.round(snapshot.durationSeconds),p_autonomy:!!snapshot.autonomy,p_speed:!!snapshot.speed,p_mastery:!!snapshot.mastery,
    p_assistance_used:!!snapshot.assistanceUsed,p_first_play:snapshot.firstPlay!==false,p_qualifying:snapshot.qualifying===true});
   if(!(result?.error?.code==='PGRST202'&&result.status===404)){if(result?.error)throw result.error;const rows=result?.data;return Array.isArray(rows)?rows[0]:rows}
@@ -105,6 +107,8 @@ export function createChallengeClient(supabase,{getUserId=()=>null,getAnonymousI
  }
  async function createFirstPlay(snapshot){
   const stableOnly=snapshot.questId===null&&!!snapshot.stableQuestId;
+  // #887: the historical writer only knows revision 0; never mislabel a revised board.
+  if(!stableOnly&&snapshot.gridRevision>0)throw new Error('challenge_grid_update_required');
   const versioned=stableOnly&&snapshot.gridRevision>0;
   const rows=await rpc(versioned?'lumen_create_quest_challenge_v2':stableOnly?'lumen_create_quest_challenge':'lumen_create_social_challenge',{...identity(),
    ...(versioned?{p_grid_revision:snapshot.gridRevision}:{}),

@@ -17,8 +17,10 @@ export function duelPerformance({name='',status:state='pending',duration=null,au
 }
 
 // The sender owns the reference (source); the recipient is a participant.
-export function duelOutcome({mine,theirs,role='sender'}){
+export function duelOutcome({mine,theirs,role='sender',boardMismatch=false}){
  if(!mine||!theirs)return {state:'unavailable'};
+ // #887: a result played on another board than the reference is never compared.
+ if(boardMismatch)return {state:'different-board'};
  if(mine.status==='abandoned')return {state:'abandoned-me'};
  if(theirs.status==='abandoned')return {state:'abandoned-them'};
  if(theirs.status!=='completed')return {state:theirs.status==='started'?'playing':'pending'};
@@ -34,12 +36,12 @@ export function duelOutcome({mine,theirs,role='sender'}){
 
 // Builders from the existing contracts (#18 list rows, #889 get_v2).
 export function duelFromSentRow(row,participant){
- return {challengeId:row?.challenge_id,role:'sender',quest:row,
+ return {challengeId:row?.challenge_id,role:'sender',quest:row,boardMismatch:participant?.board_mismatch===true,
   mine:duelPerformance({status:'completed',duration:row?.source_duration_seconds,autonomy:row?.source_autonomy,mastery:row?.source_mastery,firstPlay:row?.source_first_play}),
   theirs:duelPerformance({name:participant?.name,status:participant?.status,duration:participant?.duration_seconds,autonomy:participant?.autonomy,mastery:participant?.mastery,previouslyPlayed:participant?.previously_played})};
 }
 export function duelFromChallenge(data){
- return {challengeId:data?.challenge_id,role:'participant',quest:data,
+ return {challengeId:data?.challenge_id,role:'participant',quest:data,boardMismatch:data?.participant_board_mismatch===true,
   mine:duelPerformance({name:data?.participant_display_name,status:data?.participant_status,duration:data?.participant_duration_seconds,autonomy:data?.participant_autonomy,mastery:data?.participant_mastery,assistanceUsed:data?.participant_assistance_used,previouslyPlayed:data?.previously_played}),
   theirs:duelPerformance({name:data?.sender_display_name,status:'completed',duration:data?.source_duration_seconds,autonomy:data?.source_autonomy,mastery:data?.source_mastery,assistanceUsed:data?.source_assistance_used,firstPlay:data?.source_first_play})};
 }
@@ -55,7 +57,7 @@ export function participantForRecipient(row,listRow){
  return byTime.length===1?byTime[0]:null;
 }
 
-const VERDICT_ICON={won:'🏆',lost:'✦',tied:'🤝',pending:'⏳','pending-me':'⏳',playing:'⏳','playing-me':'⏳','abandoned-me':'✕','abandoned-them':'✕',unavailable:'·'};
+const VERDICT_ICON={won:'🏆',lost:'✦',tied:'🤝',pending:'⏳','pending-me':'⏳',playing:'⏳','playing-me':'⏳','abandoned-me':'✕','abandoned-them':'✕','different-board':'≠',unavailable:'·'};
 function gapText(outcome,theirName,{t,formatDuration}){
  if(outcome.state==='tied')return t('duel.sameTime');
  if(outcome.reason==='assistance')return outcome.state==='won'?t('duel.byAutonomyWon',{name:theirName}):t('duel.byAutonomyLost',{name:theirName});
@@ -75,6 +77,7 @@ export function duelVerdictText(outcome,theirName,t){
   case 'playing-me':return t('duel.yourTurnStarted');
   case 'abandoned-me':return t('duel.abandonedMe');
   case 'abandoned-them':return t('duel.abandonedThem',{name});
+  case 'different-board':return t('duel.differentBoard');
   default:return t('duel.unavailable');
  }
 }
@@ -87,6 +90,7 @@ function notes(duel,{t,currentRevision}){
  if(duel.role==='participant'&&duel.theirs.firstPlay===false)out.push(t('duel.noteReplaySource',{name:duel.theirs.name||t('duel.friend')}));
  const knew=duel.role==='sender'?duel.theirs.previouslyPlayed:duel.mine.previouslyPlayed;
  if(knew===true)out.push(duel.role==='sender'?t('duel.noteKnewGrid',{name:duel.theirs.name||t('duel.friend')}):t('duel.noteYouKnewGrid'));
+ if(duel.boardMismatch)out.push(t('duel.noteDifferentBoard'));
  const revision=Number(duel.quest?.grid_revision??0),current=currentRevision?.(duel.quest);
  if(Number.isFinite(current)&&current!==revision)out.push(t('duel.noteOriginalGrid'));
  return out;

@@ -52,4 +52,6 @@ export default Object.freeze({
   'duel.secondsShort': "{count} s",
   'duel.share': "Partager",
   'duel.shareChallenge': "Partager le défi · {quest}",
+  'duel.differentBoard': "Grille différente : pas de comparaison",
+  'duel.noteDifferentBoard': "Ce résultat a été joué sur une autre version de la grille que celle du défi. Les deux temps restent enregistrés, sans vainqueur.",
 });

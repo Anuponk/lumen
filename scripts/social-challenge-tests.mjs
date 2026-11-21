@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {challengeEligibility,challengeResumePlan,challengeSnapshot,compareChallenge,normalizeChallengeName,validChallengeName,challengeParticipantKey} from "../src/campaign/social-challenge.js";
+import {challengeEligibility,challengeResumePlan,challengeSnapshot,compareChallenge,normalizeChallengeName,validChallengeName,challengeParticipantKey,createChallengeClient} from "../src/campaign/social-challenge.js";
 
 // #889 (owner decision 20/11/2026): Défier follows the run's qualification only,
 // the same flag the attempt engine uses for badges/ranking (15-min cooldown).
@@ -48,5 +48,20 @@ assert.deepEqual(challengeResumePlan({participantStatus:'started',localAttempt:f
 assert.deepEqual(challengeResumePlan({participantStatus:'started',localAttempt:false}),{kind:'blocked',elapsedMs:0},'without server proof the resume is refused');
 assert.deepEqual(challengeResumePlan({participantStatus:'started',localAttempt:false,participantStartedAt:'garbage',serverNow:'2026-11-20T09:59:00Z'}),{kind:'blocked',elapsedMs:0});
 assert.equal(challengeResumePlan({participantStatus:'completed'}).kind,'closed');
+
+// #887: a numbered quest pins the board revision the attempt actually played.
+{
+ const numbered=challengeSnapshot({questIndex:2,gridRevision:1,seconds:61,run:mastery});
+ assert.equal(numbered.questId,3);assert.equal(numbered.gridRevision,1,"played revision kept on the numbered path");
+ assert.equal(challengeSnapshot({questIndex:2,seconds:61,run:mastery}).gridRevision,undefined,"no revision declared when none was played");
+ const calls=[];
+ const fake={rpc:async(name,args)=>{calls.push({name,args});return name==="lumen_create_qualifying_challenge"&&calls.length===1?{data:[{challenge_id:"c"}],error:null}:{data:null,error:{code:"PGRST202"},status:404}}};
+ const client=createChallengeClient(fake,{getUserId:()=>"u",getDisplayName:()=>"Loutre"});
+ await client.create({...numbered,displayName:"Loutre"});
+ assert.equal(calls[0].args.p_puzzle_id,3);assert.equal(calls[0].args.p_quest_id,null);assert.equal(calls[0].args.p_grid_revision,1,"numbered writer receives the played revision");
+ // An old server without the versioned writer can only store revision 0: refuse rather than mislabel.
+ const old=createChallengeClient({rpc:async()=>({data:null,error:{code:"PGRST202"},status:404})},{getDisplayName:()=>"Loutre"});
+ await assert.rejects(old.create(numbered),/challenge_grid_update_required/);
+}
 
 console.log("social challenge tests: ok");
