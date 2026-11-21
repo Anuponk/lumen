@@ -17,8 +17,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const until = async (expr, label) => { for (let i = 0; i < 150; i++) { if (await evaluate(expr).catch(() => false)) return; await sleep(100); } throw Error('Timed out: ' + label); };
 
 export const COPY = {
-  fr: {page: '/decouvrir.html', file: 'src/landing/og.jpg', lang: 'fr', hook: 'Peux-tu rallumer les constellations ?', sub: 'Un jeu de logique · 88 vraies constellations', cta: 'Gratuit pour commencer'},
-  en: {page: '/discover.html', file: 'src/landing/og-en.jpg', lang: 'en', hook: 'Can you relight the constellations?', sub: 'A logic puzzle · 88 real constellations', cta: 'Free to start'},
+  fr: {page: '/decouvrir.html', file: 'src/landing/og.jpg', lang: 'fr', hook: 'Peux-tu rallumer les constellations ?', sub: 'Un jeu de logique dans les étoiles', cta: '100 puzzles gratuits et sans pub'},
+  en: {page: '/discover.html', file: 'src/landing/og-en.jpg', lang: 'en', hook: 'Can you relight the constellations?', sub: 'A logic puzzle among the stars', cta: '100 free puzzles · No ads'},
 };
 // Ursa Major (Grande Ourse), partly relit: 4 of its 6 quests solved, lit with the
 // same rule as the victory scene.
