@@ -85,8 +85,9 @@ begin
  exception when raise_exception then if sqlerrm<>'invalid_grid_revision' then raise;end if;end;
  begin perform public.lumen_create_qualifying_challenge(null,'Sender887',plain_number,null,1,55,true,true,false,false,true,true);raise exception 'revision on unrevised quest accepted';
  exception when raise_exception then if sqlerrm<>'invalid_grid_revision' then raise;end if;end;
- assert (select grid_revision from lumen.social_challenges where id=(select challenge_id from public.lumen_create_qualifying_challenge(null,'Sender887',plain_number,null,0,55,true,true,false,false,true,true)))=0,
-  'unrevised quest stays revision 0';
+ -- (insert first: a writer called inside the asserting statement is invisible to its snapshot)
+ select challenge_id into fresh from public.lumen_create_qualifying_challenge(null,'Sender887',plain_number,null,0,55,true,true,false,false,true,true);
+ assert (select grid_revision from lumen.social_challenges where id=fresh)=0,'unrevised quest stays revision 0';
  -- An older client (sends 0) is corrected from the sender's fresh official run.
  insert into lumen_commands.ranking_runs(user_id,operation_id,quest_id,grid_revision,started_at,eligible)
   values(sender,'887-stale-client',revised,1,now()-interval '1 minute',true);
