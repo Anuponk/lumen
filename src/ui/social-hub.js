@@ -25,7 +25,8 @@ export function setupSocialHub({doc=document,t=key=>key,isSignedIn=()=>false,ext
  if(!trigger||!hub)return null;
  const badge=$('socialBadge'),menu=$('socialHubMenu'),close=$('socialHubClose');
  const views={menu,rankings:$('socialRankingsView'),notifications:$('socialNotificationsView')};
- const counters=[$('friendsBadge'),$('challengeUnreadBadge')];
+ // #929: pending circle invitations join the existing counters.
+ const counters=[$('friendsBadge'),$('challengeUnreadBadge'),$('circlesBadge')];
  let returnFocus=null;
 
  function total(){return counters.reduce((sum,el)=>sum+badgeCount(el),0)+Math.max(0,Number(notifications?notifications.extraCount():extraCount())||0)}

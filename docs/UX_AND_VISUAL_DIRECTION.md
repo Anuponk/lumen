@@ -319,13 +319,30 @@ and Abandonner (#908, same component, unchanged copy). No `alert`, `prompt` or
 `beforeunload` prompt exists. Information and real errors keep their inline
 status lines; Google Play « aucun droit pour cet achat » is a separate issue.
 ## Menus pause the quest — #925
-Opening a top menu (Social, Account, Help, Report, Share, their sub-panels) or an
+Opening a top menu (Social, Account, Help, Report, Share, their sub-panels including
+« Mes cercles ») or an
 in-game confirmation during a quest uses the Pause button's own mechanism: the
 grid disappears behind the opaque attempt mask and is inert, the official clock
 stops. Closing the last menu brings the grid back and restarts the clock once.
 A grid the player had paused stays paused; after leaving the app it waits for an
 explicit resume. One-shot challenges and the Défi du jour already allow the pause
 button, so no exception applies. Mon ciel is a navigation, not a menu: unchanged.
+
+## Private circles — #929 (EPIC #928 V1)
+« Mes cercles » sits in the social hub after « Mes amis » (no new header icon);
+pending invitations join the hub's badge. One modal: my circles and received
+invitations, then a circle's members, its private ranking (quest selector, podium
+of 3, my place, members without a time) and, for its owner, invitations (friends
+only), private links (7 days, revocable, shown once — with a manual copy when the
+device can neither share nor copy), renaming and deletion. Leaving, deleting and
+removing a member are confirmed with the Lumen dialog (#921) and state that
+official times never change. A `?circle=` link shows who invites, the circle name
+and size, and what members will see before joining; the token leaves the address
+once used or declined. Guests see why an account is needed. Empty states explain
+what to do next; offline errors offer a retry. Only nicknames are shown, never an
+e-mail. Minors: no free-text messaging, no public circle, invitations only from
+accepted friends or a private link, leave at any time, owner can remove a member.
+Opening circles during a quest pauses it (#925).
 
 ## Error UX
 No lives system. When guidance is active, illegal/conflicting Guardian reasoning should identify the relevant rule and source cells. A correction should be persistent enough to be understood rather than disappearing on an accidental outside tap.

@@ -45,7 +45,7 @@ test('every confirmation is wired to the shared Lumen dialog', () => {
     /activeQuest\(\)\?\.id!==shownQuest\|\|attemptEngine\.snapshot\(\)\?\.attemptId!==shownAttempt\)return;resetBoardMarks\(\)/,
   );
   // Dialog buttons stay usable during the scripted lesson.
-  assert.match(source, /#learningSkip,#lumenConfirm,#abandonConfirm"\)\)return;/);
+  assert.match(source, /#learningSkip,#lumenConfirm,#abandonConfirm[^"]*"\)\)return;/);
 });
 
 test('dialog copy is warm, explicit and translated in French and English', () => {

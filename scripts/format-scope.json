@@ -16,5 +16,8 @@
   "scripts/mastery-prelude-tests.mjs",
   "src/ui/menu-pause.js",
   "scripts/menu-pause-tests.mjs",
-  "scripts/menu-pause-browser-tests.mjs"
+  "scripts/menu-pause-browser-tests.mjs",
+  "src/ui/circles.js",
+  "scripts/circles-tests.mjs",
+  "scripts/circles-browser-tests.mjs"
 ]

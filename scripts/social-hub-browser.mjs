@@ -74,7 +74,7 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
  await until(evaluate,`!document.getElementById('socialHub').hidden`,'keyboard opens the panel');
  assert.equal(await evaluate(`document.getElementById('openSocial').getAttribute('aria-expanded')`),'true');
  assert.equal(await evaluate(`document.getElementById('socialHub').contains(document.activeElement)`),true,'Focus moves into the panel');
- assert.deepEqual(await evaluate(visibleItems),['Mes défis','Classements','Mes amis','Notifications','Inviter des amis'],'Daily row hidden while the daily challenge is unavailable');
+ assert.deepEqual(await evaluate(visibleItems),['Mes défis','Classements','Mes amis','Mes cercles','Notifications','Inviter des amis'],'Daily row hidden while the daily challenge is unavailable (#929: Mes cercles after Mes amis)');
  assert.equal(await evaluate(`!document.getElementById('socialGuestNote').hidden&&!document.getElementById('socialSignIn').hidden`),true,'Guests learn what needs an account');
  const fit=await evaluate(`(()=>{const c=document.querySelector('#socialHub .social-card').getBoundingClientRect();return {inside:c.top>=0&&c.bottom<=innerHeight&&c.left>=0&&c.right<=innerWidth,noHScroll:document.documentElement.scrollWidth<=innerWidth}})()`);
  assert.deepEqual(fit,{inside:true,noHScroll:true},'Panel fits a 360×640 screen');
@@ -137,7 +137,7 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
   await until(evaluate,`document.getElementById('socialBadge').textContent==='4'&&!document.getElementById('socialBadge').hidden`,'global badge '+width);
   assert.equal(await evaluate(`document.getElementById('friendsBadge').textContent+'/'+document.getElementById('challengeUnreadBadge').textContent`),'2/1','#35 counters unchanged');
   assert.equal(await evaluate(`document.getElementById('openSocial').getAttribute('aria-label')`),'Espace social, 4 nouveautés');
-  assert.deepEqual(await evaluate(visibleItems),['Défi du jour','Mes défis','Classements','Mes amis','Notifications','Inviter des amis'],'Six sections in the agreed order');
+  assert.deepEqual(await evaluate(visibleItems),['Défi du jour','Mes défis','Classements','Mes amis','Mes cercles','Notifications','Inviter des amis'],'Seven sections in the agreed order (#929)');
   assert.match(await evaluate(`document.getElementById('socialDailyState').textContent`),/fin dans/,'Daily state mirrors « Mes quêtes »');
   assert.equal(await evaluate(`document.getElementById('socialGuestNote').hidden`),true);
   assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,'No horizontal scroll at '+width);
