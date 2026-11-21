@@ -20,6 +20,8 @@ const mine=[
  row(3,90,[part('Loutre','completed',90)]),          // tied
  row(4,84,[part('Loutre','started',null)]),          // pending/playing
  row(5,84,[part('Loutre','abandoned',null)]),        // abandoned
+ // #896 recette: several players on one challenge, read as one compact card.
+ row(6,84,[part('Loutre','completed',98),part('Bo','pending',null),part('Cyrielle-au-pseudonyme-très-long','completed',70)]),
 ];
 const inbox={received:[
   {challenge_id:id(10),sender:'Loutre',puzzle_id:12,stable_quest_id:'base-q012',grid_revision:0,source_first_play:true,created_at:'2026-11-21T09:00:00Z',status:'pending'},
@@ -71,28 +73,48 @@ async function open({send,evaluate},url,{width=390,height=844,locale='fr'}={}){
 }
 const capture=async(send,dir,name)=>{if(dir)fs.writeFileSync(dir+'/'+name+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'))};
 const key=async(send,k,code,vk)=>{await send('Input.dispatchKeyEvent',{type:'keyDown',key:k,code,windowsVirtualKeyCode:vk});await send('Input.dispatchKeyEvent',{type:'keyUp',key:k,code,windowsVirtualKeyCode:vk})};
-const states=`[...document.querySelectorAll('#myChallengesList .duel-row')].map(r=>r.dataset.duelState)`;
+const states=`[...document.querySelectorAll('#myChallengesList .challenge-duel')].map(r=>r.dataset.duelState)`;
+const DUEL_LINES=8;
 const cardVisible=`(()=>{const m=document.getElementById('challengeResultModal');if(m.hidden)return false;const v=m.querySelector('.duel-verdict').getBoundingClientRect(),t=[...m.querySelectorAll('.duel-time')].map(e=>e.getBoundingClientRect());return v.top>=0&&v.bottom<=innerHeight&&t.every(r=>r.top>=0&&r.bottom<=innerHeight)&&document.documentElement.scrollWidth<=innerWidth})()`;
 
 export async function verifyDuels({send,evaluate},url,{captureDir=process.env.LUMEN_DUEL_CAPTURES||null}={}){
  await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
  const results=[];
- for(const [width,height] of [[360,640],[1440,900]]){
+ for(const [width,height] of [[320,568],[360,640],[390,844],[1440,900]]){
   await open({send,evaluate},url,{width,height});
-  // « Mes défis » from the Espace social: verdicts readable in the list.
+  // « Mes défis » from the Espace social: compact, scannable list (#896 recette).
   await evaluate(`document.getElementById('openSocial').click();document.getElementById('openMyChallenges').click()`);
-  await until(evaluate,`document.querySelectorAll('#myChallengesList .duel-row').length===5`,'duel rows '+width);
-  assert.deepEqual(await evaluate(states),['won','lost','tied','playing','abandoned-them'],'one honest state per duel');
-  const text=await evaluate(`document.getElementById('myChallengesList').textContent`);
-  assert.match(text,/Défi contre Loutre.*Mon temps1:24.*Loutre1:38.*Tu as gagné !.*14 secondes d’avance/s);
-  assert.match(text,/Loutre a gagné.*14 secondes de retard/s);
+  await until(evaluate,`document.querySelectorAll('#myChallengesList .challenge-duel').length===${DUEL_LINES}`,'duel lines '+width);
+  assert.deepEqual(await evaluate(states),['won','lost','tied','playing','abandoned-them','won','pending','lost'],'one honest state per duel, no participant hidden');
+  const text=await evaluate(`document.getElementById('myChallengesList').innerText.replace(/\\s+/g,' ')`);
+  assert.match(text,/Quête 16.*Tu as gagné !.*Voir le duel.*Toi 1:24.*Loutre 1:38.*14 s d’avance/s);
+  assert.match(text,/Loutre a gagné.*Toi 1:38.*Loutre 1:24.*14 s de retard/s);
   assert.match(text,/Égalité.*Même temps/s);
   assert.match(text,/Loutre relève le défi/);
   assert.match(text,/Loutre a abandonné/);
-  assert.doesNotMatch(text,/par lien/,'no technical label');
-  assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,'no horizontal scroll at '+width);
+  assert.match(text,/En attente de Bo/);
+  assert.doesNotMatch(text,/Ton temps de référence|participants?\b|Copier le lien|Envoyer à un ami|0:00|par lien/,'no reference line, count, visible share buttons, fake time or technical label');
+  const layout=await evaluate(`(()=>{const items=[...document.querySelectorAll('#myChallengesList .challenge-list-item')];return {heights:items.map(e=>Math.round(e.getBoundingClientRect().height)),
+   heads:items.map(e=>e.querySelectorAll('.challenge-compact-quest').length),
+   targets:[...document.querySelectorAll('#myChallengesList [data-duel-open], #myChallengesList .challenge-share>summary')].every(b=>{const r=b.getBoundingClientRect();return r.height>=44&&r.width>=44}),
+   verdicts:[...document.querySelectorAll('#myChallengesList .challenge-duel-verdict')].every(v=>v.scrollWidth<=v.clientWidth+1),
+   overflow:document.documentElement.scrollWidth>innerWidth}})()`);
+  assert.equal(layout.overflow,false,'no horizontal scroll at '+width);
+  assert.deepEqual(layout.heads,[1,1,1,1,1,1],'the quest is named once per challenge');
+  assert(layout.heights.slice(0,5).every(h=>h<=160),'a single-player card stays compact: '+layout.heights);
+  assert(layout.heights[5]<=3*120,'three players (one with a very long name) stay within 120 px each: '+layout.heights[5]);
+  assert.equal(layout.targets,true,'touch targets of at least 44 px');
+  assert.equal(layout.verdicts,true,'the verdict is never truncated');
   await capture(send,captureDir,'duel-list-'+width);
-  assert.equal(await evaluate(`document.querySelectorAll('#myChallengesList [data-duel-open]').length`),4,'detail for finished duels only');
+  if(width===360){await evaluate(`document.querySelectorAll('#myChallengesList .challenge-list-item')[5].scrollIntoView({block:'start'})`);await capture(send,captureDir,'duel-list-multi-360')}
+  assert.equal(await evaluate(`document.querySelectorAll('#myChallengesList [data-duel-open]').length`),6,'detail for finished duels only');
+  // Sharing: secondary, closed by default, still reachable (also for a pending duel).
+  assert.equal(await evaluate(`[...document.querySelectorAll('#myChallengesList [data-copy-link], #myChallengesList [data-send-friend]')].some(b=>b.checkVisibility({contentVisibilityAuto:true,visibilityProperty:true}))`),false,'share actions collapsed');
+  await evaluate(`document.querySelectorAll('#myChallengesList .challenge-share>summary')[3].click()`);
+  assert.equal(await evaluate(`(()=>{const b=document.querySelectorAll('#myChallengesList [data-copy-link]')[3];const r=b.getBoundingClientRect();return r.height>=44&&r.right<=innerWidth&&r.left>=0&&document.documentElement.scrollWidth<=innerWidth})()`),true,'share menu reachable without overflow');
+  if(width===360){await evaluate(`document.querySelectorAll('#myChallengesList .challenge-list-item')[3].scrollIntoView({block:'center'})`);await capture(send,captureDir,'duel-list-share-360')}
+  await evaluate(`document.querySelectorAll('#myChallengesList .challenge-share>summary')[3].click();document.getElementById('myChallengesList').scrollTop=0;document.querySelector('#myChallengesList .challenge-list-item')?.scrollIntoView({block:'start'})`);
+  if(width!==360&&width!==1440){await evaluate(`document.getElementById('myChallengesClose').click()`);results.push({kind:'list',width});continue}
   // Detail card: verdict and both times visible at once; one highlighted winner.
   for(const [index,state] of [[0,'won'],[1,'lost'],[2,'tied']]){
    await evaluate(`(()=>{const b=document.querySelectorAll('#myChallengesList [data-duel-open]')[${index}];b.focus();b.click()})()`);
@@ -106,8 +128,8 @@ export async function verifyDuels({send,evaluate},url,{captureDir=process.env.LU
    await until(evaluate,`document.getElementById('challengeResultModal').hidden&&!document.getElementById('myChallengesModal').hidden`,'Escape closes the card');
    assert.equal(await evaluate(`document.activeElement?.dataset?.duelOpen!==undefined`),true,'focus back on « Voir le duel »');
   }
-  // Copy the link (sharing, distinct from viewing).
-  await evaluate(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async v=>{window.__copied=v}}});document.querySelector('#myChallengesList [data-copy-link]').click()`);
+  // Copy the link (sharing, distinct from viewing), from the « Partager » menu.
+  await evaluate(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async v=>{window.__copied=v}}});document.querySelector('#myChallengesList .challenge-share>summary').click();document.querySelector('#myChallengesList [data-copy-link]').click()`);
   await until(evaluate,`!!window.__copied`,'copy link');
   assert.match(await evaluate('window.__copied'),/[?&]challenge=00000000-0000-4000-8000-000000089601/);
   await evaluate(`document.getElementById('myChallengesClose').click()`);
@@ -139,8 +161,9 @@ export async function verifyDuels({send,evaluate},url,{captureDir=process.env.LU
  // English.
  await open({send,evaluate},url,{width:390,height:844,locale:'en'});
  await evaluate(`document.getElementById('openSocial').click();document.getElementById('openMyChallenges').click()`);
- await until(evaluate,`document.querySelectorAll('#myChallengesList .duel-row').length===5`,'english rows');
- assert.match(await evaluate(`document.getElementById('myChallengesList').textContent`),/Challenge against Loutre.*My time.*You won!.*14 seconds ahead.*Loutre won.*Tie/s);
+ await until(evaluate,`document.querySelectorAll('#myChallengesList .challenge-duel').length===${DUEL_LINES}`,'english rows');
+ assert.match(await evaluate(`document.getElementById('myChallengesList').innerText.replace(/\\s+/g,' ')`),/You won!.*View the duel.*You 1:24.*Loutre 1:38.*14 s ahead.*Loutre won.*Tie.*Waiting for Bo/s);
+ assert.equal(await evaluate(`document.querySelector('#myChallengesList .challenge-share>summary').textContent`),'Share');
  results.push({kind:'english'});
  return results;
 }

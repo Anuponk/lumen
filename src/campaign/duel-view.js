@@ -132,22 +132,48 @@ export function renderDuelCard(duel,{t,formatDuration,questLabel=()=>'',currentR
 
 const actionButton=(attr,value,label,extra='')=>'<button type="button" '+attr+'="'+esc(value)+'"'+extra+'>'+esc(label)+'</button>';
 
-// « Mes défis »: one card per challenge I created, one duel row per player.
+// #896 (recette 21/11): « Mes défis » is a scannable list. Per challenge: the
+// quest once, then one compact line per player (verdict, both times and gap
+// when the duel is over), « Voir le duel » as the only main action, sharing
+// tucked behind a discreet « Partager ». Context notes stay in the detail card.
+const DUEL_DETAIL_STATES=['won','lost','tied','abandoned-them','unavailable'];
+// Short gap for one-line reading in the list; the detail card keeps the sentence.
+function shortGap(outcome,name,{t,formatDuration}){
+ if(outcome.state==='tied'||outcome.reason==='assistance')return gapText(outcome,name,{t,formatDuration});
+ if(!['won','lost'].includes(outcome.state))return '';
+ const time=outcome.gap>=60?formatDuration(outcome.gap):t('duel.secondsShort',{count:outcome.gap});
+ return t(outcome.state==='won'?'duel.aheadTime':'duel.behindTime',{time});
+}
+function compactDuel(duel,{t,formatDuration,openId}){
+ const outcome=duelOutcome(duel),name=duel.theirs.name||t('duel.friend');
+ const comparable=['won','lost','tied'].includes(outcome.state);
+ const gap=comparable?shortGap(outcome,name,{t,formatDuration}):'';
+ const mine=duel.mine.status==='completed'&&duel.mine.duration!==null?formatDuration(duel.mine.duration):null;
+ const theirs=comparable?timeOf(duel.theirs,formatDuration):null;
+ // Times: both only when comparable; otherwise my own time alone, never a 0:00.
+ const times=[mine!==null?'<span class="challenge-duel-time"><small>'+esc(t('duel.you'))+'</small> <b>'+esc(mine)+'</b></span>':'',
+  theirs!==null?'<span class="challenge-duel-time"><small>'+esc(name)+'</small> <b>'+esc(theirs)+'</b></span>':'',
+  gap?'<span class="challenge-duel-gap">'+esc(gap)+'</span>':''].filter(Boolean).join('<span class="challenge-duel-sep" aria-hidden="true">·</span>');
+ const view=openId!==null&&DUEL_DETAIL_STATES.includes(outcome.state)?actionButton('data-duel-open',openId,t('duel.view'),' class="challenge-duel-open"'):'';
+ return '<li class="challenge-duel duel-'+outcome.state+'" data-duel-state="'+outcome.state+'">'
+  +'<div class="challenge-duel-main"><span class="challenge-duel-icon" aria-hidden="true">'+VERDICT_ICON[outcome.state]+'</span>'
+  +'<strong class="challenge-duel-verdict">'+esc(duelVerdictText(outcome,name,t))+'</strong>'+view+'</div>'
+  +(times?'<p class="challenge-duel-times">'+times+'</p>':'')
+  +'</li>';
+}
+
+// « Mes défis »: one card per challenge I created, one compact line per player.
 export function renderMyChallenges(rows=[],{t,formatDuration,questLabel=()=>'',canSendFriend=false,currentRevision=null}){
  if(!rows.length)return '<p class="social-note">'+esc(t('duel.noChallenges'))+'</p>';
  return rows.map(row=>{
-  const parts=Array.isArray(row.participants)?row.participants:[];
-  const duels=parts.map((p,index)=>{
-   const duel=duelFromSentRow(row,p),done=duelOutcome(duel).state;
-   const view=['won','lost','tied','abandoned-them','unavailable'].includes(done)?actionButton('data-duel-open',row.challenge_id+'|'+index,t('duel.view')):null;
-   return renderDuelRow(duel,{t,formatDuration,questLabel:()=>'',action:view,currentRevision});
-  }).join('');
-  return '<div class="challenge-list-item" data-challenge-id="'+esc(row.challenge_id)+'">'
-   +'<div class="challenge-list-head"><strong>'+esc(questLabel(row))+'</strong><span>'+esc(t('duel.participants',{count:parts.length}))+'</span></div>'
-   +'<small>'+esc(t('duel.reference',{time:formatDuration(Number(row.source_duration_seconds)||0)}))+'</small>'
-   +(duels||'<p class="social-note">'+esc(t('duel.noParticipant'))+'</p>')
-   +'<div class="duel-row-actions">'+actionButton('data-copy-link',row.challenge_id,t('duel.copyLink'))
-   +(canSendFriend?actionButton('data-send-friend',row.challenge_id,t('duel.sendFriend'),' class="challenge-send-friend"'):'')+'</div>'
+  const parts=Array.isArray(row.participants)?row.participants:[],quest=questLabel(row);
+  const duels=parts.map((p,index)=>compactDuel(duelFromSentRow(row,p),{t,formatDuration,openId:row.challenge_id+'|'+index})).join('');
+  const share='<details class="challenge-share"><summary aria-label="'+esc(t('duel.shareChallenge',{quest}))+'">'+esc(t('duel.share'))+'</summary>'
+   +'<div class="challenge-share-actions">'+actionButton('data-copy-link',row.challenge_id,t('duel.copyLink'))
+   +(canSendFriend?actionButton('data-send-friend',row.challenge_id,t('duel.sendFriend'),' class="challenge-send-friend"'):'')+'</div></details>';
+  return '<div class="challenge-list-item challenge-compact" data-challenge-id="'+esc(row.challenge_id)+'">'
+   +'<div class="challenge-compact-head"><strong class="challenge-compact-quest">'+esc(quest)+'</strong>'+share+'</div>'
+   +(duels?'<ul class="challenge-duels">'+duels+'</ul>':'<p class="challenge-duel-empty">'+esc(t('duel.noParticipant'))+'</p>')
    +'</div>';
  }).join('');
 }

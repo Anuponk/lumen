@@ -49,4 +49,7 @@ export default Object.freeze({
   'duel.noSent': "No challenge sent to a friend.",
   'duel.versus': "VS",
   'duel.sendFriend': "Send to a friend",
+  'duel.secondsShort': "{count} s",
+  'duel.share': "Share",
+  'duel.shareChallenge': "Share the challenge · {quest}",
 });

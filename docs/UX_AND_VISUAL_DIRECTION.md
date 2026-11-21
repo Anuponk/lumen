@@ -400,6 +400,14 @@ replaces « Mes défis par lien ». Notes stay honest: qualifying-replay referen
 Copy: `duel.*` (FR/EN). Captures: `docs/validation/duel-*.png` (before:
 `duel-before-*`).
 
+**Compact « Mes défis » (#896, recette 21/11/2026).** The list is for scanning; the detail card (unchanged) is for reading.
+- The quest is named once per challenge. Each player gets one compact line: verdict icon and sentence, with « Voir le duel » as the only main action (44 px).
+- Below it, for a finished comparable duel, « Toi 1:24 · Loutre 1:38 · 14 s d’avance ». For an unfinished one, only my own time, never a `0:00`.
+- No reference line, participant count or context notes in the list (still in the card).
+- Sharing (« Copier le lien », « Envoyer à un ami ») sits behind a discreet « Partager ▾ » menu in the card head, available even for a pending challenge.
+- Implemented in `renderMyChallenges` only (`.challenge-compact` styles). `renderDuelRow` (shared with « Amis et défis ») and `renderDuelCard` are untouched.
+- Captures: `duel-list-{320,360,390,1440}`, `duel-list-multi-360`, `duel-list-share-360` (before: `duel-before-compact-list-*`).
+
 « Amis et défis » (#35, row « Mes amis » of the panel) stays an optional screen,
 never on the game screen and never inside a grid. Guests see why friends need an account and
 keep playing link challenges. Friends are added by exact nickname; « Envoyer à un
