@@ -1564,3 +1564,44 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 @media(prefers-reduced-motion:reduce){.social-hub *{transition:none!important;animation:none!important}}
 .social-notification.unread{border-color:rgba(255,204,99,.55)}
 .social-new{flex:0 0 auto;padding:2px 8px;border-radius:10px;background:rgba(255,204,99,.16);color:#ffcc63;font-size:11px;font-weight:800}
+
+/* #896 Readable friend duels: verdict and both times first, no animation. */
+#challengeResultModal.duel-modal{z-index:1450}
+.duel-modal .social-card{display:flex;flex-direction:column;gap:12px}
+.duel-modal h2{margin:0;font-size:18px;color:#9fdcf0}
+.duel-card{display:grid;gap:12px;text-align:center}
+.duel-quest{margin:0;font-size:13px;color:#b9ccda}
+.duel-verdict{display:grid;gap:2px;justify-items:center;padding:10px 12px;border-radius:16px;background:rgba(104,231,255,.07);border:1px solid rgba(104,231,255,.2)}
+.duel-verdict strong{font-size:22px;line-height:1.2;color:#edfaff}
+.duel-verdict small{font-size:14px;color:#cfe3ee}
+.duel-verdict-icon{font-size:28px;line-height:1}
+.duel-won .duel-verdict{background:linear-gradient(180deg,rgba(255,214,120,.18),rgba(255,214,120,.06));border-color:rgba(255,214,120,.55)}
+.duel-won .duel-verdict strong{color:#ffe39a}
+.duel-tied .duel-verdict{border-color:rgba(159,220,240,.5)}
+.duel-players{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:8px}
+.duel-player{position:relative;display:grid;gap:2px;justify-items:center;align-content:start;min-width:0;padding:12px 8px 10px;border-radius:16px;background:rgba(7,19,31,.7);border:1px solid rgba(104,231,255,.18)}
+.duel-player.duel-winner{border-color:rgba(255,214,120,.7);box-shadow:0 0 0 1px rgba(255,214,120,.25) inset}
+.duel-crown{min-height:18px;font-size:16px;line-height:1}
+.duel-name{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:#edfaff}
+.duel-me .duel-name{color:#9fdcf0}
+.duel-time{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:#ffffff}
+.duel-aid{min-height:16px;font-size:12px;color:#b9ccda}
+.duel-vs{align-self:center;font-size:12px;font-weight:900;color:#6f8aa0}
+.duel-notes{margin:0;font-size:12px;color:#9fb8c9;line-height:1.4}
+.duel-row{display:grid;gap:6px;padding:10px 12px;margin:8px 0;border-radius:14px;background:rgba(104,231,255,.05);border:1px solid rgba(104,231,255,.15);text-align:left}
+.duel-row-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.duel-row-head span{font-size:12px;color:#9fb8c9}
+.duel-row-times{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.duel-row-times span{display:grid;gap:1px;min-width:0}
+.duel-row-times small{font-size:11px;color:#9fb8c9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.duel-row-times b{font-size:18px;font-variant-numeric:tabular-nums;color:#ffffff}
+.duel-row-verdict{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.duel-row-verdict small{color:#cfe3ee}
+.duel-row.duel-won{border-color:rgba(255,214,120,.5)}
+.duel-row.duel-won .duel-row-verdict strong{color:#ffe39a}
+.duel-row-actions{display:flex;gap:8px;flex-wrap:wrap}
+.duel-row-actions button{flex:1 1 auto;min-height:44px;border-radius:12px}
+.duel-loading{min-height:120px}
+.friend-challenge>.duel-row{margin:6px 0}
+@media(max-width:380px){.duel-time{font-size:24px}.duel-verdict strong{font-size:19px}.duel-player{padding:10px 4px 8px}}
+@media(prefers-reduced-motion:reduce){.duel-card *,.duel-row *{transition:none!important;animation:none!important}}

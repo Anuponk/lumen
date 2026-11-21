@@ -36,9 +36,9 @@ assert.deepEqual(declined.accepted,[],'a declined request is not an acceptance')
 const events=deriveSocialEvents({t,now:NOW,questLabel:r=>'Quête '+r.puzzle_id,
  friends:[{nickname:'Ana',state:'incoming',since:'2026-11-21T10:00:00Z'},{nickname:'Bo',state:'outgoing'},{nickname:'Old',state:'friends'}],
  received:[{challenge_id:'c1',sender:'Ana',puzzle_id:12,created_at:'2026-11-21T09:00:00Z',status:'pending'},{challenge_id:'c2',sender:'Ana',status:'completed'},{challenge_id:'c1',sender:'Ana',puzzle_id:12,created_at:'2026-11-21T09:00:00Z',status:'pending'}],
- sent:[{challenge_id:'m1',puzzle_id:7,unread_count:1,created_at:'2026-11-20T00:00:00Z',participants:[{display_name:'Bo',status:'completed'}]},{challenge_id:'m2',unread_count:0}],
+ sent:[{challenge_id:'m1',puzzle_id:7,unread_count:1,created_at:'2026-11-20T00:00:00Z',participants:[{name:'Bo',status:'completed',completed_at:'2026-11-21T11:30:00Z'}]},{challenge_id:'m2',unread_count:0}],
  accepted:s.accepted});
-assert.deepEqual(events.map(e=>e.kind),['friend-accepted','friend-request','challenge-received','challenge-result'],'newest first, one per source item');
+assert.deepEqual(events.map(e=>e.kind),['challenge-result','friend-accepted','friend-request','challenge-received'],'newest first (result dated by completed_at), one per source item');
 assert.equal(events.find(e=>e.kind==='challenge-received').text,'Ana te défie · Quête 12');
 assert.equal(events.find(e=>e.kind==='challenge-result').text,'Bo a terminé ton défi · Quête 7');
 assert.deepEqual(events.find(e=>e.kind==='challenge-result').target,{type:'my-challenges',id:'m1'});

@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:03,000
+One deduction in 20 seconds.
+
+2
+00:00:03,000 --> 00:00:07,000
+This territory has a single cell.
+
+3
+00:00:07,000 --> 00:00:12,000
+Rule out its row, its column and the touching cells.
+
+4
+00:00:12,000 --> 00:00:16,000
+Only one cell is left in this territory.
+
+5
+00:00:16,000 --> 00:00:20,000
+Solve the rest in Lumen · lumen.nopuna.fr/decouvrir.html

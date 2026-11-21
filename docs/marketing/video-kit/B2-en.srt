@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:03,000
+One cell is enough to unlock the rest.
+
+2
+00:00:03,000 --> 00:00:06,000
+This territory forces the corner.
+
+3
+00:00:06,000 --> 00:00:11,000
+Same row and touching cells are ruled out.
+
+4
+00:00:11,000 --> 00:00:17,000
+This cell is the only one left.
+
+5
+00:00:17,000 --> 00:00:21,000
+Solve the rest in Lumen · lumen.nopuna.fr/decouvrir.html

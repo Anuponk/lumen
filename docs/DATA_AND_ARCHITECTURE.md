@@ -1953,7 +1953,12 @@ writer) delivered to a friend; the one-shot participation, resume (#888),
 comparison and campaign isolation are those of the link challenge. The client
 module is `src/campaign/social-friends.js`; the screen is « Amis et défis »
 (`#friendsModal`), with « Envoyer à un ami » from the challenge share dialog and
-from « Mes défis ». No push or in-app notification beyond a small counter of
+from « Mes défis ». Duel presentation (#896, `src/campaign/duel-view.js`) reads the
+same contracts: « Mes défis » rows (`source_*`, `participants[].name/status/
+duration_seconds/autonomy/mastery/previously_played/completed_at`), the friend
+inbox joined to them by `challenge_id` (participant matched by name, else by a
+unique identical time), and, for a finished received challenge, the read-only
+`lumen_get_quest_challenge_v2` (cached per session). No migration. No push or in-app notification beyond a small counter of
 pending requests and received challenges on the entry button. Since #898 the
 entry buttons (`#openFriends`, `#openMyChallenges`, `#inviteLumenFriends`) and
 their counters live in the Espace social panel (`src/ui/social-hub.js`), keeping

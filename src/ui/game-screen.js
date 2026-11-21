@@ -23,6 +23,7 @@ import {summarizeWeek,weekMonday,weekNavigation} from '../campaign/daily-week.js
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
 import {createRankingClient} from '../persistence/ranking.js';
 import {setupSocialHub} from './social-hub.js';
+import {duelFromChallenge,duelFromSentRow,renderDuelCard,renderMyChallenges,renderFriendReceived,renderFriendSent} from '../campaign/duel-view.js';
 import {createSocialNotifications} from './social-notifications.js';
 import {createRankingView} from './ranking.js';
 import {createVictoryPresentation} from './victory-presentation.js';
@@ -63,9 +64,9 @@ import {verifiedAstronomicalFigure} from "./astronomical-catalogue.js";
 import {astronomicalReferenceSvg,astronomicalPrimarySvg} from "./astronomical-reference-svg.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
-import {challengeAttemptClosed,challengeEligibility,challengeResumePlan,challengeSnapshot,compareChallenge,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
+import {challengeAttemptClosed,challengeEligibility,challengeResumePlan,challengeSnapshot,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {challengeQuestLabel,resolveChallengeQuest} from "../campaign/canonical-challenges.js";
-import {createFriendsClient,friendErrorMessage,friendsOnly,renderFriendRows,renderReceivedChallenges,renderSentChallenges,validNickname} from "../campaign/social-friends.js";
+import {createFriendsClient,friendErrorMessage,friendsOnly,renderFriendRows,validNickname} from "../campaign/social-friends.js";
 import {canonicalDisplayForLegacy,canonicalScopeProgress,canonicalCampaignComplete,canonicalQuestMilestone,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestById,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
 import {loadCommittedCanonicalAttempt} from '../persistence/canonical-command.js';
@@ -1678,6 +1679,11 @@ function updateAdminTools(){
  const analytics=hasInternalCapability("analytics_cockpit");
  box.hidden=!(analytics||qaActive);
  if(qaTools)qaTools.hidden=!(analytics||qaActive);
+ // #708: Analytics is the single administration. For an administrator the test
+ // tools live in Support (same element and handlers); a QA profile without the
+ // capability keeps them in the menu so it can always return to the real profile.
+ const supportTools=document.getElementById("analyticsSupportTools"),toolsHome=analytics&&supportTools?supportTools:box;
+ if(qaTools&&toolsHome?.append&&qaTools.parentElement!==toolsHome)toolsHome.append(qaTools);
  if(cockpit)cockpit.hidden=!analytics;
  const adminModal=document.getElementById('adminCockpit');
  if(!analytics||(adminModal?.cockpitOwner&&adminModal.cockpitOwner!==lumenUser?.id)){
@@ -2179,30 +2185,47 @@ async function createSocialChallengeFromSuccess(){
  finally{challengeCreationPending=false}
 }
 async function sharePendingChallenge(){
- if(!pendingChallengeUrl)return;const text="Je te défie sur LUMEN. Tu as une tentative pour faire mieux !";
- try{if(navigator.share){await navigator.share({title:"Défi LUMEN",text,url:pendingChallengeUrl});trackAttemptEvent("challenge_share_completed",{method:"native"})}else{await navigator.clipboard.writeText(text+"\n"+pendingChallengeUrl);showShareToast("Lien du défi copié")}}catch(e){if(e?.name!=="AbortError")console.warn("challenge share",e)}
+ if(!pendingChallengeUrl)return;const text=t("share.challengeText");
+ try{if(navigator.share){await navigator.share({title:t("share.challengeTitle"),text,url:pendingChallengeUrl});trackAttemptEvent("challenge_share_completed",{method:"native"})}else{await navigator.clipboard.writeText(text+"\n"+pendingChallengeUrl);showShareToast(t("share.challengeCopied"))}}catch(e){if(e?.name!=="AbortError")console.warn("challenge share",e)}
 }
-async function copyPendingChallenge(){if(!pendingChallengeUrl)return;await navigator.clipboard.writeText(pendingChallengeUrl);showShareToast("Lien du défi copié");trackAttemptEvent("challenge_share_completed",{method:"copy"})}
+async function copyPendingChallenge(){if(!pendingChallengeUrl)return;await navigator.clipboard.writeText(pendingChallengeUrl);showShareToast(t("share.challengeCopied"));trackAttemptEvent("challenge_share_completed",{method:"copy"})}
 function maybeOfferSocialPush(){
  if(localStorage.getItem("lumenPushChoice")==="enabled"||!("Notification"in window)||Notification.permission==="denied")return;
  const box=document.getElementById("pushOptin");if(!box)return;box.querySelector("h2").textContent=t('push.challengeTitle');box.querySelector("p").textContent=t('push.challengeCopy');box.hidden=false;
 }
-function challengePerformanceHtml(name,duration,autonomy,mastery,note=''){
- const badge=mastery?"✦ Maîtrise":autonomy?"🧠 Autonome":"Avec aide";return '<div class="challenge-result-player"><strong>'+escapeHtml(name)+'</strong><span>'+badge+' · '+formatDuration(Number(duration)||0)+'</span>'+(note?'<small>'+escapeHtml(note)+'</small>':'')+'</div>';
-}
-// #889: honest provenance of a reference (older servers report none).
-function challengeProvenance(firstPlay){return firstPlay===false?'Rejeu qualifiant':firstPlay===true?'Première résolution':''}
 function escapeHtml(v){const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML}
+// #896 duel presentation (lists and detail card share one context).
+let myChallengeRows=[],lastFriendInbox=null,duelReturnFocus=null;const receivedDuels=new Map();
+function duelContext(extra={}){return {t,formatDuration,questLabel:row=>row?challengeQuestLabel(row):'',currentRevision:row=>{const id=row?.stable_quest_id;if(!id)return NaN;try{return canonicalQuestById(id)?.gridRevision??0}catch{return NaN}},...extra}}
+function showDuelCard(duel,{linkFlow=false}={}){
+ const modal=document.getElementById("challengeResultModal");if(!modal||!duel)return;
+ document.getElementById("challengeResultTitle").textContent=t("duel.result");
+ document.getElementById("challengeResultBody").innerHTML=renderDuelCard(duel,duelContext());
+ const close=document.getElementById("challengeResultClose"),copy=document.getElementById("challengeResultCopy"),home=document.getElementById("challengeResultHome");
+ if(home)home.hidden=!linkFlow;if(close)close.hidden=linkFlow;
+ if(copy){copy.hidden=duel.role!=='sender'||!duel.challengeId;copy.dataset.copyLink=duel.challengeId||''}
+ if(!linkFlow){const reshare=document.getElementById("challengeResultReshare");if(reshare)reshare.hidden=true}
+ duelReturnFocus=linkFlow?null:document.activeElement;
+ modal.hidden=false;(linkFlow?home:close)?.focus({preventScroll:true});
+}
+function closeDuelCard(){document.getElementById("challengeResultModal").hidden=true;duelReturnFocus?.focus?.({preventScroll:true});duelReturnFocus=null}
+async function copyDuelLink(id){
+ try{await navigator.clipboard.writeText(socialChallengeUrl(id));showShareToast(t("duel.linkCopied"))}
+ catch{void lumenShare.text({title:t("duel.copyLink"),text:"",url:socialChallengeUrl(id)})}
+}
+function handleDuelAction(event){
+ const open=event.target.closest("[data-duel-open]"),copy=event.target.closest("[data-copy-link]");
+ if(open){const [id,index]=open.dataset.duelOpen.split("|"),row=myChallengeRows.find(r=>r.challenge_id===id),p=row?.participants?.[Number(index)];if(row&&p)showDuelCard(duelFromSentRow(row,p));return}
+ if(copy)void copyDuelLink(copy.dataset.copyLink);
+}
 async function showSocialChallengeResult(data){
  if(!data)return;const modal=document.getElementById("challengeResultModal"),title=document.getElementById("challengeResultTitle"),body=document.getElementById("challengeResultBody");
- const participant={status:data.participant_status,duration_seconds:data.participant_duration_seconds,autonomy:data.participant_autonomy,speed:data.participant_speed,mastery:data.participant_mastery,assistance_used:data.participant_assistance_used};
- const source={duration_seconds:data.source_duration_seconds,autonomy:data.source_autonomy,speed:data.source_speed,mastery:data.source_mastery,assistance_used:data.source_assistance_used};
- const cmp=compareChallenge(source,participant);title.textContent=cmp?.headline||"Défi terminé";
- body.innerHTML='<div class="challenge-result-versus">'+challengePerformanceHtml(data.sender_display_name,source.duration_seconds,source.autonomy,source.mastery,challengeProvenance(data.source_first_play))+challengePerformanceHtml(data.participant_display_name||challengeDisplayName(),participant.duration_seconds,participant.autonomy,participant.mastery)+'</div><div class="challenge-result-detail">'+escapeHtml(cmp?.detail||"")+'</div>';
+ // #896: one duel card (verdict, both times, gap) with the existing #18 rule.
+ showDuelCard(duelFromChallenge({...data,participant_display_name:data.participant_display_name||challengeDisplayName()}),{linkFlow:true});
  const reshare=document.getElementById("challengeResultReshare"),canPass=data.participant_status==="completed"&&!data.previously_played;
  if(reshare){reshare.hidden=!canPass;if(canPass)reshare.classList.toggle("remarkable",!!data.participant_mastery)}
  if(canPass)lastChallengeOffer={eligibility:{firstPlay:true,remarkable:!!data.participant_mastery,canChallenge:true},snapshot:challengeSnapshot({quest:resolveChallengeQuest(data),seconds:data.participant_duration_seconds,run:{autonomy:data.participant_autonomy,speed:data.participant_speed,mastery:data.participant_mastery,qualifying:true},assistanceUsed:data.participant_assistance_used,firstPlay:true})};
- modal.hidden=false;trackLumenEvent("challenge_result_viewed",data.puzzle_id??null,{status:data.participant_status,stable_quest_id:data.stable_quest_id??null,grid_revision:data.grid_revision??0});
+ trackLumenEvent("challenge_result_viewed",data.puzzle_id??null,{status:data.participant_status,stable_quest_id:data.stable_quest_id??null,grid_revision:data.grid_revision??0});
 }
 async function finishSocialChallenge(status){
  if(socialChallenge?.daily)return finishDaily(status);
@@ -2216,15 +2239,19 @@ function celebrateSocialChallengeSuccess(){
 async function loadMyChallenges(){
  try{
   const rows=await challengeClient.sent(),list=document.getElementById("myChallengesList"),badge=document.getElementById("challengeUnreadBadge");let unread=0;
-  list.innerHTML=(rows||[]).length?(rows||[]).map(row=>{unread+=Number(row.unread_count)||0;const parts=Array.isArray(row.participants)?row.participants:[];const source={duration_seconds:row.source_duration_seconds,autonomy:row.source_autonomy,mastery:row.source_mastery};return '<div class="challenge-list-item" data-challenge-id="'+row.challenge_id+'"><div class="challenge-list-head"><strong>'+escapeHtml(challengeQuestLabel(row))+'</strong><span>'+parts.length+' participant'+(parts.length>1?"s":"")+'</span></div><small>Ta référence · '+formatDuration(row.source_duration_seconds)+(row.source_first_play===false?' · Rejeu qualifiant':'')+(row.source_mastery?" · ✦ Maîtrise":row.source_autonomy?" · 🧠 Autonomie":"")+'</small>'+parts.map(p=>{const cmp=compareChallenge(source,{status:p.status,duration_seconds:p.duration_seconds,autonomy:p.autonomy,mastery:p.mastery});const ownerOutcome=cmp?.winner==="source"?"🏆 Victoire":cmp?.winner==="participant"?"Défaite":"Égalité";return '<div class="challenge-participant"><span>'+escapeHtml(p.name)+'</span><span><strong>'+ownerOutcome+'</strong> · '+(p.status==="abandoned"?"abandon":formatDuration(p.duration_seconds)+(p.mastery?" · ✦":p.autonomy?" · 🧠":" · aide"))+'</span></div>'}).join("")+(lumenUser?'<button type="button" class="challenge-send-friend" data-send-friend="'+escapeHtml(row.challenge_id)+'">Envoyer à un ami</button>':'')+'</div>'}).join(""):'<p>Aucun défi envoyé pour le moment.</p>';
+  myChallengeRows=rows||[];for(const row of myChallengeRows)unread+=Number(row.unread_count)||0;
+  // #896: one duel row per participant (verdict, both times, gap).
+  list.innerHTML=renderMyChallenges(myChallengeRows,duelContext({canSendFriend:!!lumenUser}));
   if(badge){badge.hidden=!unread;badge.textContent=unread||""}
   void refreshFriendsBadge();
   return rows||[];
  }catch(e){console.warn("challenge inbox",e);return []}
 }
-async function openMyChallenges(focusId=null){
+async function openMyChallenges(focusId=null,{duel=false}={}){
  const rows=await loadMyChallenges();document.getElementById("myChallengesModal").hidden=false;
- if(focusId)document.querySelector('[data-challenge-id="'+CSS.escape(focusId)+'"]')?.scrollIntoView({block:"center"});
+ if(focusId)document.querySelector('#myChallengesList [data-challenge-id="'+CSS.escape(focusId)+'"]')?.scrollIntoView({block:"center"});
+ // #896: a result notification opens the latest finished duel of that challenge.
+ if(duel&&focusId){const row=(rows||[]).find(r=>r.challenge_id===focusId),index=(row?.participants||[]).findIndex(p=>["completed","abandoned"].includes(p?.status));if(index>=0)showDuelCard(duelFromSentRow(row,row.participants[index]))}
  const unread=(rows||[]).filter(r=>Number(r.unread_count)>0);for(const row of unread)await challengeClient.markRead(row.challenge_id);
  if(unread.length)loadMyChallenges();
 }
@@ -2410,12 +2437,22 @@ async function refreshFriends(){
  document.getElementById("friendsAccountRequired").hidden=!guest;document.getElementById("friendsBody").hidden=guest;
  if(guest)return;
  try{
-  const [list,inbox]=await Promise.all([friendsClient.list(),friendsClient.inbox()]);
+  const [list,inbox,mine]=await Promise.all([friendsClient.list(),friendsClient.inbox(),challengeClient.sent().catch(()=>myChallengeRows)]);
+  myChallengeRows=mine||[];lastFriendInbox=inbox;
   document.getElementById("friendsList").innerHTML=renderFriendRows(list);
-  document.getElementById("friendChallengesReceived").innerHTML=renderReceivedChallenges(inbox.received,row=>challengeQuestLabel(row));
-  document.getElementById("friendChallengesSent").innerHTML=renderSentChallenges(inbox.sent,row=>challengeQuestLabel(row),formatDuration);
+  renderFriendDuels();
+  // #896: finished received duels need both performances (read-only get, cached).
+  for(const row of inbox.received.filter(r=>["completed","abandoned"].includes(r.status)&&!receivedDuels.has(r.challenge_id)).slice(0,12)){
+   receivedDuels.set(row.challenge_id,'loading');
+   challengeClient.get(row.challenge_id).then(data=>{receivedDuels.set(row.challenge_id,data||'error')}).catch(()=>{receivedDuels.set(row.challenge_id,'error')}).finally(renderFriendDuels);
+  }
  }catch(e){document.getElementById("friendStatus").textContent=friendErrorMessage(e)}
  void refreshFriendsBadge();
+}
+function renderFriendDuels(){
+ if(!lastFriendInbox)return;
+ document.getElementById("friendChallengesReceived").innerHTML=renderFriendReceived(lastFriendInbox.received,duelContext({details:receivedDuels}));
+ document.getElementById("friendChallengesSent").innerHTML=renderFriendSent(lastFriendInbox.sent,duelContext({listRows:myChallengeRows}));
 }
 function openFriends(){document.getElementById("friendStatus").textContent="";document.getElementById("friendsModal").hidden=false;void refreshFriends()}
 async function openFriendPicker(challengeId){
@@ -2445,9 +2482,12 @@ function setupFriends(){
    try{if(action==='accept')await friendsClient.respond(nickname,true);else if(action==='decline')await friendsClient.respond(nickname,false);else await friendsClient.remove(nickname);status.textContent="";void refreshFriends()}
    catch(e){status.textContent=friendErrorMessage(e)}
   }
-  if(challengeAction){const id=challengeAction.closest("[data-challenge-id]")?.dataset.challengeId;if(id)location.href=socialChallengeUrl(id)}
+  if(challengeAction){const id=challengeAction.closest("[data-challenge-id]")?.dataset.challengeId,data=receivedDuels.get(id);
+   if(id&&challengeAction.dataset.challengeAction==='result'&&data&&typeof data==='object'){showDuelCard(duelFromChallenge(data));return}
+   if(id)location.href=socialChallengeUrl(id)}
+  handleDuelAction(event);
  });
- document.getElementById("myChallengesList")?.addEventListener("click",event=>{const send=event.target.closest("[data-send-friend]");if(send)openFriendPicker(send.dataset.sendFriend)});
+ document.getElementById("myChallengesList")?.addEventListener("click",event=>{const send=event.target.closest("[data-send-friend]");if(send){openFriendPicker(send.dataset.sendFriend);return}handleDuelAction(event)});
  const sendFriend=document.getElementById("challengeSendFriend");if(sendFriend)sendFriend.onclick=()=>{if(pendingChallengeId)openFriendPicker(pendingChallengeId)};
  document.getElementById("friendPickerClose").onclick=()=>document.getElementById("friendPickerModal").hidden=true;
  document.getElementById("friendPickerList").addEventListener("click",async event=>{
@@ -5821,12 +5861,15 @@ let socialHub=null;
 const socialNotifications=createSocialNotifications({t,getOwner:()=>lumenUser?.id||null,
  fetchFriends:()=>friendsClient.list(),fetchInbox:()=>friendsClient.inbox(),fetchSent:()=>challengeClient.sent(),
  questLabel:row=>challengeQuestLabel(row),onChange:()=>socialHub?.refresh(),
- open:event=>{if(event.target.type==='challenge')location.href=socialChallengeUrl(event.target.id);else if(event.target.type==='my-challenges')openMyChallenges(event.target.id);else document.getElementById("openFriends")?.click()}});
+ open:event=>{if(event.target.type==='challenge')location.href=socialChallengeUrl(event.target.id);else if(event.target.type==='my-challenges')openMyChallenges(event.target.id,{duel:true});else document.getElementById("openFriends")?.click()}});
 socialHub=setupSocialHub({t,isSignedIn:()=>!!lumenUser,onSignIn:()=>openEmailAccountOffer("signup"),notifications:socialNotifications,onOpen:()=>{void refreshFriendsBadge();void loadMyChallenges()}});
 document.getElementById("openFriends")?.addEventListener("click",()=>socialNotifications.markKindSeen("friend-accepted"));
 window.addEventListener("online",()=>{void socialNotifications.refresh({force:true})});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)void socialNotifications.refresh()});
 void socialNotifications.refresh();
+document.getElementById("challengeResultClose")?.addEventListener("click",closeDuelCard);
+document.getElementById("challengeResultCopy")?.addEventListener("click",event=>void copyDuelLink(event.currentTarget.dataset.copyLink));
+document.getElementById("challengeResultModal")?.addEventListener("keydown",event=>{if(event.key==="Escape"&&!document.getElementById("challengeResultClose").hidden){event.stopPropagation();closeDuelCard()}});
 const challengeHome=document.getElementById("challengeResultHome"),challengeReshare=document.getElementById("challengeResultReshare");if(challengeHome)challengeHome.onclick=()=>{location.href=location.pathname};if(challengeReshare)challengeReshare.onclick=()=>{document.getElementById("challengeResultModal").hidden=true;createSocialChallengeFromSuccess()};
 const pushEnable=document.getElementById("pushEnable"),pushLater=document.getElementById("pushLater");
 if(pushEnable)pushEnable.onclick=enableLumenPush;
