@@ -40,6 +40,12 @@ async function assertHelpPlacement(cardId,buttonId,safeBottom=0){
  assert(placement.closeBottom<=placement.cardBottom+0.1&&placement.closeHeight>=44&&placement.closeHit,'Dismiss control is visible and operable: '+JSON.stringify(placement));
  assert(placement.overlapsCommands,'Assistance can use the space occupied by commands: '+JSON.stringify(placement));
 }
+async function resetSyntheticTouchGesture(){
+ const point=await evaluate(`(()=>{const r=document.querySelector('.status').getBoundingClientRect();return {x:r.left+4,y:r.top+r.height/2}})()`);
+ await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+ await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await new Promise(resolve=>setTimeout(resolve,250));
+}
 async function tap(selector){
  const point=await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:(r.left+r.right)/2,y:(r.top+r.bottom)/2}})()`);
  await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
@@ -60,6 +66,12 @@ try{
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().state[0].slice(0,4)'),[0,2,0,0]);
   // Let Chrome finish the synthesized swipe before beginning a new gesture.
   await new Promise(resolve=>setTimeout(resolve,250));
+  // HeadlessChrome 157 accepts the CDP touchEnd of a synthesized drag but never
+  // dispatches its touchend to the page (traced at window capture, before any
+  // Lumen listener). Its gesture detector then turns the next tap anywhere into
+  // a non-click. One neutral tap outside the board closes that synthetic
+  // sequence; the asserted tap below stays the real check.
+  await resetSyntheticTouchGesture();
   await evaluate(`(()=>{
    const events=[];
    const record=event=>{
