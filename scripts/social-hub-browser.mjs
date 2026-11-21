@@ -106,10 +106,21 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
  assert.deepEqual(await evaluate('window.__shared'),{title:'Discover Lumen',text:'✨ I found Lumen, a logic puzzle where you relight the constellations. Want to try?',url:'https://lumen.nopuna.fr/discover.html?utm_source=player_invite&utm_medium=referral'},'English invitation → discover.html');
  await evaluate(`(()=>{const s=document.getElementById('gameLocaleMode');s.value='fr';s.dispatchEvent(new Event('change'))})()`);
  // #932: « Partager Lumen » in the header and in Mon Ciel is the same invitation path.
- const invitation=await evaluate(`(async()=>{window.__shared=null;document.getElementById('shareLumen').click();for(let i=0;i<40&&!window.__shared;i++)await new Promise(r=>setTimeout(r,25));return window.__shared})()`,true);
+ const invitation=await evaluate(`(async()=>{window.__shared=null;document.getElementById('shareLumen').click();for(let i=0;i<40&&!window.__shared;i++)await new Promise(r=>setTimeout(r,25));const {title,text,url}=window.__shared||{};return {title,text,url}})()`,true);
  assert.deepEqual(invitation,{title:'Découvrir Lumen',text:'✨ J’ai découvert Lumen, un jeu de logique où tu rallumes les constellations. Tu veux essayer ?',url:'https://lumen.nopuna.fr/decouvrir.html?utm_source=player_invite&utm_medium=referral'},'header entry = Inviter des amis');
  const header=await evaluate(`(()=>{const b=document.getElementById('shareLumen'),r=b.getBoundingClientRect(),row=[...document.querySelectorAll('.head-actions > button')].filter(x=>x.getClientRects().length);return {name:b.getAttribute('aria-label'),size:Math.round(r.width)+'x'+Math.round(r.height),sameRow:row.every(x=>Math.abs(x.getBoundingClientRect().top-r.top)<2),overflow:document.documentElement.scrollWidth>innerWidth}})()`);
  assert.deepEqual(header,{name:'Partager Lumen',size:header.size,sameRow:true,overflow:false},'header entry fits without pushing other commands');
+ // #932 Lot C: once warmed (hover/focus/touch or idle), the promotional picture of the
+ // same language is attached when the channel accepts files; text and link stay.
+ const withPicture=await evaluate(`(async()=>{Object.defineProperty(navigator,'canShare',{configurable:true,value:({files})=>files.every(f=>f.type==='image/jpeg')});
+  const b=document.getElementById('shareLumen');b.dispatchEvent(new Event('pointerenter'));
+  await new Promise(r=>setTimeout(r,800));window.__shared=null;b.click();
+  for(let i=0;i<40&&!window.__shared;i++)await new Promise(r=>setTimeout(r,25));
+  const s=window.__shared;return {url:s?.url,text:s?.text,files:s?.files?.map(f=>({name:f.name,type:f.type,size:f.size}))}})()`,true);
+ assert.equal(withPicture.url,invitation.url);assert.equal(withPicture.text,invitation.text);
+ assert.equal(withPicture.files?.[0]?.name,'lumen.jpg','French promotional picture attached');
+ assert(withPicture.files[0].type==='image/jpeg'&&withPicture.files[0].size>20_000&&withPicture.files[0].size<200_000,'real og.jpg bytes: '+withPicture.files[0].size);
+ await evaluate(`delete navigator.canShare`);
  await evaluate(`document.getElementById('openSky').click()`);
  await until(evaluate,`!document.getElementById('mapModal').hidden`,'Mon Ciel');
  const fromSky=await evaluate(`(async()=>{window.__shared=null;document.getElementById('mapShareLumen').click();for(let i=0;i<40&&!window.__shared;i++)await new Promise(r=>setTimeout(r,25));return window.__shared?.url})()`,true);

@@ -95,8 +95,33 @@ export async function tryCopyShare(navigator, text) {
   }
 }
 
+// #932 Lot C: the promotional picture of « Partager Lumen » is the discovery
+// page's own social preview (same file as og:image, same language).
+export function promoImagePath(locale) {
+  return discoveryUrlFor(locale).endsWith('/discover.html') ? '/src/landing/og-en.jpg' : '/src/landing/og.jpg';
+}
+async function fetchPromoImage(path) {
+  const response = await fetch(path, { cache: 'force-cache' });
+  if (!response.ok) return null;
+  const blob = await response.blob();
+  return new File([blob], path.endsWith('og-en.jpg') ? 'lumen-en.jpg' : 'lumen.jpg', { type: blob.type || 'image/jpeg' });
+}
+
 // `locale` returns the language Lumen is displayed in (it can change at runtime).
-export function createShareDialog(document, navigator, t = createTranslator().t, { locale = () => 'fr' } = {}) {
+export function createShareDialog(document, navigator, t = createTranslator().t, { locale = () => 'fr', loadImage = fetchPromoImage } = {}) {
+  // The picture is fetched ahead of the click (warmPromo) and only attached
+  // once ready: awaiting a download inside the click could lose the user
+  // activation that navigator.share() requires. Not ready: text + link only.
+  const promoImages = new Map();
+  function warmPromo(lang = locale()) {
+    const path = promoImagePath(lang);
+    if (promoImages.has(path)) return promoImages.get(path).ready;
+    const entry = { file: null, ready: null };
+    entry.ready = Promise.resolve().then(() => loadImage(path)).then(file => { entry.file = file || null; return entry.file; })
+      .catch(() => { promoImages.delete(path); return null; });
+    promoImages.set(path, entry);
+    return entry.ready;
+  }
   const dialog = document.getElementById('lumenShareDialog');
   const title = document.getElementById('lumenShareTitle');
   const preview = document.getElementById('lumenSharePreview');
@@ -164,9 +189,14 @@ export function createShareDialog(document, navigator, t = createTranslator().t,
     },
     // The discovery page in the current language, for any other generic share.
     discoveryUrl: () => discoveryUrlFor(locale()),
+    warmPromo,
     async invite(origin) {
-      const data = inviteShare(t, locale());
-      const outcome = await tryNativeShare(navigator, { ...data, url: inviteShareUrlFor(locale()) });
+      const lang = locale();
+      const data = inviteShare(t, lang);
+      const image = promoImages.get(promoImagePath(lang))?.file ?? null;
+      if (!image) void warmPromo(lang);
+      // Text + link always; the picture too when the channel accepts files.
+      const outcome = await tryNativeShare(navigator, { ...data, url: inviteShareUrlFor(lang) }, image);
       if (outcome === 'unavailable' && origin.getClientRects().length) {
         open(data, { invitation: true, origin });
       }

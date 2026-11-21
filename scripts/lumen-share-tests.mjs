@@ -161,3 +161,55 @@ console.log('Invitation and result share contracts passed');
   assert.equal(adventureShareMilestone(null, {newlyCompleted: true}), null);
 }
 console.log('Adventure share moments passed');
+
+// #932 Lot C: « Partager Lumen » attaches the same-language promotional picture
+// when it is ready and the channel accepts files; never waits for it in the click.
+{
+  const {createShareDialog: make, promoImagePath} = await import('../src/ui/lumen-share.js');
+  assert.equal(promoImagePath('fr'), '/src/landing/og.jpg');
+  assert.equal(promoImagePath('en-GB'), '/src/landing/og-en.jpg');
+  assert.equal(promoImagePath('de'), '/src/landing/og.jpg');
+  const loads = [];
+  const loadImage = async path => { loads.push(path); return new File(['x'], path.endsWith('og-en.jpg') ? 'lumen-en.jpg' : 'lumen.jpg', {type: 'image/jpeg'}); };
+  const sent = [];
+  const withFiles = {share: async data => { sent.push(data); }, canShare: ({files}) => files.every(f => f.type === 'image/jpeg')};
+  let lang = 'en';
+  const promo = make(fakeDocument(), withFiles, en, {locale: () => lang, loadImage});
+  const button = {getClientRects: () => [1], focus() {}};
+  await promo.invite(button);
+  assert.equal(sent.at(-1).files, undefined, 'not ready yet: text + link only, no waiting inside the click');
+  await promo.warmPromo();
+  await promo.invite(button);
+  assert.equal(sent.at(-1).files[0].name, 'lumen-en.jpg', 'English picture attached once ready');
+  assert.equal(sent.at(-1).url, discover + '?utm_source=player_invite&utm_medium=referral', 'text and link are kept with the picture');
+  assert.equal(sent.at(-1).text, '✨ I found Lumen, a logic puzzle where you relight the constellations. Want to try?');
+  lang = 'fr';
+  await promo.invite(button);
+  assert.equal(sent.at(-1).files, undefined, 'a language switch never sends the other language picture');
+  await promo.warmPromo();
+  await promo.invite(button);
+  assert.equal(sent.at(-1).files[0].name, 'lumen.jpg');
+  assert.deepEqual(loads, ['/src/landing/og-en.jpg', '/src/landing/og.jpg'], 'each picture is fetched once');
+  // A channel without file support: text + link only.
+  const textOnly = make(fakeDocument(), {share: async data => { sent.push(data); }, canShare: () => false}, en, {locale: () => 'en', loadImage});
+  await textOnly.warmPromo();
+  await textOnly.invite(button);
+  assert.equal(sent.at(-1).files, undefined);
+  // Download failure: no picture, the share still works.
+  const failing = make(fakeDocument(), withFiles, en, {locale: () => 'en', loadImage: async () => { throw Error('offline'); }});
+  await failing.warmPromo();
+  await failing.invite(button);
+  assert.equal(sent.at(-1).files, undefined);
+  // No native share: the copy dialog opens (invitation), nothing is sent.
+  const noShareDoc = fakeDocument();
+  const before = sent.length;
+  await make(noShareDoc, {}, en, {locale: () => 'en', loadImage}).invite(button);
+  assert.equal(sent.length, before);
+  assert.equal(noShareDoc.getElementById('lumenShareDialog').open, true, 'copy fallback dialog');
+  assert.equal(noShareDoc.getElementById('lumenShareSelection').value, discover, 'copy keeps the canonical English link');
+  // Cancelled native sheet: no fallback dialog, no fake success.
+  const cancelledDoc = fakeDocument();
+  await make(cancelledDoc, {share: async () => { throw {name: 'AbortError'}; }}, en, {locale: () => 'en', loadImage}).invite(button);
+  assert.equal(cancelledDoc.getElementById('lumenShareDialog').open, false);
+}
+console.log('Promotional picture share passed');

@@ -2483,6 +2483,7 @@ denial. The shop displays no count while the server response is unavailable.
 - `scripts/landing-browser-tests.mjs` (browser inventory, report `ci-landing.json`) runs `scripts/landing-browser.mjs` at 360, 390 and 1440 px on the three pages (`/decouvrir.html`, `/comment-jouer.html`, `/apprendre-constellations.html`): images load, the « Jouer » button is reachable (and keyboard-focusable on the how-to page), nothing overflows horizontally, no executable script runs, and the structured data parses.
 - How-to illustrations: `node scripts/how-to-play.mjs` regenerates `src/landing/how-to-play-*.svg` from the catalogue; `--check` fails when they are stale.
 - Visuals: `node scripts/landing-assets.mjs` with a served app and `LUMEN_CDP_URL` (QA mode, synthetic progress).
+- Social previews (#932): `node scripts/promo-og-assets.mjs` composes `src/landing/og.jpg` / `og-en.jpg` (1200×630) from `board.webp` and the official Ursa Major figure. `PROMO_PREVIEW_DIR=docs/validation` also writes the messenger-like previews `og-promo-{fr,en}-small.png`. `lumen-share-tests.mjs` covers attaching the picture to « Partager Lumen ». `social-hub-browser` checks the real `og.jpg` bytes in the native share payload.
 - Owner after deployment: Google Search Console (sitemap), the Rich Results Test and the Open Graph preview.
 
 ## Fiches des 88 constellations (#856)
