@@ -1,6 +1,7 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import assert from 'node:assert/strict';
-import {summarizeWeek,weekMonday,weekNavigation,weekShareText,FIRST_DAILY_WEEK} from '../src/campaign/daily-week.js';
-import {renderDailyWeek,formatWeekRange,formatRank} from '../src/ui/daily-view.js';
+import {summarizeWeek,weekMonday,weekNavigation,FIRST_DAILY_WEEK} from '../src/campaign/daily-week.js';
+import {renderDailyWeek,formatWeekRange,weekShareText} from '../src/ui/daily-view.js';
 
 // #882 Lot 3 PR C: « Ta semaine dans les étoiles » (own days only).
 assert.equal(weekMonday('2026-11-23'),'2026-11-23');
@@ -41,7 +42,7 @@ assert.deepEqual(weekNavigation('2026-11-23','2026-11-25'),{previous:null,next:n
 assert.deepEqual(weekNavigation('2026-11-30','2026-12-09'),{previous:'2026-11-23',next:'2026-12-07',current:false});
 assert.deepEqual(weekNavigation('2026-12-07','2026-12-09'),{previous:'2026-11-30',next:null,current:true},'never after the current week');
 
-const text=weekShareText(s,{formatRank});
+const text=weekShareText(s);
 assert.match(text,/5\/7 défis du jour · 1 podium · meilleur rang 2e\nÀ toi de jouer !/);
 assert.doesNotMatch(text,/Ana|Bo|participants/,'no other player data');
 
@@ -59,3 +60,8 @@ assert.match(renderDailyWeek(past),/Semaine terminée : classements figés/);
 assert.match(renderDailyWeek(empty),/Aucun défi du jour joué cette semaine/);
 assert.equal(formatWeekRange('2026-11-30','2026-12-06'),'Semaine du 30 novembre au 6 décembre');
 console.log('daily week summary: ok');
+
+const english = {t:createTranslator({locale:'en'}).t,locale:'en'};
+assert.match(weekShareText(s,english),/5\/7 Daily Challenges · 1 podium finish · best rank 2nd\nCan you beat it\?/);
+assert.match(renderDailyWeek(s,{...english,formatDuration:fmt}),/Best overall rank.*<strong>2nd<\/strong> of 40.*Rankings are provisional/s);
+assert.match(formatWeekRange('2026-11-30','2026-12-06',english),/Week of November 30 to December 6/);

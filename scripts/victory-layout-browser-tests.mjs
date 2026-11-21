@@ -63,7 +63,7 @@ try {
       window.layoutBoard={participating:true,realParticipants:6,top:[1,2,3].map(p=>({place:p,position:p,nickname:p===2?'Anupon':'Écho '+p,score:p*40,mine:p===2,virtual:p!==2})),personal:{place:2,position:2,nickname:'Anupon',score:80,mine:true}};
       window.layoutDelay=0;
       window.layoutView=createRankingView({client:{flush:async()=>[],takeResult:()=>({status:'ineligible'}),board:()=>new Promise(r=>setTimeout(()=>r(window.layoutBoard),window.layoutDelay))},getContext:()=>({owner:'synthetic',client:null}),format:s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0')});
-    })()`);
+    })()`, true);
     for (const delay of [0, 1000, 5000]) {
       await evaluate(`window.layoutView.clear();window.layoutDelay=${delay};window.layoutView.show({id:'layout'});window.layoutView.mount()`);
       const before = await evaluate(ZONES);

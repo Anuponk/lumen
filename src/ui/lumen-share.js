@@ -1,3 +1,4 @@
+import {createTranslator} from './i18n.js';
 import {discoveryUrl, inviteShareUrl, playerShareUrl} from '../analytics/acquisition.js';
 import {astronomicalIllumination} from './astronomical-reference-svg.js';
 
@@ -60,7 +61,7 @@ export async function tryCopyShare(navigator, text) {
   }
 }
 
-export function createShareDialog(document, navigator) {
+export function createShareDialog(document, navigator, t = createTranslator().t) {
   const dialog = document.getElementById('lumenShareDialog');
   const title = document.getElementById('lumenShareTitle');
   const preview = document.getElementById('lumenSharePreview');
@@ -75,11 +76,11 @@ export function createShareDialog(document, navigator) {
     if (dialog.open) return;
     const state = { data, origin, image: null };
     current = state;
-    title.textContent = invitation ? 'Inviter des amis' : data.title;
+    title.textContent = invitation ? t('share.invite') : data.title;
     preview.textContent = invitation ? '' : data.text;
     preview.hidden = invitation;
     native.hidden = invitation || !navigator.share;
-    copy.textContent = invitation ? 'Copier le lien' : 'Copier le résultat';
+    copy.textContent = invitation ? t('share.copyLink') : t('share.copyResult');
     selection.value = invitation ? data.url : data.text + '\n' + data.url;
     manual.hidden = true;
     status.textContent = '';
@@ -94,7 +95,7 @@ export function createShareDialog(document, navigator) {
     const copied = await tryCopyShare(navigator, selection.value);
     if (current !== state || !dialog.open) return;
     if (copied) {
-      status.textContent = state.data === inviteShareData ? 'Lien copié !' : 'Résultat copié !';
+      status.textContent = state.data === inviteShareData ? t('share.linkCopied') : t('share.resultCopied');
       return;
     }
     manual.hidden = false;
@@ -108,7 +109,7 @@ export function createShareDialog(document, navigator) {
     if (outcome === 'shared') dialog.close();
     if (outcome === 'unavailable') {
       state.image = null;
-      status.textContent = 'Partage indisponible. Tu peux copier le résultat.';
+      status.textContent = t('share.unavailable');
     }
   };
   dialog.addEventListener('click', event => event.stopPropagation());

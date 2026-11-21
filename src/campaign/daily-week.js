@@ -51,11 +51,3 @@ export function weekNavigation(monday,today){
  const current=weekMonday(today);
  return {previous:monday>FIRST_DAILY_WEEK?addDays(monday,-7):null,next:monday<current?addDays(monday,7):null,current:monday===current};
 }
-
-// Optional share: own counts only, no nickname, no other player.
-export function weekShareText(summary,{formatRank=r=>r+'e'}={}){
- return ['✦ Ma semaine Lumen dans les étoiles : '+summary.participations+'/7 défis du jour',
-  summary.podiums?summary.podiums+' podium'+(summary.podiums>1?'s':''):null,
-  summary.bestGeneral?'meilleur rang '+formatRank(summary.bestGeneral.rank):null,
-  'À toi de jouer !'].filter(Boolean).join(' · ').replace(' · À toi de jouer !','\nÀ toi de jouer !');
-}

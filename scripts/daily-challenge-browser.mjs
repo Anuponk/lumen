@@ -18,9 +18,10 @@ const board=(me)=>({day:DAY,final:false,closes_at:'2026-11-23T23:00:00Z',my_run:
  general:{participants:12,top:[{nickname:'Ana',score:95,rank:1,mine:false},{nickname:'Bo',score:95,rank:1,mine:false},{nickname:'Cy',score:120,rank:3,mine:false}],me:me?.status==='completed'?{rank:5,score:me.score}:null},
  friends:{participants:1,top:me?.status==='completed'?[{nickname:'Moi',score:me.score,rank:1,mine:true}]:[],me:me?.status==='completed'?{rank:1,score:me.score}:null}});
 
-function fixture({signedIn,enabled=true,run=null,beginResume=false,finishFails=false,beginDay=DAY}){
+function fixture({signedIn,enabled=true,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr'}){
  return `
   localStorage.clear();
+  localStorage.setItem('lumen.locale',${JSON.stringify(locale)});
   localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(profile))});
   for(const k of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');
   localStorage.setItem('lumenPushChoice','off');
@@ -112,23 +113,36 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  results.push({kind:'guest-training'});
 
  // Signed in: one official attempt, themed grid, both rankings from one result.
- for(const [width,height] of [[360,640],[390,844],[1440,900]]){
+ for(const [width,height,locale='fr'] of [[360,640],[390,844],[1440,900],[360,640,'en']]){
   if(captureDir&&width!==360){
    await open({send,evaluate},url,{signedIn:true},{width,height,daily:false});
    await until(evaluate,`!!document.querySelector('#board .cell')`,'campaign board');await acknowledgeLearningMilestones(evaluate);await evaluate(`document.getElementById('attemptMask')?.click()`);await sleep(600);
    fs.writeFileSync(captureDir+'/daily-compare-campaign-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
   }
-  await open({send,evaluate},url,{signedIn:true},{width,height});
+  await open({send,evaluate},url,{signedIn:true,locale},{width,height});
   await until(evaluate,`!document.getElementById('dailyIntro').hidden`,'official intro');
-  assert.equal(await evaluate(`document.getElementById('dailyStart').textContent`),'Relever le défi');
+  assert.equal(await evaluate(`document.getElementById('dailyStart').textContent`),locale==='en'?'Start the challenge':'Relever le défi');
+  if(locale==='en')assert.match(await evaluate(`document.getElementById('dailyIntroDate').textContent`),/Monday.*November/);
   assert.equal(await evaluate(`document.getElementById('dailyTraining').hidden`),true,'no training before the official attempt');
   await evaluate(`document.getElementById('dailyStart').click()`);
   await until(evaluate,`document.getElementById('dailyIntro').hidden`,'official start');
   await acknowledgeLearningMilestones(evaluate);
   assert.equal((await calls(evaluate,'lumen_daily_begin')).length,1,'one begin');
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),quest.reg,'same pinned grid for everyone');
-  assert.match(await evaluate(`document.getElementById('dailyBannerMeta').textContent`),/1 tentative officielle · fin dans/);
+  assert.match(await evaluate(`document.getElementById('dailyBannerMeta').textContent`),locale==='en'?/1 official attempt · ends in/:/1 tentative officielle · fin dans/);
   assert.equal(await evaluate(`(()=>{const b=document.getElementById('dailyBanner'),r=b.getBoundingClientRect();return r.height>0&&r.top>=0&&b.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))})()`),true,'daily banner visible above the grid at '+width);
+  if(locale==='en'){
+   const before=await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)');
+   await evaluate("document.getElementById('tutorialHelp').click()");
+   await until(evaluate,"!document.getElementById('rulesModal').hidden");
+   for(const [mode,copy] of [['fr',/1 tentative officielle/],['en',/1 official attempt/]]){
+    await evaluate("(()=>{const select=document.getElementById('gameLocaleMode');select.value="+JSON.stringify(mode)+";select.dispatchEvent(new Event('change',{bubbles:true}));})()");
+    assert.match(await evaluate("document.getElementById('dailyBannerMeta').textContent"),copy);
+   }
+   await evaluate("document.getElementById('closeRulesModal').click()");
+   assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)'),before);
+   assert.equal((await calls(evaluate,'lumen_daily_begin')).length,1,'language change keeps the same official run');
+  }
   const dailyCell=await evaluate(`(()=>{const c=document.querySelector('#board .cell');const s=getComputedStyle(c);return {bg:s.backgroundColor,color:s.color,border:s.borderTopColor}})()`);
   assert.deepEqual(dailyCell,campaignCell,'grid cells keep their campaign look and meaning');
   assert.match(await evaluate(`getComputedStyle(document.getElementById('board')).boxShadow`),/242, 201, 107/,'gold daily frame');
@@ -141,10 +155,10 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   const finish=await calls(evaluate,'lumen_daily_finish');
   assert.equal(finish.length,1);assert.equal(finish[0].args.p_status,'completed');assert.equal(finish[0].args.p_day,DAY);
   assert.deepEqual(['p_hint','p_verify','p_guided'].map(k=>typeof finish[0].args[k]),['number','number','number'],'aid counts sent for official penalties');
-  assert.match(await evaluate(`document.getElementById('dailyBoardPanel').textContent`),/1erAna.*1erBo.*3eCy.*Ta position : 5e.*12 participants/s,'general top 3 with ties + my position');
+  assert.match(await evaluate(`document.getElementById('dailyBoardPanel').textContent`),locale==='en'?/1stAna.*1stBo.*3rdCy.*Your rank: 5th.*12 participants/s:/1erAna.*1erBo.*3eCy.*Ta position : 5e.*12 participants/s,'general top 3 with ties + my position');
   await evaluate(`document.getElementById('dailyTabFriends').click()`);
   assert.equal(await evaluate(`document.getElementById('dailyTabFriends').getAttribute('aria-selected')`),'true');
-  assert.match(await evaluate(`document.getElementById('dailyBoardPanel').textContent`),/Moi \(toi\).*Aucun de tes amis n’a encore joué/s,'explicit empty friends state');
+  assert.match(await evaluate(`document.getElementById('dailyBoardPanel').textContent`),locale==='en'?/Moi \(you\).*None of your friends has played today/s:/Moi \(toi\).*Aucun de tes amis n’a encore joué/s,'explicit empty friends state');
   const layout=await evaluate(`(()=>{const c=document.getElementById('dailyContinue').getBoundingClientRect(),card=document.querySelector('#dailyResultModal .social-card');return {inside:c.top>=0&&c.bottom<=innerHeight,primary:document.getElementById('dailyContinue').classList.contains('primary'),cardScroll:card.scrollHeight-card.clientHeight}})()`);
   assert.equal(layout.inside&&layout.primary,true,'« Continuer » is the visible primary action at '+width+'x'+height);
   if(captureDir&&width!==360)fs.writeFileSync(captureDir+'/daily-compare-result-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
@@ -153,7 +167,7 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   await evaluate(`document.getElementById('dailyWeekFromResult').click()`);
   await until(evaluate,`!document.getElementById('dailyWeekModal').hidden&&document.querySelectorAll('#dailyWeekBody .daily-week-day').length===7`,'week summary');
   assert.equal(await evaluate(`document.querySelector('#dailyWeekBody .daily-week-day').className`),'daily-week-day completed provisional','today played, ranking still provisional');
-  assert.match(await evaluate(`document.getElementById('dailyWeekBody').textContent`),/Participations1\/7.*Meilleur rang général5e sur 12.*Classements provisoires/s);
+  assert.match(await evaluate(`document.getElementById('dailyWeekBody').textContent`),locale==='en'?/Challenges played1\/7.*Best overall rank5th of 12.*Rankings are provisional/s:/Participations1\/7.*Meilleur rang général5e sur 12.*Classements provisoires/s);
   assert.doesNotMatch(await evaluate(`document.getElementById('dailyWeekBody').textContent`),/Ana|Cy/,'no other player in the weekly summary');
   assert.equal(await evaluate(`document.getElementById('dailyWeekPrev').disabled&&document.getElementById('dailyWeekNext').disabled`),true,'first week: no past, no future');
   assert.equal(await evaluate(`document.getElementById('dailyWeekShare').hidden`),false,'optional share once played');
@@ -161,10 +175,18 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   const weekLayout=await evaluate(`(()=>{const c=document.getElementById('dailyWeekClose').getBoundingClientRect();return c.top>=0&&c.bottom<=innerHeight&&document.documentElement.scrollWidth<=innerWidth})()`);
   assert.equal(weekLayout,true,'week summary fits at '+width+'x'+height);
   if(captureDir&&width!==360)fs.writeFileSync(captureDir+'/daily-week-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
+  if(locale==='en'){
+   assert.equal(await evaluate(`document.getElementById('dailyWeekPrev').getAttribute('aria-label')`),'Previous week');
+   await evaluate(`document.getElementById('dailyWeekShare').click()`);
+   assert.equal(await evaluate(`document.getElementById('lumenShareTitle').textContent`),'My week in Lumen');
+   assert.match(await evaluate(`document.getElementById('lumenSharePreview').textContent`),/1\/7 Daily Challenges · best rank 5th/);
+   assert.equal(await evaluate(`document.getElementById('lumenShareCopy').textContent`),'Copy result');
+   await evaluate(`document.getElementById('lumenShareDialog').close()`);
+  }
   await evaluate(`document.getElementById('dailyWeekClose').click()`);
   assert.equal(await evaluate(`document.getElementById('dailyWeekModal').hidden`),true);
   assert.equal((await evaluate('window.__allRpc')).includes('lumen_track_event'),false,'daily measurement never enables disabled collection');
-  results.push({kind:'official',width,height,cardScroll:layout.cardScroll});
+  results.push({kind:'official',width,height,locale,cardScroll:layout.cardScroll});
  }
 
  // Resume on another device: the clock restarts from the server elapsed time.
