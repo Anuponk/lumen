@@ -114,9 +114,8 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
  // same language is attached when the channel accepts files; text and link stay.
  const withPicture=await evaluate(`(async()=>{Object.defineProperty(navigator,'canShare',{configurable:true,value:({files})=>files.every(f=>f.type==='image/jpeg')});
   const b=document.getElementById('shareLumen');b.dispatchEvent(new Event('pointerenter'));
-  await new Promise(r=>setTimeout(r,800));window.__shared=null;b.click();
-  for(let i=0;i<40&&!window.__shared;i++)await new Promise(r=>setTimeout(r,25));
-  const s=window.__shared;return {url:s?.url,text:s?.text,files:s?.files?.map(f=>({name:f.name,type:f.type,size:f.size}))}})()`,true);
+  // The picture is fetched in the background: share until it is ready (bounded).
+  let s=null;for(let i=0;i<40&&!s?.files;i++){await new Promise(r=>setTimeout(r,250));window.__shared=null;b.click();for(let j=0;j<40&&!window.__shared;j++)await new Promise(r=>setTimeout(r,25));s=window.__shared}return {url:s?.url,text:s?.text,files:s?.files?.map(f=>({name:f.name,type:f.type,size:f.size}))}})()`,true);
  assert.equal(withPicture.url,invitation.url);assert.equal(withPicture.text,invitation.text);
  assert.equal(withPicture.files?.[0]?.name,'lumen.jpg','French promotional picture attached');
  assert(withPicture.files[0].type==='image/jpeg'&&withPicture.files[0].size>20_000&&withPicture.files[0].size<200_000,'real og.jpg bytes: '+withPicture.files[0].size);
