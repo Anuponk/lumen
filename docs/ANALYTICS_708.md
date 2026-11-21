@@ -1,10 +1,34 @@
 # Lumen Analytics — audit et conception du lot A (#708)
 
-Statut : proposition à revoir, 15 novembre 2026. **Lot A uniquement** : aucun
+Statut : audit du 15 novembre 2026, **actualisé le 21 novembre 2026** (§0). Lot A d'origine : aucun
 développement B/C/D, aucune table, migration, activation ou modification de production.
 L'état cible décidé dans [#708](https://github.com/Anuponk/lumen/issues/708) est
 **une seule administration dans `/admin/analytics`**, absorbant toutes les fonctions
 actuelles. La coexistence avec l'écran historique est temporaire.
+
+## 0. Actualisation du 21/11/2026 (base `42e7af14`, production `1.11.1+719`)
+
+L'audit du 15/11 ci-dessous reste la référence de l'inventaire F01–F24.
+Les constats suivants sont devenus **obsolètes** ou ont évolué, après vérification dans le code actuel.
+
+| Constat du 15/11 | État vérifié au 21/11 | Source |
+|---|---|---|
+| « B/C/D non commencés », coexistence avec un écran historique | **B1 livré** (#718) : le cockpit **est** l'espace `/admin/analytics`, une seule fenêtre `#adminCockpit` avec cinq sections (`overview`, `players`, `journeys`, `sync`, `support`), l'historique de navigation, la période dans l'URL et un refus d'accès explicite. Il n'existe plus d'écran séparé : l'entrée « Ouvrir le cockpit » ouvre la même route. | `src/ui/analytics-navigation.js` |
+| Tableaux peu exploitables | **#721** : synthèse priorisée, quêtes filtrables avec échantillons, santé technique avec causes, versions et files, puis accès aux joueurs et sessions | `src/ui/analytics-dashboard.js` |
+| KPI produit à zéro | **#727** : lecture agrégée des reçus serveur (`lumen_admin_quest_metrics`, `service_activity`), inconnus explicites, migration `reliable_analytics_708` **appliquée** | `supabase/migrations/20261115162545_reliable_analytics_708.sql` |
+| F24 « PR #716 seulement » | **Livré** : « Aperçu : aventure pleinement maîtrisée » est dans la section Support | `index.html#adminPreviewMastery` |
+| Acquisition non instrumentée | **#875 / #890 / #759** : canaux `player_share`, `player_invite`, `challenge_link` et les UTM vidéo sont portés par `app_opened` puis par la quête 1 ; requêtes manuelles dans `docs/marketing/acquisition-agregats.sql`. **Aucune vue Analytics** de ces chiffres | `src/analytics/acquisition.js` |
+| Social non couvert | Défis (#18/#35), Défi du jour (#882), Espace social (#898) et duels (#896) **livrés**, avec des tables serveur fiables (`social_challenges`, `…_participations`, `…_invites`, `daily_runs`). **Aucune vue Analytics** | migrations #35/#882 |
+| Trafic humain/QA/CI | Les RPC du cockpit filtrent `traffic_type='human'`. La répartition humains / QA / CI / non déterminés (complément du 18/11) **n'est affichée nulle part** | `20261007_lumen_cockpit_human_traffic_only.sql` |
+| Feature `analytics_cockpit` | Inchangé : toutes les RPC `lumen_admin_*` exigent la capacité non expirée et révoquent `anon` explicitement | migrations `lumen_admin_*` |
+| Collecte produit publique | **Toujours désactivée**. Seules les sources serveur et les sessions consenties ou QA alimentent les tableaux | `analyticsAllowed()` |
+
+**Écarts de parité restants** (à traiter par les PR B/C/D de ce chantier) :
+1. **F21/F22** : « Tester comme nouveau joueur », « Réinitialiser la progression QA » et « Simuler une série perdue » sont encore dans le menu Administration, hors d'Analytics ; la section Support l'annonce elle-même.
+2. **F23** : le mode « éclats illimités » n'existe plus dans le code actuel (aucune référence `lumenAdminUnlimitedShards`). C'est une fonction retirée, pas un écart à migrer.
+3. **Absence d'une section Acquisition et engagement** : canaux, quête 1, défis, Défi du jour, rétention lorsqu'elle est mesurable.
+4. **Répartition du trafic** (humains / QA / CI / non déterminés) non affichée.
+5. **Libellés historiques** : « Tableau de bord », « Ouvrir le cockpit ».
 
 ## 1. Périmètre, preuves et limites
 
