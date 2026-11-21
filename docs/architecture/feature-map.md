@@ -106,6 +106,10 @@ server `record_purchase` (service_role), `sync_purchase_entitlements`,
 `claim_mastery_unlock`; store seed from `scripts/adventure-store-seed.mjs`. See
 [PROGRESSION](../PROGRESSION.md#purchases-and-mastery-unlocks-728).
 
+Critical monitoring (#947): the independent GitHub runner checks public availability and supplies the incident state machine, which reads #398 observations. The existing analytics sync pane acknowledges incidents through the capability-gated RPC. See [critical alerts](../OBSERVABILITY_946.md#alertes-critiques-947).
+
+Admin activity notifications (#950): the private activity-mail queue reads verified Auth membership and the purchase ledger. The cPanel worker in `scripts/lumen_activity_mail.py` sends with Brevo. See [supervision](../OBSERVABILITY_946.md).
+
 Payment providers: Google Play #729 `persistence/play-billing.js` → Edge
 `lumen-play-purchase` → Google Orders API → `lumen_record_play_purchase`; Stripe web/PWA TEST #730 `persistence/stripe-checkout.js` →
 Edges `lumen-stripe-checkout` and `lumen-stripe-webhook` (`functions/_shared/lumen-stripe.ts`)

@@ -495,6 +495,10 @@ progression writes. The existing server limiter governs mail requests.
 
 ## Cloud persistence contract
 
+The [critical-alert contract](OBSERVABILITY_946.md#alertes-critiques-947) reads existing sync observations and the payment access projection, and records only operational incident summaries.
+
+The [admin activity mail contract](OBSERVABILITY_946.md#notifications-dactivité-950) describes the read-only projection of Auth and commerce events and its separate delivery queue.
+
 ### Google Play review navigation (#796)
 
 `lumen_commands.play_review_access_events` is private. A database operator
