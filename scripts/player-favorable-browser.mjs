@@ -31,7 +31,7 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
  // retry scheduler conserves active/paused attempts instead of hydrating over
  // them. Other variants exercise preservation of a genuinely started run.
  const initialAttempt=loseReply?null:JSON.stringify(ownedRun);
- await evaluate(`sessionStorage.removeItem('favorableServer');sessionStorage.removeItem('favorableLoads');localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(owner)});localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(local))});localStorage.removeItem('lumenCloudDiagnosticsV1');${initialAttempt===null?"localStorage.removeItem('lumenActiveAttemptV1')":"localStorage.setItem('lumenActiveAttemptV1',"+JSON.stringify(initialAttempt)+")"}`);
+ await evaluate(`sessionStorage.removeItem('favorableServer');sessionStorage.removeItem('favorableLoads');localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(owner)});localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(local))});localStorage.removeItem('lumenCloudDiagnosticsV1');${initialAttempt===null?"localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1')":"localStorage.setItem('lumenActiveAttemptV1',"+JSON.stringify(initialAttempt)+")"}`);
  const fixture=`
   const owner=${JSON.stringify(owner)};
   localStorage.setItem('lumenOnboardingV1:guest',JSON.stringify({auto:true}));

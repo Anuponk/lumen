@@ -23,7 +23,7 @@ export async function verifyVictoryChallenge({send,evaluate},url){
   if(stable){progress.solved=Object.fromEntries(canonicalQuestList().filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1]));progress.canonicalQuestState={}}
   const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`
    localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});
-   localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');
+   localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');
    localStorage.setItem('lumenGuestName','Fixture');localStorage.setItem('lumenPushChoice','off');
    for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');
    window.__challengeCalls=[];

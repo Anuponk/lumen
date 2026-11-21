@@ -139,7 +139,7 @@ try{
   await click('#puzzleGrid .puzzle-card.done');assert.equal(await evaluate("document.getElementById('skyReveal').classList.contains('quest-review')"),true,'A completed quest opens its review');await evaluate(REPLAY_FROM_REVIEW);assert((await snapshot()).replayMode);assert.deepEqual((await snapshot()).progress,original.progress);
   await click('#openSky');await click('#closeMap');assert((await snapshot()).replayMode,'Browsing must preserve replay');
   // Real prior progression beyond Adventure 1 remains accessible after reload.
-  await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:100},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1')`);
+  await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:100},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1')`);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();await acknowledgeLearningMilestones(evaluate);await click('#openSky');
   const restored=await snapshot();assert.equal(restored.levelIndex,100);assert.equal(await evaluate('lumenDiagnostics.skySnapshot().activeAdventure'),CONTENT_PACKS[1].id);
   await click('#adventureRail button');assert.equal(await evaluate('lumenDiagnostics.skySnapshot().viewedAdventure'),CONTENT_PACKS[0].id);assert.equal(await evaluate('lumenDiagnostics.skySnapshot().activeAdventure'),CONTENT_PACKS[1].id);assert.deepEqual(await snapshot(),restored);
@@ -164,7 +164,7 @@ try{
   await evaluate('lumenDiagnostics.setSkyCatalogue(null)');await fit();
   const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(`docs/validation/issue96-${viewport.width}.png`,Buffer.from(shot.data,'base64'));
   // New player completes the free Adventure and sees a locked next Adventure.
-  await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:${CONTENT_PACKS[0].questCount-1}},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1')`);
+  await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:${CONTENT_PACKS[0].questCount-1}},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1')`);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();await acknowledgeLearningMilestones(evaluate);
   assert.equal((await snapshot()).levelIndex,CONTENT_PACKS[0].questCount-1);
   await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');await until('!document.getElementById("skyReveal").hidden');await until('!document.getElementById("skyRevealResults").hidden');assert(await evaluate('document.querySelectorAll("#skyReveal .new-star,#skyReveal .new-secondary").length')>0,'Every victory visibly changes the sky');assert.equal(await evaluate('document.querySelectorAll("#skyReveal .quest-reward-orbit").length'),0);await evaluate('document.getElementById("skyRevealNext").scrollIntoView({block:"center",behavior:"instant"})');await click('#skyRevealNext');

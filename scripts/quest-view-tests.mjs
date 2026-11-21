@@ -54,7 +54,7 @@ test('live sky badge refresh follows stable card IDs after insertion, reorder an
  const cards=[inserted,legacy].map(q=>{const card={dataset:{questId:q.id},innerHTML:'initial',paused:false};card.classList={toggle:(_,on)=>{card.paused=on}};return card});
  cards.push({dataset:{questId:'removed-content'},innerHTML:'untouched'});
  let refresh,stopped=false;
- const ctx={...canonical,CONTENT_CONSTELLATIONS,readQuestView,questPerformanceRecord,badgeCooldownRemaining,lumenProgress:{},
+ const ctx={...canonical,CONTENT_CONSTELLATIONS,readQuestView,questPerformanceRecord,badgeCooldownRemaining,questCooldownRemaining:q=>badgeCooldownRemaining(questPerformanceRecord(q,ctx.lumenProgress)),lumenProgress:{},
   badgeCooldownRefreshTimer:null,setInterval:fn=>(refresh=fn,1),clearInterval:()=>{stopped=true},
   document:{getElementById:()=>({hidden:false}),querySelectorAll:()=>cards},
   skyNavigation:{selectedConstellation:()=>({canonicalOnly:false})},mapConstellation:0,

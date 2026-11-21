@@ -221,6 +221,13 @@ All four badges are available from the first quest for guests and authenticated 
 
 A quest has a **15-minute qualification cooldown** based on `lastQualifiedAt`; replay during cooldown remains possible but cannot improve qualifying badges. Reset/restore must preserve attempt identity and qualification metadata. See `badgeCooldownRemaining` and `mergeEarnedBadges` in `src/campaign/performance.js`.
 
+**Abandon (#908).** The window runs from the **start** (first move) of the last qualifying run, whether it ends in victory, explicit abandon, reload or a device switch:
+- Before the first move (READY), leaving consumes nothing.
+- The first move of a qualifying run records its start, per player (`lumenQualifyingStartsV1`, `src/campaign/qualification-window.js`). Every cooldown reader uses the latest of `lastQualifiedAt` and that start, through `questCooldownRemaining`. This store can only delay qualification, never award anything.
+- On another device or after a reconnection, the server ranking window (`lumen_ranking_begin`, 15 minutes from the last eligible start) answers `eligible:false`; the live run is then demoted to non-qualifying (`attemptEngine.disqualify`). A run is never promoted after its first move.
+- « Abandonner » (after the first move, every mode except the scripted lesson) asks for confirmation: « Continuer la partie » leaves the attempt untouched; « Abandonner et revenir au ciel » sets `ABANDONED`, clears the resumable slot and opens Mon Ciel on the quest's constellation. The confirmation states the remaining window.
+- Social challenges and the Défi du jour keep their one-shot rules: the abandon is recorded by the server (`finishSocialChallenge('abandoned')`), with no second official attempt.
+
 Existing performance data must be migrated conservatively; never infer newly earned badges from an incompatible legacy record.
 
 ## Progress integrity

@@ -12,7 +12,7 @@ export async function verifyWalletAndOfflineFlow({send,evaluate,navigate,url}){
  window.__walletServer=saved||{profile:{solved,historyBackup:{...solved},badges:{},stars:{},performances:{},noHint:{},canonicalQuestState:{},
   xp:100,shards:10,skyScore:20,skyHistoryVersion:4,daily:{dates:{},rewards:{}},challenges:{},walletRevision:1},receipts:[],legacy:[],debits:0};
  const persist=()=>sessionStorage.setItem('walletFixtureServer',JSON.stringify(window.__walletServer));
- if(!saved){localStorage.setItem('lumenCloudOwnerId',owner);localStorage.setItem('lumenProgressV1',JSON.stringify(window.__walletServer.profile));localStorage.removeItem('lumenActiveAttemptV1');persist()}
+ if(!saved){localStorage.setItem('lumenCloudOwnerId',owner);localStorage.setItem('lumenProgressV1',JSON.stringify(window.__walletServer.profile));localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');persist()}
  for(const key of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSound'])localStorage.setItem(key,key==='lumenSound'?'off':'1');
  window.__walletLoseReply=false;window.__walletHideReceipt=false;window.__offlineVictory=false;
  window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{user:{id:owner}}}}),
@@ -65,7 +65,7 @@ export async function verifyWalletAndOfflineFlow({send,evaluate,navigate,url}){
   await send('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
  };
  try{
-  await evaluate(`sessionStorage.removeItem('walletFixtureServer');localStorage.removeItem('lumenActiveAttemptV1')`);
+  await evaluate(`sessionStorage.removeItem('walletFixtureServer');localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1')`);
   await navigate('Page.navigate',{url:url.href});
   await until(`window.lumenDiagnostics&&document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   await until(`document.getElementById('authUser').textContent==='Progression synchronisée'`);

@@ -103,7 +103,7 @@ test('launching a replay clears a terminal attempt for either saved quest format
  const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
  for(const state of ['COMPLETED','ABANDONED'])for(const canonical of [false,true]){
   let cleared=0;const ctx={leavePendingVictoryForNavigation:()=>{},questIsAccessible:()=>true,skyTourActive:()=>false,questIsCompleted:()=>true,canonicalQuestAvailable:()=>true,
-   lumenProgress:{},badgeCooldownRemaining:()=>0,questPerformanceRecord:()=>({}),lumenUser:null,currentQuestPosition:()=>0,currentQuestLimit:()=>100,
+   lumenProgress:{},badgeCooldownRemaining:()=>0,questCooldownRemaining:()=>0,questPerformanceRecord:()=>({}),lumenUser:null,currentQuestPosition:()=>0,currentQuestLimit:()=>100,
    attemptEngine:{snapshot:()=>({state}),clear:()=>cleared++},document:{getElementById:()=>({})},loadPuzzle(){},refreshJourney(){}};
   vm.createContext(ctx);vm.runInContext(functionSource(source,canonical?'startCanonicalQuest':'launchReplay'),ctx);
   if(canonical)ctx.startCanonicalQuest({id:'q'});else ctx.launchReplay(20);

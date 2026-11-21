@@ -12,7 +12,7 @@ export async function verifyAstronomicalRendering({send,evaluate},baseUrl){
  await send('Network.setBlockedURLs',{urls:['*supabase.co/*']});
  const quests=canonicalQuestList();
  const progress={solved:Object.fromEntries(quests.filter(q=>q.legacyIndex!==null).map(q=>[q.legacyIndex,1])),canonicalQuestState:Object.fromEntries(quests.filter(q=>q.legacyIndex===null).map(q=>[q.id,{solved:true,badges:{}}])),xp:123,shards:7,badges:{}};
- const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');localStorage.setItem('lumenSound','off');`});
+ const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(progress))});localStorage.removeItem('lumenQaActiveAttemptV1');localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1');for(const k of ['lumenQaTutorialSeen','lumenQaTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');localStorage.setItem('lumenSound','off');`});
  await navigateAndWait({send,evaluate},'Page.navigate',{url:String(baseUrl)});
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});
  for(let i=0;i<100;i++){if(await evaluate(`!!document.getElementById('adventureRail') && typeof document.getElementById('openSky').onclick==='function'`))break;await new Promise(resolve=>setTimeout(resolve,100));}
