@@ -1,3 +1,4 @@
+import {createTranslator} from '../src/ui/i18n.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
@@ -27,8 +28,13 @@ assert.equal(controls.badgeUnlockOverlay.hidden,true,'Badge advice must not open
 ctx.levelIndex=5;vm.runInContext('maybeShowBadgeMilestone()',ctx);
 assert.equal(controls.badgeUnlockOverlay.hidden,true,'Quest 6 uses its real assistance control');
 const markup=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const rulesNote=markup.match(/class="badge-rules-note">([^<]+)/)?.[1]||'';
+const rulesNoteKey=markup.match(/class="badge-rules-note" data-game-text="([^"]+)"/)?.[1];
+const fr=createTranslator().t,en=createTranslator({locale:"en"}).t;
+const rulesNote=fr(rulesNoteKey);
+assert.match(en(rulesNoteKey),/from quest 1/);
 assert(rulesNote.includes('dès la quête 1')&&!rulesNote.includes('verrouillées'),'The actual rules dialog must retain four-badge eligibility from quest 1');
-const rulesIntro=markup.match(/class="badge-rules-intro">([^<]+)/)?.[1]||'';
+const rulesIntroKey=markup.match(/class="badge-rules-intro" data-game-text="([^"]+)"/)?.[1];
+const rulesIntro=fr(rulesIntroKey);
+assert.match(en(rulesIntroKey),/every 15 minutes/);
 assert(rulesIntro.includes('quinze minutes')&&!rulesIntro.includes('par jour'),'Rules must describe the actual qualification cooldown');
 console.log('Four early quests: earned/missing badge UI, reload and educational dialogs passed');

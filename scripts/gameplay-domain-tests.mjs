@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {createTranslator} from '../src/ui/i18n.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -67,24 +68,24 @@ test('help on a verified replay while historical wallet recovery is pending reco
 });
 test('pending replay presentation never advertises an extra star or a confirmed badge',()=>{
  const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
- for(const replay of [false,true]){
+ for(const locale of ['fr','en']) for(const replay of [false,true]){
   const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',classList:{add(){}}});return nodes.get(id)};let stars=0;
   const shown=[],overlay=[],quest={id:'confirmed'};
   nodes.set('successOverlay',{classList:{add:c=>overlay.push(c)}});
-  const ctx={pendingVictoryView:null,pendingNavigationEntries:[],lumenUser:{id:'a'},lumenSupabase:{},lumenProgress:{},questIsCompleted:()=>replay,
+  const ctx={t:createTranslator({locale}).t,pendingVictoryView:null,pendingNavigationEntries:[],lumenUser:{id:'a'},lumenSupabase:{},lumenProgress:{},questIsCompleted:()=>replay,
    attemptEngine:{snapshot:()=>({attemptId:'same-attempt'})},syncPresentation:{celebration(){},pending(){}},pauseGameClock(){},
    board:{classList:{add(){}}},document:{getElementById:node},shownPendingVictories:new Set(),launchWinStar:()=>stars++,
    canonicalQuestList:()=>[quest],CONTENT_CONSTELLATIONS:[],readQuestView:()=>({badges:replay?{autonomy:true}:{}}),lastRewardState:null,
    showSkyReveal:(...args)=>shown.push(args)};
   vm.createContext(ctx);vm.runInContext(functionSource(source,'presentPendingVictory'),ctx);ctx.presentPendingVictory('confirmed','op');
-  assert.equal(stars,replay?0:1);assert.equal(node('successRewards').innerHTML.includes('Étoile'),!replay);
-  assert.match(node('successSub').textContent,/récompenses en attente/);assert.equal(node('successAchievement').hidden,true);
+  assert.equal(stars,replay?0:1);assert.equal(node('successRewards').innerHTML.includes(locale==='fr'?'Étoile':'Star pending'),!replay);
+  assert.match(node('successSub').textContent,locale==='fr'?/récompenses en attente/:/rewards awaiting confirmation/);assert.equal(node('successAchievement').hidden,true);
   // #682 (I) / #699: same single result screen, never the historical overlay card.
   assert.deepEqual(overlay,[],'successOverlay is never shown for a pending victory');
   assert.equal(JSON.stringify(shown),JSON.stringify([[null,null,{quest,newlyCompleted:!replay,pending:true}]]));
   assert.equal(JSON.stringify(ctx.lastRewardState),JSON.stringify({stars:0,badges:{},qualifying:false,prior:replay?{autonomy:true}:{},completed:replay,pending:true}));
   assert.equal(node('successShare').hidden,false);assert.equal(node('successShare').disabled,true,'No challenge before the server ACK');
-  assert.equal(node('successNew').textContent,'Quête suivante');
+  assert.equal(node('successNew').textContent,locale==='fr'?'Quête suivante':'Next quest');
   ctx.presentPendingVictory('confirmed','op');assert.equal(shown.length,1,'The same operation is presented once');
  }
 });
