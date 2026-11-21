@@ -18,8 +18,10 @@ function fixture({signedIn,daily}){
   for(const k of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen','lumenQaTutorialSeen','lumenQaTutorialCompletedV1'])localStorage.setItem(k,'1');
   localStorage.setItem('lumenPushChoice','off');localStorage.setItem('lumenGuestName','Moi898');
   ${signedIn?`localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(OWNER)});`:''}
-  window.__socialCalls=[];
-  const friends=[{nickname:'Ana898',state:'incoming',since:'2026-11-20T10:00:00Z'}];
+  // PR B: this device already knew an outgoing request to Cy898, now accepted.
+  ${signedIn?`localStorage.setItem('lumenSocialNotificationsV1:${OWNER}',JSON.stringify({version:1,baseline:true,outgoing:['cy898'],accepted:[],seen:[]}));`:''}
+  window.__socialCalls=[];window.__failSocial=false;
+  const friends=[{nickname:'Ana898',state:'incoming',since:'2026-11-20T10:00:00Z'},{nickname:'Cy898',state:'friends',since:new Date(Date.now()-3600000).toISOString()}];
   const inbox={received:[{challenge_id:'00000000-0000-4000-8000-000000089802',sender:'Ana898',puzzle_id:12,stable_quest_id:'base-q012',grid_revision:0,source_first_play:true,created_at:'2026-11-20T10:00:00Z',status:'pending'}],sent:[]};
   const mine=[{challenge_id:'00000000-0000-4000-8000-000000089803',puzzle_id:12,stable_quest_id:'base-q012',grid_revision:0,source_first_play:true,created_at:'2026-11-20T10:00:00Z',source_duration_seconds:60,source_autonomy:true,source_mastery:false,participant_count:1,unread_count:1,participants:[{display_name:'Bo898',status:'completed',duration_seconds:70}]}];
   const closes=new Date(Date.now()+5*3600000).toISOString();
@@ -35,7 +37,7 @@ function fixture({signedIn,daily}){
     if(name==='lumen_get_progress')return {data:Array.from({length:10},(_,i)=>({puzzle_id:i+1}))};
     if(name==='lumen_get_engagement')return {data:[{rewarded_days:{}}]};
     if(name==='lumen_cas_profile')return {data:true};
-    if(name==='lumen_friend_list')return {data:friends.map(f=>({...f}))};
+    if(name==='lumen_friend_list')return window.__failSocial?{data:null,error:{message:'Failed to fetch'}}:{data:friends.map(f=>({...f}))};
     if(name==='lumen_challenge_inbox')return {data:JSON.parse(JSON.stringify(inbox))};
     if(name==='lumen_list_quest_challenges_v2')return {data:JSON.parse(JSON.stringify(mine))};
     if(name==='lumen_mark_social_challenge_read'){mine[0].unread_count=0;return {data:true}}
@@ -101,34 +103,53 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
 
  for(const [width,height] of [[390,844],[1440,900]]){
   await open({send,evaluate},url,{signedIn:true,daily:true,width,height});
-  // #35 counters feed the global badge: 1 friend request + 1 friend challenge + 1 unread result.
+  // #35 counters (1 friend request + 1 friend challenge; 1 unread result) + 1 unseen acceptance (PR B).
   await evaluate(`document.getElementById('openSocial').click()`);
-  await until(evaluate,`document.getElementById('socialBadge').textContent==='3'&&!document.getElementById('socialBadge').hidden`,'global badge '+width);
+  await until(evaluate,`document.getElementById('socialBadge').textContent==='4'&&!document.getElementById('socialBadge').hidden`,'global badge '+width);
   assert.equal(await evaluate(`document.getElementById('friendsBadge').textContent+'/'+document.getElementById('challengeUnreadBadge').textContent`),'2/1','#35 counters unchanged');
-  assert.equal(await evaluate(`document.getElementById('openSocial').getAttribute('aria-label')`),'Espace social, 3 nouveautés');
+  assert.equal(await evaluate(`document.getElementById('openSocial').getAttribute('aria-label')`),'Espace social, 4 nouveautés');
   assert.deepEqual(await evaluate(visibleItems),['Défi du jour','Mes défis','Classements','Mes amis','Notifications','Inviter des amis'],'Six sections in the agreed order');
   assert.match(await evaluate(`document.getElementById('socialDailyState').textContent`),/fin dans/,'Daily state mirrors « Mes quêtes »');
   assert.equal(await evaluate(`document.getElementById('socialGuestNote').hidden`),true);
   assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,'No horizontal scroll at '+width);
   await capture(send,captureDir,'social-hub-menu-'+width);
   // Tab stays inside the dialog.
-  const before=await evaluate('document.activeElement.id');
+  const focusStart=await evaluate('document.activeElement.id');
   for(let i=0;i<12;i++)await key(send,'Tab','Tab',9);
-  assert.equal(await evaluate(`document.getElementById('socialHub').contains(document.activeElement)`),true,'Focus trapped in the panel (from '+before+')');
+  assert.equal(await evaluate(`document.getElementById('socialHub').contains(document.activeElement)`),true,'Focus trapped in the panel (from '+focusStart+')');
   // Rankings: campaign and daily kept apart.
   await evaluate(`document.getElementById('socialRankings').click()`);
   assert.equal(await evaluate(`document.getElementById('socialHubTitle').textContent`),'Classements');
   assert.match(await evaluate(`document.getElementById('socialRankingsView').textContent`),/Classements des quêtes.*Défi du jour · Général et Mes amis/s);
   assert.equal(await evaluate(`!document.getElementById('socialDailyRanking').hidden`),true);
   await capture(send,captureDir,'social-hub-rankings-'+width);
-  // Notifications (PR A): existing counters, each opening its screen.
+  // Notifications (PR B): one row per event, unread marked, read on viewing.
   await evaluate(`document.getElementById('socialHubBack').click();document.getElementById('socialNotifications').click()`);
-  assert.match(await evaluate(`document.getElementById('socialNotificationsList').textContent`),/2 demandes d’ami ou défis reçus.*1 nouveau résultat/s);
+  await until(evaluate,`document.querySelectorAll('#socialNotificationsList .social-notification').length===4`,'notification feed '+width);
+  const feed=await evaluate(`[...document.querySelectorAll('#socialNotificationsList .social-notification')].map(b=>({kind:b.dataset.kind,text:b.querySelector('strong').textContent,fresh:!!b.querySelector('.social-new')}))`);
+  assert.deepEqual(feed.map(f=>f.kind).sort(),['challenge-received','challenge-result','friend-accepted','friend-request']);
+  assert.deepEqual(feed.map(f=>f.text.replace(/Quête \d+/,'Quête N')).sort(),['Ana898 souhaite devenir ton ami·e','Ana898 te défie · Quête N','Bo898 a terminé ton défi · Quête N','Cy898 a accepté ta demande d’ami'].sort(),'Canonical quest labels (#18)');
+  assert.equal(feed.every(f=>f.fresh),true,'Everything new is marked « Nouveau » during this viewing');
+  assert.equal(feed.some(f=>/@|0000-4000/.test(f.text)),false,'Nicknames only');
+  await until(evaluate,`document.getElementById('socialBadge').textContent==='3'`,'viewing reads the acceptance');
   await capture(send,captureDir,'social-hub-notifications-'+width);
-  await evaluate(`document.querySelector('#socialNotificationsList [data-social-target="openMyChallenges"]').click()`);
+  await evaluate(`document.querySelector('#socialNotificationsList [data-kind="challenge-result"]').click()`);
   await until(evaluate,`!document.getElementById('myChallengesModal').hidden&&document.getElementById('socialHub').hidden`,'result opens Mes défis');
   await until(evaluate,`document.getElementById('challengeUnreadBadge').hidden&&document.getElementById('socialBadge').textContent==='2'`,'read result leaves the global badge consistent');
   await evaluate(`document.getElementById('myChallengesClose').click()`);
+  // Read state persists; the read result is gone (no ghost, no duplicate).
+  await evaluate(`document.getElementById('openSocial').click();document.getElementById('socialNotifications').click()`);
+  await until(evaluate,`document.querySelectorAll('#socialNotificationsList .social-notification').length===3`,'read result removed');
+  assert.equal(await evaluate(`document.querySelectorAll('#socialNotificationsList .social-new').length`),0,'Nothing new on the second viewing');
+  // Offline: last known list kept with a notice; reconnection refreshes.
+  await evaluate(`window.__failSocial=true;document.getElementById('socialHubBack').click();document.getElementById('socialNotifications').click()`);
+  await until(evaluate,`!document.getElementById('socialNotificationsError').hidden`,'offline notice');
+  assert.match(await evaluate(`document.getElementById('socialNotificationsError').textContent`),/dernières nouveautés connues/);
+  assert.equal(await evaluate(`document.querySelectorAll('#socialNotificationsList .social-notification').length`),3,'offline keeps the last list');
+  const listCalls=(await evaluate('window.__socialCalls')).filter(n=>n==='lumen_friend_list').length;
+  await evaluate(`window.__failSocial=false;window.dispatchEvent(new Event('online'))`);
+  await until(evaluate,`document.getElementById('socialNotificationsError').hidden&&window.__socialCalls.filter(n=>n==='lumen_friend_list').length>`+listCalls,'reconnection refresh');
+  await key(send,'Escape','Escape',27);
   // Mes amis keeps the #35 screen.
   await evaluate(`document.getElementById('openSocial').click();document.getElementById('openFriends').click()`);
   await until(evaluate,`!document.getElementById('friendsModal').hidden&&!document.getElementById('friendsBody').hidden`,'Mes amis signed in');
@@ -139,5 +160,12 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
   await until(evaluate,`new URL(location.href).searchParams.get('daily')==='1'`,'daily route');
   results.push({kind:'signed-in',width});
  }
+ // A received challenge opens its existing one-shot link (#35/#18).
+ await open({send,evaluate},url,{signedIn:true,width:390});
+ await evaluate(`document.getElementById('openSocial').click();document.getElementById('socialNotifications').click()`);
+ await until(evaluate,`!!document.querySelector('#socialNotificationsList [data-kind="challenge-received"]')`,'received challenge row');
+ await evaluate(`document.querySelector('#socialNotificationsList [data-kind="challenge-received"]').click()`);
+ await until(evaluate,`new URL(location.href).searchParams.get('challenge')==='00000000-0000-4000-8000-000000089802'`,'challenge link opened');
+ results.push({kind:'challenge-link'});
  return results;
 }

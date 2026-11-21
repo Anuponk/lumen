@@ -23,6 +23,7 @@ import {summarizeWeek,weekMonday,weekNavigation} from '../campaign/daily-week.js
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
 import {createRankingClient} from '../persistence/ranking.js';
 import {setupSocialHub} from './social-hub.js';
+import {createSocialNotifications} from './social-notifications.js';
 import {createRankingView} from './ranking.js';
 import {createVictoryPresentation} from './victory-presentation.js';
 import {createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
@@ -5781,7 +5782,17 @@ const nativeChallengeShare=document.getElementById("challengeNativeShare"),copyC
 const openChallenges=document.getElementById("openMyChallenges"),closeChallenges=document.getElementById("myChallengesClose");if(openChallenges)openChallenges.onclick=()=>openMyChallenges();if(closeChallenges)closeChallenges.onclick=()=>document.getElementById("myChallengesModal").hidden=true;
 setupFriends();
 // #898 Lot 4: single social entry point over the existing screens and counters.
-const socialHub=setupSocialHub({t,isSignedIn:()=>!!lumenUser,onSignIn:()=>openEmailAccountOffer("signup"),onOpen:()=>{void refreshFriendsBadge();void loadMyChallenges()}});
+// #898 PR B: in-app notifications derived from the same reads (no push, no new server state).
+let socialHub=null;
+const socialNotifications=createSocialNotifications({t,getOwner:()=>lumenUser?.id||null,
+ fetchFriends:()=>friendsClient.list(),fetchInbox:()=>friendsClient.inbox(),fetchSent:()=>challengeClient.sent(),
+ questLabel:row=>challengeQuestLabel(row),onChange:()=>socialHub?.refresh(),
+ open:event=>{if(event.target.type==='challenge')location.href=socialChallengeUrl(event.target.id);else if(event.target.type==='my-challenges')openMyChallenges(event.target.id);else document.getElementById("openFriends")?.click()}});
+socialHub=setupSocialHub({t,isSignedIn:()=>!!lumenUser,onSignIn:()=>openEmailAccountOffer("signup"),notifications:socialNotifications,onOpen:()=>{void refreshFriendsBadge();void loadMyChallenges()}});
+document.getElementById("openFriends")?.addEventListener("click",()=>socialNotifications.markKindSeen("friend-accepted"));
+window.addEventListener("online",()=>{void socialNotifications.refresh({force:true})});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)void socialNotifications.refresh()});
+void socialNotifications.refresh();
 const challengeHome=document.getElementById("challengeResultHome"),challengeReshare=document.getElementById("challengeResultReshare");if(challengeHome)challengeHome.onclick=()=>{location.href=location.pathname};if(challengeReshare)challengeReshare.onclick=()=>{document.getElementById("challengeResultModal").hidden=true;createSocialChallengeFromSuccess()};
 const pushEnable=document.getElementById("pushEnable"),pushLater=document.getElementById("pushLater");
 if(pushEnable)pushEnable.onclick=enableLumenPush;

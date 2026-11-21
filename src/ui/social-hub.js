@@ -19,7 +19,7 @@ export function socialBadgeText(total){
  return n?n>99?'99+':String(n):'';
 }
 
-export function setupSocialHub({doc=document,t=key=>key,isSignedIn=()=>false,extraCount=()=>0,onOpen=()=>{},onSignIn=null}={}){
+export function setupSocialHub({doc=document,t=key=>key,isSignedIn=()=>false,extraCount=()=>0,onOpen=()=>{},onSignIn=null,notifications=null}={}){
  const $=id=>doc.getElementById(id);
  const trigger=$('openSocial'),hub=$('socialHub');
  if(!trigger||!hub)return null;
@@ -28,7 +28,7 @@ export function setupSocialHub({doc=document,t=key=>key,isSignedIn=()=>false,ext
  const counters=[$('friendsBadge'),$('challengeUnreadBadge')];
  let returnFocus=null;
 
- function total(){return counters.reduce((sum,el)=>sum+badgeCount(el),0)+Math.max(0,Number(extraCount())||0)}
+ function total(){return counters.reduce((sum,el)=>sum+badgeCount(el),0)+Math.max(0,Number(notifications?notifications.extraCount():extraCount())||0)}
  function refreshBadge(){
   const n=total(),text=socialBadgeText(n);
   if(badge){badge.hidden=!n;badge.textContent=text}
@@ -52,6 +52,9 @@ export function setupSocialHub({doc=document,t=key=>key,isSignedIn=()=>false,ext
  }
  function renderNotifications(){
   const list=$('socialNotificationsList');if(!list)return;
+  // PR B: the derived feed (#898) when available; counters summary otherwise.
+  if(notifications&&isSignedIn()){notifications.render(list,{empty:$('socialNotificationsEmpty'),error:$('socialNotificationsError')});return}
+  const error=$('socialNotificationsError');if(error)error.hidden=true;
   const friends=badgeCount(counters[0]),results=badgeCount(counters[1]);
   const rows=[];
   if(friends)rows.push({target:'openFriends',icon:'👥',text:t('social.summaryFriends',{count:friends})});
@@ -66,7 +69,10 @@ export function setupSocialHub({doc=document,t=key=>key,isSignedIn=()=>false,ext
  }
  function show(name){
   for(const [key,view] of Object.entries(views))if(view)view.hidden=key!==name;
-  if(name==='notifications')renderNotifications();
+  if(name==='notifications'){
+   renderNotifications();
+   if(notifications&&isSignedIn()){notifications.markAllSeen();void notifications.refresh({force:true}).then(()=>{if(!views.notifications.hidden)renderNotifications()})}
+  }
   const back=$('socialHubBack');if(back)back.hidden=name==='menu';
   const title=$('socialHubTitle');if(title)title.textContent=t(name==='rankings'?'social.rankings':name==='notifications'?'social.notifications':'social.title');
   const first=(views[name]||menu)?.querySelector('button:not([hidden])');
@@ -78,6 +84,7 @@ export function setupSocialHub({doc=document,t=key=>key,isSignedIn=()=>false,ext
   refreshDaily();refreshAccount();refreshBadge();
   hub.hidden=false;trigger.setAttribute('aria-expanded','true');
   show('menu');onOpen();
+  if(notifications&&isSignedIn())void notifications.refresh().then(refreshBadge);
  }
  function hide({restore=true}={}){
   if(hub.hidden)return;
@@ -102,6 +109,7 @@ export function setupSocialHub({doc=document,t=key=>key,isSignedIn=()=>false,ext
  // their original handlers; the panel only steps aside afterwards.
  menu?.addEventListener('click',event=>{if(event.target.closest('[data-social-leave]'))hide({restore:false})});
  views.notifications?.addEventListener('click',event=>{
+  if(event.target.closest('.social-notification')){hide({restore:false});return}
   const row=event.target.closest('[data-social-target]');if(!row)return;
   hide({restore:false});$(row.dataset.socialTarget)?.click();
  });
