@@ -52,11 +52,10 @@ try{
   await evaluate(`lumenDiagnostics.setupQuest(20);document.getElementById('questStart').hidden=true;document.getElementById('attemptMask').click();const s=lumenDiagnostics.snapshot();s.state[0].splice(0,4,1,2,0,1);lumenDiagnostics.setBoard(s.state);`);
   const point=c=>evaluate(`(()=>{const r=document.querySelector('#board [data-row="0"][data-col="${c}"]').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
   async function sweep(){
-   await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[await point(0)]});
-   await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[await point(3)]});
-   // Let Chrome process the move on a frame before releasing the finger.
-   await settleLayout();
-   await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+   const start=await point(0),end=await point(3);
+   // Let Chrome pace the touch moves and finish the swipe without a fling.
+   await send('Input.synthesizeScrollGesture',{...start,xDistance:end.x-start.x,yDistance:end.y-start.y,
+    speed:550,preventFling:true,gestureSourceType:'touch'});
   }
   await sweep();
   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().state[0].slice(0,4)'),[0,2,0,0]);
