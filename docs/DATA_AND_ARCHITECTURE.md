@@ -1889,6 +1889,20 @@ Limit: a guest on a stale client has no server run, so its declared revision 0
 is kept. Old clients cannot open repaired links (v1 readers and start/finish
 wrappers refuse revision > 0: `challenge_grid_update_required`).
 
+#927 (migration `20261122120000_current_nicknames_927.sql`): **one account =
+its current nickname everywhere**. Rankings, the daily board, the challenge
+inbox and friends already read `lumen.profiles`; the challenge readers
+`lumen_get_social_challenge` (sender and caller names),
+`lumen_list_social_challenges` and `lumen_list_quest_challenges_v2`
+(participant names) now resolve, at read time, the ready nickname of the
+account ID through the private `lumen.public_nickname(user, fallback)`. The
+stored snapshot is only a fallback: guests/anonymous players (never matched by
+an equal name) and accounts without a ready nickname keep it; erased senders
+are already anonymized (« Compte supprimé »), erased participants removed.
+Snapshots stay in the database. No time, rank, badge, status, link or owner
+changes; no client cache holds names (notifications are rebuilt from current
+lists, an « accepted » notice keyed by an old name simply expires).
+
 Recipient invariants (`challenge-recipient-browser.mjs`,
 `fixtures/challenge-rpc-matrix.sql`):
 - the challenged grid is played even from a locked Adventure: `choose()` does not
