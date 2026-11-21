@@ -51,6 +51,22 @@ Hors périmètre : amis, classement hebdomadaire, parrainage, publication de cam
 - Les liens de défi `/?challenge=…` ne sont jamais remplacés par une page de découverte (opaques, one-shot, référence non révélée).
 - Aperçus : `decouvrir.html` porte l'OG/Twitter français (`og.jpg`, `fr_FR`), `discover.html` l'OG/Twitter anglais (`og-en.jpg`, `en_US`).
 
+## Trois partages distincts (#932, 21/11/2026)
+
+| Action | Où | Ce qui est partagé | Lien | Mesure |
+|---|---|---|---|---|
+| **Partager Lumen** | Icône de l'en-tête (toujours visible, invité ou connecté), en-tête de Mon Ciel, « Inviter des amis » de l'Espace social | Invitation générale (« Découvrir Lumen ») | Page de découverte de la langue de Lumen (#933) | `player_invite` (même chemin et même compteur `trackInviteClick` pour les trois entrées) |
+| **Défier** | Après une quête ordinaire (inchangé) | Même grille, référence cachée, one-shot | `/?challenge=…` opaque | — |
+| **Partager ma réussite** | Uniquement la victoire qui **termine** une aventure, ou celle qui la rend **entièrement maîtrisée** | Carte « AVENTURE ACCOMPLIE » (nombre de constellations rallumées) ou « AVENTURE MAÎTRISÉE » (cadre doré, maîtrise sur les N quêtes) | Page de découverte de la langue, `player_share` | `player_share` |
+
+- **Partager Lumen** ouvre directement le partage natif quand il existe (Android, PWA). Sinon, il affiche le dialogue avec « Copier le lien », puis une sélection manuelle si le presse-papiers est refusé. Rien n'est envoyé automatiquement et la partie en cours n'est pas touchée.
+- **Partager ma réussite** dépend de l'état **confirmé** de l'aventure (`canonicalScopeProgress` du pack, via `adventureShareMilestone`), jamais de la seule scène affichée :
+  - aventure terminée : l'aventure est complète **et** cette victoire est une première réussite ;
+  - aventure maîtrisée : l'aventure est maîtrisée à 100 % **et** cette victoire vient d'apporter la Maîtrise de la quête.
+  - La Maîtrise l'emporte si les deux arrivent en même temps. Aucune récompense n'est inventée : les comptes affichés viennent de la progression confirmée.
+- Une quête ordinaire, même si elle rallume une constellation, propose **Défier** et non « Partager ma réussite ». La place du bouton n'est plus réservée pendant la confirmation.
+- La carte (PNG 600 × 750) est jointe au partage natif quand `navigator.canShare({files})` l'accepte. Sinon, texte et lien seuls. Une annulation n'affiche ni succès ni erreur.
+
 ## Recette après publication
 
 | Scénario | Appareil | Attendu | État |

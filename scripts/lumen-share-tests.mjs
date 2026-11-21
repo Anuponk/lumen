@@ -63,8 +63,18 @@ assert.deepEqual(resultShareData({ordinal: 3, constellation: 'Great Bear', time:
   title: 'My win in Lumen', text: '✦ Quest 3 solved in Lumen · Great Bear\nFinal time 1:02\nAutonomy\nYour turn!', url: discoveryUrl}, 'no locale given: French page (explicit default)');
 assert.equal(resultShareData({ordinal: 3, constellation: 'Great Bear', time: '1:02', badges: []}, en, 'en').url, discover, 'English result → discover.html');
 assert.equal(resultShareData({ordinal: 5, constellation: 'Orion', time: '', badges: [], milestone: 'adventure', adventure: 'Northern Sky'}, en).text.split('\n')[0], '✦ Adventure “Northern Sky” completed in Lumen · Orion');
-assert.deepEqual(shareCardCopy({ordinal: 4, catalogueTotal: 880, time: '0:58'}, en), {kicker: 'QUEST 4 / 880 SOLVED', time: 'Final time 0:58', cta: 'Your turn!'});
-assert.deepEqual(shareCardCopy({ordinal: 4, catalogueTotal: 880, time: '', milestone: 'constellation'}), {kicker: 'CONSTELLATION RALLUMÉE', time: '', cta: 'À toi de jouer !'});
+assert.deepEqual(shareCardCopy({ordinal: 4, catalogueTotal: 880, time: '0:58'}, en), {kicker: 'QUEST 4 / 880 SOLVED', detail: '', time: 'Final time 0:58', cta: 'Your turn!'});
+assert.deepEqual(shareCardCopy({ordinal: 4, catalogueTotal: 880, time: '', milestone: 'constellation'}), {kicker: 'CONSTELLATION RALLUMÉE', detail: '', time: '', cta: 'À toi de jouer !'});
+// #932: the two Adventure moments, from confirmed counts only.
+assert.deepEqual(shareCardCopy({ordinal: 79, time: '', milestone: 'adventure', constellations: 8}), {kicker: 'AVENTURE ACCOMPLIE', detail: '8 constellations rallumées', time: '', cta: 'À toi de jouer !'});
+assert.deepEqual(shareCardCopy({ordinal: 79, time: '', milestone: 'adventureMastered', quests: 79}, en), {kicker: 'ADVENTURE MASTERED', detail: 'Mastery on all 79 quests', time: '', cta: 'Your turn!'});
+assert.deepEqual(resultShareData({ordinal: 79, constellation: 'Lyre', time: '0:40', badges: ['Maîtrise'], milestone: 'adventureMastered', adventure: 'Premières lueurs', quests: 79}), {
+  title: 'Aventure maîtrisée dans Lumen',
+  text: '✦ Aventure « Premières lueurs » entièrement maîtrisée dans Lumen\nMaîtrise sur les 79 quêtes\nTemps final 0:40\nMaîtrise\nÀ toi de jouer !',
+  url: discoveryUrl,
+});
+assert.equal(resultShareData({ordinal: 79, constellation: 'Lyre', time: '', badges: [], milestone: 'adventure', adventure: 'First Light', constellations: 1}, en, 'en').text.split('\n').slice(0, 2).join('|'), '✦ Adventure “First Light” completed in Lumen · Lyre|1 constellation relit');
+assert.equal(resultShareData({ordinal: 79, constellation: 'Lyre', time: '', badges: [], milestone: 'adventure', adventure: 'X'}).text.split('\n').length, 2, 'no count is invented when it is unknown');
 assert.equal(JSON.stringify(resultShareData({ordinal: 1, constellation: 'Lyre', time: '0:30', badges: [], player: 'secret@mail', userId: 'uuid'}, en)).match(/secret|uuid/), null, 'no private field leaks');
 
 // Native share from the dialog: generic links get the Partager campaign, a
@@ -136,3 +146,18 @@ for (const [locale, page] of [['fr', discoveryUrl], ['en', discover]]) {
   }
 }
 console.log('Invitation and result share contracts passed');
+
+// #932: « Partager ma réussite » only for the victory that completes or masters an Adventure.
+{
+  const {adventureShareMilestone} = await import('../src/ui/lumen-share.js');
+  const scope = (complete, mastered) => ({complete, mastered});
+  assert.equal(adventureShareMilestone(scope(false, false), {newlyCompleted: true}), null, 'ordinary first win: Défier only');
+  assert.equal(adventureShareMilestone(scope(true, false), {newlyCompleted: false}), null, 'replay of a completed Adventure: nothing new');
+  assert.equal(adventureShareMilestone(scope(true, false), {newlyCompleted: true}), 'adventure', 'the win that completes the Adventure');
+  assert.equal(adventureShareMilestone(scope(true, true), {masteryNew: true}), 'adventureMastered', 'the run that brings the last Maîtrise');
+  assert.equal(adventureShareMilestone(scope(true, true), {newlyCompleted: true, masteryNew: true}), 'adventureMastered', 'mastered wins when both happen');
+  assert.equal(adventureShareMilestone(scope(true, true), {masteryNew: false}), null, 'an already mastered Adventure is not re-announced');
+  assert.equal(adventureShareMilestone(scope(false, false), {masteryNew: true}), null, 'a quest Maîtrise alone is not an Adventure');
+  assert.equal(adventureShareMilestone(null, {newlyCompleted: true}), null);
+}
+console.log('Adventure share moments passed');

@@ -73,7 +73,17 @@ export async function verifyVictoryChallenge({send,evaluate},url){
     assert.equal(await evaluate(`document.getElementById('lumenShareTitle').textContent`),'Aventure accomplie dans Lumen');
     assert.match(await evaluate(`document.getElementById('lumenSharePreview').textContent`),/^✦ Aventure « .+ » accomplie dans Lumen · /);
     assert.doesNotMatch(await evaluate(`document.getElementById('lumenShareSelection').value`),/challenge=/,'A result share never carries a challenge link');
-    await evaluate(`document.getElementById('lumenShareDialog').close()`);
+    // #932: the Adventure card is attached to the native share when the channel accepts files.
+    await evaluate(`Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.__adventureShare=data}});Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true})`);
+    await new Promise(r=>setTimeout(r,400));
+    await evaluate(`document.getElementById('lumenShareNative').hidden=false;document.getElementById('lumenShareNative').click()`);
+    for(let i=0;i<50;i++){if(await evaluate('!!window.__adventureShare'))break;await new Promise(r=>setTimeout(r,50));}
+    const adventureShare=await evaluate(`(()=>{const {title,text,url,files}=window.__adventureShare||{};return {title,text,url,files:files?.map(f=>({type:f.type,size:f.size}))}})()`);
+    assert.equal(adventureShare.title,'Aventure accomplie dans Lumen');
+    assert.equal(adventureShare.url,'https://lumen.nopuna.fr/decouvrir.html?utm_source=player_share&utm_medium=referral');
+    assert.match(adventureShare.text,/constellations? rallumées?/,'the card states the confirmed constellation count');
+    if(adventureShare.files){assert.equal(adventureShare.files[0].type,'image/png');assert(adventureShare.files[0].size>0&&adventureShare.files[0].size<100_000)}
+    if(await evaluate(`document.getElementById('lumenShareDialog').open`))await evaluate(`document.getElementById('lumenShareDialog').close()`);
     await evaluate(`document.getElementById('skyRevealNext').click()`);
     assert.equal(await evaluate(`document.getElementById('adventureNotice').hidden`),true,'No second Adventure popup after the already presented scene');
     assert.equal(await evaluate(`document.getElementById('mapModal').hidden`),false);

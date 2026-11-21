@@ -105,6 +105,17 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
  await key(send,'Escape','Escape',27);
  assert.deepEqual(await evaluate('window.__shared'),{title:'Discover Lumen',text:'✨ I found Lumen, a logic puzzle where you relight the constellations. Want to try?',url:'https://lumen.nopuna.fr/discover.html?utm_source=player_invite&utm_medium=referral'},'English invitation → discover.html');
  await evaluate(`(()=>{const s=document.getElementById('gameLocaleMode');s.value='fr';s.dispatchEvent(new Event('change'))})()`);
+ // #932: « Partager Lumen » in the header and in Mon Ciel is the same invitation path.
+ const invitation=await evaluate(`(async()=>{window.__shared=null;document.getElementById('shareLumen').click();for(let i=0;i<40&&!window.__shared;i++)await new Promise(r=>setTimeout(r,25));return window.__shared})()`,true);
+ assert.deepEqual(invitation,{title:'Découvrir Lumen',text:'✨ J’ai découvert Lumen, un jeu de logique où tu rallumes les constellations. Tu veux essayer ?',url:'https://lumen.nopuna.fr/decouvrir.html?utm_source=player_invite&utm_medium=referral'},'header entry = Inviter des amis');
+ const header=await evaluate(`(()=>{const b=document.getElementById('shareLumen'),r=b.getBoundingClientRect(),row=[...document.querySelectorAll('.head-actions > button')].filter(x=>x.getClientRects().length);return {name:b.getAttribute('aria-label'),size:Math.round(r.width)+'x'+Math.round(r.height),sameRow:row.every(x=>Math.abs(x.getBoundingClientRect().top-r.top)<2),overflow:document.documentElement.scrollWidth>innerWidth}})()`);
+ assert.deepEqual(header,{name:'Partager Lumen',size:header.size,sameRow:true,overflow:false},'header entry fits without pushing other commands');
+ await evaluate(`document.getElementById('openSky').click()`);
+ await until(evaluate,`!document.getElementById('mapModal').hidden`,'Mon Ciel');
+ const fromSky=await evaluate(`(async()=>{window.__shared=null;document.getElementById('mapShareLumen').click();for(let i=0;i<40&&!window.__shared;i++)await new Promise(r=>setTimeout(r,25));return window.__shared?.url})()`,true);
+ assert.equal(fromSky,invitation.url,'Mon Ciel entry = same invitation');
+ assert.equal(await evaluate(`!document.getElementById('mapModal').hidden`),true,'sharing keeps Mon Ciel open');
+ await evaluate(`document.getElementById('closeMap').click()`);
  assert.equal(await evaluate('JSON.stringify(lumenDiagnostics.snapshot().state)'),board,'The panel never touches the active grid');
  assert.equal((await evaluate('window.__socialCalls')).some(n=>/^lumen_friend/.test(n)),false,'No friend RPC for guests');
  results.push({kind:'guest',width:360});

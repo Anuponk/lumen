@@ -1,5 +1,5 @@
 import {setupAppUpdates} from './app-updates.js';
-import {createShareDialog,discoveryUrl} from './lumen-share.js';
+import {createShareDialog,discoveryUrl,adventureShareMilestone} from './lumen-share.js';
 import {consumeInstallRequest,isIosDevice,requestedInstallCopy,installGuestWarning} from './install-request.js';
 import {pwaFirstOpenEligible,createPwaFirstOpen} from './pwa-first-open.js';
 import {readNativeAuthLinkResult,scrubNativeAuthLinkError,authLinkMessage} from '../persistence/auth-link-result.js';
@@ -1821,7 +1821,9 @@ function setupMobileAuth(){
  menu.onclick=(e)=>e.stopPropagation();
  setupCredits(document);
  const invite=document.getElementById("inviteLumenFriends");
- if(invite)invite.onclick=()=>{void trackInviteClick();void lumenShare.invite(invite)};
+ // #932: « Partager Lumen » (header, Mon Ciel) and « Inviter des amis » share one
+ // path: same message, same destination (#933), same player_invite measure.
+ if(invite)invite.onclick=()=>shareLumen(invite);
  const editor=document.getElementById("accountProfileEditor");
  const edit=document.getElementById("editAccountProfile");if(edit)edit.onclick=()=>{if(!lumenUser||!editor)return;editor.dataset.open="true";syncMobileAuthUI();document.getElementById("nicknameInput")?.focus()};
  const closeProfile=document.getElementById("closeAccountProfile");if(closeProfile)closeProfile.onclick=()=>{if(!editor)return;editor.dataset.open="false";syncMobileAuthUI()};
@@ -1948,6 +1950,9 @@ async function maybeOfferInstall(){
 
 async function installLumen(){const box=document.getElementById("installOptin"),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);if(ios&&!lumenInstallPrompt){box.hidden=true;localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()));return}if(!lumenInstallPrompt){box.hidden=true;return}const p=lumenInstallPrompt;lumenInstallPrompt=null;await p.prompt();const choice=await p.userChoice;trackLumenEvent("pwa_install_choice",null,{outcome:choice.outcome,qa:qaActive});box.hidden=true;if(choice.outcome==="dismissed")localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()))}
 const lumenShare=createShareDialog(document,navigator,t,{locale:()=>localePreference?.locale??'fr'});
+function shareLumen(origin){void trackInviteClick();void lumenShare.invite(origin)}
+// Bound once for every mode (guest, signed in, QA); the social entry reuses it.
+for(const id of ["shareLumen","mapShareLumen"]){const button=document.getElementById(id);if(button)button.onclick=()=>shareLumen(button)}
 function showShareToast(t){let e=document.createElement("div");e.className="share-toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800)}
 function successAchievement(){
  const canonicalQuest=activeQuest(),view=readQuestView(canonicalQuest,lumenProgress,canonicalQuestList(),CONTENT_CONSTELLATIONS);
@@ -5506,9 +5511,14 @@ function showSkyReveal(beforeEarned=null,checkpoint=null,canonical=null){
      time:document.getElementById("successTime").textContent,
      badges:slots.filter(slot=>slot.key!=="star"&&slot.state==="new").map(slot=>slot.label)
     };
-    shareResult.hidden=false;
-    // #881 Lot 1: share the accomplishment the scene actually shows when clicked.
-    shareResult.onclick=()=>lumenShare.result({...sharedVictory,milestone:shareMilestone(document.getElementById('skyReveal').dataset.celestial)},shareResult);
+    // #932: ordinary quests keep « Défier »; « Partager ma réussite » is reserved
+    // for the victory that completes or fully masters an Adventure.
+    const achievement=adventureShareAchievement(playedQuest,{newlyCompleted,slots});
+    if(achievement){
+     const pack=CONTENT_PACKS.find(entry=>entry.id===playedQuest.packId);
+     shareResult.hidden=false;
+     shareResult.onclick=()=>lumenShare.result({...sharedVictory,milestone:achievement,constellations:pack?.constellationIds?.length||0,quests:canonicalScopeProgress(lumenProgress,{packId:playedQuest.packId}).total},shareResult);
+    }
    }
    const rankingExpected=!(socialChallenge||learningReplayActive()||qaActive||!lumenUser);
    document.getElementById('skyRevealPerformance')?.classList.toggle('victory-performance-ranked',rankingExpected);
@@ -5588,6 +5598,13 @@ bindReviewNavigation(document.getElementById('skyReveal'),{
 // Performance block of the shared victory surface filled from saved results only:
 // best time, saved badges and this quest's board (#695 review, #705 preview).
 // Every caller owns the whole block, never a previous screen's leftovers.
+// #932: from the confirmed progression only. Mastered: the Adventure is 100 %
+// mastered and this run just earned its quest's Maîtrise. Completed: the
+// Adventure is complete and this run is the quest's first completion.
+function adventureShareAchievement(quest,{newlyCompleted=false,slots=[]}={}){
+ if(!quest?.packId)return null;
+ return adventureShareMilestone(canonicalScopeProgress(lumenProgress,{packId:quest.packId}),{newlyCompleted,masteryNew:slots.some(slot=>slot.key==='mastery'&&slot.state==='new')});
+}
 function shareMilestone(celestial){return celestial==='constellation'?'constellation':/^(adventure|campaign)/.test(celestial||'')?'adventure':null}
 function fillSavedPerformance(quest,model){
  const shareResult=document.getElementById('skyRevealShareResult');

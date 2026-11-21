@@ -97,24 +97,9 @@ try {
       false,
       'No horizontal scrolling at ' + width + 'x' + height,
     );
-    if (width === 390) {
-      await evaluate(`Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.sharedVictory=data}});Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});document.getElementById('skyRevealShareResult').click()`);
-      await until('document.getElementById("lumenShareDialog").open');
-      // The card is rendered on opening the dialog. Wait for the real PNG encoder before clicking Share.
-      await evaluate('new Promise(resolve=>setTimeout(resolve,350))', true);
-      await evaluate('document.getElementById("lumenShareNative").click()');
-      await until('!!window.sharedVictory');
-      const shared = await evaluate(`(()=>{const {title,text,url,files}=window.sharedVictory;return {title,text,url,files:files?.map(f=>({name:f.name,type:f.type,size:f.size})),time:document.getElementById('skyRevealTime').textContent}})()`);
-      // The scene above is marked as a completed constellation: Partager names it (#881 Lot 1).
-      assert.equal(shared.title, 'Constellation rallumée dans Lumen');
-      assert.equal(shared.url, 'https://lumen.nopuna.fr/decouvrir.html?utm_source=player_share&utm_medium=referral');
-      assert.match(shared.text, /^✦ J’ai rallumé .+ dans Lumen \(quête \d+\)/);
-      assert(shared.text.includes('Temps final ' + shared.time));
-      assert.doesNotMatch(shared.text, /ref=|challenge=|quêtes accomplies/);
-      assert.equal(shared.files?.[0]?.type, 'image/png');
-      assert(shared.files[0].size > 0 && shared.files[0].size < 100_000, 'Share PNG bytes: ' + shared.files[0].size);
-      await until('!document.getElementById("lumenShareDialog").open');
-    }
+    // #932: an ordinary quest (even one completing a constellation) keeps « Défier »;
+    // « Partager ma réussite » is reserved for a completed or mastered Adventure.
+    assert.equal(await evaluate(`document.getElementById('skyRevealShareResult').hidden`), true, 'no result share after an ordinary quest');
     results.push({ width, height, rewards: rewards.count, actions: true, lateBoard: [0, 1000, 5000], podium: true });
   }
   // Reduced motion: the shared celebration renders no particles.
