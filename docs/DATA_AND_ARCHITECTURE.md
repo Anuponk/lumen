@@ -1911,6 +1911,10 @@ from the same rows, ranks frozen in `daily_standings` after close + 6 h, disable
 by the `daily_challenge` feature flag until the gates of #882 are validated.
 Client (PR B): a daily run is an isolated challenge run in `game-screen.js`
 (`socialChallenge.daily`), started from `/?daily=1`; see DAILY_CHALLENGE.md §6 bis.
+Privileges: hosted Supabase grants `EXECUTE` to `anon` on every new `public`
+function, so revoking `PUBLIC` is not enough. `20261122100000_daily_anon_revoke_882.sql`
+revokes `anon` explicitly; only `lumen_daily_today` stays guest-callable. New
+account-only RPCs must revoke `anon` explicitly too.
 
 ### Friends and direct challenges (#35, EPIC #881 Lot 2)
 

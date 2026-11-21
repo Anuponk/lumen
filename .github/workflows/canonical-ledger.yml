@@ -456,3 +456,9 @@ jobs:
             -f scripts/fixtures/daily-challenge-882.sql
           python3 scripts/daily-concurrency.py
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/daily-rollback-882.sql
+          # Supabase grants anon EXECUTE on new public functions by default.
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/supabase-default-anon-grants.sql \
+            -f supabase/migrations/20261122100000_daily_anon_revoke_882.sql \
+            -f supabase/migrations/20261122100000_daily_anon_revoke_882.sql \
+            -f scripts/fixtures/daily-anon-revoke-882.sql

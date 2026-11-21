@@ -1,4 +1,13 @@
 export default Object.freeze({
+  'share.native': "Partager",
+  'share.copyLink': "Copier le lien",
+  'share.copyResult': "Copier le résultat",
+  'share.manual': "Sélectionne et copie ce texte",
+  'share.close': "Fermer",
+  'share.invite': "Inviter des amis",
+  'share.linkCopied': "Lien copié !",
+  'share.resultCopied': "Résultat copié !",
+  'share.unavailable': "Partage indisponible. Tu peux copier le résultat.",
   'ranking.afterConfirmation': "Classement après confirmation",
   'ranking.board': "Classement de la grille",
   'ranking.top': "Les trois meilleurs temps",

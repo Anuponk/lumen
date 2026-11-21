@@ -190,7 +190,10 @@ calendrier dans `daily_puzzles`.
   campagne, jours de 23/25 h, finalisation stable, semaine, administration,
   droits, effacement) ; `daily-concurrency.py` (6 appareils simultanés, une
   tentative et un résultat) ; `fixtures/daily-rollback-882.sql` (répétition du
-  retour arrière).
+  retour arrière) ; `fixtures/supabase-default-anon-grants.sql` puis
+  `20261122100000_daily_anon_revoke_882.sql` et `fixtures/daily-anon-revoke-882.sql`
+  (privilèges par défaut de Supabase reproduits : seul `lumen_daily_today` reste
+  appelable par un invité).
 - **Retour arrière** (après retrait du client, et seulement si aucune migration
   ultérieure n'a renommé `lumen_privacy.policy()`) : supprimer les RPC et
   fonctions `daily_*`, restaurer `policy_before_daily_challenge` en `policy`,
@@ -201,3 +204,9 @@ calendrier dans `daily_puzzles`.
   reste désactivé jusqu'à la validation des gates (§6 et #882). Recette manuelle,
   activation progressive, surveillance et critères de retour arrière :
   [DAILY_CHALLENGE_ROLLOUT.md](DAILY_CHALLENGE_ROLLOUT.md).
+
+## Langue et affichage
+
+L’entrée, l’introduction, le bandeau, le résultat, les deux classements, le bilan hebdomadaire et les textes de partage lisent les catalogues FR/EN. Les dates, rangs et pluriels sont formatés dans la langue de l’application. Les pseudonymes et les classements restent ceux renvoyés par le serveur.
+
+Le jour et la semaine suivent toujours le calendrier de Paris. Le changement de langue pendant la grille actualise le bandeau et conserve la tentative et son chrono. Les aides partagées avec la campagne suivent la couverture du [chantier multilingue](https://github.com/Anuponk/lumen/issues/754).
