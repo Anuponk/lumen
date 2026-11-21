@@ -926,6 +926,8 @@ Tests should assert relationships derived from the content registry rather than 
 
 ## Cloud persistence regression matrix
 
+The [admin activity mail tests](OBSERVABILITY_946.md#configuration-et-recette-opérateur) cover deduplication and role grants in disposable PostgreSQL and capture mail with a simulated provider.
+
 Review navigation (#796) uses `play-review-navigation-tests.mjs` for catalogue,
 normal guard preservation, stale account responses and attempt backup.
 `play-review-navigation-browser-tests.mjs` exercises Mon ciel on a mobile
