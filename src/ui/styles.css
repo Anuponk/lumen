@@ -1761,3 +1761,6 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 .tip[hidden]{display:none!important}
 .my-space #mobileAuthAction.primary{background:linear-gradient(180deg,#9be8f4,#4fb9d3);color:#05202b;border-color:transparent}
 .help-more>summary{font:inherit;font-size:15px;font-weight:800}
+
+/* #962: one-tap diagnostic transmission status. */
+.support-quick-status{margin:4px 12px 8px;font-size:13px;line-height:1.35;overflow-wrap:anywhere}

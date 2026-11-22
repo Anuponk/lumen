@@ -112,6 +112,7 @@ import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
 import {createLumenDialog} from './lumen-dialog.js';
+import {createSupportQuickSend} from './support-quick-send.js';
 import {playMasteryPrelude} from './mastery-prelude.js';
 import {createMenuPause} from './menu-pause.js';
 import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../persistence/play-billing.js';
@@ -1763,6 +1764,7 @@ function renderAuthUserCopy(node=document.getElementById('authUser')){
  if(node)node.textContent=lumenUser?(lumenNickname||(cloudProfileReady&&!cloudProfileDirty&&!cloudProfileFailure&&!canonicalOutboxNotice?t('sync.synced'):t('sync.pending'))):t('account.localProgress');
 }
 function updateAuthUI(){
+ {const quick=document.getElementById('supportQuickSend');if(quick)quick.hidden=!lumenUser||qaActive}
  const purchaseNotice=document.getElementById('purchaseStatus');
  if(purchaseNotice?.dataset?.purchaseOwner&&purchaseNotice.dataset.purchaseOwner!==lumenUser?.id)showPurchaseStatus('');
 
@@ -6091,6 +6093,12 @@ if(supportHost){
  window.addEventListener('storage',event=>{if(event.key==='lumenSupportRevocationsV1')void supportSession.refresh()});
  // Local clock enforces expiry even while the phone stays offline.
  setInterval(()=>{supportSession.changed();const v=supportSession.view();if(v.dossier?.state==='active'&&Date.parse(v.dossier.expires_at)<=Date.now())void supportSession.refresh()},30000);
+}
+// #962: one-tap diagnostic transmission with explicit consent in the Lumen dialog.
+const supportQuickButton=document.getElementById('supportQuickSend');
+if(supportQuickButton){
+ const quick=createSupportQuickSend({session:()=>supportSession,dialog:lumenConfirm,t,button:supportQuickButton,status:document.getElementById('supportQuickStatus')});
+ supportQuickButton.onclick=()=>quick.open();
 }
 const archiveAccountStorage=document.getElementById('archiveAccountStorage');if(archiveAccountStorage)archiveAccountStorage.onclick=compactAccountStorage;
 const exportAccountStorage=document.getElementById('exportAccountStorage');if(exportAccountStorage)exportAccountStorage.onclick=()=>exportLumenRecoveryBundle().catch(()=>{document.getElementById('accountStorageStatus').textContent='Export incomplet : les sauvegardes restent conservées.'});
