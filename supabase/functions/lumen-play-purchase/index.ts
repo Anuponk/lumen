@@ -86,10 +86,15 @@ Deno.serve(async (request) => {
   const isRtdn = new URL(request.url).pathname.endsWith('/lumen-play-purchase/rtdn');
   const token = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
   const subscription = Deno.env.get('LUMEN_PLAY_RTDN_SUBSCRIPTION');
+  let messageKey = null;
+  const deferred = (reason, error = 'rtdn_retry') => {
+    console.warn(JSON.stringify({ event: 'lumen_play_rtdn_deferred', reason, messageKey }));
+    return reply(503, { error });
+  };
   if (isRtdn) {
     const audience = Deno.env.get('LUMEN_PLAY_RTDN_AUDIENCE');
     const email = Deno.env.get('LUMEN_PLAY_RTDN_EMAIL');
-    if (!audience || !email || !subscription) return reply(503, { error: 'rtdn_unavailable' });
+    if (!audience || !email || !subscription) return deferred('push_configuration', 'rtdn_unavailable');
     if (!token) return reply(401, { error: 'authentication_required' });
     try {
       const { payload } = await jwtVerify(token, googleKeys, {
@@ -105,7 +110,9 @@ Deno.serve(async (request) => {
   const packageName = Deno.env.get('LUMEN_PLAY_PACKAGE') || 'com.nopuna.lumen';
   let account = null;
   try { account = JSON.parse(Deno.env.get('LUMEN_PLAY_SERVICE_ACCOUNT') || 'null'); } catch { account = null; }
-  if (!url || !key || !serviceKey || !account?.client_email || !account?.private_key) return reply(503, { error: 'unavailable' });
+  if (!url || !key || !serviceKey || !account?.client_email || !account?.private_key) {
+    return isRtdn ? deferred('verifier_configuration', 'unavailable') : reply(503, { error: 'unavailable' });
+  }
   let body;
   try { body = await request.json(); } catch { return reply(400, { error: 'invalid_request' }); }
   const operator = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -176,6 +183,10 @@ Deno.serve(async (request) => {
       const delivered = new Response(null, { status: 204, headers });
       const notification = parseNotification(body?.message?.data);
       if (!notification || notification.packageName !== packageName) return delivered;
+      const id = body.message?.messageId;
+      if (typeof id === 'string' && /^[0-9]{1,32}$/.test(id)) {
+        messageKey = await sha256hex('lumen-rtdn:' + id);
+      }
       if (notification.testNotification) {
         console.info('Lumen Play RTDN test notification accepted');
         return delivered;
@@ -194,20 +205,24 @@ Deno.serve(async (request) => {
           p_provider: 'play', p_provider_ref: ref,
         });
         if (error) throw Error('lookup_failed');
-        if (!original) return reply(503, { error: 'rtdn_receipt_pending' });
+        if (!original) return deferred('refund_receipt_pending', 'rtdn_receipt_pending');
         if (original.status === 'refunded') return delivered;
         result = await verify(original.product_id.replaceAll('-', '_'), voided.purchaseToken, null, true, voided.orderId);
       } else {
         return delivered;
       }
       const outcome = await result.json();
-      // Only retain messages that may succeed after a provider or database retry.
-      if (result.status >= 500 || result.status === 202 || outcome.error === 'invalid_purchase') {
-        console.warn('Lumen Play RTDN deferred');
-        return reply(503, { error: 'rtdn_retry' });
+      // A paid order awaiting an account decision must remain recoverable via Pub/Sub.
+      if (outcome.error === 'purchase_account_unverified') return deferred('owner_unverified');
+      if (result.status === 202) return deferred('provider_pending');
+      if (outcome.error === 'invalid_purchase') return deferred('provider_purchase_unavailable');
+      if (result.status >= 500) {
+        const reason = ['google_unavailable', 'google_invalid_response', 'unverified_order_identity', 'unverified_order_total']
+          .includes(outcome.error) ? outcome.error : 'verification_unavailable';
+        return deferred(reason);
       }
-      if (outcome.error === 'purchase_account_unverified' || outcome.error === 'purchase_owned_elsewhere') {
-        console.warn('Lumen Play RTDN requires account reconciliation');
+      if (outcome.error === 'purchase_owned_elsewhere') {
+        console.warn(JSON.stringify({ event: 'lumen_play_rtdn_conflict', reason: 'owner_or_product_conflict', messageKey }));
       }
       return delivered;
     }
@@ -274,7 +289,13 @@ Deno.serve(async (request) => {
     const { data: { user }, error: authError } = await client.auth.getUser(token);
     if (authError || !user) return reply(401, { error: 'invalid_session' });
     return await verify(body?.productId, body?.purchaseToken, user.id);
-  } catch {
+  } catch (error) {
+    if (isRtdn) {
+      const reason = ['google_auth_failed', 'google_invalid_response', 'lookup_failed', 'refund_failed',
+        'binding_lookup_failed', 'eligibility_failed', 'record_failed'].includes(error?.message)
+        ? error.message : 'verification_unavailable';
+      return deferred(reason, 'unavailable');
+    }
     console.error('Lumen Play verification unavailable');
     return reply(503, { error: 'unavailable' });
   }
@@ -328,7 +349,7 @@ Deno.serve(async (request) => {
         if (error) throw Error('binding_lookup_failed');
         userId = owner;
       }
-      if (!userId) return reply(409, { error: 'purchase_account_unverified' });
+      if (!userId && accountBinding != null) return reply(409, { error: 'purchase_account_unverified' });
     }
     if (!refundOnly && accountBinding != null && accountBinding !== await sha256hex('lumen-play:' + userId)) {
       return reply(409, { error: 'purchase_owned_elsewhere' });
@@ -354,20 +375,21 @@ Deno.serve(async (request) => {
       if (!settlement) return reply(502, { error: 'unverified_order_total' });
     }
     if (refundOnly) return reply(202, { status: 'pending' });
+    if (!original && accountBinding == null) {
+      // The current TWA does not pass an account binding. Allow only orders the
+      // operator has independently reconciled, after reading the real settlement.
+      const recovery = JSON.parse(Deno.env.get('LUMEN_PLAY_RECOVERY_ORDERS') || '{}');
+      const owner = settlement && Object.hasOwn(recovery, purchase.orderId) && recovery[purchase.orderId];
+      if (typeof owner !== 'string' || !owner) return reply(409, { error: 'purchase_account_unverified' });
+      if (userId && owner !== userId) return reply(409, { error: 'purchase_owned_elsewhere' });
+      userId = owner;
+    }
     if (!original && skyUpgrade) {
       // #865: the tier is checked again once paid. An outdated tier is neither recorded
       // nor acknowledged, so Google refunds it automatically (never a silent grant).
       const { data: eligible, error } = await operator.rpc('lumen_sky_upgrade_eligible', { p_user: userId, p_product: internalProductId });
       if (error) throw Error('eligibility_failed');
       if (eligible !== true) return reply(409, { error: 'offer_not_eligible' });
-    }
-    if (!original && accountBinding == null) {
-      // The current TWA does not pass an account binding. Allow only orders the
-      // operator has independently reconciled, after reading the real settlement.
-      const recovery = JSON.parse(Deno.env.get('LUMEN_PLAY_RECOVERY_ORDERS') || '{}');
-      const owner = settlement && Object.hasOwn(recovery, purchase.orderId) && recovery[purchase.orderId];
-      if (!owner) return reply(409, { error: 'purchase_account_unverified' });
-      if (owner !== userId) return reply(409, { error: 'purchase_owned_elsewhere' });
     }
     const { data: recorded, error: recordError } = await operator.rpc('lumen_record_play_purchase_with_ack', {
       p_provider_ref: ref, p_user_id: userId, p_product_id: internalProductId,
