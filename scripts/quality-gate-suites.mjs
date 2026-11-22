@@ -194,6 +194,7 @@ export const nodeSuites=[
  "mastery-prelude-tests.mjs",
  "menu-pause-tests.mjs",
  "circles-tests.mjs",
+ "i18n-es-tests.mjs",
  "performance-badge-tests.mjs",
  "unlocked-adventure-progress.test.mjs",
  "test-affected-tests.mjs",

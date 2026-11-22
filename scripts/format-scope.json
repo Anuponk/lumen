@@ -19,5 +19,6 @@
   "scripts/menu-pause-browser-tests.mjs",
   "src/ui/circles.js",
   "scripts/circles-tests.mjs",
-  "scripts/circles-browser-tests.mjs"
+  "scripts/circles-browser-tests.mjs",
+  "scripts/i18n-es-tests.mjs"
 ]

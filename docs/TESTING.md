@@ -336,6 +336,7 @@ keeps the existing origin, consent and UTM restrictions.
 `node scripts/locale-tests.mjs` covers ordered device languages, explicit and
 automatic preferences, restricted storage, missing keys and placeholders, and
 number, currency, date and plural formatting, including a partial German fixture.
+`node --test scripts/i18n-es-tests.mjs` (#945) checks that the Spanish catalogue has exactly the French keys, the same placeholders and plural shapes, Spanish ¿/¡ punctuation, no French or raw-key leftovers, no string left identical to French outside a reviewed allowlist (units, symbols, identical words), consistent glossary terms, the untranslated protocol value `SUPPRIMER`, and that French/English are unchanged while `es` stays disabled.
 `node scripts/onboarding-locale-tests.mjs` checks French and English catalogue parity
 and the English copy for the actual pre-action, placement and drag steps. The
 coach-placement browser suite runs the English first-open-to-tutorial path from the public game entry point in
