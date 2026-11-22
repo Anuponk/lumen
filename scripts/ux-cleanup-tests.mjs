@@ -31,7 +31,7 @@ try{
    if(await evaluate(`!document.getElementById('autonomyOverlay').hidden`))await click('#autonomyTry');
    const before=await snapshot();
    check(await evaluate(`!document.getElementById('rulesHelp')&&!document.getElementById('boardNext')&&!document.getElementById('clearHint')&&document.getElementById('rulesModal').hidden`),label+' redundant controls removed');
-   await click('#tutorialHelp');
+   await click('#mobileAccount');await click('#tutorialHelp');
    if(viewport.mobile&&quest<2)console.log('help-debug',label,await evaluate(`(()=>{const h=document.getElementById('tutorialHelp'),r=h.getBoundingClientRect(),m=document.getElementById('rulesModal');return {help:[r.x,r.y,r.width,r.height],hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id,modalHidden:m.hidden,active:document.activeElement.id,coach:document.getElementById('scriptedLearn').getBoundingClientRect().toJSON()}})()`));
    check(await evaluate(`!document.getElementById('rulesModal').hidden&&document.activeElement.id==='closeRulesModal'`),label+' open/focus');
    check(await evaluate(`(()=>{const r=document.querySelector('#rulesModal .shard-rules-card').getBoundingClientRect(),b=document.getElementById('board').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&b.width<=innerWidth&&!!document.getElementById('replayLearning')})()`),label+' help layout');
@@ -41,11 +41,12 @@ try{
    check(await evaluate("!document.getElementById('rulesModal').hidden"),label+' content click keeps help open');
    check(await snapshot()===before,label+' modal content changed quest/teaching state');
    await click('#closeRulesModal');
-   check(await evaluate(`document.getElementById('rulesModal').hidden&&document.activeElement.id==='tutorialHelp'`),label+' close/focus');
-   await click('#tutorialHelp');
+   // #959: help lives in Mon espace (closed on open): focus returns to its button.
+   check(await evaluate(`document.getElementById('rulesModal').hidden&&document.activeElement.id==='mobileAccount'`),label+' close/focus');
+   await click('#mobileAccount');await click('#tutorialHelp');
    await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});
    check(await evaluate(`document.getElementById('rulesModal').hidden`),label+' Escape');
-   await click('#tutorialHelp');
+   await click('#mobileAccount');await click('#tutorialHelp');
    await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,x:5,y:5});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,x:5,y:5});
    check(await evaluate(`document.getElementById('rulesModal').hidden`),label+' backdrop');
    check(await snapshot()===before,label+' modal interactions changed quest/teaching state');
@@ -78,7 +79,7 @@ try{
  check(performanceSource.includes('return 60'),'Badge timing threshold is not the global 60-second rule');
 
  const beforeLearning=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`);
- await click('#tutorialHelp');await click('#replayLearning');await sleep(120);
+ await click('#mobileAccount');await click('#tutorialHelp');await click('#replayLearning');await sleep(120);
  const learningContract=await evaluate(`(()=>({stage:document.getElementById('board').dataset.learningStage,noAdvanceControl:!document.getElementById('scriptedLearnNext'),realCells:document.querySelectorAll('#board .cell').length,allowedCells:document.querySelectorAll('#board .cell[aria-disabled="false"]').length}))()`);
  check(learningContract.realCells>0,'learning uses real grid cells');
  check(learningContract.noAdvanceControl,'learning cannot skip real actions through a Next button');
