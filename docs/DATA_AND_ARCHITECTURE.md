@@ -503,6 +503,14 @@ The [performance monitoring contract](OBSERVABILITY_946.md#détection-des-régre
 
 The [admin activity mail contract](OBSERVABILITY_946.md#notifications-dactivité-950) describes the read-only projection of Auth and commerce events and its separate delivery queue.
 
+### Ranking finish diagnostics (#962)
+
+`lumen_commands.ranking_finish` keeps SQLSTATE `22023` for its existing
+invalid-input and evidence gates. Fixed reason messages identify the guard
+without exposing arguments, player IDs or scores. A missing victory receipt
+still returns `pending`. Only the existing receipt-backed admission path can
+publish a score. Timing, assistance, idempotence and revision checks are
+unchanged. Use the new reason distribution to investigate client behavior.
 ### Google Play review navigation (#796)
 
 `lumen_commands.play_review_access_events` is private. A database operator
