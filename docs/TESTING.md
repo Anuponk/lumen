@@ -459,7 +459,7 @@ and grants are preserved, that a 700 KB profile is accepted and that 1.1 MB is r
 unchanged; support captures keep their own limit. `local-persistence-contract-tests`
 checks the exact client boundary against `MAX_PROFILE_BYTES`.
 
-Cold account recovery (#971): the account-switch browser fixture delays the game entry point, restores an explicit Spanish preference and checks the first visible title, message and sign-out control. It also covers switching to French and recovery in English through an offline reload and reconnection.
+Cold account recovery (#971): the account-switch browser fixture delays the game entry point, restores an explicit Spanish preference and checks the first visible title, message and sign-out control. It also covers switching to French and recovery in English through an offline reload and reconnection. It opens beta feedback in all three languages and checks the active category and both actions, including a live language change while the dialog is open.
 
 Account switch (#711): `account-switch-browser-tests.mjs` uses `scripts/fixtures/multi-account-browser.mjs` (per-account profiles, receipts and wallet; any RPC naming another account than the session is refused and recorded). With 800 ms per RPC it plays A → sign out → B → sign out → A: B is never shown A's progress during its load (screen held), B gets its own next quest, A's pending victory stays durable under B and is credited to A only, no call targets another account, and a failed B load stays held until « Réessayer » installs B. After an explicit sign-out, the neutral screen covers the app (also after reload), with the sign-in dialog opening above it and nothing erased locally.
 
