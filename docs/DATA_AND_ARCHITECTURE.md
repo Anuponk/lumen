@@ -139,6 +139,14 @@ Rollback must retain the epoch/guards; reinstalling an old save would undo the
 requested reset. Existing privacy export/erasure includes this already inventoried
 user-owned authority table and its private originals.
 
+## Admin cockpit indexes (#962)
+
+On 22 November 2026, `lumen_admin_cockpit`, `lumen_admin_quest_metrics` and `lumen_admin_recent_players` took 9.7 s, 7.9 s and 7.3 s when measured one at a time in production. Together they exceeded the 8 s `authenticated` statement timeout, which returned HTTP 500 and SQLSTATE 57014.
+
+- **Cause:** all three read `lumen_commands.cockpit_events`. Because of its `SET search_path`, that function cannot be inlined, so it runs a generic plan. The plan scans the 163,742 analytics events sequentially and decodes `properties` on each one, only to keep 5,287 human, non-QA rows. It also reads every account-linked row in full to find anonymous owners.
+- **Fix:** `20261123010000_admin_cockpit_indexes_962.sql` adds two indexes that match those exact predicates: `analytics_events_human_occurred_idx`, partial on human, non-QA events, and `analytics_events_user_anonymous_idx`, covering owners. Functions, results, permissions and timeouts are unchanged.
+- **CI check:** `scripts/fixtures/admin-cockpit-indexes-962.sql` checks the predicates, that the planner can use both indexes, and that `cockpit_events` returns the same attribution.
+
 ## Prepared technical retention (#316)
 
 `20261022192259_lumen_technical_retention.sql` adds operator-only bounded
