@@ -25,6 +25,7 @@ const SAME_AS_FRENCH = new Set([
   'fact.directorySourcesFor',
   'map.available',
   'sky.adventureStatus',
+  'success.rateFrustrating',
 ]);
 
 test('every French key has a Spanish translation, and nothing more', () => {

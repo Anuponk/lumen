@@ -32,7 +32,7 @@ const profile = {
 const BASE = process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/';
 // Words that legitimately read the same in French and Spanish here.
 const ALLOW =
-  /^(?:LUMEN|Lumen|Ana945|Moi945|VS|QA|XP|OK|Orion|Canal|disponible|Stellarium|Google Play|Google|Hipparcos.*|CC BY-SA.*|LUMEN · v[\w.-]+)$/;
+  /^(?:LUMEN|Lumen|Ana945|Moi945|VS|QA|XP|OK|Orion|Canal|disponible|Stellarium|Google Play|Google|Hipparcos.*|CC BY-SA.*|LUMEN · v[\w.-]+|😵 Frustrante)$/;
 
 function fixture({ locale, signedIn }) {
   return `localStorage.clear();localStorage.setItem('lumen.locale',${JSON.stringify(locale)});localStorage.setItem('lumenSound','off');localStorage.setItem('lumenPushChoice','off');
@@ -148,6 +148,16 @@ async function journeys(locale, width) {
   );
   await sleep(2500);
   await snap('victory');
+  // Secondary result screens, shown directly: their static copy must be translated too.
+  await evaluate(
+    `document.getElementById('skyReveal').hidden=true;document.getElementById('successOverlay').classList.add('show');for(const id of ['remarkableChallenge','difficultyBox','successRetry','successShare'])document.getElementById(id).hidden=false`,
+  );
+  await snap('success-card');
+  await evaluate(
+    `document.getElementById('successOverlay').classList.remove('show');document.getElementById('endgameOverlay').hidden=false`,
+  );
+  await snap('endgame');
+  await evaluate(`document.getElementById('endgameOverlay').hidden=true`);
   const missing = await evaluate('window.__missing||[]');
   return { seen, missing };
 }
