@@ -92,8 +92,10 @@ export function createDailyClient(supabase){
   if(error)throw new Error(error.message||'unavailable');
   return data;
  }
+ const today=()=>rpc('lumen_daily_today');
  return {
-  today:()=>rpc('lumen_daily_today'),
+  today,
+  async discover(previewAllowed){return previewAllowed?today():null},
   begin:operationId=>rpc('lumen_daily_begin',{p_operation_id:operationId}),
   finish:({day,operationId,status,seconds,hint=0,verify=0,guided=0})=>rpc('lumen_daily_finish',{p_day:day,p_operation_id:operationId,p_status:status,p_seconds:seconds,p_hint:hint,p_verify:verify,p_guided:guided}),
   board:day=>rpc('lumen_daily_board',{p_day:day??null}),

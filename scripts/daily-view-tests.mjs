@@ -27,6 +27,10 @@ const alone=renderDailyBoard({participants:1,top:[{nickname:'Moi',score:80,rank:
 assert.match(alone,/Moi \(toi\).*Aucun de tes amis n’a encore joué.*1 participant parmi toi et tes amis/s,'no invented friend');
 
 const calls=[];const client=createDailyClient({rpc:async(name,args)=>{calls.push({name,args});return {data:{ok:true},error:null}}});
+assert.equal(await client.discover(false),null);
+assert.deepEqual(calls,[],'disabled public discovery performs no RPC');
+await client.discover(true);
+assert.equal(calls.pop().name,'lumen_daily_today');
 await client.today();await client.begin('daily-op');await client.finish({day:'2026-11-23',operationId:'daily-op',status:'completed',seconds:120,hint:1});await client.board('2026-11-23');await client.week();
 assert.deepEqual(calls.map(c=>c.name),['lumen_daily_today','lumen_daily_begin','lumen_daily_finish','lumen_daily_board','lumen_daily_week']);
 assert.deepEqual(calls[2].args,{p_day:'2026-11-23',p_operation_id:'daily-op',p_status:'completed',p_seconds:120,p_hint:1,p_verify:0,p_guided:0});
