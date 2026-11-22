@@ -118,6 +118,7 @@ import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,create
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campaign/store-catalogue.js';
 import {setupToggletips,setupExclusiveSections} from "./toggletip.js";
+import {createBetaFeedback,buildFeedbackContext,feedbackSessionId} from "./beta-feedback.js";
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
@@ -342,6 +343,7 @@ function renderSyncStatus(view,{announce=true}={}){
  if(view.status==='critical'||view.status==='persistent'){
   const retry=document.createElement('button');retry.textContent=t('app.retry');retry.onclick=()=>retryAccountCloudSync();status.append(' ',retry);
   const exportButton=document.createElement('button');exportButton.textContent=t('sync.exportSave');exportButton.onclick=()=>exportLumenRecoveryBundle().catch(()=>{});status.append(' ',exportButton);
+  status.append(' ',reportProblemButton('sync_'+view.status,'sync'));
  }
  if(announce&&view.alert&&view.status==='persistent')queueMicrotask(()=>syncPresentation.announced());
 }
@@ -1814,7 +1816,7 @@ function setupGameLocaleSetting(){
   if(!localePreference.setMode(select.value))return;
   translate=localePreference.translator().t;
   translateGameCopy();
-  renderAuthUserCopy();renderMobileAuthCopy();
+  renderAuthUserCopy();renderMobileAuthCopy();betaFeedback?.refresh();
   LEARNING_INTRO=learningIntro(t);
   updateHintButton();updateVerifyButton();
   if(!document.getElementById("hintCard")?.hidden)renderCurrentHint?.();
@@ -3400,8 +3402,28 @@ function displayedCellState(r,c){
 }
 
 const LUMEN_APP_VERSION=appVersion();
-let feedbackKind="bug";
-function openBetaFeedback(){const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");if(!modal)return;modal.hidden=false;if(status)status.textContent="";}
+let betaFeedback=null;
+function openBetaFeedback(options={}){betaFeedback?.open(options)}
+// #960: a « Report this problem » action for blocking errors, prefilled with the error code.
+function reportProblemButton(errorCode,surface='error'){const b=document.createElement('button');b.type='button';b.className='report-problem';b.textContent=t('feedback.reportThis');b.onclick=()=>openBetaFeedback({kind:'bug',surface,errorCode,origin:b});return b}
+// #960: admin report rows (v2 adds status and the allowlisted context) and triage.
+const FEEDBACK_KIND_KEYS={bug:'admin.feedback.kind.bug',question:'admin.feedback.kind.question',idea:'admin.feedback.kind.idea',rule:'admin.feedback.kind.rule',difficulty:'admin.feedback.kind.difficulty',other:'admin.feedback.kind.other'};
+const FEEDBACK_STATUS_KEYS={new:'admin.feedback.status.new',reviewed:'admin.feedback.status.reviewed',fixed:'admin.feedback.status.fixed',closed:'admin.feedback.status.closed'};
+function adminFeedbackRow(x){
+ const c=x.context&&typeof x.context==='object'?x.context:{};
+ const facts=[c.platform,c.browser,c.screen,c.locale,c.quest_ordinal?'Q'+c.quest_ordinal:(x.puzzle_id?'Q'+x.puzzle_id:null),c.surface,c.error_code,c.offline?t('admin.feedback.offline'):null,c.session_id].filter(Boolean).map(adminEsc).join(' · ');
+ const status=x.status&&FEEDBACK_STATUS_KEYS[x.status]?'<select data-feedback-status="'+adminEsc(x.id)+'" aria-label="'+adminEsc(t('admin.feedback.statusLabel',{id:String(x.id)}))+'">'+Object.entries(FEEDBACK_STATUS_KEYS).map(([v,k])=>'<option value="'+v+'"'+(v===x.status?' selected':'')+'>'+adminEsc(t(k))+'</option>').join('')+'</select>':'';
+ return '<div class="admin-feedback"><strong>'+(x.id?'n° '+adminEsc(x.id)+' · ':'')+adminEsc(FEEDBACK_KIND_KEYS[x.kind]?t(FEEDBACK_KIND_KEYS[x.kind]):x.kind)+' · '+adminEsc(x.player_label)+'</strong>'+status+'<p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+(facts?' · '+facts:'')+'</small></div>';
+}
+function bindAdminFeedbackTriage(root){
+ if(!root||root.dataset.triageBound)return;root.dataset.triageBound='1';
+ root.addEventListener('change',async e=>{
+  const select=e.target.closest('select[data-feedback-status]');if(!select||!lumenSupabase)return;
+  select.disabled=true;
+  const {error}=await lumenSupabase.rpc('lumen_admin_feedback_set_status',{p_id:Number(select.dataset.feedbackStatus),p_status:select.value});
+  select.disabled=false;select.classList.toggle('admin-error',!!error);if(error)select.title=t('admin.feedback.statusError');
+ });
+}
 function adminEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function adminNumber(v){return new Intl.NumberFormat("fr-FR").format(Number(v)||0)}
 function adminEventLabel(name){return ({session_start:"Ouverture",attempt_started:"Quête commencée",puzzle_start:"Quête commencée",attempt_completed:"Quête réussie",puzzle_complete:"Quête réussie",attempt_reset:"Réinitialisation",attempt_abandoned:"Abandon",hint_used:"Indice utilisé",verify_used:"Vérification",guided_intervention:"Contrôle guidé"}[name]||name)}
@@ -3594,7 +3616,7 @@ async function loadAdminCockpit(){
  const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth,questMetrics,engagement,versionHealth,criticalIncidents,healthSnapshot]=await Promise.all([
    lumenSupabase.rpc("lumen_admin_cockpit",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_accounts",{p_limit:250}),
-   lumenSupabase.rpc("lumen_admin_feedback",{p_days:days}),
+   lumenSupabase.rpc("lumen_admin_feedback_v2",{p_days:days}).then(r=>r.error?lumenSupabase.rpc("lumen_admin_feedback",{p_days:days}):r),
    lumenSupabase.rpc("lumen_admin_recent_players",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_sync_health",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days}),
@@ -3648,7 +3670,8 @@ async function loadAdminCockpit(){
  }
  const accountRows=document.getElementById("adminAccounts");
  if(accountRows)accountRows.innerHTML=accounts.error?'<tr><td colspan="6">Comptes indisponibles.</td></tr>':(accounts.data||[]).map(x=>'<tr><td>'+adminEsc(x.email||"—")+'</td><td>'+adminEsc(x.nickname||"—")+'</td><td>'+new Date(x.created_at).toLocaleString("fr-FR")+'</td><td>'+(x.last_sign_in_at?new Date(x.last_sign_in_at).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.last_activity?new Date(x.last_activity).toLocaleString("fr-FR"):"—")+'</td><td>'+(questMetrics.data?.current_players?.['u:'+x.user_id]||"—")+'</td></tr>').join("")||'<tr><td colspan="6">Aucun compte.</td></tr>';
- document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":realFeedbacks.map(x=>'<div class="admin-feedback"><strong>'+adminEsc(x.kind)+' · '+adminEsc(x.player_label)+(x.puzzle_id?" · Q"+x.puzzle_id:"")+'</strong><p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+'</small></div>').join("");
+ document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":realFeedbacks.map(adminFeedbackRow).join("");
+ bindAdminFeedbackTriage(document.getElementById("adminFeedbacks"));
  renderAnalyticsDashboard({overview:document.getElementById('analyticsOverview'),journeys:document.getElementById('analyticsJourneys'),technical:document.getElementById('analyticsTechnical')},
   buildAnalyticsDashboard({product:cockpit.error?null:cockpit.data,quests:questMetrics.error?null:questMetrics.data,health,players,observations:observations.error?null:observations.data,catalogue:adminCanonicalCatalogueTree(),days}),
   {authorized,scope:requestUser,onAction:action=>{
@@ -3697,19 +3720,28 @@ function setupAdminCockpit(){
 setupAdminCockpit();
 
 function setupBetaFeedback(){
- const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");
- document.getElementById("betaFeedbackBtn").onclick=openBetaFeedback;
- document.getElementById("feedbackCancel").onclick=()=>modal.hidden=true;
- modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
- document.querySelector(".beta-kinds").addEventListener("click",e=>{const b=e.target.closest("button[data-kind]");if(!b)return;e.preventDefault();feedbackKind=b.dataset.kind;document.querySelectorAll(".beta-kinds button").forEach(x=>x.classList.toggle("selected",x===b));const labels={bug:"Bug",rule:"Règle / indice",difficulty:"Trop difficile",other:"Autre"};document.getElementById("feedbackChoice").textContent="Type sélectionné : "+labels[feedbackKind]});
- document.querySelector('.beta-kinds button[data-kind="bug"]').classList.add("selected");
- document.getElementById("feedbackSend").onclick=async()=>{
-  const btn=document.getElementById("feedbackSend");btn.disabled=true;status.textContent="Envoi…";
-  if(!lumenSupabase){status.textContent="Connexion indisponible.";btn.disabled=false;return}
-  const {error}=await lumenSupabase.rpc("lumen_send_feedback",{p_anonymous_id:lumenAnonymousId,p_kind:feedbackKind,p_message:document.getElementById("feedbackText").value,p_puzzle_id:activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,p_board_state:{stable_quest_id:activeQuest().id,quest_ordinal:activeQuestOrdinal()},p_elapsed_seconds:activeGameSeconds(),p_hints_used:usedHintThisGame?1:0,p_app_version:LUMEN_APP_VERSION,p_user_agent:navigator.userAgent});
-  if(error){status.textContent="Envoi impossible. Réessaie.";console.warn("LUMEN feedback",error);btn.disabled=false;return}
-  trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,{...analyticsContext(),kind:feedbackKind});status.textContent="Merci, retour envoyé.";document.getElementById("feedbackText").value="";setTimeout(()=>{modal.hidden=true;btn.disabled=false},800);
- };
+ // #960: compact report form (bug, question, suggestion) with a receipt, a kept
+ // draft and idempotent retries. The board is untouched: the modal pauses the clock.
+ const feedbackPlatform=()=>{const p=diagnosticContext().platform;return p==='android-web'&&document.referrer.startsWith('android-app://')?'android-twa':p};
+ betaFeedback=createBetaFeedback({document,storage:localStorage,t,
+  context:({surface,errorCode}={})=>{
+   const q=activeQuest(),pack=q?CONTENT_PACKS.find(item=>item.id===q.packId):null;
+   return buildFeedbackContext({appVersion:LUMEN_APP_VERSION,locale:document.documentElement.lang,platform:feedbackPlatform(),
+    userAgent:navigator.userAgent,screen:innerWidth+'x'+innerHeight,standalone:lumenIsStandalone(),online:navigator.onLine,
+    quest:q?{id:q.id,ordinal:q.ordinal,puzzleId:q.legacyIndex===null?undefined:q.legacyIndex+1,inProgress:!!state&&!celebrated}:null,
+    adventure:pack?adventureDisplayName(pack,t):null,surface,errorCode,sessionId:feedbackSessionId(sessionStorage)});
+  },
+  send:async({kind,message,context,clientRef})=>{
+   if(!lumenSupabase)throw Error('offline');
+   const {data,error}=await lumenSupabase.rpc("lumen_send_feedback_v2",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef});
+   if(error){console.warn("LUMEN feedback",error);throw Error(error.message||'failed')}
+   return data;
+  },
+  onSent:()=>trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,analyticsContext())
+ });
+ document.getElementById("betaFeedbackBtn").onclick=e=>openBetaFeedback({surface:'menu',origin:document.getElementById('mobileAccount')});
+ const fromHelp=document.getElementById("helpReportProblem");
+ if(fromHelp)fromHelp.onclick=()=>{document.getElementById("rulesModal").hidden=true;openBetaFeedback({kind:'bug',surface:'help',origin:document.getElementById('mobileAccount')})};
  document.querySelectorAll(".difficulty-choices button").forEach(b=>b.onclick=()=>{
   // Rating is the final action on the completion card: advance immediately.
   const rating=b.dataset.rating,puzzleId=levelIndex+1;
@@ -4230,6 +4262,8 @@ async function captureLegacyCommandVictory(){
     else{retry.remove();await celebrateSuccess()}
    }finally{retry.disabled=false}
   };msg.append(' ',retry);
+  // #960: the player can report a save that could not be confirmed.
+  if(typeof reportProblemButton==='function')msg.append(' ',reportProblemButton(intent?'victory_pending_sync':'victory_local_unconfirmed','victory'));
   recordCloudDiagnostic('legacy_victory_pending',{durable:!!intent,stage:victoryStage,errorCode:classifyCanonicalRecoveryError(error).code});
    if(intent){presentPendingVictory(quest.id,intent.operationId);syncPresentation.failed({durable:true})}else syncPresentation.failed({durable:false});
   if(intent)legacyVictoryRetry=async()=>{if(!sameContext()){legacyVictoryRetry=null;return}const state=await legacyVictoryOutbox.inspect(ownerId);if(state.retryable.some(e=>e.operationId===intent.operationId))await celebrateSuccess()};
