@@ -24,9 +24,13 @@ jobs:
     if: github.event_name == 'schedule' && github.ref == 'refs/heads/main' && vars.LUMEN_CRITICAL_MONITOR_ENABLED == '1'
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    environment: lumen-operations
+    environment:
+      name: production
+      deployment: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Observe public availability and drain critical notices
         env:
           LUMEN_CRITICAL_MONITOR_ENABLED: '1'
