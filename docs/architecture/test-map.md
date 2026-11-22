@@ -371,6 +371,7 @@ remain covered. Real SDK 2.118.0 was additionally checked locally with blocked
 provider requests; that check is distinct from the required fixture transport.
 
 Spanish catalogue (#945) uses `i18n-es-tests.mjs` (parity, placeholders, plurals, punctuation, leftovers, glossary); Spanish activation uses `es-journeys-browser-tests.mjs` (FR-vs-ES journey comparison, no French left, switching, `es-MX` auto-detection).
+Header and Mon espace (#959) use `my-space-browser-tests.mjs` (four header actions, compact first level, exclusive sections, accessible tips, keyboard and focus, FR/EN); tips live in `src/ui/toggletip.js`.
 Locale foundation (#754) uses `locale-tests.mjs` for browser preference resolution,
 storage isolation, catalogue parity and formatting. The welcome browser suite
 mounts an English fixture. `onboarding-locale-tests.mjs` covers the first two quests’

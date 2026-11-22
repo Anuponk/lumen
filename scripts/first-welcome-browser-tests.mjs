@@ -145,7 +145,8 @@ try{
  assert.equal(await visible(),true);const replayBefore=await state();
  await sleep(200);await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});
  assert.equal(await visible(),false);assert.equal(await state(),replayBefore,'Replay preserves paused attempt, cells and profile');
- assert.equal(await evaluate('document.activeElement.id'),'tutorialHelp');results.push('Aide replay, pause, Escape and focus return');
+ // #959: help lives in Mon espace (closed on open): focus returns to its button.
+ assert.equal(await evaluate('document.activeElement.id'),'mobileAccount');results.push('Aide replay, pause, Escape and focus return');
 
  for(const [width,height] of [[320,568],[360,640],[640,360],[1440,900]]){
   await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});

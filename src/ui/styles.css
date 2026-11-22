@@ -1702,3 +1702,61 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 .circles-empty{color:#b9ccda}.circles-note,.circles-personal{font-size:13px;color:#9fb3c8;margin:6px 0}
 .circles-danger{display:flex;flex-wrap:wrap;gap:8px}.circles-danger button{border-color:rgba(255,160,140,.5);color:#ffd9d0}
 @media(max-width:420px){.circles-form button{flex:1 1 100%}.circles-rank{gap:6px;padding:8px}}
+
+/* #959 · Header: four equal icons in one colour; state through the icon, never a permanent tint. */
+.head-actions .head-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;line-height:1;color:#b9cee1;background:#101d2e;border:1px solid #28415b;border-radius:50%}
+.head-actions .head-icon svg{display:block;pointer-events:none}
+.head-actions .head-icon:hover{color:#eafaff;border-color:#3d6283}
+.head-actions .head-icon:focus-visible{outline:3px solid #68e7ff;outline-offset:2px}
+.head-actions .head-icon[aria-expanded="true"]{color:#eafaff;border-color:#68e7ff}
+#soundToggle .icon-sound-off,#soundToggle[data-sound="off"] .icon-sound-on{display:none}
+#soundToggle[data-sound="off"] .icon-sound-off{display:block}
+#soundToggle[data-sound="off"]{color:#7f94ad}
+.account-state-dot{position:absolute;right:2px;bottom:2px;width:9px;height:9px;border-radius:50%;border:2px solid #101d2e;display:none}
+#mobileAccount[data-state="signed"] .account-state-dot{display:block;background:#5fd39a}
+#mobileAccount[data-state="attention"] .account-state-dot{display:block;background:#f4cf78}
+#mobileAccount[data-state="pending"] .account-state-dot{display:block;background:#7f94ad}
+
+/* #959 · Mon espace: identity and the key action first, short rows, one section open at a time. */
+.mobile-auth-popover.my-space:not([hidden]){display:flex!important;flex-direction:column;width:min(330px,calc(100vw - 20px));padding:12px 12px 8px;font-size:13px}
+.my-space-head{display:flex;flex-direction:column;gap:3px}
+.my-space-head>strong{color:#eafaff;font-size:15px}
+.my-space-state{display:flex;align-items:center;gap:6px;color:#9fb3c8;font-size:12px;line-height:1.35}
+.my-space-state #mobileAuthStatus{flex:1 1 auto;min-width:0}
+.my-space #mobileAuthAction{min-height:40px;font-weight:800}
+.my-space #mobileAuthAction:not(.primary){order:5}
+.my-space .administration-entry{order:6}
+.my-space-list{display:flex;flex-direction:column;margin-top:8px;border-top:1px solid #1d3047}
+.my-space .my-space-row,.my-space .my-space-section>summary{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;margin:0;padding:8px 4px;background:none;border:0;border-bottom:1px solid #1d3047;border-radius:0;color:#dceaf6;font-size:13px;font-weight:700;text-align:left;cursor:pointer;box-sizing:border-box}
+.my-space .my-space-row:hover,.my-space .my-space-section>summary:hover{color:#ffffff;background:rgba(104,231,255,.05)}
+.my-space .my-space-row:focus-visible,.my-space .my-space-section>summary:focus-visible{outline:3px solid #68e7ff;outline-offset:-3px}
+.my-space-icon{flex:0 0 22px;display:inline-flex;align-items:center;justify-content:center;color:#8fb3cf;font-size:15px}
+.my-space-language[hidden]{display:none!important}
+.my-space-language label{flex:1 1 auto}
+.my-space-language select{flex:0 1 auto;max-width:55%;min-height:34px;padding:4px 8px;border-radius:9px;background:#0c1828;color:#eafaff;border:1px solid #28415b;font:inherit;font-weight:600}
+.my-space-section>summary{list-style:none}
+.my-space-section>summary::-webkit-details-marker{display:none}
+.my-space-section>summary::after{content:"";margin-left:auto;width:7px;height:7px;border-right:2px solid #7f94ad;border-bottom:2px solid #7f94ad;transform:rotate(45deg) translate(-2px,-2px);transition:transform .15s}
+.my-space-section[open]>summary::after{transform:rotate(225deg) translate(-2px,-2px)}
+.my-space-section[hidden]{display:none!important}
+.my-space-body{padding:4px 2px 10px;border-bottom:1px solid #1d3047}
+.my-space-body p{margin:6px 0}
+.my-space-check{display:inline-flex;align-items:center;gap:8px;min-height:36px}
+
+/* #959 · Tips: explanations on demand, usable by touch, keyboard and screen readers. */
+.tip{display:inline;vertical-align:middle}
+.tip .tip-button{position:relative;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;min-height:26px;margin:0;padding:0;border-radius:50%;border:1px solid #28415b;background:#0c1828;color:#8fb3cf;font-size:14px;line-height:1;cursor:pointer;vertical-align:middle;flex:0 0 auto}
+.tip .tip-button::before{content:"";position:absolute;inset:-9px}
+.tip .tip-button[aria-expanded="true"]{color:#08131f;background:#68e7ff;border-color:#68e7ff}
+.tip .tip-button:focus-visible{outline:3px solid #68e7ff;outline-offset:2px}
+.tip-bubble{position:absolute;z-index:20;left:12px;right:12px;margin-top:30px;padding:10px 12px;border-radius:12px;background:#eafaff;color:#08131f;font-size:12.5px;font-weight:600;line-height:1.45;box-shadow:0 10px 28px rgba(0,0,0,.45);text-align:left;white-space:normal}
+.tip-bubble[hidden]{display:none}
+.shard-rules-card.help-card{position:relative}
+
+/* #959 · Help: rules first; gestures and timer details on demand. */
+.help-more{margin:12px 0;border:1px solid #1d3047;border-radius:12px;padding:0 12px}
+.help-more>summary{display:flex;align-items:center;min-height:44px;font-weight:800;color:#dceaf6;cursor:pointer}
+.help-more[open]>summary{border-bottom:1px solid #1d3047}
+.tip[hidden]{display:none!important}
+.my-space #mobileAuthAction.primary{background:linear-gradient(180deg,#9be8f4,#4fb9d3);color:#05202b;border-color:transparent}
+.help-more>summary{font:inherit;font-size:15px;font-weight:800}

@@ -53,7 +53,6 @@ export default Object.freeze({
   'board.masteryRetry': "○ Maîtrise à retenter",
   'board.speedAvailable': "⚡ Rapidité disponible",
   'rules.open': "Aide et règles",
-  'rules.help': "Aide",
   'rules.title': "Aide LUMEN",
   'rules.close': "Fermer",
   'rules.heading': "Règles du jeu",

@@ -21,5 +21,7 @@
   "scripts/circles-tests.mjs",
   "scripts/circles-browser-tests.mjs",
   "scripts/i18n-es-tests.mjs",
-  "scripts/es-journeys-browser-tests.mjs"
+  "scripts/es-journeys-browser-tests.mjs",
+  "scripts/my-space-browser-tests.mjs",
+  "src/ui/toggletip.js"
 ]

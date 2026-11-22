@@ -53,7 +53,6 @@ export default Object.freeze({
   'board.masteryRetry': "○ Try for Mastery next time",
   'board.speedAvailable': "⚡ Speed badge available",
   'rules.open': "Help and rules",
-  'rules.help': "Help",
   'rules.title': "LUMEN help",
   'rules.close': "Close",
   'rules.heading': "Game rules",
