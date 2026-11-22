@@ -112,7 +112,8 @@ test('a canonical board never renders the dormant legacy challenge banner',async
  const nodes={challengeBanner:{hidden:false},challengeTitle:{textContent:''},challengeCopy:{textContent:''}};
  const ctx={canonicalActiveQuest:next,levelIndex:198,lumenProgress:{stars:{}},document:{getElementById:id=>nodes[id]},
   activeBonusChallenge:()=>null,bonusChallengeFor:()=>null,canonicalQuestForLegacy:()=>({id:'historical-final'}),canonicalQuestMilestone:quest=>quest===next?null:({title:'Grand Chien',copy:'catalogue final'})};
- vm.createContext(ctx);vm.runInContext(functionSource(source,'renderXP'),ctx);ctx.renderXP();
+ ctx.t=(await import('./source-tools.mjs')).frenchT;ctx.constellationDisplayName=(await import('../src/campaign/constellation-facts.js')).constellationDisplayName;
+ vm.createContext(ctx);vm.runInContext(functionSource(source,'localizedChallenge'),ctx);vm.runInContext(functionSource(source,'renderXP'),ctx);ctx.renderXP();
  assert.equal(nodes.challengeBanner.hidden,true);assert.equal(nodes.challengeTitle.textContent,'');
  ctx.canonicalActiveQuest=null;ctx.renderXP();assert.equal(nodes.challengeBanner.hidden,false);assert.equal(nodes.challengeTitle.textContent,'Grand Chien');
 });

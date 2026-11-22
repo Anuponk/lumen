@@ -214,6 +214,11 @@ export const browserSuites=[
     "script": "circles-browser-tests.mjs",
     "output": "ci-circles.json",
     "port": 9272
+  },
+  {
+    "script": "es-journeys-browser-tests.mjs",
+    "output": "ci-es-journeys.json",
+    "port": 9273
   }
 ];
 

@@ -1,4 +1,7 @@
 import vm from 'node:vm';
+import {createTranslator} from '../src/ui/i18n.js';
+// #945: extracted game-screen excerpts render through the catalogue; harnesses use French.
+export const frenchT=createTranslator({locale:'fr'}).t;
 // Parse a complete existing declaration with the JS parser, including templates.
 export function functionSource(source,name){
  const match=new RegExp('(?:async )?function '+name+'\\(').exec(source);
