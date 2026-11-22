@@ -108,6 +108,8 @@ server `record_purchase` (service_role), `sync_purchase_entitlements`,
 
 Critical monitoring (#947): the independent GitHub runner checks public availability and supplies the incident state machine, which reads #398 observations. The existing analytics sync pane acknowledges incidents through the capability-gated RPC. See [critical alerts](../OBSERVABILITY_946.md#alertes-critiques-947).
 
+Performance monitoring (#948): `src/analytics/performance-sampler.js` collects bounded optional timing metrics. `lumen_admin_performance_health` presents grouped comparison data, and the existing external monitor queues P1 notifications. See [performance monitoring](../OBSERVABILITY_946.md#détection-des-régressions-948).
+
 Admin activity notifications (#950): the private activity-mail queue reads verified Auth membership and the purchase ledger. The cPanel worker in `scripts/lumen_activity_mail.py` sends with Brevo. See [supervision](../OBSERVABILITY_946.md).
 
 Payment providers: Google Play #729 `persistence/play-billing.js` → Edge

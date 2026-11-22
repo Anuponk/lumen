@@ -2685,3 +2685,8 @@ Manual acceptance:
 6. Android edge gesture (#821): swipe from each screen edge on a running quest,
    inside the grid, on the ranking podium and between results. Record whether
    the system Back preview appears (Android setting « Navigation par gestes »).
+
+
+### Supervision des performances (#948)
+
+Run `node scripts/performance-sampler-tests.mjs` for opt-in, closed metric payload, owner switching, timers, and bounded animation sampling. The **Performance monitoring tests** workflow uses PostgreSQL 17 with `scripts/fixtures/performance-monitor*.sql` after the activity and incident migrations. It checks permission boundaries, separated cohorts, the sample floor, a simulated slowdown and a hydration failure-rate increase, stable notification keys, retention and revocation. The deployment smoke check and real mailbox receipt remain separate.

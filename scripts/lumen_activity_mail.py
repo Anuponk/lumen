@@ -19,6 +19,7 @@ SUBJECTS = {
     "refund": "Achat remboursé",
     "revocation": "Achat contesté · vérifier le droit d’accès",
     "incident_open": "Incident ouvert",
+    "performance_regression": "P1 · Dégradation de performance",
     "incident_resolved": "Retour à la normale",
 }
 COCKPIT_URL = "https://lumen.nopuna.fr/admin/analytics"
@@ -52,6 +53,32 @@ def timestamp(value):
 
 def format_notice(kind, payload):
     subject = "[Lumen] " + SUBJECTS[kind]
+    if kind == "performance_regression":
+        metrics = {"load": "Chargement", "grid_render": "Construction de la grille",
+                   "grid_input": "Interaction", "long_task": "Traitement bloquant",
+                   "victory_gap": "Fluidité de la victoire", "cloud_rpc": "Appel cloud",
+                   "sync_rpc": "Appel de sauvegarde", "hydration_error_rate": "Échecs de restauration"}
+        metric = metrics[payload["metric"]]
+        version, reference = payload["version"], payload["reference"]
+        if any(not re.fullmatch(r"\d{1,3}\.\d{1,3}\.\d{1,3}\+\d{1,9}", entry) for entry in [version, reference]):
+            raise ValueError("invalid release")
+        samples, prior_samples = payload["samples"], payload["reference_samples"]
+        if any(type(value) is not int or value < 1 for value in [samples, prior_samples]):
+            raise ValueError("invalid sample")
+        if payload["metric"] == "hydration_error_rate":
+            rate, previous = payload["rate"], payload["reference_rate"]
+            if any(type(value) is not int or not 0 <= value <= 10000 for value in [rate, previous]):
+                raise ValueError("invalid failure rate")
+            change = f"Échecs : {rate / 100:.2f} % contre {previous / 100:.2f} %"
+        else:
+            p90, previous = payload["p90"], payload["reference_p90"]
+            if any(type(value) is not int or not 1 <= value <= 60000 for value in [p90, previous]):
+                raise ValueError("invalid duration")
+            change = f"P90 : {p90} ms contre {previous} ms"
+        lines = [f"Mesure : {metric}", f"Version : {version} · référence {reference}",
+                 change,
+                 f"Comptes échantillonnés : {samples} contre {prior_samples}"]
+        return subject, "\n".join([*lines, "", COCKPIT_URL + "?section=sync"])
     if kind in ("incident_open", "incident_resolved"):
         label = {"availability": "Disponibilité du jeu", "hydration": "Restauration du compte",
                  "outbox": "Sauvegarde cloud", "backlog": "File de sauvegardes"}[payload["signature"]]
