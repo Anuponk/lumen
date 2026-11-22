@@ -219,6 +219,11 @@ export const browserSuites=[
     "script": "es-journeys-browser-tests.mjs",
     "output": "ci-es-journeys.json",
     "port": 9273
+  },
+  {
+    "script": "my-space-browser-tests.mjs",
+    "output": "ci-my-space.json",
+    "port": 9274
   }
 ];
 

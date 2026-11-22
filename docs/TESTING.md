@@ -339,6 +339,15 @@ number, currency, date and plural formatting, including a partial German fixture
 `node --test scripts/i18n-es-tests.mjs` (#945) checks that the Spanish catalogue has exactly the French keys, the same placeholders and plural shapes, Spanish ¿/¡ punctuation, no French or raw-key leftovers, no string left identical to French outside a reviewed allowlist (units, symbols, identical words), consistent glossary terms, the untranslated protocol value `SUPPRIMER`, and that French/English are unchanged while `es` is offered in the selector.
 
 `node scripts/es-journeys-browser-tests.mjs` (#945, browser gate) runs the main journeys (first launch, tutorial, account creation, challenge received by link, board, rules, account, social, friends, my challenges, circles, badge rules, sky, share, shop, quest review, victory) once in French and once in Spanish at 360 px and 1440 px, and fails on any visible text or accessible label (aria-label, title, placeholder) identical in both runs outside a short allowlist (nicknames, brand, version, numbers and symbols). It also requires no missing-translation warning, no horizontal scroll, language switching that keeps the attempt and the board, and automatic mode on an `es-MX` browser opening in Spanish.
+
+`node scripts/my-space-browser-tests.mjs` (#959, browser gate) checks, at 360, 390 and 1440 px, for guests and signed-in players:
+- the header has exactly four actions (sound, share, social, Mon espace) with one colour, one size (≥ 36 px), no colour emoji and an accessible name;
+- sound toggles in one gesture;
+- Mon espace holds language, help and report, shows the account section only when signed in and makes sign-in primary for guests;
+- no first-level text longer than 80 characters, no scrolling, 44 px rows, only one section open at a time;
+- a tip opens on tap as a status region inside the screen; Escape closes the tip, then the menu, and focus returns to Mon espace;
+- help opens from Mon espace with gestures and timer folded, and focus returns on close;
+- the English labels follow the language chosen in Mon espace.
 `node scripts/onboarding-locale-tests.mjs` checks French and English catalogue parity
 and the English copy for the actual pre-action, placement and drag steps. The
 coach-placement browser suite runs the English first-open-to-tutorial path from the public game entry point in

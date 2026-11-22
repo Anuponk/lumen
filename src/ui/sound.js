@@ -8,7 +8,8 @@ function halfSound(){tone(560,.16,.08);tone(740,.22,.085,.11)}
 function victorySound(){tone(392,.18,.06);tone(523,.26,.08,.08);tone(659,.32,.085,.18);tone(784,.42,.09,.3);tone(1047,.58,.075,.43)}
 function starArrivalSound(){tone(988,.28,.085);tone(1318,.42,.07,.08)}
 function constellationSound(){[523,659,784,1047].forEach((f,i)=>tone(f,.62,.105,i*.13))}
-function updateSoundToggle(){const b=document.getElementById("soundToggle");if(!b)return;b.textContent=soundEnabled?"🔊":"🔇";b.setAttribute("aria-label",label(soundEnabled))}
+// #959: the SVG icon follows the state through CSS; no emoji, same colour as the other header icons.
+function updateSoundToggle(){const b=document.getElementById("soundToggle");if(!b)return;b.dataset.sound=soundEnabled?"on":"off";b.setAttribute("aria-pressed",String(soundEnabled));b.setAttribute("aria-label",label(soundEnabled))}
 const soundToggle=document.getElementById("soundToggle");if(soundToggle){updateSoundToggle();soundToggle.onclick=()=>{soundEnabled=!soundEnabled;localStorage.setItem("lumenSound",soundEnabled?"on":"off");updateSoundToggle();if(soundEnabled){tone(660,.1,.075);tone(880,.16,.065,.08)}}}
 document.addEventListener("pointerdown",()=>{if(soundEnabled)audioContext()},{once:true});
 

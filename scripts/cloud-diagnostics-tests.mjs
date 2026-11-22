@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {frenchT} from './source-tools.mjs';
 const src=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 for(const key of ['function recordCloudDiagnostic','function cloudDiagnosticReport','flush_blocked','flush_failed','flush_conflict','victory_preflight','victory_dialog','hydration_failed','hydration_ready','Copier le diagnostic'])assert(src.includes(key),key);
 const section=src.slice(src.indexOf('function recordCloudDiagnostic'),src.indexOf('async function flushCloudProfile'));
@@ -47,7 +48,8 @@ const helpers=src.slice(src.indexOf('function showAccountCloudDiagnostic'),src.i
 for(const clipboard of ['ok','denied','missing']){
  const nodes=Object.fromEntries(['accountSyncDiagnosticPanel','accountSyncDiagnosticText','copyAccountSyncDiagnostic'].map(id=>[id,{hidden:true,value:'',textContent:'',focus(){this.focused=true},select(){this.selected=true}}]));
  let copied;
- const context=vm.createContext({localStorage:{},storageReport:async()=>({local:{available:false},browser:{available:false}}),document:{getElementById:id=>nodes[id]},navigator:clipboard==='missing'?{}:{clipboard:{writeText:async value=>{if(clipboard==='denied')throw Error('denied');copied=value}}},syncMobileAuthUI(){},cloudDiagnosticReport:()=>'{"events":[{"event":"hydration_reconciliation","reason":"unclassified_field","fields":["exampleField"]}]}'});
+ // #959: the diagnostic copy comes from the catalogue (French reference).
+ const context=vm.createContext({t:frenchT,localStorage:{},storageReport:async()=>({local:{available:false},browser:{available:false}}),document:{getElementById:id=>nodes[id]},navigator:clipboard==='missing'?{}:{clipboard:{writeText:async value=>{if(clipboard==='denied')throw Error('denied');copied=value}}},syncMobileAuthUI(){},cloudDiagnosticReport:()=>'{"events":[{"event":"hydration_reconciliation","reason":"unclassified_field","fields":["exampleField"]}]}'});
  vm.runInContext(helpers,context);
  vm.runInContext('showAccountCloudDiagnostic()',context);
  assert.equal(nodes.accountSyncDiagnosticPanel.hidden,false);

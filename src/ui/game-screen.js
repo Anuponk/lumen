@@ -117,6 +117,7 @@ import {createMenuPause} from './menu-pause.js';
 import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../persistence/play-billing.js';
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campaign/store-catalogue.js';
+import {setupToggletips,setupExclusiveSections} from "./toggletip.js";
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
@@ -264,7 +265,7 @@ function renderDiagnosticPreference(message=''){
  if(typeof renderPerformanceChoice==='function')renderPerformanceChoice();
  const input=document.getElementById('diagnosticConsent'),status=document.getElementById('diagnosticConsentStatus');
  if(input){input.checked=diagnosticEnabled;input.disabled=!lumenUser||qaActive||diagnosticPending}
- if(status)status.textContent=message||(!lumenUser?'Connecte-toi pour gérer ce choix.':diagnosticEnabled?'Partage des diagnostics détaillés activé.':'Partage des diagnostics détaillés désactivé.');
+ if(status)status.textContent=message||t(!lumenUser?'account.diagnosticSignIn':diagnosticEnabled?'account.diagnosticOn':'account.diagnosticOff');
 }
 async function requestDiagnosticPreference(client,enabled){
  const controller=new AbortController();let timer;
@@ -292,20 +293,20 @@ async function refreshDiagnosticPreference(force=false){
   const pref=await requestDiagnosticPreference(client,local?.owner===user&&local.pending?false:undefined);
   if(lumenUser?.id!==user||lumenSupabase!==client)return;
   diagnosticEnabled=pref.enabled;saveDiagnosticChoice(user,pref.enabled);incidentReporter.refresh();renderDiagnosticPreference();
- }catch{renderDiagnosticPreference('Choix serveur indisponible. Le jeu et les sauvegardes restent accessibles.')}
+ }catch{renderDiagnosticPreference(t('account.diagnosticUnavailable'))}
 }
 async function changeDiagnosticPreference(){
  const input=document.getElementById('diagnosticConsent'),user=lumenUser?.id,client=lumenSupabase;
  if(!input||!user||!client||diagnosticPending)return;
  const enabled=input.checked;diagnosticPending=true;
  if(!enabled){diagnosticEnabled=false;incidentReporter.clear();saveDiagnosticChoice(user,false,true)}
- renderDiagnosticPreference('Enregistrement du choix…');
+ renderDiagnosticPreference(t('account.diagnosticSaving'));
  try{
   const pref=await requestDiagnosticPreference(client,enabled);
   if(lumenUser?.id!==user||lumenSupabase!==client)return;
   diagnosticEnabled=pref.enabled;saveDiagnosticChoice(user,pref.enabled);incidentReporter.clear();incidentReporter.refresh();
-  renderDiagnosticPreference(pref.enabled?'Partage activé.':'Partage désactivé et diagnostics détaillés effacés côté serveur.');
- }catch{renderDiagnosticPreference(enabled?'Activation non confirmée ; aucun nouveau partage.':'Partage arrêté ici ; effacement serveur en attente de connexion.')}
+  renderDiagnosticPreference(t(pref.enabled?'account.diagnosticSharingOn':'account.diagnosticSharingOffErased'));
+ }catch{renderDiagnosticPreference(t(enabled?'account.diagnosticActivationUnconfirmed':'account.diagnosticStopPending'))}
  finally{diagnosticPending=false;const checkbox=document.getElementById('diagnosticConsent');if(checkbox){checkbox.checked=diagnosticEnabled;checkbox.disabled=!lumenUser||qaActive}}
 }
 window.addEventListener('online',()=>queueDiagnosticPreferenceRefresh(true));
@@ -529,7 +530,8 @@ function showAccountCloudDiagnostic(){
  const panel=document.getElementById("accountSyncDiagnosticPanel"),text=document.getElementById("accountSyncDiagnosticText"),copy=document.getElementById("copyAccountSyncDiagnostic");
  if(!panel||!text)return;
  text.value=cloudDiagnosticReport();panel.hidden=false;
- if(copy)copy.textContent="Copier le diagnostic";
+ const section=document.getElementById('mySpaceData');if(section)section.open=true;
+ if(copy)copy.textContent=t('account.copyDiagnostic');
  void refreshAccountStorage();
 }
 let storageRefreshVersion=0;
@@ -1600,7 +1602,7 @@ function renderMobileAuthCopy(){
   status.textContent=t('account.checkingConnection');
   const summary=document.getElementById("accountSyncDiagnosticSummary");if(summary)summary.textContent=status.textContent;
   action.textContent=t('account.checking');action.disabled=true;action.title="";
-  icon.textContent="…";icon.setAttribute("aria-label",t('account.connectionLabel'));
+  icon.dataset.state="pending";icon.setAttribute("aria-label",t('mySpace.title')+" · "+t('account.connectionLabel'));
   return;
  }
  const signedIn=Boolean(lumenUser);
@@ -1610,9 +1612,9 @@ function renderMobileAuthCopy(){
  const syncMessage=(pendingNotice&&cloudProfileFailure?pendingNotice+" · "+cloudReconciliationMessage(cloudProfileFailure):pendingNotice)||(domainState.wallet==='review'&&domainState.confirmedReplayIds.length?t('sync.reviewHistory'):cloudProfileFailure?cloudReconciliationMessage(cloudProfileFailure):navigator.onLine===false?t('sync.accountOffline'):!cloudProfileReady?t('sync.accountSyncing'):cloudProfileBusy||cloudProfileDirty?t('sync.saving'):(lumenNickname?lumenNickname+" \u00b7 ":"")+t('sync.synced'));
  status.textContent=recovering?t('account.passwordChoose'):signedIn?syncMessage:t('account.localProgress');
  const summary=document.getElementById("accountSyncDiagnosticSummary");if(summary)summary.textContent=status.textContent;
- action.textContent=signedIn?t('account.logout'):t('account.chooseSignIn');
- icon.textContent=signedIn?"●":"♙";
- icon.setAttribute("aria-label",signedIn?t('account.connectedLabel'):t('account.guestLabel'));
+ action.textContent=signedIn?t('account.logout'):t('account.chooseSignIn');action.classList.toggle('primary',!signedIn);
+ icon.dataset.state=signedIn?(pendingNotice||cloudProfileFailure?"attention":"signed"):"guest";
+ icon.setAttribute("aria-label",t('mySpace.title')+" · "+(signedIn?t('account.connectedLabel'):t('account.guestLabel')));
  action.disabled=!signedIn&&!lumenSupabase;
  action.title=action.disabled?t('account.signInUnavailable'):"";
  return pendingNotice;
@@ -1634,7 +1636,7 @@ function syncMobileAuthUI(){
  if(!signedIn){sessionStorage.removeItem("lumenPasswordRecoveryPending");if(["form","saving"].includes(passwordRecoveryFlow().state.phase))passwordRecoveryFlow().sessionMissing()}
  const show=(id,visible)=>{const el=document.getElementById(id);if(el)el.hidden=!visible};
  if(!signedIn){const editor=document.getElementById("accountProfileEditor");if(editor)editor.dataset.open="false"}
- show("editAccountProfile",signedIn);
+ show("editAccountProfile",signedIn);show("mySpaceAccount",signedIn);
  show("accountProfileEditor",signedIn&&document.getElementById("accountProfileEditor")?.dataset.open==="true");
  show("guestSaveExplainer",!signedIn);
  const pendingNotice=renderMobileAuthCopy();
@@ -1835,7 +1837,8 @@ function setupGameLocaleSetting(){
 function setupRulesHelp(){
  const open=document.getElementById("tutorialHelp"),modal=document.getElementById("rulesModal"),close=document.getElementById("closeRulesModal"),replay=document.getElementById("replayLearning");
  if(!open||!modal||!close)return;
- const hide=(restoreFocus=true)=>{modal.hidden=true;if(restoreFocus)open.focus()};
+ // #959: help lives in Mon espace, which closes on open: focus returns to its button.
+ const hide=(restoreFocus=true)=>{modal.hidden=true;if(restoreFocus)(open.closest('[hidden]')?document.getElementById('mobileAccount'):open)?.focus()};
  // #881 Lot 1: help stays readable during a challenge, but learning replays would
  // swap the challenged grid and restart its clock, so they are not offered there.
  open.onclick=()=>{for(const id of ['replayLearning','replayIntroduction']){const control=document.getElementById(id);if(control)control.hidden=!!socialChallenge}modal.hidden=false;close.focus()};
@@ -1861,8 +1864,11 @@ function setupDailyInfo(){
 function setupMobileAuth(){
  const menu=document.getElementById("mobileAuthPopover"),account=document.getElementById("mobileAccount"),action=document.getElementById("mobileAuthAction");
  if(!menu||!account||!action)return;
- account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden};
- menu.onclick=(e)=>e.stopPropagation();
+ account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden;account.setAttribute("aria-expanded",String(!menu.hidden))};
+ menu.onclick=(e)=>{if(e.target.closest("[data-closes-menu]")){menu.hidden=true;account.setAttribute("aria-expanded","false")}e.stopPropagation()};
+ // #959: Escape closes Mon espace (after any open tip) and returns focus to its button.
+ menu.addEventListener("keydown",e=>{if(e.key!=="Escape"||menu.hidden)return;menu.hidden=true;account.setAttribute("aria-expanded","false");account.focus()});
+ setupToggletips(document);setupExclusiveSections(menu);
  setupCredits(document);
  const invite=document.getElementById("inviteLumenFriends");
  // #932: « Partager Lumen » (header, Mon Ciel) and « Inviter des amis » share one
@@ -1880,7 +1886,7 @@ function setupMobileAuth(){
   panel.hidden=!panel.hidden;
   adminToggle.setAttribute("aria-expanded",String(!panel.hidden));
  };
- document.addEventListener("click",()=>{if(!menu.hidden&&!menu.classList.contains("password-recovery"))menu.hidden=true});
+ document.addEventListener("click",()=>{if(!menu.hidden&&!menu.classList.contains("password-recovery")){menu.hidden=true;account.setAttribute("aria-expanded","false")}});
  action.onclick=async()=>{
    menu.hidden=true;
    if(authSessionPending||!lumenSupabase)return;
@@ -6003,7 +6009,7 @@ async function bootGame(){
     onReplayStart:()=>pauseGameClock(),
     onReturn:({replay,origin})=>{
      updateAttemptUI();
-     if(replay){(origin?.isConnected&&!origin.closest('[hidden]')?origin:document.getElementById('tutorialHelp'))?.focus();return}
+     if(replay){(origin?.isConnected&&!origin.closest('[hidden]')?origin:document.getElementById('mobileAccount'))?.focus();return}
      const target=document.getElementById('learningCoachNext');
      if(target&&!target.hidden)target.focus();else document.getElementById('attemptMask')?.focus();
     }});

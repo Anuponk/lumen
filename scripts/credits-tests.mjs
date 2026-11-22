@@ -13,6 +13,6 @@ assert.ok(panel.includes(CREDITS_ATTRIBUTION),'The exact attribution is shown');
 for(const href of Object.values(CREDITS_LINKS))assert.ok(panel.includes(href.replace(/&/g,'&amp;')),'Link present: '+href);
 assert.ok(doc.includes('Données de constellations Western © équipe Stellarium, CC BY-SA ; coordonnées stellaires Hipparcos II'),'Same attribution as the repository documentation');
 assert.match(js,/import \{setupCredits\} from "\.\/credits\.js";/);
-assert.match(js,/ menu\.onclick=\(e\)=>e\.stopPropagation\(\);\n setupCredits\(document\);/);
+assert.match(js,/ menu\.onclick=\(e\)=>\{[^\n]*e\.stopPropagation\(\)\};[\s\S]{0,400}?\n setupCredits\(document\);/);
 assert.match(notice,/stellarium-western-figures\.json/);assert.match(notice,/CC BY-SA/);assert.match(notice,/ne s’applique pas au jeu/);
 console.log('credits-tests: account-menu attribution, links and data notice OK');

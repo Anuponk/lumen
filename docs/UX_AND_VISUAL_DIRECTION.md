@@ -28,6 +28,18 @@ The public discovery page is available in French at `/decouvrir.html` and in Eng
 
 The public game exposes a language selector in the rules dialog. The player can choose Automatic, Français or English. Automatic selects the first supported browser language and falls back to French. The explicit choice is stored on the device. Switching updates the translated text and accessibility labels without rebuilding the board or restarting the attempt. English covers onboarding, board controls, help, verification feedback, the puzzle leaderboard, personal records and the quest review’s performance copy. The Daily Challenge surfaces also use FR/EN, including both leaderboards, the weekly recap and its share text. My Sky navigation, its guided tour and quest cards, sign-in and password recovery, primary sync notices, purchase offers and purchase confirmation also use FR/EN. The controls and successive explanations of logical hints follow the current language, including row and column coordinates. Guided-check conflict explanations, the accessible Guardian label and the quest 11 autonomy prompt also update when the player changes language. Constellation names and the 88 cultural facts follow the selected language in My Sky. The [public constellation directory](../constellations/index.html) also has an [English edition](../constellations/en.html). Adventure names in My Sky, offers and purchase confirmations and the current quest label and difficulty, and the achievement recap after a quest also follow the selected locale. The badge rules, replay cooldown and reward or pending-save labels in the victory view use the same locale. The legal notice, privacy policy, sales terms and account-deletion request have English pages. Some status messages and notification payloads can still appear in French. The remaining translations, cross-device preference, native Android app language, transactional copy, notifications and Play listing are tracked in #754.
 
+### Header and « Mon espace » (#959)
+
+- **Header:** four actions, in this order: Sound (toggles in one tap), Share, Social, Mon espace (profile icon).
+  - All four are monochrome SVGs in the same colour and size.
+  - State shows in the icon itself (muted speaker, a dot on the profile, the social notification badge), never as a permanent tint.
+- **Mon espace, first level:** the title, the state on one line (with a tip), the key action, then short rows: Language, Help and rules, Report a problem.
+- **Secondary details:** in sections that unfold, one open at a time (Account, Data and diagnostics, About). Administration stays last.
+- **Explanations:** tips (`src/ui/toggletip.js`), never paragraphs next to actions.
+  - A tip opens by tap, Enter or Space and is announced as a status.
+  - Escape closes the tip first, then the menu; focus returns to the button that opened it.
+- **Help:** the rules come first; gestures and timer sit in a folded section; learning replays stay available.
+
 ### Spanish (#945)
 
 `src/ui/locales/es/` mirrors every French domain (1 387 keys, same keys,

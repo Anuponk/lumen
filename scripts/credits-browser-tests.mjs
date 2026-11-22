@@ -19,7 +19,8 @@ try{
  await evaluate(`(()=>{const w=document.getElementById('firstWelcome');if(w)w.hidden=true;document.getElementById('mobileAccount').click()})()`);
  await until('!document.getElementById("mobileAuthPopover").hidden','account menu');
  assert.equal(await evaluate('document.getElementById("creditsPanel").hidden'),true,'Credits start collapsed');
- await evaluate(`document.getElementById('showCredits').click()`);
+ // #959: credits live in the « À propos » section of Mon espace.
+ await evaluate(`document.getElementById('mySpaceAbout').open=true;document.getElementById('showCredits').click()`);
  await until('!document.getElementById("creditsPanel").hidden','credits panel');
  await evaluate(`document.getElementById('creditsPanel').scrollIntoView({block:'nearest'})`);
  await sleep(200);
