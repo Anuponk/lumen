@@ -36,4 +36,6 @@ export default Object.freeze({
   'purchase.account': "Tu compra está vinculada a tu cuenta: la recuperas automáticamente en todos tus dispositivos conectados.",
   'purchase.exploreSky': "Explorar mi cielo",
   'purchase.exploreAdventure': "Explorar la aventura",
+  'account.performanceConsent': "Compartir mediciones de rendimiento",
+  'account.performanceConsentCopy': "Esta opción es voluntaria y mide tiempos en este dispositivo. Está desactivada al principio. Las mediciones se conservan como máximo 14 días.",
 });
