@@ -2700,3 +2700,5 @@ The `health-cockpit.yml` PostgreSQL job runs `scripts/fixtures/health-cockpit.sq
 ### External monitor deployment configuration (#946)
 
 Run `python -B scripts/lumen_critical_monitor_tests.py` and `python -B scripts/lumen_activity_mail_tests.py` with their synthetic RPCs and transport. When changing `.github/workflows/lumen-external-monitor.yml`, verify the public probe remains manually available without secrets, and the notification job is scheduled only on `main` with its activation flag. The job shares the web release's `Production` environment and uses its secrets without creating a deployment record. Verify the environment's main-only policy before adding operational secrets. A real receipt test still requires approved access to SoldeZen and Brevo and a test mailbox.
+
+`lumen-mail-receipt.yml` exécute également les quatre scénarios et leur rejeu dans PostgreSQL jetable sur PR, avec un transport simulé. Le lancement manuel sur `main` vérifie le schéma API SoldeZen en lecture seule et soumet les quatre avis synthétiques à Brevo. L'acceptation Brevo et la réception en boîte sont deux contrôles distincts.
