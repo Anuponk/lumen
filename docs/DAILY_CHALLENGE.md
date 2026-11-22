@@ -24,6 +24,11 @@ serveur). L'expérience joueur et le thème (PR B), puis le bilan et la mesure
 
 Aucun nouveau moteur de grille, de classement, d'amitié ou de chronomètre.
 
+Le lancement public et l'ouverture de Mon ciel ne sondent pas le défi
+désactivé. La découverte passe par les capacités existantes `daily_preview`
+et `analytics_cockpit`. Le serveur décide encore si l'aperçu est disponible.
+Un lien explicite et une tentative déjà en attente gardent leurs chemins
+existants. La réactivation publique fait l'objet du suivi #882.
 ## 2. Modèle de données (migration additive `20261122090000_daily_challenge_882.sql`)
 
 | Objet | Rôle | Propriétaire / effacement |

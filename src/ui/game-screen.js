@@ -2379,7 +2379,8 @@ const dailyDuration=ms=>formatRemaining(ms,t);
 function dailyUrl(training=false){const u=new URL(location.origin+location.pathname);u.searchParams.set('daily','1');if(training)u.searchParams.set('training','1');return u.toString()}
 async function refreshDailyEntry(){
  const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek');if(!entry||socialChallenge)return;entry.onclick=()=>{location.href=dailyUrl()};
- try{const today=await dailyClient.today();entry.hidden=!today?.enabled;if(today?.enabled)document.getElementById('dailyEntryState').textContent=t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
+ const previewAllowed=!!lumenUser&&(hasInternalCapability('daily_preview')||hasInternalCapability('analytics_cockpit'));
+ try{const today=await dailyClient.discover(previewAllowed);entry.hidden=!today?.enabled;if(today?.enabled)document.getElementById('dailyEntryState').textContent=t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
   if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}}
  catch{entry.hidden=true;if(week)week.hidden=true}
 }

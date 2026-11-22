@@ -31,6 +31,7 @@ function fixture({signedIn,daily}){
    onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
    rpc:async(name,args={})=>{
     window.__socialCalls.push(name);
+    if(name==='lumen_get_internal_capabilities')return {data:${signedIn}&&${daily}?['daily_preview']:[]};
     if(name==='lumen_daily_today')return {data:${daily}?{enabled:true,day:'2026-11-23',quest_id:'base-q012',grid_revision:0,closes_at:closes,server_now:new Date().toISOString()}:{enabled:false,day:'2026-11-23',server_now:new Date().toISOString()}};
     if(name==='lumen_ranking_account')return {data:{nicknameRequired:false,withdrawn:false,participating:false}};
     if(name==='lumen_restore_profile')return {data:${JSON.stringify(profile)}};

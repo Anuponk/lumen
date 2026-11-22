@@ -18,7 +18,7 @@ const board=(me)=>({day:DAY,final:false,closes_at:'2026-11-23T23:00:00Z',my_run:
  general:{participants:12,top:[{nickname:'Ana',score:95,rank:1,mine:false},{nickname:'Bo',score:95,rank:1,mine:false},{nickname:'Cy',score:120,rank:3,mine:false}],me:me?.status==='completed'?{rank:5,score:me.score}:null},
  friends:{participants:1,top:me?.status==='completed'?[{nickname:'Moi',score:me.score,rank:1,mine:true}]:[],me:me?.status==='completed'?{rank:1,score:me.score}:null}});
 
-function fixture({signedIn,enabled=true,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr'}){
+function fixture({signedIn,enabled=true,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr'}){
  return `
   localStorage.clear();
   localStorage.setItem('lumen.locale',${JSON.stringify(locale)});
@@ -37,6 +37,7 @@ function fixture({signedIn,enabled=true,run=null,beginResume=false,finishFails=f
    rpc:async(name,args={})=>{
     window.__allRpc=(window.__allRpc||[]).concat(name);
     if(/^lumen_daily_/.test(name))window.__dailyCalls.push({name,args});
+    if(name==='lumen_get_internal_capabilities')return {data:${preview}?['daily_preview']:[]};
     if(name==='lumen_daily_today')return {data:${enabled}?{enabled:true,day:${JSON.stringify(DAY)},quest_id:${JSON.stringify(quest.id)},grid_revision:${quest.gridRevision},closes_at:closes,server_now:now()}:{enabled:false,day:${JSON.stringify(DAY)},server_now:now()}};
     if(name==='lumen_daily_week'){const mine=run?.status==='completed';
      return {data:{monday:DAY,days:Array.from({length:7},(_,i)=>i===0?(mine?{day:DAY,state:'completed',final:false,run,general_rank:5,general_total:12,friends_rank:1,friends_total:1}:{day:DAY,state:run?.status||'missed',final:false}):{day:'2026-11-'+(23+i),state:'future'})}}}
@@ -72,6 +73,16 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
  const results=[];
 
+ // Ordinary traffic does not discover the feature on boot or on opening the map.
+ for(const signedIn of [false,true]){
+  await open({send,evaluate},url,{signedIn,enabled:false},{daily:false});
+  await acknowledgeLearningMilestones(evaluate);
+  await evaluate("document.getElementById('openSky').click()");
+  await sleep(400);
+  assert.equal((await calls(evaluate,'lumen_daily_today')).length,0,'disabled public discovery never queries Supabase');
+  assert.equal(await evaluate("document.getElementById('openDaily').hidden"),true);
+ }
+
  // Disabled: no entry in « Mes quêtes », ?daily=1 falls back to the campaign.
  await open({send,evaluate},url,{signedIn:false,enabled:false});
  await sleep(400);
@@ -81,7 +92,7 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  results.push({kind:'disabled'});
 
  // Entry from « Mes quêtes » (Mon ciel).
- await open({send,evaluate},url,{signedIn:false},{daily:false});
+ await open({send,evaluate},url,{signedIn:true,preview:true},{daily:false});
  await acknowledgeLearningMilestones(evaluate);
  await evaluate(`document.getElementById('openSky').click()`);
  await until(evaluate,`!document.getElementById('openDaily').hidden`,'daily entry');
