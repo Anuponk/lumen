@@ -144,7 +144,8 @@ user-owned authority table and its private originals.
 On 22 November 2026, `lumen_admin_cockpit`, `lumen_admin_quest_metrics` and `lumen_admin_recent_players` took 9.7 s, 7.9 s and 7.3 s when measured one at a time in production. Together they exceeded the 8 s `authenticated` statement timeout, which returned HTTP 500 and SQLSTATE 57014.
 
 - **Cause:** all three read `lumen_commands.cockpit_events`. Because of its `SET search_path`, that function cannot be inlined, so it runs a generic plan. The plan scans the 163,742 analytics events sequentially and decodes `properties` on each one, only to keep 5,287 human, non-QA rows. It also reads every account-linked row in full to find anonymous owners.
-- **Fix:** `20261123010000_admin_cockpit_indexes_962.sql` adds two indexes that match those exact predicates: `analytics_events_human_occurred_idx`, partial on human, non-QA events, and `analytics_events_user_anonymous_idx`, covering owners. Functions, results, permissions and timeouts are unchanged.
+- **Fix:** `20261123010000_admin_cockpit_indexes_962.sql` adds two indexes that match those exact predicates: `analytics_events_human_occurred_idx`, partial on human, non-QA events, and `analytics_events_user_anonymous_idx`, covering owners. It also makes the `owners` CTE of `cockpit_events` `MATERIALIZED`. Results, permissions and timeouts are unchanged.
+- **Production lesson:** the indexes alone made the RPCs slower (9.0 to 9.5 s). The planner underestimates the human rows and re-aggregated the inlined `owners` once per event (5,287 loops, 3.7 M heap fetches). Computed once, the full history needs 26,809 buffers instead of 2.2 M.
 - **CI check:** `scripts/fixtures/admin-cockpit-indexes-962.sql` checks the predicates, that the planner can use both indexes, and that `cockpit_events` returns the same attribution.
 
 ## Prepared technical retention (#316)

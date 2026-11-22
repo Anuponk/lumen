@@ -19,6 +19,10 @@ begin
  assert (select indexdef from pg_indexes where schemaname='lumen' and indexname='analytics_events_user_anonymous_idx')
   like '%(anonymous_id, user_id) WHERE (user_id IS NOT NULL)', 'owner index covers anonymous_id and user_id';
 
+ -- `owners` is computed once (the inlined CTE was re-aggregated per event in production).
+ assert position('owners as materialized' in (select prosrc from pg_proc where oid='lumen_commands.cockpit_events(integer)'::regprocedure))>0,
+  'cockpit_events materializes owners';
+ assert not has_function_privilege('authenticated','lumen_commands.cockpit_events(integer)','execute'), 'internal function stays private';
  select count(*) into events_before from lumen_commands.cockpit_events(null);
  insert into auth.users(id) values (owner);
  insert into lumen.analytics_events(user_id, anonymous_id, event_name, session_id, occurred_at, properties) values
