@@ -38,7 +38,7 @@ export default Object.freeze({
   'account.google': "Continuar con Google",
   'app.or': "o",
   'account.email': "Dirección de correo",
-  'account.emailExample': "tu@correo.es",
+  'account.emailExample': "tu@example.com",
   'account.password': "Contraseña",
   'account.passwordPlaceholder': "Tu contraseña",
   'account.showPassword': "Mostrar la contraseña",
