@@ -403,6 +403,17 @@ remboursement reçu avant son reçu sera réessayé. Un achat dépourvu de
 liaison vérifiée peut nécessiter un rapprochement privé. Le registre
 rejette une réactivation après remboursement.
 
+#962 : un achat payé sans compte vérifié reste à traiter dans Pub/Sub. Pour un
+achat historique sans liaison, seule la correspondance opérateur
+`LUMEN_PLAY_RECOVERY_ORDERS` permet à RTDN de poursuivre après vérification du
+règlement, de l'identité de la commande, du jeton et du SKU auprès de Google.
+Vérifier la rétention, l'abonnement de récupération du topic d'échec et l'âge
+du plus ancien message avant de livrer cette version Edge. La catégorie
+`owner_unverified` est une demande de rapprochement. Les catégories
+`provider_pending` et `refund_receipt_pending` décrivent des traitements
+différés. Le journal n'inclut que des raisons prédéfinies et, après
+authentification du push, une empreinte de l'identifiant de livraison Pub/Sub.
+L'empreinte déduplique les redélivraisons dans les compteurs.
 [Configurer RTDN](https://developer.android.com/google/play/billing/getting-ready#configure-rtdn).
 [Authentifier l'abonnement push](https://docs.cloud.google.com/pubsub/docs/authenticate-push-subscriptions).
 

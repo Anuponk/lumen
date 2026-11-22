@@ -2472,6 +2472,11 @@ retry without a live client. The canonical ledger gate replays both migrations
 and verifies retry leases, account erasure, mixed-provider distinct Adventure
 counting, refunds, and preservation of mastery and admin rights.
 
+For #962, `play-purchase-handler-tests.mjs` proves that an independently
+reconciled unbound order can be restored by RTDN, after Google settlement and
+identity proof. An unresolved owner remains retryable without any ledger
+write. The tests distinguish provider failure from missing ownership and
+verify that redelivery uses the same redacted diagnostic key.
 For #729 RTDN, the handler mocks prove the expected Google identity checks,
 bound registration without a browser session, pending redelivery, and verified
 refunds and duplicates. The SQL fixture covers binding preparation, lookup
