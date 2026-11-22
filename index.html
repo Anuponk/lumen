@@ -100,10 +100,10 @@
 <div id="adminAnalyticsAccess" class="analytics-access" hidden role="status"><p>Une connexion avec les droits d’administration est nécessaire pour ouvrir Analytics.</p><a href="/">Retour à Lumen</a></div>
 <div id="feedbackModal" class="beta-modal" hidden role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
  <div class="beta-card">
-  <h2 id="feedbackTitle">Retour bêta</h2><p>Le contexte de la quête sera joint automatiquement.</p>
-  <div class="beta-kinds"><button type="button" data-kind="bug">🐞 Bug</button><button type="button" data-kind="rule">? Règle / indice</button><button type="button" data-kind="difficulty">🧠 Trop difficile</button><button type="button" data-kind="other">… Autre</button></div>
-  <div id="feedbackChoice" style="font-size:13px;color:#68e7ff;margin:-4px 0 10px">Type sélectionné : Bug</div><textarea id="feedbackText" maxlength="2000" placeholder="Que s'est-il passé ? (facultatif)"></textarea>
-  <div class="beta-actions"><button id="feedbackCancel" data-game-text="app.cancel">Annuler</button><button id="feedbackSend">Envoyer</button></div>
+  <h2 id="feedbackTitle" data-game-text="betaFeedback.title">Retour bêta</h2><p data-game-text="betaFeedback.context">Le contexte de la quête sera joint automatiquement.</p>
+  <div class="beta-kinds"><button type="button" data-kind="bug">🐞 <span data-game-text="betaFeedback.bug">Bug</span></button><button type="button" data-kind="rule">? <span data-game-text="betaFeedback.rule">Règle / indice</span></button><button type="button" data-kind="difficulty">🧠 <span data-game-text="betaFeedback.difficulty">Trop difficile</span></button><button type="button" data-kind="other">… <span data-game-text="betaFeedback.other">Autre</span></button></div>
+  <div id="feedbackChoice" style="font-size:13px;color:#68e7ff;margin:-4px 0 10px">Type sélectionné : Bug</div><textarea id="feedbackText" maxlength="2000" data-game-placeholder="betaFeedback.placeholder" placeholder="Que s'est-il passé ? (facultatif)"></textarea>
+  <div class="beta-actions"><button id="feedbackCancel" data-game-text="app.cancel">Annuler</button><button id="feedbackSend" data-game-text="betaFeedback.send">Envoyer</button></div>
   <p id="feedbackStatus" aria-live="polite"></p>
  </div>
 </div>

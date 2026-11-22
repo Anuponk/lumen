@@ -146,6 +146,7 @@ function translateGameCopy(){
  }
 }
 translateGameCopy();
+document.getElementById('accountSwitchHold')?.classList.remove('localizing');
 setSecondaryStarsLabel((lit,count)=>t('sky.secondaryStars',{lit,count}));
 // #748: the presentation page links to /?install=1. Read once and removed from the URL
 // before anything else reads it, so the first-visit welcome still plays.
@@ -1814,6 +1815,7 @@ function setupGameLocaleSetting(){
   if(!localePreference.setMode(select.value))return;
   translate=localePreference.translator().t;
   translateGameCopy();
+  renderBetaFeedbackChoice();
   renderAuthUserCopy();renderMobileAuthCopy();
   LEARNING_INTRO=learningIntro(t);
   updateHintButton();updateVerifyButton();
@@ -3410,7 +3412,15 @@ function displayedCellState(r,c){
 
 const LUMEN_APP_VERSION=appVersion();
 let feedbackKind="bug";
-function openBetaFeedback(){const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");if(!modal)return;modal.hidden=false;if(status)status.textContent="";}
+function renderBetaFeedbackChoice(){
+ document.getElementById('feedbackChoice').textContent=t('betaFeedback.choice',{kind:t('betaFeedback.'+feedbackKind)});
+}
+function openBetaFeedback(){
+ const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");if(!modal)return;
+ renderBetaFeedbackChoice();
+ modal.hidden=false;
+ if(status){delete status.dataset.gameText;status.textContent=""}
+}
 function adminEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function adminNumber(v){return new Intl.NumberFormat("fr-FR").format(Number(v)||0)}
 function adminEventLabel(name){return ({session_start:"Ouverture",attempt_started:"Quête commencée",puzzle_start:"Quête commencée",attempt_completed:"Quête réussie",puzzle_complete:"Quête réussie",attempt_reset:"Réinitialisation",attempt_abandoned:"Abandon",hint_used:"Indice utilisé",verify_used:"Vérification",guided_intervention:"Contrôle guidé"}[name]||name)}
@@ -3710,14 +3720,15 @@ function setupBetaFeedback(){
  document.getElementById("betaFeedbackBtn").onclick=openBetaFeedback;
  document.getElementById("feedbackCancel").onclick=()=>modal.hidden=true;
  modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
- document.querySelector(".beta-kinds").addEventListener("click",e=>{const b=e.target.closest("button[data-kind]");if(!b)return;e.preventDefault();feedbackKind=b.dataset.kind;document.querySelectorAll(".beta-kinds button").forEach(x=>x.classList.toggle("selected",x===b));const labels={bug:"Bug",rule:"Règle / indice",difficulty:"Trop difficile",other:"Autre"};document.getElementById("feedbackChoice").textContent="Type sélectionné : "+labels[feedbackKind]});
+ document.querySelector(".beta-kinds").addEventListener("click",e=>{const b=e.target.closest("button[data-kind]");if(!b)return;e.preventDefault();feedbackKind=b.dataset.kind;document.querySelectorAll(".beta-kinds button").forEach(x=>x.classList.toggle("selected",x===b));renderBetaFeedbackChoice()});
  document.querySelector('.beta-kinds button[data-kind="bug"]').classList.add("selected");
+ const showStatus=key=>{status.dataset.gameText=key;status.textContent=t(key)};
  document.getElementById("feedbackSend").onclick=async()=>{
-  const btn=document.getElementById("feedbackSend");btn.disabled=true;status.textContent="Envoi…";
-  if(!lumenSupabase){status.textContent="Connexion indisponible.";btn.disabled=false;return}
+  const btn=document.getElementById("feedbackSend");btn.disabled=true;showStatus("betaFeedback.sending");
+  if(!lumenSupabase){showStatus("betaFeedback.unavailable");btn.disabled=false;return}
   const {error}=await lumenSupabase.rpc("lumen_send_feedback",{p_anonymous_id:lumenAnonymousId,p_kind:feedbackKind,p_message:document.getElementById("feedbackText").value,p_puzzle_id:activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,p_board_state:{stable_quest_id:activeQuest().id,quest_ordinal:activeQuestOrdinal()},p_elapsed_seconds:activeGameSeconds(),p_hints_used:usedHintThisGame?1:0,p_app_version:LUMEN_APP_VERSION,p_user_agent:navigator.userAgent});
-  if(error){status.textContent="Envoi impossible. Réessaie.";console.warn("LUMEN feedback",error);btn.disabled=false;return}
-  trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,{...analyticsContext(),kind:feedbackKind});status.textContent="Merci, retour envoyé.";document.getElementById("feedbackText").value="";setTimeout(()=>{modal.hidden=true;btn.disabled=false},800);
+  if(error){showStatus("betaFeedback.failed");console.warn("LUMEN feedback",error);btn.disabled=false;return}
+  trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,{...analyticsContext(),kind:feedbackKind});showStatus("betaFeedback.sent");document.getElementById("feedbackText").value="";setTimeout(()=>{modal.hidden=true;btn.disabled=false},800);
  };
  document.querySelectorAll(".difficulty-choices button").forEach(b=>b.onclick=()=>{
   // Rating is the final action on the completion card: advance immediately.
