@@ -17,6 +17,8 @@ writes nothing and needs no cloud merge, restore or consent change. Contract:
 [PRODUCT_ANALYTICS](PRODUCT_ANALYTICS.md#mesure-dacquisition-708).
 Lot D adds `lumen_admin_version_health(p_days)` (`20261121170000_admin_version_health_708.sql`),
 the same kind of read-only admin aggregate over `lumen_sync_health` and `outbox_health`, per app version.
+#962: the client sends `outbox_health` the build as `X.Y.Z+N sha` (`outboxHealthVersion`), the only
+format `record_outbox_health` accepts; the visible label "Version … · sha" was stored as `unknown`.
 
 ## Current architecture
 
