@@ -115,3 +115,25 @@ test('cloud/outbox mapping keeps retry and acknowledgement chronology without ar
  await f.reporter.flush();assert.deepEqual(f.sent[0].p_events.map(e=>e.code),['sync_write_failed','sync_retry','outbox_retried','outbox_acknowledged']);
  assert.equal(new Set(f.sent[0].p_events.map(e=>e.trace)).size,1);assert(!JSON.stringify(f.sent).includes('secret'));
 });
+
+// #962: runtime errors carry a category (quota/storage/network) from the error name only.
+test('runtime errors are classified by name, never by private text',async()=>{
+ const {installDiagnosticListeners,diagnosticErrorKind}=await load();
+ const quota=Object.assign(new Error('secret@example.invalid'),{name:'QuotaExceededError'});
+ assert.equal(diagnosticErrorKind(quota),'quota');
+ assert.equal(diagnosticErrorKind({name:'Error',code:22,message:'secret'}),'quota');
+ assert.equal(diagnosticErrorKind({name:'InvalidStateError',message:'secret'}),'storage');
+ assert.equal(diagnosticErrorKind(new TypeError('Failed to fetch')),'network');
+ assert.equal(diagnosticErrorKind(new TypeError('secret Failed to fetch')),'unknown','only exact browser messages');
+ assert.equal(diagnosticErrorKind(new TypeError('x is undefined')),'unknown');
+ for(const value of [null,undefined,'QuotaExceededError',42,{get name(){throw Error('trap')}}])assert.equal(diagnosticErrorKind(value),'unknown');
+ const listeners={},seen=[];const target={addEventListener:(name,fn)=>{listeners[name]=fn},removeEventListener:()=>{}};
+ installDiagnosticListeners(target,{capture:(...args)=>seen.push(args)});
+ listeners.error({error:quota,message:'secret',target});
+ listeners.unhandledrejection({reason:new TypeError('Failed to fetch')});
+ listeners.unhandledrejection({reason:{token:'secret'}});
+ assert.deepEqual(seen.map(([code,details])=>[code,details.kind]),[['runtime_exception','quota'],['unhandled_rejection','network'],['unhandled_rejection','unknown']]);
+ assert(!JSON.stringify(seen).includes('secret'));
+ const f=await fixture();f.reporter.capture('runtime_exception',{stage:'runtime',kind:'quota'});await f.reporter.flush();
+ assert.equal(f.sent[0].p_events[0].kind,'quota','the accepted server category is transmitted');
+});
