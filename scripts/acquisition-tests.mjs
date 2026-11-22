@@ -6,6 +6,8 @@ const location = new URL('/', discoveryUrl);
 assert.equal(readDiscoveryCampaign(location, playerShareUrl), 'player_share');
 assert.equal(readDiscoveryCampaign(location, discoveryUrl + '?utm_source=tiktok&utm_medium=social&arbitrary=secret'), 'tiktok');
 assert.equal(readDiscoveryCampaign(location, inviteShareUrl), 'player_invite');
+// #945 Lot C: the Spanish discovery page is a known campaign source.
+assert.equal(readDiscoveryCampaign(location, new URL('/descubrir.html?utm_source=player_invite&utm_medium=referral', discoveryUrl).href), 'player_invite');
 const englishDiscovery = new URL('/discover.html', discoveryUrl);
 assert.equal(readDiscoveryCampaign(location, englishDiscovery.href), null, 'Plain English discovery has no campaign');
 for (const [source, medium] of [['player_share', 'referral'], ['player_invite', 'referral'], ['tiktok', 'social']]) {

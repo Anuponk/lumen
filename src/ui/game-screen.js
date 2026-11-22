@@ -140,7 +140,8 @@ function translateGameCopy(){
  if(build&&buildLabel){buildLabel.textContent=t('app.buildVersion',{build});buildLabel.title=t('app.buildLoaded',{build})}
  for(const link of document.querySelectorAll("[data-game-href-en]")){
   link.dataset.gameHrefFr??=link.getAttribute('href');
-  link.href=localePreference?.locale==='en'?link.dataset.gameHrefEn:link.dataset.gameHrefFr;
+  const locale=localePreference?.locale;
+  link.href=locale==='en'?link.dataset.gameHrefEn:locale==='es'?(link.dataset.gameHrefEs??link.dataset.gameHrefEn):link.dataset.gameHrefFr;
  }
 }
 translateGameCopy();
@@ -2232,7 +2233,7 @@ function configureVictoryChallenge({priorPerformance,run,snapshot,firstCompletio
  const socialEligibility=challengeEligibility({priorPerformance,run,firstCompletion});
  lastChallengeOffer=supported&&socialEligibility.canChallenge?{eligibility:socialEligibility,snapshot:{...snapshot,firstPlay:socialEligibility.firstPlay,qualifying:true}}:null;
  const shareBtn=document.getElementById('successShare'),remarkable=document.getElementById('remarkableChallenge'),reason=document.getElementById('successChallengeReason');
- const explanation=!supported?'Les défis ne sont pas disponibles dans cette version.':!socialEligibility.canChallenge?'Défier demande une tentative qualifiante, comme les badges (15 min après la précédente).'+(cooldownMs>0?' '+badgeCooldownLabel(cooldownMs)+'.':''):'';
+ const explanation=!supported?t('challenge.unsupported'):!socialEligibility.canChallenge?t('challenge.needsQualifying')+(cooldownMs>0?' '+localizedBadgeCooldown(cooldownMs)+'.':''):'';
  if(shareBtn){shareBtn.hidden=!socialEligibility.canChallenge;shareBtn.disabled=!supported;shareBtn.classList.toggle('remarkable',supported&&socialEligibility.remarkable);shareBtn.title=explanation}
  if(remarkable){remarkable.hidden=!supported||!socialEligibility.remarkable;const title=remarkable.querySelector?.('strong');if(title)title.textContent=socialEligibility.firstPlay?'✦ MAÎTRISE DU PREMIER COUP !':'✦ MAÎTRISE EN REJEU QUALIFIANT'}
  if(reason){reason.hidden=!explanation;reason.textContent=explanation}
@@ -3732,7 +3733,7 @@ function showEndgameCelebration(){
  if(!canonicalCampaignComplete(lumenProgress))return;
  const overlay=document.getElementById("endgameOverlay");if(!overlay)return;
  const stats=endgameStats();
- document.getElementById("endgameSummary").textContent=stats.quests+" quêtes · "+stats.constellations+" constellations · "+stats.stars+" étoiles";
+ document.getElementById("endgameSummary").textContent=t('endgame.summary',{quests:stats.quests,constellations:stats.constellations,stars:stats.stars});
  document.getElementById("endgameAutonomy").textContent=stats.autonomy;
  document.getElementById("endgameNoError").textContent=stats.noError;
  document.getElementById("endgameMastery").textContent=stats.mastery;
@@ -3761,10 +3762,10 @@ function setLearningReplaySuccessMode(active){
 }
 function celebrateLearningReplaySuccess(){
  celebrated=true;attemptEngine.complete();clearInterval(timer);board.classList.add("win");
- document.getElementById("successTitle").textContent=levelIndex===0?"Première étape terminée":"Apprentissage terminé";
- document.getElementById("successSub").textContent=levelIndex===0?"Continue avec la quête 2.":"Tu peux reprendre ta quête là où tu l’avais laissée.";
+ document.getElementById("successTitle").textContent=t(levelIndex===0?'success.learningFirstTitle':'success.learningDoneTitle');
+ document.getElementById("successSub").textContent=t(levelIndex===0?'success.learningFirstCopy':'success.learningDoneCopy');
  document.getElementById("successTime").textContent=document.getElementById("time").textContent;
- document.getElementById("successNew").textContent=levelIndex===0?"Continuer l’apprentissage":"Retour à ma quête";
+ document.getElementById("successNew").textContent=t(levelIndex===0?'success.learningContinue':'success.learningBack');
  setLearningReplaySuccessMode(true);document.getElementById("successOverlay").classList.add("show");
 }
 
@@ -4119,7 +4120,7 @@ async function celebrateCanonicalSuccess(){
  const rewards=document.getElementById("successRewards");if(rewards)rewards.hidden=false;
  const challenge=document.getElementById("questResult"),bonus=questRewardDefinition(q).bonus;
  if(challenge){challenge.hidden=!bonus;if(bonus){const passed=!!committed.outcome?.questPassed,owned=!!lumenProgress.stars?.[bonus.id];challenge.className='quest-result '+(passed||owned?'success':'fail');challenge.textContent=t(passed?'results.victory.bonusWon':owned?'results.victory.bonusOwned':'results.victory.bonusLost')}}
- document.getElementById("successNew").textContent="Quête suivante";
+ document.getElementById("successNew").textContent=t('board.nextQuest');
  configureSuccessFeedback(false);
  refreshJourney();
  if(!celestialPending&&!upgradeInPlace)launchWinStar(committed.newlyCompleted?1:0);
@@ -4826,7 +4827,7 @@ function skyTourActive(){return document.getElementById('skyTour')?.hidden===fal
 function firstLearningSkyVisit(){return false}
 function updateLearningSuccessCTA(){
  const b=document.getElementById("successNew");if(!b)return;
- b.textContent=learningSkyDiscoveryRequired()?"✦ Découvrir Mon ciel":"Quête suivante";
+ b.textContent=t(learningSkyDiscoveryRequired()?'success.discoverSky':'board.nextQuest');
 }
 function clearSkyTourFocus(){document.querySelectorAll(".sky-tour-focus").forEach(el=>el.classList.remove("sky-tour-focus"))}
 function renderSkyTourStep(){

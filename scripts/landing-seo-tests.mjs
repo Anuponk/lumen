@@ -12,8 +12,8 @@ const read=p=>fs.readFileSync(p,'utf8');
 const index=read('index.html'),page=read('decouvrir.html'),english=read('discover.html'),robots=read('robots.txt'),sitemap=read('sitemap.xml');
 // #932: acquisition copy explicitly promises the free first 100 puzzles, without ads.
 const promoSource=read('scripts/promo-og-assets.mjs');
-for(const phrase of ['Un jeu de logique dans les étoiles','100 puzzles gratuits et sans pub','A logic puzzle among the stars','100 free puzzles · No ads'])
- assert(promoSource.includes(phrase), 'FR/EN OG promotional copy: '+phrase);
+for(const phrase of ['Un jeu de logique dans les étoiles','100 puzzles gratuits et sans pub','A logic puzzle among the stars','100 free puzzles · No ads','Un juego de lógica entre las estrellas','100 puzles gratis y sin anuncios'])
+ assert(promoSource.includes(phrase), 'FR/EN/ES OG promotional copy: '+phrase);
 
 const meta=(html,attr,name)=>html.match(new RegExp('<meta '+attr+'="'+name+'" content="([^"]*)"'))?.[1];
 
@@ -50,7 +50,7 @@ assert.match(page,/petit studio indépendant/);assert.doesNotMatch(page,/pas (po
 for(const img of page.matchAll(/<img src="\/([^"]+)" width="(\d+)" height="(\d+)"/g)){
  assert(fs.existsSync(img[1]),'Image exists: '+img[1]);assert(fs.statSync(img[1]).size<250000,'Image stays light: '+img[1]);
 }
-for(const filename of ['og.jpg','og-en.jpg']){
+for(const filename of ['og.jpg','og-en.jpg','og-es.jpg']){
  const og=fs.readFileSync('src/landing/'+filename);
  assert(og.length<250000,filename+' stays light');
  assert.equal(og[0],0xff);assert.equal(og[1],0xd8,filename+' is a JPEG');
@@ -64,13 +64,49 @@ for(const filename of ['og.jpg','og-en.jpg']){
 }
 
 // #754: language alternatives point both ways and each page owns its canonical URL.
-const frenchUrl='https://lumen.nopuna.fr/decouvrir.html',englishUrl='https://lumen.nopuna.fr/discover.html';
-for(const [lang,html,canonical,alternateLocale] of [['fr',page,frenchUrl,'en_US'],['en',english,englishUrl,'fr_FR']]){
+const frenchUrl='https://lumen.nopuna.fr/decouvrir.html',englishUrl='https://lumen.nopuna.fr/discover.html',spanishUrl='https://lumen.nopuna.fr/descubrir.html';
+const spanish=read('descubrir.html');
+for(const [lang,html,canonical,alternateLocale] of [['fr',page,frenchUrl,'en_US'],['en',english,englishUrl,'fr_FR'],['es',spanish,spanishUrl,'fr_FR']]){
  assert(html.includes('<html lang="'+lang+'">'));
  assert(html.includes('<link rel="canonical" href="'+canonical+'">'));
  assert.equal(meta(html,'property','og:url'),canonical);
  assert.equal(meta(html,'property','og:locale:alternate'),alternateLocale);
- assert.deepEqual(Object.fromEntries([...html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map(([,language,url])=>[language,url])),{fr:frenchUrl,en:englishUrl,'x-default':frenchUrl});
+ assert.deepEqual(Object.fromEntries([...html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map(([,language,url])=>[language,url])),{fr:frenchUrl,en:englishUrl,es:spanishUrl,'x-default':frenchUrl});
+}
+// #945 Lot C: Spanish discovery page, same facts and rules as the French reference.
+assert.match(page,/<a href="\/descubrir\.html" lang="es" hreflang="es">Español<\/a>/);
+assert.match(english,/<a href="\/descubrir\.html" lang="es" hreflang="es">Español<\/a>/);
+assert.match(spanish,/<a href="\/decouvrir\.html" lang="fr" hreflang="fr">Français<\/a> · <a href="\/discover\.html" lang="en" hreflang="en">English<\/a>/);
+assert.equal(meta(spanish,'property','og:locale'),'es_ES');
+assert.equal(meta(spanish,'property','og:image'),'https://lumen.nopuna.fr/src/landing/og-es.jpg');
+for(const field of ['title','description','image','image:alt'])assert.equal(meta(spanish,'name','twitter:'+field),meta(spanish,'property','og:'+field));
+{const d=meta(spanish,'name','description');assert(d&&d.length>=70&&d.length<=170,'Spanish meta description length')}
+assert.match(spanish,/<a class="play" href="\/">Jugar a Lumen<\/a>/);
+assert.match(spanish,/nunca se tocan, ni siquiera en diagonal/);
+assert.match(spanish,/100 puzles gratis y sin anuncios/);
+assert.match(spanish,/Stellarium.*CC BY-SA.*Hipparcos/);
+assert(spanish.includes(CONTENT_CONSTELLATIONS.length+' constelaciones oficiales'));
+assert(spanish.includes(quests.length+' misiones')&&spanish.includes(CONTENT_PACKS.length+' Aventuras'));
+assert(spanish.includes('('+quests.filter(q=>q.packId===first.id).length+' misiones) es gratis'));
+assert.doesNotMatch(spanish,/<script\b(?![^>]*application\/ld\+json)/);
+{const ld=JSON.parse(spanish.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);assert.equal(ld['@type'],'VideoGame');assert.equal(ld.mainEntityOfPage.inLanguage,'es');assert.equal(ld.mainEntityOfPage['@id'],spanishUrl);assert.equal(ld.offers.price,'0')}
+for(const [,target] of spanish.matchAll(/<a [^>]*href="(\/[^"]*)"/g)){
+ const path=new URL(target,spanishUrl).pathname;
+ assert(fs.existsSync(path.endsWith('/')?path.slice(1)+'index.html':path.slice(1)),'Spanish discovery link exists: '+target);
+}
+// #945 Lot C: Spanish « Cómo jugar », same worked example as the English page.
+{
+ const como=read('como-jugar.html'),howEn=read('how-to-play.html');
+ assert.match(como,/<html lang="es">/);assert.match(como,/<h1>Cómo jugar a Lumen<\/h1>/);
+ assert.match(como,/<link rel="canonical" href="https:\/\/lumen\.nopuna\.fr\/como-jugar\.html">/);
+ for(const html of [como,howEn,read('comment-jouer.html')])assert(html.includes('hreflang="es" href="https://lumen.nopuna.fr/como-jugar.html"'),'hreflang es on every how-to page');
+ assert.equal(meta(como,'property','og:image'),'https://lumen.nopuna.fr/src/landing/og-es.jpg');
+ assert.doesNotMatch(como,/<script\b(?![^>]*application\/ld\+json)/);
+ assert.equal(JSON.parse(como.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]).step.length,3);
+ assert.deepEqual([...como.matchAll(/<img src="([^"]+)"/g)].map(m=>m[1]),[...howEn.matchAll(/<img src="([^"]+)"/g)].map(m=>m[1]),'Same example grids');
+ const cells=html=>[...html.matchAll(/(?:row|fila) (\d), (?:column|columna) (\d)/g)].map(m=>m[1]+','+m[2]);
+ assert.deepEqual(cells(como),cells(howEn),'Same worked example cells');
+ assert.match(como,/nunca se tocan, ni siquiera en diagonal/);
 }
 assert.match(page,/<a href="\/discover\.html" lang="en" hreflang="en">English<\/a>/);
 assert.match(english,/<a href="\/decouvrir\.html" lang="fr" hreflang="fr">Français<\/a>/);
@@ -187,11 +223,11 @@ assert.match(robots,/^User-agent: \*$/m);assert.match(robots,/^Disallow: \/admin
 assert.doesNotMatch(robots,/Disallow: \/src\//,'Never hide the code and styles Google needs to render the game');
 assert.match(robots,/^Sitemap: https:\/\/lumen\.nopuna\.fr\/sitemap\.xml$/m);
 const locs=[...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);
-assert.deepEqual(locs,['https://lumen.nopuna.fr/','https://lumen.nopuna.fr/decouvrir.html','https://lumen.nopuna.fr/discover.html','https://lumen.nopuna.fr/comment-jouer.html','https://lumen.nopuna.fr/how-to-play.html','https://lumen.nopuna.fr/apprendre-constellations.html','https://lumen.nopuna.fr/learn-constellations.html','https://lumen.nopuna.fr/constellations/','https://lumen.nopuna.fr/constellations/en.html']);
+assert.deepEqual(locs,['https://lumen.nopuna.fr/','https://lumen.nopuna.fr/decouvrir.html','https://lumen.nopuna.fr/discover.html','https://lumen.nopuna.fr/descubrir.html','https://lumen.nopuna.fr/comment-jouer.html','https://lumen.nopuna.fr/how-to-play.html','https://lumen.nopuna.fr/como-jugar.html','https://lumen.nopuna.fr/apprendre-constellations.html','https://lumen.nopuna.fr/learn-constellations.html','https://lumen.nopuna.fr/constellations/','https://lumen.nopuna.fr/constellations/en.html']);
 for(const l of locs){const path=new URL(l).pathname;assert(fs.existsSync(path.endsWith('/')?path.slice(1)+'index.html':path.slice(1)),'Sitemap URL exists: '+l)}
 
 // Every new public file is published and verified by both release paths.
-for(const file of ['decouvrir.html','discover.html','comment-jouer.html','how-to-play.html','apprendre-constellations.html','learn-constellations.html','constellations/index.html','constellations/en.html','robots.txt','sitemap.xml']){
+for(const file of ['decouvrir.html','discover.html','descubrir.html','comment-jouer.html','how-to-play.html','como-jugar.html','apprendre-constellations.html','learn-constellations.html','constellations/index.html','constellations/en.html','robots.txt','sitemap.xml']){
  assert.match(read('scripts/o2switch-cron-publish.sh'),new RegExp('PUBLIC_PAGES=\\([^)]*'+file.replace('.','\\.')),'Cron publisher: '+file);
  assert.match(read('scripts/o2switch-safe-release.sh'),new RegExp('for page in [^;]*'+file.replace('.','\\.')),'Safe release: '+file);
  assert.match(read('scripts/o2switch-deploy-tests.py'),new RegExp('PUBLIC_PAGES = \\([^)]*"'+file.replace('.','\\.')+'"'),'Deploy tests: '+file);

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {discoveryUrl, discoveryUrlFor, inviteShareUrlFor, playerShareUrlFor, inviteShare, inviteShareData, inviteShareUrl, resultShareData, resultShareUrl, shareCardCopy, createShareDialog, tryNativeShare, tryCopyShare} from '../src/ui/lumen-share.js';
+import {promoImagePath, discoveryUrl, discoveryUrlFor, inviteShareUrlFor, playerShareUrlFor, inviteShare, inviteShareData, inviteShareUrl, resultShareData, resultShareUrl, shareCardCopy, createShareDialog, tryNativeShare, tryCopyShare} from '../src/ui/lumen-share.js';
 import {createTranslator} from '../src/ui/i18n.js';
 
 assert.equal(discoveryUrl, 'https://lumen.nopuna.fr/decouvrir.html');
@@ -56,6 +56,13 @@ assert.equal(await tryCopyShare({clipboard: {writeText: async () => { throw Erro
 const en = createTranslator({locale: 'en'}).t;
 // #933: the destination follows the language too (the English page exists).
 const discover = 'https://lumen.nopuna.fr/discover.html';
+// #945 Lot C: Spanish shares lead to the Spanish page with the Spanish picture.
+assert.equal(inviteShare(createTranslator({locale: 'es'}).t, 'es').url, 'https://lumen.nopuna.fr/descubrir.html');
+assert.equal(promoImagePath('es-MX'), '/src/landing/og-es.jpg');
+assert.equal(promoImagePath('en'), '/src/landing/og-en.jpg');
+assert.equal(promoImagePath('fr'), '/src/landing/og.jpg');
+assert.equal(promoImagePath('de'), '/src/landing/og.jpg');
+assert.match(inviteShare(createTranslator({locale: 'es'}).t, 'es').text, /Lumen/);
 assert.deepEqual(inviteShare(en, 'en'), {title: 'Discover Lumen', text: '✨ I found Lumen, a logic puzzle where you relight the constellations. Want to try?', url: discover});
 assert.equal(inviteShare(createTranslator({locale: 'fr'}).t, 'fr').url, discoveryUrl, 'French invitation → decouvrir.html');
 assert.deepEqual(inviteShare(), inviteShareData, 'French default unchanged');
@@ -137,7 +144,8 @@ assert.equal(cancelDoc.getElementById('lumenShareStatus').textContent, '', 'no f
 assert.equal(discoveryUrlFor('fr'), discoveryUrl);
 assert.equal(discoveryUrlFor('en'), discover);
 for (const other of ['en-GB', 'EN_us']) assert.equal(discoveryUrlFor(other), discover, other);
-for (const other of ['de', 'es', '', null, undefined, 'xx-invalid']) assert.equal(discoveryUrlFor(other), discoveryUrl, 'French default for ' + other);
+for (const other of ['de', 'it', '', null, undefined, 'xx-invalid']) assert.equal(discoveryUrlFor(other), discoveryUrl, 'French default for ' + other);
+assert.equal(discoveryUrlFor('es-MX'), 'https://lumen.nopuna.fr/descubrir.html', '#945: Spanish has its own page');
 for (const [locale, page] of [['fr', discoveryUrl], ['en', discover]]) {
   for (const [url, source] of [[inviteShareUrlFor(locale), 'player_invite'], [playerShareUrlFor(locale), 'player_share']]) {
     const parsed = new URL(url);

@@ -110,7 +110,8 @@ begin
  -- Links: created by the owner, shown once, preview reveals no member, join.
  x:=public.lumen_circle_link_create(circle);tok:=x->>'token';
  assert tok ~ '^[0-9a-f]{64}$' and (x->>'expires_at')::timestamptz between now()+interval '6 days 23 hours' and now()+interval '7 days 1 minute','7-day link';
- assert not exists(select 1 from lumen.circle_links where convert_from(token_hash,'LATIN1') like '%'||tok||'%'),'token not stored in clear';
+ -- Binary comparison: a SHA-256 hash may contain 0x00, which no text encoding accepts.
+ assert not exists(select 1 from lumen.circle_links where position(convert_to(tok,'UTF8') in token_hash)>0 or encode(token_hash,'hex')=tok),'token not stored in clear';
  perform set_config('request.jwt.claim.sub',cleo::text,true);
  x:=public.lumen_circle_link_preview(tok);
  assert x->>'name'='Famille d''Ana' and x->>'owner'='Ana929' and (x->>'members')::int=2 and not (x->>'member')::boolean,'preview';
