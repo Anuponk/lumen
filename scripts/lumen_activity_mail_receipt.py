@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.request import Request, build_opener
 from uuid import UUID
 
-from lumen_activity_mail import NoRedirect, clients, configuration, drain
+from lumen_activity_mail import NoRedirect, brevo_outcome, clients, configuration, drain
 
 KINDS = ("signup", "purchase", "incident_open", "daily_summary")
 SETUP = (
@@ -68,7 +68,7 @@ def main(live):
         if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", config["digest_recipient"]):
             raise ValueError("invalid summary recipient")
         verify_supabase(config, os.environ["LUMEN_ACTIVITY_SUPABASE_KEY"])
-        _, transport = clients(config, os.environ)
+        _, transport = clients(config, os.environ, brevo_diagnostics=True)
 
     sql("\n".join(Path(path).read_text(encoding="utf-8") for path in SETUP))
     kinds = ", ".join(f"'{kind}'" for kind in KINDS)
@@ -94,7 +94,13 @@ def main(live):
     def send(payload):
         submitted.append(payload["tags"][1].replace("-", "_"))
         payload["subject"] = "[RECETTE] " + payload["subject"]
-        return transport(payload) if live else (201, {"messageId": "simulated"})
+        if not live:
+            return 201, {"messageId": "simulated"}
+        status, response = transport(payload)
+        if brevo_outcome(status, response) != "accepted":
+            label = (response or {}).get("error", "unknown") if status >= 400 else "unknown"
+            print(f"Brevo request failed: HTTP {status}, category {label}", flush=True)
+        return status, response
 
     first = drain(claim, finish, send, config)
     if first != {"accepted": 4} or sorted(submitted) != sorted(KINDS):

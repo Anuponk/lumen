@@ -1,6 +1,9 @@
 """Local tests use synthetic payloads and never initialize an external transport."""
 import unittest
-from lumen_activity_mail import brevo_outcome, configuration, drain, format_notice
+from io import BytesIO
+from unittest.mock import patch
+from urllib.error import HTTPError
+from lumen_activity_mail import brevo_outcome, configuration, drain, format_notice, post
 
 
 class ActivityMailTest(unittest.TestCase):
@@ -46,6 +49,22 @@ class ActivityMailTest(unittest.TestCase):
         for status, result in [(201, "unknown"), (429, "retry"), (403, "rejected"),
                                (503, "unknown"), (0, "unknown"), (302, "unknown")]:
             self.assertEqual(brevo_outcome(status, None), result)
+
+    def test_error_diagnostics_are_opt_in_and_redacted(self):
+        for raw, label in (
+            (b'{"code":"unauthorized","message":"Unrecognised IP address 192.0.2.1"}', "ip_not_authorized"),
+            (b'{"code":"unauthorized","message":"sensitive address@example.test"}', "unauthorized"),
+            (b'{"code":"secret-provider-text","message":"secret-provider-text"}', "unknown"),
+            (b'not json', "unknown"),
+        ):
+            for enabled in (True, False):
+                with self.subTest(label=label, enabled=enabled):
+                    error = HTTPError("https://example.test", 401, "Unauthorized", {}, BytesIO(raw))
+                    with patch("lumen_activity_mail.build_opener") as opener:
+                        opener.return_value.open.side_effect = error
+                        expected = {"error": label} if enabled else None
+                        self.assertEqual(post("https://example.test", {}, {}, brevo_diagnostics=enabled),
+                                         (401, expected))
 
     def test_drain_acknowledges_each_lease_and_never_retries_ambiguous_send(self):
         delivered, completions = [], []
