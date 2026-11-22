@@ -205,6 +205,7 @@ progress loss in Lumen without infrastructure details. No real account deletion,
 server deployment or physical acceptance is claimed.
 
 Admin cockpit indexes (#962): `scripts/fixtures/admin-cockpit-indexes-962.sql` (canonical-ledger CI, #708 step) applies the migration twice. It checks the exact partial-index predicates, that the planner uses both indexes for the `cockpit_events` filters, and that `cockpit_events` keeps returning only human, non-QA events with the same owner attribution.
+Device storage health (#962): `scripts/fixtures/outbox-storage-health-962.sql` (same step) applies the migration twice and checks the 14-argument observation, the unchanged 11-argument call, stale packets, bounds (no free text), identity, the summary count and anonymous alert fields, 7-day expiry, privileges and erasure registration. Client buckets: `cloud-outbox-health-tests.mjs`; admin rendering: `analytics-dashboard-tests.mjs`.
 
 Production isolation (#962): `scripts/cdp-client.mjs::connectBrowser` blocks the production Supabase host (`tjdjlavmusmncuszhsuw.supabase.co`) for every browser suite. Any blocked-URL list a suite sets later keeps this host, so a suite can never reach production by replacing the list.
 

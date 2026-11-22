@@ -19,6 +19,13 @@ Lot D adds `lumen_admin_version_health(p_days)` (`20261121170000_admin_version_h
 the same kind of read-only admin aggregate over `lumen_sync_health` and `outbox_health`, per app version.
 #962: the client sends `outbox_health` the build as `X.Y.Z+N sha` (`outboxHealthVersion`), the only
 format `record_outbox_health` accepts; the visible label "Version … · sha" was stored as `unknown`.
+#962 storage health (`20261123020000_outbox_storage_health_962.sql`): each outbox observation also
+carries the local storage size rounded up to 256 KB, its share of the ~10 MB origin limit
+rounded to 5 %, and `quota`/`storage` for the last local write failure (runtime error name or
+`local_preservation_failed`). A 14-argument overload keeps the 11-argument call for older
+clients; `outbox_health_summary` adds `storage_pressure_players` (≥ 80 %, ≥ 6 MB or an error
+within 7 days) and storage fields on alerts. No key, content, message or stack; same
+legitimate-interest tier, retention and erasure as `outbox_health` (privacy policy updated).
 
 ## Current architecture
 

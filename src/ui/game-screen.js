@@ -51,7 +51,7 @@ import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSn
 import {installVerifiedQuestResets} from '../persistence/quest-reset-install.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation,guestAcquisitionRecoveryEligible} from '../persistence/guest-account.js';
-import {storageReport,archiveRecoveryBackups,maintainRecoveryBackups} from '../persistence/storage-maintenance.js';
+import {storageReport,archiveRecoveryBackups,maintainRecoveryBackups,measureLocalStorage} from '../persistence/storage-maintenance.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
 import {isNetworkFailure,preserveRecoverySnapshot,CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
@@ -90,7 +90,7 @@ import {gridCellsAlongSegment} from './drag-grid-path.js';
 import {replayWalletCommand} from '../persistence/coordinated-command-adapters.js';
 import {gameplayDomainState} from '../persistence/gameplay-sync.js';
 import {createOutboxHealthReporter} from "../persistence/outbox-health.js";
-import {createDiagnosticReporter,mapCloudDiagnostic,installDiagnosticListeners} from '../persistence/diagnostic-reporter.js';
+import {createDiagnosticReporter,mapCloudDiagnostic,installDiagnosticListeners,diagnosticErrorKind} from '../persistence/diagnostic-reporter.js';
 import {createSyncPresentation} from "../persistence/sync-presentation.js";
 import {walletCommandsSupported,recoverWalletCacheDurably} from "../persistence/wallet-command.js";
 import {applyLegacyVictory} from "../campaign/legacy-victory.js";
@@ -321,6 +321,18 @@ function recordGuidedDiagnostic(code,before,after){
  }catch{}
 }
 function navigationProgress(){return pendingNavigationProfile(lumenProgress,pendingNavigationEntries,lumenUser?.id,canonicalQuestList())}
+// #962: bounded device storage health rides on each outbox observation (buckets and a
+// quota/storage category only). A local write failure re-sends the last observation.
+let localStorageError=null,lastOutboxObservation=null;
+function outboxDeviceHealth(){const m=measureLocalStorage(localStorage);return {bytes:m.available?m.bytes:undefined,error:localStorageError}}
+function reportOutboxHealth(observation){lastOutboxObservation=observation;return outboxHealthReporter.report({...observation,device:outboxDeviceHealth()})}
+function noteLocalStorageError(kind){
+ if(kind!=='quota'&&kind!=='storage')return;
+ localStorageError=kind;
+ if(lastOutboxObservation&&lastOutboxObservation.userId===lumenUser?.id&&lastOutboxObservation.client===lumenSupabase&&!qaActive)void reportOutboxHealth(lastOutboxObservation);
+}
+window.addEventListener('error',event=>{try{noteLocalStorageError(diagnosticErrorKind(event.error))}catch{}},true);
+window.addEventListener('unhandledrejection',event=>{try{noteLocalStorageError(diagnosticErrorKind(event.reason))}catch{}});
 const outboxHealthReporter=createOutboxHealthReporter({storage:localStorage,send:async(client,payload)=>{
  const result=await client.rpc('lumen_record_outbox_health',payload);if(result.error)throw Error('Observation unavailable');
 }});
@@ -328,7 +340,7 @@ const syncPresentation=createSyncPresentation({onChange:view=>{
  renderSyncStatus(view);
  // Capture failure can make BOTH outbox stores unreadable. Report that risk
  // independently rather than rely on successful enumeration of pending work.
- if(view.status==='critical'&&lumenUser?.id&&!qaActive)void outboxHealthReporter.report({
+ if(view.status==='critical'&&lumenUser?.id&&!qaActive)void reportOutboxHealth({
   userId:lumenUser.id,client:lumenSupabase,version:document.getElementById('lumenAccountVersion')?.textContent||'unknown',
   state:'critical',pending:[],failures:view.failures
  });
@@ -473,6 +485,7 @@ function confirmedReplayAllowed(quest){return !qaActive&&gameplaySyncState().con
 // Local-only, privacy-safe cloud diagnostics. Never log IDs, emails, tokens or save payloads.
 const cloudDiagKey="lumenCloudDiagnosticsV1";
 function recordCloudDiagnostic(event,details={}){
+ if(event==='local_preservation_failed')try{noteLocalStorageError('storage')}catch{}
  try{const detail=mapCloudDiagnostic(event,details);if(detail){incidentReporter.capture(detail.code,detail);supportSession?.incident(detail.code)}}catch{}
  try{
   const previous=JSON.parse(localStorage.getItem(cloudDiagKey)||"[]");
@@ -3867,7 +3880,7 @@ async function refreshCanonicalOutboxNotice(ownerId){
   // An unreadable backend may contain older intents even if the other is empty.
   const view=typeof syncPresentation==='undefined'?{status:'confirmed',failures:0}:syncPresentation.snapshot();
   const platform=/Android/i.test(globalThis.navigator?.userAgent||'')?(matchMedia('(display-mode: standalone)').matches?'android-pwa':'android-web'):/Windows|Mac|Linux/i.test(globalThis.navigator?.userAgent||'')?'desktop':'other';
-  if(typeof outboxHealthReporter!=='undefined'&&!qaActive)void outboxHealthReporter.report({userId:ownerId,client:lumenSupabase,
+  if(typeof outboxHealthReporter!=='undefined'&&!qaActive)void reportOutboxHealth({userId:ownerId,client:lumenSupabase,
    platform,version:document.getElementById('lumenAccountVersion')?.textContent||'unknown',pending:state.pending,
    failures:view.failures,state:view.status==='critical'?'critical':canonicalOutboxNotice==='attention'?'review':state.authRequired?'auth':state.pending.length?'pending':state.complete?'confirmed':'review'});
   updateAuthUI();return (state.retryable??state.pending).length||(state.complete===false?1:0);
