@@ -117,4 +117,4 @@ Après confirmation de la recette, fixer `LUMEN_ACTIVITY_START` à l'heure du pa
 */5 * * * * /bin/bash "$HOME/lumen-staging/scripts/o2switch-activity-mail.sh" >> "$HOME/lumen-private/activity-mail.log" 2>&1
 ```
 
-Le script utilise `flock` pour garantir un seul traitement à la fois. Activer ensuite les variables du dépôt GitHub `LUMEN_CRITICAL_MONITOR_ENABLED=1`, `LUMEN_PERFORMANCE_MONITOR_ENABLED=1` et `LUMEN_DAILY_SUMMARY_ENABLED=1`. Contrôler le premier passage planifié. Pour suspendre les e-mails, remettre `LUMEN_ACTIVITY_ENABLED` à `0` côté o2switch.
+Le script utilise `flock` pour garantir un seul traitement à la fois. Activer ensuite les variables du dépôt GitHub `LUMEN_CRITICAL_MONITOR_ENABLED=1`, `LUMEN_PERFORMANCE_MONITOR_ENABLED=1` et `LUMEN_DAILY_SUMMARY_ENABLED=1`. Contrôler le premier passage planifié. Si GitHub tarde à lancer le planning, exécuter **External Lumen health probe** sur `main` avec **Record the observation in SoldeZen**. Ce passage utilise les mêmes RPC et garde les mêmes limites que la planification. Pour suspendre les e-mails, remettre `LUMEN_ACTIVITY_ENABLED` à `0` côté o2switch.
