@@ -936,6 +936,10 @@ Every change affecting content, progression, shop, sky navigation or saved state
 - Historical fixed quest numbers remain test fixtures only, not current campaign endpoints.
 Tests should assert relationships derived from the content registry rather than a specific future total. Documentation alone is not proof of runtime coverage.
 
+The ranking guard assertions in `scripts/fixtures/official-time.sql` require the
+fixed #962 reason for an absent run, invalid counters, a hint-flag mismatch, a
+versioned assistance mismatch and a changed replay. The same fixture verifies
+one confirmed score, the original receipt and an unchanged player snapshot.
 ## Cloud persistence regression matrix
 
 Critical alert tests run the production migration against disposable PostgreSQL and simulate interrupted transport, replayed observations, one affected account and unauthorized acknowledgements. The public probe test also rejects maintenance HTML with HTTP 200.
