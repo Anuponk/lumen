@@ -693,6 +693,8 @@ Production evidence (22 November 2026): one capture from 15 November, recorded b
 
 Captures for a non-participating account (#962) are archived when `lumen_ranking_finish` answers `membership_required`, as withdrawal already does. Before this, they stayed pending and were resent at every 30-second queue refresh. On 22 November 2026 one such account replayed 133 captures, about 4.4 finish calls a second, 33,935 calls in 16 hours.
 
+Both terminal answers are also remembered for the page lifetime (#962). On 22 November 2026 a device on the fixed build still resent its refused capture at every refresh although the client logic was verified with the real supabase-js error; the archive write most likely failed on that device (e.g. storage full). The refusal is now sent at most once per page load; the capture stays pending in storage and is never deleted.
+
 `lumen.profiles` owns the canonical unique nickname and durable ranking opposition;
 `ranking_members` owns public participation. Automatic participation is server-gated
 by the published information boundary, never inferred from reconnect.

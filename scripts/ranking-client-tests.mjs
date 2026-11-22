@@ -87,3 +87,24 @@ console.log('Ranking staging: offline, reload, exact counters, owner changes, be
  assert.equal(finishes,3,'later periodic flushes send nothing');
  console.log('Ranking membership: non-participating captures archived once, no periodic replay');
 }
+
+// #962: on the fixed build, one device still resent the refused capture every refresh:
+// the archive copy could not be written (localStorage full). The refusal is remembered
+// for the page lifetime; the capture stays durable and nothing is deleted.
+{
+ const base=memory(),full={...base,get length(){return base.length},key:base.key,getItem:base.getItem,removeItem:base.removeItem,
+  setItem(k,v){if(k.startsWith('lumenRankingObsoleteV1:'))throw Object.assign(Error('quota'),{name:'QuotaExceededError'});return base.setItem(k,v)}};
+ let finishes=0,begins=0;
+ const connection={async rpc(name){
+  if(name==='lumen_ranking_finish'){finishes++;return {error:{code:'22023',message:'ranking_finish_hint_flag_mismatch'}}}
+  begins++;return {data:{eligible:true}};
+ }};
+ const queue=createRankingClient({storage:full,getContext:()=>({owner:'owner',client:connection})});
+ queue.stage({id:'stale'}, {...a,attemptId:'stale'});
+ assert.deepEqual((await queue.flush()).map(r=>[r.status,r.reason]),[['refused','ranking_finish_hint_flag_mismatch']]);
+ for(let i=0;i<5;i++)assert.deepEqual((await queue.flush()).map(r=>r.status),['refused']);
+ assert.equal(finishes,1,'a refusal is sent once per page even when archiving fails');
+ assert.equal(begins,1,'no begin either');
+ assert.equal(queue.entries('owner').length,1,'the capture is kept, never deleted');
+ console.log('Ranking refusals: storage-full archive failure does not replay the refusal');
+}
