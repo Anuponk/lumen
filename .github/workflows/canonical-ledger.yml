@@ -273,6 +273,8 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261111133853_official_attempt_time.sql \
             -f supabase/migrations/20261111133853_official_attempt_time.sql \
+            -f supabase/migrations/20261123000000_ranking_finish_reason_962.sql \
+            -f supabase/migrations/20261123000000_ranking_finish_reason_962.sql \
             -f scripts/fixtures/official-time.sql
           python3 scripts/official-time-concurrency.py
       - name: Verify the 1 MiB profile ceiling and preserved function definitions
