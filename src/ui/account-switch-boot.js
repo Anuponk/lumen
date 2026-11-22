@@ -6,7 +6,17 @@ try{
  const storedSession=localStorage.getItem('sb-tjdjlavmusmncuszhsuw-auth-token');
  if(query.get('qa')!=='new'&&(authReturn||storedSession||sessionStorage.getItem('lumenAccountSwitchHoldV1')==='1')){
   const hold=document.getElementById('accountSwitchHold');
+  // Cover the previous account immediately. Reveal the copy only once it
+  // uses the same saved preference as the game shell.
+  hold.classList.add('localizing');
   hold.hidden=false;
+  import('./i18n.js').then(({createLocalePreference})=>{
+   if(!hold.classList.contains('localizing'))return;
+   const preference=createLocalePreference({storage:localStorage,languages:navigator.languages,language:navigator.language});
+   const {t}=preference.translator();
+   document.documentElement.lang=preference.locale;
+   for(const node of hold.querySelectorAll('[data-game-text]'))node.textContent=t(node.dataset.gameText);
+  }).catch(()=>{}).finally(()=>hold.classList.remove('localizing'));
   document.body.classList.add('account-switch-hold');
   // A pending identity change cannot use the prior owner's offline cache.
   const storedOwner=storedSession?JSON.parse(storedSession)?.user?.id:null;

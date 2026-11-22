@@ -146,6 +146,7 @@ function translateGameCopy(){
  }
 }
 translateGameCopy();
+document.getElementById('accountSwitchHold')?.classList.remove('localizing');
 setSecondaryStarsLabel((lit,count)=>t('sky.secondaryStars',{lit,count}));
 // #748: the presentation page links to /?install=1. Read once and removed from the URL
 // before anything else reads it, so the first-visit welcome still plays.
