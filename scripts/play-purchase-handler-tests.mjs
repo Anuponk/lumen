@@ -57,7 +57,7 @@ function fixture({user={id:'verified-player'},product={product_id:'real-adventur
    if(token!=='provider-token')throw Error('invalid signature');
    calls.push({kind:'oidc',options});
    return {payload:{email:'play-push@synthetic.iam.gserviceaccount.com',email_verified:true,...claims}};
-  },createClient,fetch,console:{error(){},warn(...args){logs.push(args.join(' '))},info(){}},Deno:{serve:fn=>{handler=fn},env:{get:k=>values[k]}}});
+  },createClient,fetch,console:{error(){},warn(...args){logs.push(args.join(' '))},log(...args){logs.push(args.join(' '))},info(){}},Deno:{serve:fn=>{handler=fn},env:{get:k=>values[k]}}});
  const request=({body={mode:'verify',productId:'real_adventure_02',purchaseToken:'play-token-1'},token='player-token',origin='https://lumen.nopuna.fr',method='POST',headers={},path='/play'}={})=>
   handler(new Request('https://synthetic.invalid'+path,{method,headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{}),...(origin?{origin}:{}),...headers},...(method==='POST'?{body:JSON.stringify(body)}:{})}));
  return {calls,request,logs};
@@ -138,6 +138,23 @@ test('RTDN refunds reread the current order and never acknowledge a stale or mis
  assert.deepEqual(records(replay.calls,'lumen_record_purchase'),[]);
  const unmatched=fixture({env:rtdnConfig});
  assert.equal((await push(unmatched,notification)).status,503,'a refund can be delivered before the receipt');
+ assert.deepEqual(JSON.parse(unmatched.logs[0]),{event:'lumen_play_rtdn_deferred',reason:'refund_receipt_pending',messageKey:sha('lumen-rtdn:42')});
+ // #962: production redelivered one such refund every ~8 min since 21/11. When Google
+ // confirms this exact order is refunded or cancelled, nothing was or will be granted.
+ for(const state of ['REFUNDED','CANCELED']){
+  const closed=fixture({env:rtdnConfig,order:{...order,state}});
+  assert.equal((await push(closed,notification)).status,204,state+' refund without receipt is closed');
+  assert.deepEqual(JSON.parse(closed.logs.at(-1)),{event:'lumen_play_rtdn_closed',reason:'refund_without_receipt',messageKey:sha('lumen-rtdn:42')});
+  assert(!closed.logs.join(' ').includes('play-token-1')&&!closed.logs.join(' ').includes('GPA.1'),'no token or order id in logs');
+  assert.deepEqual(records(closed.calls),[]);assert.deepEqual(records(closed.calls,'lumen_record_purchase'),[]);
+  assert(!closed.calls.some(c=>c.url?.endsWith(':acknowledge')||c.url?.includes('/tokens/')),'no purchase check, record or acknowledgement');
+ }
+ for(const [label,opts] of [['pending order',{order:{...order,state:'PENDING'}}],['other order',{order:{...order,orderId:'GPA.2'}}],
+  ['other token',{order:{...order,purchaseToken:'other'}}],['order unavailable',{order,orderStatus:404}],['Google error',{order,orderStatus:500}]]){
+  const kept=fixture({env:rtdnConfig,...opts});
+  assert.equal((await push(kept,notification)).status,503,label+' stays redeliverable');
+  assert.deepEqual(records(kept.calls,'lumen_record_purchase'),[]);
+ }
  const mismatch=fixture({env:rtdnConfig,known,order:{...order,purchaseToken:'other'}});
  assert.equal((await push(mismatch,notification)).status,503);
  assert.deepEqual(records(mismatch.calls,'lumen_record_purchase'),[]);

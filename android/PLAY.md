@@ -414,6 +414,17 @@ du plus ancien message avant de livrer cette version Edge. La catégorie
 différés. Le journal n'inclut que des raisons prédéfinies et, après
 authentification du push, une empreinte de l'identifiant de livraison Pub/Sub.
 L'empreinte déduplique les redélivraisons dans les compteurs.
+
+Le 22 novembre 2026, la version Edge 10 (#975) a attribué les 503 RTDN observés
+depuis le 21/11 à 11 h 06 UTC à une seule cause : `refund_receipt_pending`.
+Google redélivrait toutes les 7 à 10 minutes une annulation pour un achat
+jamais enregistré dans le registre Lumen. Rien n'avait été accordé.
+
+Désormais, sans reçu, la livraison n'est close (204, raison journalisée
+`refund_without_receipt`) que si `orders.get` confirme que cette commande, avec
+ce jeton, est `REFUNDED` ou `CANCELED`. Un contrôle d'achat ultérieur
+n'accorderait alors rien. Dans tous les autres cas (commande en attente,
+introuvable, autre jeton, erreur Google), la notification reste redélivrable.
 [Configurer RTDN](https://developer.android.com/google/play/billing/getting-ready#configure-rtdn).
 [Authentifier l'abonnement push](https://docs.cloud.google.com/pubsub/docs/authenticate-push-subscriptions).
 
