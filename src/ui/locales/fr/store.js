@@ -34,6 +34,7 @@ export default Object.freeze({
   'store.playPaused': "Les nouveaux achats Google Play sont temporairement suspendus.",
   'store.playLoading': "Chargement des tarifs Google Play…",
   'store.playUnavailable': "Google Play ne permet pas cet achat pour le moment. Vérifie ta connexion et réessaie.",
+  'store.playClientUnavailable': "Google Play ne répond pas à Lumen. Ferme complètement Lumen et Chrome (depuis les applications récentes), puis rouvre Lumen.",
   'store.paymentSoon': "Paiement bientôt disponible.",
   'store.terms': "Conditions générales de vente",
   'store.createOrSignIn': "Créer un compte ou se connecter",
