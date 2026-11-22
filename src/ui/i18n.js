@@ -34,7 +34,9 @@ import enDuel from './locales/en/duel.js';
 import frAdmin from './locales/fr/admin.js';
 import enAdmin from './locales/en/admin.js';
 import frCircles from './locales/fr/circles.js';
+import frPlay from './locales/fr/play.js';
 import enCircles from './locales/en/circles.js';
+import enPlay from './locales/en/play.js';
 
 import frConstellations from './locales/fr/constellations.js';
 import enConstellations from './locales/en/constellations.js';
@@ -58,15 +60,16 @@ import esHints from './locales/es/hints.js';
 import esDuel from './locales/es/duel.js';
 import esAdmin from './locales/es/admin.js';
 import esCircles from './locales/es/circles.js';
+import esPlay from './locales/es/play.js';
 import esConstellations from './locales/es/constellations.js';
 
 const DEFAULT_LOCALE = 'fr';
 const PREFERENCE_KEY = 'lumen.locale';
 
 export const locales = Object.freeze({
-  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frPrivacy, ...frDaily, ...frResults, ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome, ...frSocial, ...frDuel, ...frAdmin, ...frCircles, ...frHints, ...frConstellations, ...frMap, ...frStore, ...frStatus, ...frAccountFlow, ...frSky, ...frShell }) }),
-  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enPrivacy, ...enDaily, ...enResults, ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome, ...enSocial, ...enDuel, ...enAdmin, ...enCircles, ...enHints, ...enConstellations, ...enMap, ...enStore, ...enStatus, ...enAccountFlow, ...enSky, ...enShell }) }),
-  es: Object.freeze({ nativeName: 'Español', enabled: false, fallback: 'fr', messages: Object.freeze({ ...esPrivacy, ...esDaily, ...esResults, ...esBoard, ...esWelcome, ...esLearning, ...esPwaWelcome, ...esSocial, ...esDuel, ...esAdmin, ...esCircles, ...esHints, ...esConstellations, ...esMap, ...esStore, ...esStatus, ...esAccountFlow, ...esSky, ...esShell }) }),
+  fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frPrivacy, ...frDaily, ...frResults, ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome, ...frSocial, ...frDuel, ...frAdmin, ...frCircles, ...frPlay, ...frHints, ...frConstellations, ...frMap, ...frStore, ...frStatus, ...frAccountFlow, ...frSky, ...frShell }) }),
+  en: Object.freeze({ nativeName: 'English', enabled: true, fallback: 'fr', messages: Object.freeze({ ...enPrivacy, ...enDaily, ...enResults, ...enBoard, ...enWelcome, ...enLearning, ...enPwaWelcome, ...enSocial, ...enDuel, ...enAdmin, ...enCircles, ...enPlay, ...enHints, ...enConstellations, ...enMap, ...enStore, ...enStatus, ...enAccountFlow, ...enSky, ...enShell }) }),
+  es: Object.freeze({ nativeName: 'Español', enabled: true, fallback: 'fr', messages: Object.freeze({ ...esPrivacy, ...esDaily, ...esResults, ...esBoard, ...esWelcome, ...esLearning, ...esPwaWelcome, ...esSocial, ...esDuel, ...esAdmin, ...esCircles, ...esPlay, ...esHints, ...esConstellations, ...esMap, ...esStore, ...esStatus, ...esAccountFlow, ...esSky, ...esShell }) }),
 });
 
 function lookup(registry, locale) {

@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {functionSource} from './source-tools.mjs';
+import {functionSource,frenchT} from './source-tools.mjs';
 
 const ui=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 test('a browser quota refusal does not claim the whole phone is full',()=>{
- const message=vm.runInNewContext('('+functionSource(ui,'cloudReconciliationMessage')+')')({reason:'partial_reconciliation',detail:'storage_quota'});
+ const message=vm.runInNewContext('('+functionSource(ui,'cloudReconciliationMessage')+')',{t:frenchT})({reason:'partial_reconciliation',detail:'storage_quota'});
  assert.match(message,/Espace de stockage de LUMEN/);
  assert.doesNotMatch(message,/appareil saturé/);
 });

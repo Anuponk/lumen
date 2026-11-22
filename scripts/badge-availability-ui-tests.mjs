@@ -10,7 +10,7 @@ import {readQuestView} from '../src/campaign/quest-view.js';
 import {CONTENT_CONSTELLATIONS} from '../src/campaign/content.js';
 const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
 const controls=Object.fromEntries(['badgeUnlockOverlay','badgeUnlockTitle','badgeUnlockCopy'].map(id=>[id,{hidden:true,dataset:{},style:{}}]));
-const ctx=vm.createContext({lumenProgress:{performances:{}},badgeCooldownRemaining,badgeCooldownLabel,performanceEligibility,QUEST_MILESTONES,
+const ctx=vm.createContext({t:createTranslator({locale:'fr'}).t,lumenProgress:{performances:{}},badgeCooldownRemaining,badgeCooldownLabel,performanceEligibility,QUEST_MILESTONES,
  canonicalQuestForLegacy,canonicalQuestList,canonicalScopeProgress,readQuestView,CONTENT_CONSTELLATIONS,
  document:{getElementById:id=>controls[id]},pauseGameClock:()=>{},levelIndex:2});
 ctx.activeQuestOrdinal=()=>canonicalQuestForLegacy(ctx.levelIndex).ordinal;

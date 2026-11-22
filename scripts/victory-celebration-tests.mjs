@@ -160,7 +160,7 @@ test('the victory surface uses the shared engine with no quest-number conditions
   assert.doesNotMatch(line, /ordinal|levelIndex|questOrdinal/, 'No quest-number condition decides the celebration');
   assert.match(ui, /victoryCelebration\.amplify\(celebrationLevel\(\{\.\.\.victoryFacts,rank:summary\.rank\}\)\.level\)/);
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(ui, /sky-reveal-progress">◔ '\+p\.lit\+' \/ '\+p\.count\+' étoiles/, 'One star-progress line under the constellation');
+  assert.match(ui, /sky-reveal-progress">'\+escapeSocialHtml\(t\('victory\.progress',\{lit:p\.lit,count:p\.count\}\)/, 'One star-progress line under the constellation');
   assert.doesNotMatch(html, /skyRevealProgress/, 'No duplicate progress line');
   const order = ['skyRevealCanvas', 'skyRevealRewards', 'skyRevealPerformance', 'skyRevealTime', 'skyRevealRank', 'skyRevealPodium', 'skyRevealNext', 'skyRevealSky', 'skyRevealShare', 'skyRevealRetry'];
   const positions = order.map((id) => html.indexOf('id="' + id + '"'));

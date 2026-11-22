@@ -1,4 +1,5 @@
 // Decorative sky lights only: never HIP stars or new constellation segments.
+import frPlay from "./locales/fr/play.js";
 const halton=(index,base)=>{let value=0,fraction=1;for(let n=index;n>0;n=Math.floor(n/base)){fraction/=base;value+=fraction*(n%base);}return value;};
 const segmentDistance=(p,a,b)=>{
  const dx=b[0]-a[0],dy=b[1]-a[1],length=dx*dx+dy*dy;
@@ -27,6 +28,9 @@ export function secondaryStarPositions(figure,count){
  return points;
 }
 
+// #945: the screen installs a translated label; the default is the French catalogue copy.
+let secondaryLabel=(lit,count)=>frPlay['sky.secondaryStars'].replace('{lit}',lit).replace('{count}',count);
+export function setSecondaryStarsLabel(label){if(typeof label==='function')secondaryLabel=label}
 export function secondaryStarsSvg(figure,total,earned,beforeEarned=earned){
  const count=Math.max(0,total-figure.count);
  if(!count)return '';
@@ -34,5 +38,5 @@ export function secondaryStarsSvg(figure,total,earned,beforeEarned=earned){
  const radius=Math.min(2.8,30/Math.sqrt(count));
  const shape=`M0 ${-radius} L${radius*.38} ${-radius*.38} L${radius} 0 L${radius*.38} ${radius*.38} L0 ${radius} L${-radius*.38} ${radius*.38} L${-radius} 0 L${-radius*.38} ${-radius*.38} Z`;
  const stars=secondaryStarPositions(figure,count).map(([x,y],i)=>'<path class="quest-secondary-star'+(i<lit?' on':'')+(i<lit&&i>=before?' new-secondary':'')+'" data-secondary-index="'+i+'" transform="translate('+x+' '+y+')" d="'+shape+'"/>').join('');
- return '<g class="quest-secondary-sky" aria-label="Étoiles secondaires : '+lit+' sur '+count+'">'+stars+'</g>';
+ return '<g class="quest-secondary-sky" aria-label="'+String(secondaryLabel(lit,count)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c])+'">'+stars+'</g>';
 }

@@ -11,6 +11,7 @@ import {questIsCompleted} from '../src/persistence/canonical-progress.js';
 import {hasPlayReviewAttempt,playReviewQuestDecision} from '../src/persistence/play-review-navigation.js';
 import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
 import {functionSource} from './source-tools.mjs';
+import {constellationDisplayName} from '../src/campaign/constellation-facts.js';
 import {celestialScope} from '../src/ui/celestial-progress.js';
 import {milkyWaySvg} from '../src/ui/celestial-effects.js';
 
@@ -194,7 +195,8 @@ test('Grand Chien 8/10 cannot advertise a final constellation quest',()=>{
  const elements=new Map(['challengeBanner','challengeTitle','challengeCopy'].map(id=>[id,{}]));
  const context={...canonical,canonicalActiveQuest:null,levelIndex:quest.legacyIndex,lumenProgress:{stars:{}},
   milestoneFor,activeBonusChallenge:()=>null,bonusChallengeFor:()=>null,document:{getElementById:id=>elements.get(id)}};
- vm.createContext(context);vm.runInContext(functionSource(source,'renderXP'),context);context.renderXP();
+ Object.assign(context,{t:createTranslator({locale:'fr'}).t,constellationDisplayName});
+ vm.createContext(context);vm.runInContext(functionSource(source,'localizedChallenge'),context);vm.runInContext(functionSource(source,'renderXP'),context);context.renderXP();
  assert.doesNotMatch(elements.get('challengeTitle').textContent||'',/Défi final/);
  context.canonicalActiveQuest=group.at(-1);context.renderXP();
  assert.match(elements.get('challengeTitle').textContent,/Défi final/,'The real last inserted quest receives the finale banner');
