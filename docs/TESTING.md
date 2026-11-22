@@ -204,6 +204,12 @@ The eighth check verifies the existing confirmation describes irreversible
 progress loss in Lumen without infrastructure details. No real account deletion,
 server deployment or physical acceptance is claimed.
 
+Production isolation (#962): `scripts/cdp-client.mjs::connectBrowser` blocks the production Supabase host (`tjdjlavmusmncuszhsuw.supabase.co`) for every browser suite. Any blocked-URL list a suite sets later keeps this host, so a suite can never reach production by replacing the list.
+
+On 22 November 2026, the production logs showed about 65,000 anonymous reads a day from HeadlessChrome with the referer `http://127.0.0.1:8000/`. They came from GitHub Actions runners and local runs: 32,288 `lumen_daily_today`, 23,873 `lumen_list_quest_challenges_v2` and 9,087 `lumen_get_historical_performance`.
+
+Set `LUMEN_TEST_ALLOW_PRODUCTION=1` only for a deliberate, documented production check; CI never sets it. `production-isolation-tests.mjs` checks the guard.
+
 Browser shutdown: `scripts/cdp-client.mjs::closeBrowser` extends the exact
 Browser.close acknowledgement-timeout policy already used by the sky suite to
 the remaining unguarded core suites. The quality runner still owns process
