@@ -5,11 +5,12 @@ import os
 import re
 import sys
 from collections import Counter
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 METRICS = {"load": "Chargement", "grid_render": "Construction de la grille",
@@ -301,6 +302,36 @@ def clients(env, *, brevo_diagnostics=False):
     return rpc, send
 
 
+def digest_settings(env, *, require_recipient=True):
+    if env.get("LUMEN_DAILY_SUMMARY_ENABLED") != "1":
+        return None
+    try:
+        zone = ZoneInfo(env.get("LUMEN_DAILY_SUMMARY_ZONE") or "Europe/Paris")
+        hour = env.get("LUMEN_DAILY_SUMMARY_TIME") or "08:15"
+        if not re.fullmatch(r"(?:[01][0-9]|2[0-3]):[0-5][0-9]", hour):
+            raise ValueError("invalid dispatch time")
+        settings = {"zone": zone, "time": time.fromisoformat(hour)}
+        if require_recipient:
+            recipient = env["LUMEN_DAILY_SUMMARY_RECIPIENT"]
+            if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", recipient):
+                raise ValueError("invalid digest recipient")
+            settings["recipient"] = recipient
+        return settings
+    except (KeyError, ValueError, ZoneInfoNotFoundError):
+        return {"invalid": True}
+
+
+def enqueue_digest(rpc, settings, now):
+    if not settings or settings.get("invalid"):
+        return
+    local = now.astimezone(settings["zone"])
+    if local.time() >= settings["time"]:
+        rpc("lumen_enqueue_health_digest", {
+            "p_date": (local.date() - timedelta(days=1)).isoformat(),
+            "p_zone": settings["zone"].key,
+        })
+
+
 def main(env):
     if env.get("LUMEN_ACTIVITY_ENABLED") != "1":
         return 0
@@ -310,6 +341,17 @@ def main(env):
     except (KeyError, ValueError, OSError):
         print("Lumen activity mail: configuration invalid", file=sys.stderr)
         return 1
+
+    digest_unavailable = False
+    if "daily_summary" in config["kinds"]:
+        digest = digest_settings({**env, "LUMEN_DAILY_SUMMARY_ENABLED": "1"}, require_recipient=False)
+        digest_unavailable = bool(digest.get("invalid"))
+        try:
+            enqueue_digest(rpc, digest, datetime.now(timezone.utc))
+        except RuntimeError:
+            digest_unavailable = True
+        if digest_unavailable:
+            print("Lumen activity mail: daily digest unavailable", file=sys.stderr)
 
     try:
         results = drain(
@@ -323,7 +365,7 @@ def main(env):
         return 1
     if results:
         print(json.dumps(results, sort_keys=True))
-    return int(any(results.get(outcome) for outcome in ("rejected", "unknown")))
+    return int(digest_unavailable or any(results.get(outcome) for outcome in ("rejected", "unknown")))
 
 
 if __name__ == "__main__":

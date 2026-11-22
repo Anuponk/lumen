@@ -1,5 +1,6 @@
 """Local tests use synthetic payloads and never initialize an external transport."""
 import unittest
+from datetime import datetime, timezone
 from io import BytesIO
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError
@@ -89,6 +90,34 @@ class ActivityMailTest(unittest.TestCase):
         self.assertEqual(delivered[0]["to"], [{"email": "admin@example.test"}])
         self.assertEqual(len(delivered), 3)
 
+    def test_worker_queues_paris_digest_before_draining(self):
+        env = {
+            "LUMEN_ACTIVITY_ENABLED": "1", "LUMEN_ACTIVITY_KINDS": "signup,daily_summary",
+            "LUMEN_ACTIVITY_START": "2026-11-21T00:00:00Z",
+            "LUMEN_ACTIVITY_SUPABASE_URL": "https://fixture.supabase.co",
+            "LUMEN_ACTIVITY_SENDER": "app@example.test",
+            "LUMEN_ACTIVITY_RECIPIENT": "activity@example.test",
+            "LUMEN_DAILY_SUMMARY_RECIPIENT": "digest@example.test",
+        }
+        rpc = Mock(side_effect=lambda name, _: True if name == "lumen_enqueue_health_digest" else [])
+        with patch("lumen_activity_mail.clients", return_value=(rpc, None)), \
+             patch("lumen_activity_mail.datetime", wraps=datetime) as clock:
+            clock.now.return_value = datetime(2026, 11, 22, 7, 14, tzinfo=timezone.utc)
+            self.assertEqual(main(env), 0)
+            self.assertEqual([call.args[0] for call in rpc.call_args_list], ["lumen_claim_activity_mail"])
+            rpc.reset_mock()
+            clock.now.return_value = datetime(2026, 11, 22, 7, 15, tzinfo=timezone.utc)
+            self.assertEqual(main(env), 0)
+            self.assertEqual([call.args[0] for call in rpc.call_args_list],
+                             ["lumen_enqueue_health_digest", "lumen_claim_activity_mail"])
+            self.assertEqual(rpc.call_args_list[0].args[1],
+                             {"p_date": "2026-11-21", "p_zone": "Europe/Paris"})
+            rpc.reset_mock()
+            rpc.side_effect = [RuntimeError("fixture unavailable"), []]
+            self.assertEqual(main(env), 1)
+            self.assertEqual([call.args[0] for call in rpc.call_args_list],
+                             ["lumen_enqueue_health_digest", "lumen_claim_activity_mail"])
+
     def test_host_worker_and_receipt_route_digest_to_its_own_mailbox(self):
         env = {
             "LUMEN_ACTIVITY_ENABLED": "1", "LUMEN_ACTIVITY_KINDS": "daily_summary",
@@ -99,7 +128,7 @@ class ActivityMailTest(unittest.TestCase):
             "LUMEN_ACTIVITY_RECIPIENT": "activity@example.test",
             "LUMEN_DAILY_SUMMARY_RECIPIENT": "digest@example.test",
         }
-        with patch("lumen_activity_mail.clients", return_value=(None, None)), \
+        with patch("lumen_activity_mail.clients", return_value=(Mock(return_value=True), None)), \
              patch("lumen_activity_mail.drain", return_value={}) as drain_mail:
             self.assertEqual(main(env), 0)
             self.assertEqual(drain_mail.call_args.args[-1]["digest_recipient"], "digest@example.test")

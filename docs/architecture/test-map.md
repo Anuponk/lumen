@@ -419,7 +419,7 @@ Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the 
 | In-game confirmations (#921) | `lumen-dialog-tests.mjs`, `lumen-dialog-browser-tests.mjs`, `quest-review-tests.mjs`, `abandon-attempt-browser-tests.mjs` | Full gate |
 | Mastery celebration (#886) | `mastery-prelude-tests.mjs`, `adventure-mastery-browser-tests.mjs`, `admin-preview-browser-tests.mjs`, `celestial-ux-tests.mjs` | Full gate |
 | Menu pause (#925) | `menu-pause-tests.mjs`, `menu-pause-browser-tests.mjs`, `abandon-attempt-browser-tests.mjs`, `attempt-engine-tests.mjs` | Full gate |
-| Health cockpit and daily digest (#949) | `analytics-admin-browser-tests.mjs`, `lumen_critical_monitor_tests.py`, `fixtures/health-cockpit.sql` | Filtered view, verified data sources, timezone and deduplicated synthetic send |
+| Health cockpit and daily digest (#949) | `analytics-admin-browser-tests.mjs`, `lumen_activity_mail_tests.py`, `fixtures/health-cockpit.sql` | Filtered view, local time cutoff, worker resilience and deduplicated send |
 | Mail receipt rehearsal (#946) | `.github/workflows/lumen-mail-receipt.yml`, `scripts/lumen_activity_mail_receipt.py` | Disposable PostgreSQL and replay, plus manual o2switch transport and mailbox verification |
 | Analytics release comparison (#708 D) | `analytics-versions-tests.mjs`, `fixtures/admin-version-health-708.sql` (ledger CI), `analytics-admin-browser-tests.mjs` | Full gate |
 | Analytics acquisition & engagement (#708 C) | `analytics-engagement-tests.mjs`, `fixtures/admin-engagement-708.sql` (ledger CI), `analytics-admin-browser-tests.mjs` | Full gate |
