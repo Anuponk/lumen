@@ -83,3 +83,5 @@ Le bilan ajoute au plus un message au quota partagé par jour, sans service supp
 ### Recette des e-mails dans GitHub Actions
 
 Déclencher **Lumen mail receipt** sur `main`, une fois les migrations vérifiées et les secrets de `Production` configurés. Le workflow vérifie en lecture seule que les RPC sont exposées par SoldeZen. Il utilise ensuite un PostgreSQL jetable pour simuler une inscription confirmée, un achat avec droit vérifié, trois échecs de sonde et le bilan de la veille. Les quatre messages préfixés `[RECETTE]` empruntent le transport Brevo réel et les destinataires configurés. Le deuxième passage rejoue le signal et le paiement et vérifie qu'aucun nouvel envoi n'est soumis. Vérifier un exemplaire de chaque avis dans la boîte concernée. Un nouveau déclenchement manuel crée une nouvelle recette.
+
+En cas de refus Brevo, le journal de recette affiche le statut HTTP et une catégorie prédéfinie. Les valeurs des clés, les adresses et le texte de la réponse restent hors du journal.

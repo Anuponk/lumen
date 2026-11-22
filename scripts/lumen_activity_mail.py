@@ -43,7 +43,23 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def post(url, headers, payload):
+def brevo_error_label(response):
+    if not isinstance(response, dict):
+        return "unknown"
+    message = response.get("message")
+    if isinstance(message, str) and any(
+        marker in message.casefold()
+        for marker in ("unrecognised ip address", "unrecognized ip address", "ip address is not authorized")
+    ):
+        return "ip_not_authorized"
+    code = response.get("code")
+    if code in ("unauthorized", "permission_denied", "invalid_parameter", "missing_parameter",
+                "account_under_validation", "not_enough_credits", "forbidden"):
+        return code
+    return "unknown"
+
+
+def post(url, headers, payload, *, brevo_diagnostics=False):
     request = Request(url, data=json.dumps(payload).encode(), headers={
         "content-type": "application/json", **headers,
     }, method="POST")
@@ -52,7 +68,13 @@ def post(url, headers, payload):
             return response.status, json.loads(response.read(65536))
     except HTTPError as error:
         with error:
-            return error.code, None
+            if not brevo_diagnostics:
+                return error.code, None
+            try:
+                response = json.loads(error.read(8192))
+            except (ValueError, OSError):
+                response = None
+            return error.code, {"error": brevo_error_label(response)}
     except (URLError, TimeoutError, ValueError, OSError):
         return 0, None
 
@@ -239,7 +261,7 @@ def configuration(env):
     }
 
 
-def clients(config, env):
+def clients(config, env, *, brevo_diagnostics=False):
     def secret(name):
         return (env.get(name) or Path(env[name + "_FILE"]).read_text()).strip()
 
@@ -256,7 +278,8 @@ def clients(config, env):
         return value
 
     def send(payload):
-        return post("https://api.brevo.com/v3/smtp/email", {"api-key": brevo}, payload)
+        return post("https://api.brevo.com/v3/smtp/email", {"api-key": brevo}, payload,
+                    brevo_diagnostics=brevo_diagnostics)
 
     return rpc, send
 
