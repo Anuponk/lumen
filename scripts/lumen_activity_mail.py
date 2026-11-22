@@ -11,7 +11,11 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
+from lumen_health_digest import METRICS, format_digest
+
+
 SUBJECTS = {
+    "daily_summary": "Bilan de santé quotidien",
     "signup": "Nouveau compte joueur",
     "purchase": "Achat confirmé",
     "purchase_missing_access": "P0 · Achat confirmé sans accès",
@@ -53,12 +57,11 @@ def timestamp(value):
 
 def format_notice(kind, payload):
     subject = "[Lumen] " + SUBJECTS[kind]
+    if kind == "daily_summary":
+        day, lines = format_digest(payload)
+        return subject + " · " + day, "\n".join([*lines, "", COCKPIT_URL + "?section=sync"])
     if kind == "performance_regression":
-        metrics = {"load": "Chargement", "grid_render": "Construction de la grille",
-                   "grid_input": "Interaction", "long_task": "Traitement bloquant",
-                   "victory_gap": "Fluidité de la victoire", "cloud_rpc": "Appel cloud",
-                   "sync_rpc": "Appel de sauvegarde", "hydration_error_rate": "Échecs de restauration"}
-        metric = metrics[payload["metric"]]
+        metric = METRICS[payload["metric"]]
         version, reference = payload["version"], payload["reference"]
         if any(not re.fullmatch(r"\d{1,3}\.\d{1,3}\.\d{1,3}\+\d{1,9}", entry) for entry in [version, reference]):
             raise ValueError("invalid release")
@@ -136,9 +139,10 @@ def drain(claim, finish, send, config):
         except (KeyError, ValueError, TypeError):
             result = "rejected"
         else:
+            recipient = config.get("digest_recipient", config["recipient"]) if event["kind"] == "daily_summary" else config["recipient"]
             result = brevo_outcome(*send({
                 "sender": {"email": config["sender"], "name": "Lumen"},
-                "to": [{"email": config["recipient"]}],
+                "to": [{"email": recipient}],
                 "subject": subject, "textContent": copy,
                 "tags": ["lumen-activity", event["kind"].replace("_", "-")],
             }))

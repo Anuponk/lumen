@@ -497,6 +497,8 @@ progression writes. The existing server limiter governs mail requests.
 
 The [critical-alert contract](OBSERVABILITY_946.md#alertes-critiques-947) reads existing sync observations and the payment access projection, and records only operational incident summaries.
 
+The [health cockpit and digest contract](OBSERVABILITY_946.md#cockpit-de-santé-et-bilan-quotidien-949) defines a capability-gated read projection and a daily entry in the existing delivery queue. The reporting reads authoritative account and payment data without mutating profiles, purchases or entitlements.
+
 The [performance monitoring contract](OBSERVABILITY_946.md#détection-des-régressions-948) documents a separate opt-in measurement store, retention, and aggregated administration. It uses no save or purchase write paths.
 
 The [admin activity mail contract](OBSERVABILITY_946.md#notifications-dactivité-950) describes the read-only projection of Auth and commerce events and its separate delivery queue.

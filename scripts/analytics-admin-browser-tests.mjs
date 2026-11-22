@@ -19,6 +19,7 @@ const source=multiAccountFixture({admin:profile},'admin').replace("if(!uid())ret
   if(name==='lumen_admin_sync_health')return sessionStorage.getItem('healthUnavailable')?{error:{message:'Unavailable'}}:{data:{affected_players:2,failures:3,stalled_players:1,blocked:1,by_reason:[{reason:'storage_quota',count:2}],by_version:[{version:'1.11.1+615',count:3}],outbox:{pending_players:1,critical_players:1,alerts:[{state:'pending',pending:2,version:'1.11.1+615',since:new Date(Date.now()-3600000).toISOString()}]},diagnostics:{timeline:[],signatures:[{code:'runtime_exception',stage:'runtime',app_version:'1.11.1+615',platform:'desktop',browser:'chromium',occurrences:5,sessions:2}]}}};
   if(name==='lumen_admin_player_observations')return {data:{players:{'u:admin':{state:'pending',observed_at:new Date(Date.now()-30000).toISOString()},'u:new':{state:'failure',observed_at:new Date(Date.now()-30000).toISOString()}}}};
   if(name==='lumen_admin_engagement')return sessionStorage.getItem('engagementUnavailable')?{error:{message:'Unavailable'}}:{data:{days:args?.p_days??7,traffic:{identifiers:10,human:2,qa:3,automated_test:4,undetermined:1},acquisition:[{channel:'player_share',opened:4,q1_started:2,q1_completed:1}],challenges:{created:13,senders:4,sent_to_friends:5,accepted:5,completed:5,abandoned:0,in_progress:0,guest_participations:0},daily:{flag_enabled:false,players:2,days:1,runs:2,completed:1,abandoned:0,in_progress:1},retention_by_channel:{measurable:false,reason:'no_persistent_campaign_identifier'}}};
+  if(name==='lumen_admin_health_snapshot')return {data:{"availability":{"state":"healthy","sampled_at":"2026-11-21T09:25:00Z"},"active":[{"severity":"P0","signature":"purchase","affected":2,"opened_at":"2026-11-21T06:00:00Z"}],"errors":[{"severity":"P0","kind":"purchase_missing_access","observed_at":"2026-11-21T06:00:00Z"},{"severity":"P1","kind":"performance_regression","metric":"load","version":"1.11.1+719","observed_at":"2026-11-21T02:00:00Z"}],"performance":[{"metric":"load","version":"1.11.1+719","reference":"1.11.1+718","platform":"desktop","browser":"chromium","network":"4g","p90":1800,"reference_p90":900,"samples":23,"reference_samples":25,"regression":true}],"signup_count":5,"signups":[{"effective_at":"2026-11-21T08:00:00Z","method":"google"}],"purchase_count":1,"purchases":[{"event_at":"2026-11-21T06:00:00Z","product_id":"fixture-pack","provider":"stripe","amount":10,"currency":"EUR"}],"currencies":[{"amount":"10","currency":"EUR","count":1}],"delivery":{"accepted":1}}};
   if(name==='lumen_admin_version_health')return {data:{days:args?.p_days??7,totals:{hydrations:200,failures:10},versions:[{version:'1.11.1+719',hydrations:40,failures:8,blocked:1,players:5,devices:6,waiting_devices:1},{version:'1.11.1+718',hydrations:150,failures:2,players:20}]}};
   if(name==='lumen_admin_recent_players')return {data:[{player_key:'u:admin',player_type:'authenticated',display_name:'Compte de test',sessions:1}]};
   return {data:[]};
@@ -55,6 +56,18 @@ try{
   await until("document.getElementById('analyticsVersions').textContent.includes('Comparaison des versions')",'release comparison');
   assert.equal(await evaluate("(()=>{const h=document.getElementById('analyticsVersions'),txt=h.textContent;return txt.includes('5 % sur 200 hydratations')&&!!h.querySelector('.analytics-row-alert')&&txt.includes('à examiner')&&document.documentElement.scrollWidth<=innerWidth})()"),true,'release comparison at '+viewport.width);
   await evaluate("document.querySelector('[data-analytics-section=players]').click()");
+
+  await until("document.getElementById('analyticsHealthCockpit').textContent.includes('Santé du service')",'health snapshot');
+  assert.equal(await evaluate(`(()=>{
+   const h=document.getElementById('analyticsHealthCockpit'),[version,severity]=h.querySelectorAll('select');
+   const initial=h.textContent;
+   version.value='1.11.1+718';version.dispatchEvent(new Event('change'));
+   const referenceVisible=h.textContent.includes('1800 ms');
+   severity.value='P0';severity.dispatchEvent(new Event('change'));
+   return initial.includes('Achat sans accès')&&initial.includes('10 EUR')&&initial.includes('5 inscriptions')
+     &&initial.includes('Acceptés par Brevo')&&referenceVisible&&!h.textContent.includes('1800 ms')
+     &&document.documentElement.scrollWidth<=innerWidth;
+  })()`),true,'health controls at '+viewport.width);
   const analysis=await evaluate(`(()=>{
    const modal=document.getElementById('adminCockpit'),nav=value=>modal.querySelector('[data-analytics-section="'+value+'"]').click();
    nav('overview');const overview=document.getElementById('analyticsOverview');
