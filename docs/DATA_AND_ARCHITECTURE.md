@@ -345,6 +345,13 @@ originals that were previously omitted from its local prefix selection.
 once the session has settled), the game runs the same archival for the
 `AccountSwitch` and `AccountSwitchAttempt` families only, without any player
 action or message. A changed session interrupts it; it retries at most twice.
+**All families above 1 MiB (#962).** Twenty seconds after launch, when the local
+recovery copies exceed 1 MiB, `maintainRecoveryBackups` runs the same archival for
+**every** family, in up to eight 50-copy batches, stopping on any interruption or
+unverified archive. Production, 22 November 2026: one account held 172 copies
+(8.4 MB of the ~10 MB origin limit), saves failed with `LOCAL_WRITE_FAILED` and only
+the manual « Libérer l’espace » button could recover. The run is logged locally as
+`local_backups_maintained`; pending outboxes and the current profile are never touched.
 In every family, retention now keeps the two most recent **distinct** copies:
 an identical copy (same content, another timestamp) is archived once under the
 `localStorage:<key>` of its most recent twin, with the same read-back rule, so
