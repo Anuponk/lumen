@@ -1,0 +1,64 @@
+name: Lumen mail receipt
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/lumen-mail-receipt.yml'
+      - 'scripts/lumen_activity_mail*.py'
+      - 'scripts/fixtures/activity-mail-receipt.sql'
+      - 'scripts/fixtures/*-bootstrap.sql'
+      - 'supabase/migrations/20261122*.sql'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lumen-mail-receipt-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  receipt-simulation:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: python3 -B scripts/lumen_activity_mail_receipt.py
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+
+  receipt-live:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: production
+      deployment: false
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: python3 -B scripts/lumen_activity_mail_receipt.py --live
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+          LUMEN_ACTIVITY_SUPABASE_URL: ${{ vars.LUMEN_ACTIVITY_SUPABASE_URL }}
+          LUMEN_ACTIVITY_SENDER: ${{ vars.LUMEN_ACTIVITY_SENDER }}
+          LUMEN_ACTIVITY_RECIPIENT: ${{ secrets.LUMEN_ACTIVITY_RECIPIENT }}
+          LUMEN_DAILY_SUMMARY_RECIPIENT: ${{ secrets.LUMEN_DAILY_SUMMARY_RECIPIENT }}
+          LUMEN_ACTIVITY_SUPABASE_KEY: ${{ secrets.LUMEN_ACTIVITY_SUPABASE_KEY }}
+          LUMEN_ACTIVITY_BREVO_KEY: ${{ secrets.LUMEN_ACTIVITY_BREVO_KEY }}
