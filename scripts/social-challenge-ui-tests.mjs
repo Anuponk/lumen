@@ -3,6 +3,7 @@ import fs from "node:fs";
 import vm from 'node:vm';
 import {challengeEligibility} from '../src/campaign/social-challenge.js';
 import {badgeCooldownLabel} from '../src/campaign/performance.js';
+import {functionSource,frenchT} from './source-tools.mjs';
 
 const html=fs.readFileSync("index.html","utf8");
 const ui=fs.readFileSync("src/ui/game-screen.js","utf8");
@@ -47,8 +48,9 @@ for(const scenario of [
 ]){
  const elements=Object.fromEntries(['successShare','remarkableChallenge','successChallengeReason'].map(id=>[id,{hidden:false,disabled:false,title:'stale',textContent:'stale',classList:{toggle(name,value){this[name]=value}}}]));
  const strong={textContent:'stale'};elements.remarkableChallenge.querySelector=()=>strong;
- const context={challengeEligibility,badgeCooldownLabel,lastChallengeOffer:{snapshot:{questId:999}},document:{getElementById:id=>elements[id]}};
- const render=vm.runInNewContext(renderSource+'\nconfigureVictoryChallenge',context);
+ // #945: the explanation is catalogue copy (French reference) with the localized cooldown.
+ const context={challengeEligibility,badgeCooldownLabel,t:frenchT,lastChallengeOffer:{snapshot:{questId:999}},document:{getElementById:id=>elements[id]}};
+ const render=vm.runInNewContext(functionSource(ui,'localizedBadgeCooldown')+'\n'+renderSource+'\nconfigureVictoryChallenge',context);
  const snapshot={questId:39};render({...scenario,snapshot});
  assert.equal(!elements.successShare.hidden,scenario.visible,scenario.name);
  assert.equal(elements.successShare.disabled,!scenario.supported,scenario.name);
