@@ -151,6 +151,22 @@ functional historical analytics, accounts, receipts, recovery and unresolved
 incidents. No production migration, cron or cleanup is enabled. Procedure and
 rollback limits: [runbook](TECHNICAL_RETENTION_RUNBOOK.md).
 
+## Beta reports v2 — #960
+
+`20261122240000_beta_feedback_v2_960.sql` is additive. It only touches `lumen.feedback` (no gameplay table), and v1 (`lumen_send_feedback`, `lumen_admin_feedback`) stays as it was.
+
+- **Kinds:** `feedback_kind_check` keeps every existing kind and adds `question` and `idea`.
+- **New columns:**
+  - `context jsonb` holds an allowlisted technical context: version, platform, browser family, screen, locale, quest, adventure, surface, error code and a per-tab session id. It never holds tokens, emails, the board or the raw user agent.
+  - `client_ref` is the draft reference. It is unique per reporter, so a retry or a concurrent send returns the same receipt.
+- **`lumen_send_feedback_v2`** (anon and authenticated) validates the kind (`bug`, `question`, `idea`), the message and the reference. It limits each device or account to 10 reports per hour and returns `{id, status, duplicate}`.
+- **Administrators** read reports with `lumen_admin_feedback_v2` and set `new` → `reviewed` → `fixed` → `closed` with `lumen_admin_feedback_set_status`. Both require `analytics_cockpit`.
+  - Closing starts the existing 180-day technical retention.
+- **Erasure and rights export** cover the new columns, because reports stay owned by `user_id` / `anonymous_id`.
+- **Client:** `src/ui/beta-feedback.js`.
+  - The draft is kept in `lumenFeedbackDraftV1`, and the per-tab session id in `sessionStorage`.
+  - Reporting never touches the board: the modal pauses the attempt like any menu.
+
 ## Prepared operator access and portability (#316)
 
 `20261022184145_lumen_account_rights_export.sql` adds only a private SECURITY
