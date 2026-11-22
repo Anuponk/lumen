@@ -51,10 +51,10 @@ Deux observations nominales distinctes ferment un épisode. Pour la sauvegarde, 
 ### Activation et recette de la supervision
 
 1. En recette, valider les migrations sur une base isol?e. Pour l?activation, v?rifier les migrations d?j? install?es dans le projet Supabase SoldeZen qui h?berge les sch?mas Lumen. Appliquer les migrations manquantes dans l?ordre #950, #947, #948 puis #949, en contr?lant les pr?requis. Exécuter le workflow **External Lumen health probe** manuellement sur `main` pour la lecture HTTPS publique, sans secrets.
-2. Pour les alertes, r?utiliser l?environnement GitHub `Production` du d?p?t. Avant de stocker les acc?s du moniteur, v?rifier que sa politique GitHub autorise uniquement la branche principale et que les workflows de d?ploiement et de reprise existants restent autoris?s. Le moniteur utilise cet environnement sans cr?er d?entr?e de d?ploiement. Y renseigner les secrets `LUMEN_ACTIVITY_SUPABASE_KEY`, `LUMEN_ACTIVITY_BREVO_KEY` et `LUMEN_ACTIVITY_RECIPIENT`. Le transport d?activit? sur o2switch peut lire le fichier Brevo priv? d?j? utilis? par le cron de d?ploiement. Le moniteur GitHub a besoin d?un acc?s Brevo configur? c?t? GitHub pour envoyer quand o2switch est indisponible. Renseigner aussi `LUMEN_ACTIVITY_SUPABASE_URL`, `LUMEN_ACTIVITY_START` et `LUMEN_ACTIVITY_SENDER`, puis activer `LUMEN_CRITICAL_MONITOR_ENABLED=1` comme variable du dépôt. Les réglages de seuils sont `LUMEN_CRITICAL_STALL_MINUTES`, `LUMEN_CRITICAL_FAILURES`, `LUMEN_CRITICAL_RECOVERIES` et `LUMEN_CRITICAL_BACKLOG`. La planification initiale est toutes les cinq minutes, avec au plus cinq messages revendiqués par passage et un plafond total de 120 lignes par jour pour le moniteur. Avec #950 maintenu à 100, les vingt places supplémentaires priorisent les avis critiques.
+2. Réutiliser l'environnement GitHub `Production`, réservé à `main`. Y conserver `LUMEN_ACTIVITY_SUPABASE_KEY` et configurer `LUMEN_ACTIVITY_SUPABASE_URL`. Le moniteur met les avis en file et o2switch les envoie. Voir [Recette du transport o2switch et activation](#recette-du-transport-o2switch-et-activation).
 3. Sur un environnement de recette isolé, charger les fixtures `critical-incidents*.sql` dans une base vide après le bootstrap #950, ou enregistrer des observations synthétiques croissantes avec le rôle technique configuré. Rejouer la même observation. Simuler trois échecs puis deux retours sains. Vérifier dans la boîte autorisée un avis d’ouverture P0 et un avis de rétablissement au total, puis acquitter dans **Synchronisation et incidents** avec un compte doté de la capacité. Vérifier le refus avec un compte sans capacité. En recette, conserver uniquement les métadonnées simulées et ne modifier aucun droit réel.
 
-Le moniteur s’exécute hors d’o2switch. La sonde publique vérifie la disponibilité de la page et de sa révision, tandis que la persistance des épisodes dépend aussi de Supabase et la livraison de Brevo. Si Supabase est indisponible, le workflow échoue sans pouvoir enregistrer un nouvel épisode. Les transactions fournisseur qui n’atteignent jamais le ledger nécessitent une réconciliation fournisseur distincte. Le rétablissement du droit d’achat est lu dans le serveur. Le moniteur ne déclenche aucune attribution. Les signaux du frontend nécessitent une émission côté joueur et ne permettent pas à eux seuls de détecter un appareil durablement hors ligne. Les seuils initiaux doivent être recalibrés avec la volumétrie réelle.
+Le moniteur s'exécute hors d'o2switch. La sonde publique vérifie la disponibilité de la page et de sa révision. Supabase conserve les épisodes. La livraison dépend du worker o2switch et de Brevo. Si Supabase est indisponible, le workflow échoue sans pouvoir enregistrer un nouvel épisode. Les transactions fournisseur qui n’atteignent jamais le ledger nécessitent une réconciliation fournisseur distincte. Le rétablissement du droit d’achat est lu dans le serveur. Le moniteur ne déclenche aucune attribution. Les signaux du frontend nécessitent une émission côté joueur et ne permettent pas à eux seuls de détecter un appareil durablement hors ligne. Les seuils initiaux doivent être recalibrés avec la volumétrie réelle.
 
 À cinq minutes, environ 288 sondes et 576 lectures HTTPS publiques par jour, plus une observation et une lecture de file par sondage actif. Les appels ont un budget de taille et un délai maximal. GitHub peut différer les tâches planifiées ou les désactiver après inactivité. Les runners standards des dépôts publics sont gratuits. [Planification GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule). [Facturation GitHub Actions](https://docs.github.com/en/actions/concepts/billing-and-usage).
 
@@ -76,12 +76,45 @@ La vue **Santé du service**, dans **Synchronisation et incidents** du cockpit e
 
 Une inscription devient effective quand l’identité et l’adhésion Lumen sont établies, avec confirmation obligatoire pour l’email. Le volume des achats et les montants bruts sont calculés sur les confirmations vérifiées du ledger, avec les paiements ultérieurement remboursés inclus et les devises séparées. Les paiements test Stripe, comptes QA et achats Play sans règlement vérifié sont exclus. Les notifications sont limitées à la rétention de la file. Brevo fournit un état d’acceptation de l’API. Les alertes ne donnent pas toutes une version et peuvent toucher les mêmes comptes. Le bilan indique donc une borne basse des joueurs affectés, calculée à partir du plus grand nombre connu dans un incident actif hors disponibilité.
 
-Appliquer la migration #949 après #948 sur la base de recette. Laisser le moniteur externe activé et configurer `LUMEN_DAILY_SUMMARY_ENABLED=1`, `LUMEN_DAILY_SUMMARY_TIME` au format HH:MM (08:15 par défaut), `LUMEN_DAILY_SUMMARY_ZONE` avec un fuseau IANA (Europe/Paris par défaut), et le secret `LUMEN_DAILY_SUMMARY_RECIPIENT` dans l’environnement `Production`. Le premier passage après l’heure locale met en file le bilan de la veille. Les passages suivants réutilisent la même clé de date. Après une journée entière sans passage, vérifier la période sans bilan dans le cockpit. Les comptes et achats utilisent la veille locale, tandis que la disponibilité, les alertes non résolues et les joueurs affectés décrivent l’état au moment de la génération. Les changements de fuseau autour de minuit peuvent modifier la journée observée.
+Appliquer la migration #949 après #948 sur la base de recette. Configurer `LUMEN_DAILY_SUMMARY_ENABLED=1`, `LUMEN_DAILY_SUMMARY_TIME` (08:15 par défaut) et `LUMEN_DAILY_SUMMARY_ZONE` (Europe/Paris par défaut) dans GitHub. Renseigner `LUMEN_DAILY_SUMMARY_RECIPIENT` dans le fichier privé du worker o2switch. Le premier passage après l’heure locale met en file le bilan de la veille. Les passages suivants réutilisent la même clé de date. Après une journée entière sans passage, vérifier la période sans bilan dans le cockpit. Les comptes et achats utilisent la veille locale, tandis que la disponibilité, les alertes non résolues et les joueurs affectés décrivent l’état au moment de la génération. Les changements de fuseau autour de minuit peuvent modifier la journée observée.
 
 Le bilan ajoute au plus un message au quota partagé par jour, sans service supplémentaire. Le calcul complet s’effectue seulement si la clé de date manque. Le routage du bilan utilise son destinataire dédié. Une configuration du bilan invalide ou un échec de sa mise en file est signalé au workflow. Le traitement des autres alertes continue. L’envoi utilise les mêmes baux, règles de retry et états d’acceptation que #950. Sur la base de recette, exécuter deux passages après l’heure choisie, vérifier le total par devise et constater un seul bilan dans la boîte dédiée. Les fixtures SQL et Python simulent ce contrôle de déduplication sans envoyer de mail.
 
-### Recette des e-mails dans GitHub Actions
+### Recette du transport o2switch et activation
 
-Déclencher **Lumen mail receipt** sur `main`, une fois les migrations vérifiées et les secrets de `Production` configurés. Le workflow vérifie en lecture seule que les RPC sont exposées par SoldeZen. Il utilise ensuite un PostgreSQL jetable pour simuler une inscription confirmée, un achat avec droit vérifié, trois échecs de sonde et le bilan de la veille. Les quatre messages préfixés `[RECETTE]` empruntent le transport Brevo réel et les destinataires configurés. Le deuxième passage rejoue le signal et le paiement et vérifie qu'aucun nouvel envoi n'est soumis. Vérifier un exemplaire de chaque avis dans la boîte concernée. Un nouveau déclenchement manuel crée une nouvelle recette.
+La sonde GitHub met les alertes, les régressions et le bilan dans la file SoldeZen. Le worker o2switch traite cette file et découvre les inscriptions et achats depuis les sources vérifiées. Une panne o2switch retarde les e-mails jusqu'au retour du worker. La sonde continue tant que GitHub et SoldeZen répondent.
 
-En cas de refus Brevo, le journal de recette affiche le statut HTTP et une catégorie prédéfinie. Les valeurs des clés, les adresses et le texte de la réponse restent hors du journal.
+Préparer `~/lumen-private/activity-mail.env` en mode `600`, avec les deux destinataires de recette et une date d'activation fixe au format ISO avec fuseau.
+
+```bash
+LUMEN_ACTIVITY_ENABLED=0
+LUMEN_ACTIVITY_START='AAAA-MM-JJTHH:MM:SS+00:00'
+LUMEN_ACTIVITY_SUPABASE_URL='https://PROJET.supabase.co'
+LUMEN_ACTIVITY_SUPABASE_KEY_FILE="$HOME/lumen-private/activity-supabase-key"
+LUMEN_ACTIVITY_BREVO_KEY_FILE="$HOME/nopuna-private/brevo-key"
+LUMEN_ACTIVITY_SENDER='bonjour@nopuna.fr'
+LUMEN_ACTIVITY_RECIPIENT='activite@example.invalid'
+LUMEN_DAILY_SUMMARY_RECIPIENT='bilan@example.invalid'
+LUMEN_ACTIVITY_KINDS='signup,purchase,refund,revocation,purchase_missing_access,purchase_access_restored,incident_open,incident_resolved,performance_regression,daily_summary'
+LUMEN_ACTIVITY_BATCH=5
+LUMEN_ACTIVITY_DAILY_LIMIT=120
+```
+
+Utiliser l'URL du projet SoldeZen et sa clé `service_role` dans le fichier privé indiqué, en mode `600`. La clé Brevo reste dans le fichier privé de Nopuna.
+
+Dans le terminal cPanel, mettre à jour la copie privée après fusion et exécuter la recette.
+
+```bash
+git -C "$HOME/lumen-staging" pull --ff-only origin main
+bash "$HOME/lumen-staging/scripts/o2switch-activity-mail.sh" --receipt
+```
+
+Le test consulte le schéma API SoldeZen en lecture seule, puis soumet quatre messages synthétiques `[RECETTE]` à Brevo. La CI exécute séparément les quatre parcours en PostgreSQL jetable et vérifie le rejeu sans envoi supplémentaire. En cas de refus Brevo, le journal affiche le statut HTTP et une catégorie prédéfinie. Vérifier un exemplaire de chaque message dans les boîtes configurées.
+
+Après confirmation de la recette, fixer `LUMEN_ACTIVITY_START` à l'heure du passage en service, passer `LUMEN_ACTIVITY_ENABLED` à `1` et ajouter cette tâche dans cPanel à côté du cron de déploiement.
+
+```cron
+*/5 * * * * /bin/bash "$HOME/lumen-staging/scripts/o2switch-activity-mail.sh" >> "$HOME/lumen-private/activity-mail.log" 2>&1
+```
+
+Le script utilise `flock` pour garantir un seul traitement à la fois. Activer ensuite les variables du dépôt GitHub `LUMEN_CRITICAL_MONITOR_ENABLED=1`, `LUMEN_PERFORMANCE_MONITOR_ENABLED=1` et `LUMEN_DAILY_SUMMARY_ENABLED=1`. Contrôler le premier passage planifié. Pour suspendre les e-mails, remettre `LUMEN_ACTIVITY_ENABLED` à `0` côté o2switch.

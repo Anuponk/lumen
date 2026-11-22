@@ -243,39 +243,56 @@ def drain(claim, finish, send, config):
     return dict(results)
 
 
-def configuration(env):
+def supabase_origin(env):
     origin = env["LUMEN_ACTIVITY_SUPABASE_URL"].rstrip("/")
     if not re.fullmatch(r"https://[a-z0-9]+\.supabase\.co", origin):
         raise ValueError("invalid Supabase origin")
+    return origin
+
+
+def configuration(env):
+    origin = supabase_origin(env)
     kinds = [value.strip() for value in env["LUMEN_ACTIVITY_KINDS"].split(",") if value.strip()]
     if not kinds or not set(kinds).issubset(SUBJECTS):
         raise ValueError("invalid activity kinds")
     sender, recipient = env["LUMEN_ACTIVITY_SENDER"], env["LUMEN_ACTIVITY_RECIPIENT"]
-    if any(not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value) for value in [sender, recipient]):
+    digest_recipient = env["LUMEN_DAILY_SUMMARY_RECIPIENT"] if "daily_summary" in kinds else recipient
+    if any(not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value)
+           for value in (sender, recipient, digest_recipient)):
         raise ValueError("invalid email configuration")
     return {
         "origin": origin, "kinds": kinds, "sender": sender, "recipient": recipient,
+        "digest_recipient": digest_recipient,
         "since": timestamp(env["LUMEN_ACTIVITY_START"]),
         "batch": max(1, min(int(env.get("LUMEN_ACTIVITY_BATCH", "10")), 20)),
         "daily": max(1, min(int(env.get("LUMEN_ACTIVITY_DAILY_LIMIT", "100")), 200)),
     }
 
 
-def clients(config, env, *, brevo_diagnostics=False):
-    def secret(name):
-        return (env.get(name) or Path(env[name + "_FILE"]).read_text()).strip()
-
-    role = secret("LUMEN_ACTIVITY_SUPABASE_KEY")
-    brevo = secret("LUMEN_ACTIVITY_BREVO_KEY")
-    if not role or not brevo:
+def secret(env, name):
+    value = (env.get(name) or Path(env[name + "_FILE"]).read_text()).strip()
+    if not value:
         raise ValueError("empty credentials")
+    return value
+
+
+def supabase_client(env):
+    origin = supabase_origin(env)
+    role = secret(env, "LUMEN_ACTIVITY_SUPABASE_KEY")
 
     def rpc(name, payload):
-        status, value = post(config["origin"] + "/rest/v1/rpc/" + name,
+        status, value = post(origin + "/rest/v1/rpc/" + name,
                              {"apikey": role, "authorization": "Bearer " + role}, payload)
         if status != 200:
             raise RuntimeError("activity database unavailable")
         return value
+
+    return rpc
+
+
+def clients(env, *, brevo_diagnostics=False):
+    rpc = supabase_client(env)
+    brevo = secret(env, "LUMEN_ACTIVITY_BREVO_KEY")
 
     def send(payload):
         return post("https://api.brevo.com/v3/smtp/email", {"api-key": brevo}, payload,
@@ -289,7 +306,7 @@ def main(env):
         return 0
     try:
         config = configuration(env)
-        rpc, send = clients(config, env)
+        rpc, send = clients(env)
     except (KeyError, ValueError, OSError):
         print("Lumen activity mail: configuration invalid", file=sys.stderr)
         return 1
