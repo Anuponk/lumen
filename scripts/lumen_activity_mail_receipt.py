@@ -1,4 +1,4 @@
-"""Run the mail receipt scenarios against the runner's disposable PostgreSQL."""
+"""Verify the queue in disposable PostgreSQL or send synthetic previews from o2switch."""
 import argparse
 import json
 import os
@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.request import Request, build_opener
 from uuid import UUID
 
-from lumen_activity_mail import NoRedirect, brevo_outcome, clients, configuration, drain
+from lumen_activity_mail import NoRedirect, brevo_outcome, clients, configuration, drain, format_notice, secret
 
 KINDS = ("signup", "purchase", "incident_open", "daily_summary")
 SETUP = (
@@ -56,20 +56,44 @@ def verify_supabase(config, key):
     print("SoldeZen API schema verified")
 
 
-def main(live):
+def host_receipt():
+    reference = datetime.now(timezone.utc)
+    timestamp = reference.isoformat(timespec="seconds")
+    yesterday = (reference - timedelta(days=1)).date().isoformat()
+    config = configuration({**os.environ, "LUMEN_ACTIVITY_KINDS": ",".join(KINDS)})
+    verify_supabase(config, secret(os.environ, "LUMEN_ACTIVITY_SUPABASE_KEY"))
+    _, send = clients(os.environ, brevo_diagnostics=True)
+    fixtures = {
+        "signup": {"method": "email", "email_confirmed": True, "created_at": timestamp},
+        "purchase": {"provider": "stripe", "product": "fixture-adventure", "amount": "1.00",
+                     "currency": "EUR", "access": "verified", "event_at": timestamp},
+        "incident_open": {"signature": "availability", "severity": "P0", "affected": 0,
+                          "event_at": timestamp},
+        "daily_summary": {"date": yesterday, "zone": "Europe/Paris", "signup_count": 1,
+                          "purchase_count": 1, "currencies": [{"currency": "EUR", "amount": "1.00", "count": 1}],
+                          "availability": {"state": "outage"}, "critical_count": 1, "affected_floor": 0,
+                          "active": [{"signature": "availability", "severity": "P0"}], "performance": []},
+    }
+    for kind, fixture in fixtures.items():
+        subject, copy = format_notice(kind, fixture)
+        recipient = config["digest_recipient"] if kind == "daily_summary" else config["recipient"]
+        status, response = send({
+            "sender": {"email": config["sender"], "name": "Lumen"},
+            "to": [{"email": recipient}],
+            "subject": "[RECETTE] " + subject,
+            "textContent": "Test synthetique, sans activite ni incident reel.\n\n" + copy,
+            "tags": ["lumen-recette", kind.replace("_", "-")],
+        })
+        if brevo_outcome(status, response) != "accepted":
+            label = (response or {}).get("error", "unknown") if status >= 400 else "unknown"
+            raise RuntimeError(f"Brevo rejected {kind}: HTTP {status}, category {label}")
+        print(f"Brevo accepted {kind}", flush=True)
+
+
+def simulate_queue():
     since = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat(timespec="seconds")
     config = {"since": since, "kinds": list(KINDS), "batch": 4, "daily": 8,
               "sender": "sender@example.invalid", "recipient": "test@example.invalid"}
-    if live:
-        config = configuration({**os.environ, "LUMEN_ACTIVITY_START": since,
-                                "LUMEN_ACTIVITY_KINDS": ",".join(KINDS),
-                                "LUMEN_ACTIVITY_BATCH": "4", "LUMEN_ACTIVITY_DAILY_LIMIT": "8"})
-        config["digest_recipient"] = os.environ["LUMEN_DAILY_SUMMARY_RECIPIENT"]
-        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", config["digest_recipient"]):
-            raise ValueError("invalid summary recipient")
-        verify_supabase(config, os.environ["LUMEN_ACTIVITY_SUPABASE_KEY"])
-        _, transport = clients(config, os.environ, brevo_diagnostics=True)
-
     sql("\n".join(Path(path).read_text(encoding="utf-8") for path in SETUP))
     kinds = ", ".join(f"'{kind}'" for kind in KINDS)
 
@@ -93,14 +117,7 @@ def main(live):
 
     def send(payload):
         submitted.append(payload["tags"][1].replace("-", "_"))
-        payload["subject"] = "[RECETTE] " + payload["subject"]
-        if not live:
-            return 201, {"messageId": "simulated"}
-        status, response = transport(payload)
-        if brevo_outcome(status, response) != "accepted":
-            label = (response or {}).get("error", "unknown") if status >= 400 else "unknown"
-            print(f"Brevo request failed: HTTP {status}, category {label}", flush=True)
-        return status, response
+        return 201, {"messageId": "simulated"}
 
     first = drain(claim, finish, send, config)
     if first != {"accepted": 4} or sorted(submitted) != sorted(KINDS):
@@ -121,5 +138,8 @@ def main(live):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--live", action="store_true")
-    main(parser.parse_args().live)
+    parser.add_argument("--live", action="store_true", help="send four synthetic previews from o2switch")
+    if parser.parse_args().live:
+        host_receipt()
+    else:
+        simulate_queue()

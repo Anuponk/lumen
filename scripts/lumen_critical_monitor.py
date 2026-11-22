@@ -10,7 +10,7 @@ from html.parser import HTMLParser
 from urllib.error import URLError
 from urllib.request import Request, build_opener
 
-from lumen_activity_mail import NoRedirect, clients, configuration, drain
+from lumen_activity_mail import NoRedirect, drain, supabase_client
 
 SITE = "https://lumen.nopuna.fr"
 KINDS = ["incident_open", "incident_resolved", "purchase_missing_access", "purchase_access_restored"]
@@ -68,7 +68,7 @@ def probe(read=public_read):
     return probe_once(read) if first == "revision_mismatch" else first
 
 
-def digest_settings(env):
+def digest_settings(env, *, require_recipient=True):
     if env.get("LUMEN_DAILY_SUMMARY_ENABLED") != "1":
         return None
     try:
@@ -76,10 +76,13 @@ def digest_settings(env):
         hour = env.get("LUMEN_DAILY_SUMMARY_TIME") or "08:15"
         if not re.fullmatch(r"(?:[01][0-9]|2[0-3]):[0-5][0-9]", hour):
             raise ValueError("invalid dispatch time")
-        recipient = env["LUMEN_DAILY_SUMMARY_RECIPIENT"]
-        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", recipient):
-            raise ValueError("invalid digest recipient")
-        return {"zone": zone, "time": time.fromisoformat(hour), "recipient": recipient}
+        settings = {"zone": zone, "time": time.fromisoformat(hour)}
+        if require_recipient:
+            recipient = env["LUMEN_DAILY_SUMMARY_RECIPIENT"]
+            if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", recipient):
+                raise ValueError("invalid digest recipient")
+            settings["recipient"] = recipient
+        return settings
     except (KeyError, ValueError, ZoneInfoNotFoundError):
         return {"invalid": True}
 
@@ -114,13 +117,16 @@ def tick(rpc, send, config, result, now=None):
         enqueue_digest(rpc, digest, now or datetime.now(timezone.utc))
     except RuntimeError:
         digest_unavailable = True
-    if digest and not digest.get("invalid"):
-        config = {**config, "kinds": [*config["kinds"], "daily_summary"], "digest_recipient": digest["recipient"]}
-    outcome = drain(
-        lambda payload: rpc("lumen_claim_activity_mail", payload),
-        lambda payload: rpc("lumen_finish_activity_mail", payload),
-        send, config,
-    )
+    outcome = {}
+    if send is not None:
+        if digest and not digest.get("invalid"):
+            config = {**config, "kinds": [*config["kinds"], "daily_summary"],
+                      "digest_recipient": digest["recipient"]}
+        outcome = drain(
+            lambda payload: rpc("lumen_claim_activity_mail", payload),
+            lambda payload: rpc("lumen_finish_activity_mail", payload),
+            send, config,
+        )
     if performance_unavailable:
         outcome['performance_unavailable'] = 1
     if digest_unavailable:
@@ -134,20 +140,16 @@ def main(env):
     if env.get("LUMEN_CRITICAL_MONITOR_ENABLED") != "1":
         return int(result != "healthy")
     try:
-        performance = env.get("LUMEN_PERFORMANCE_MONITOR_ENABLED") == "1"
-        kinds = [*KINDS, "performance_regression"] if performance else KINDS
-        config = configuration({**env, "LUMEN_ACTIVITY_KINDS": ",".join(kinds)})
-        config.update(
-            performance=performance,
-            digest=digest_settings(env),
-            sample=int(env["LUMEN_PROBE_SAMPLE"]),
-            stall_minutes=int(env.get("LUMEN_CRITICAL_STALL_MINUTES", "15")),
-            failures=int(env.get("LUMEN_CRITICAL_FAILURES", "3")),
-            recoveries=int(env.get("LUMEN_CRITICAL_RECOVERIES", "2")),
-            backlog=int(env.get("LUMEN_CRITICAL_BACKLOG", "20")),
-        )
-        rpc, send = clients(config, env)
-        outcome = tick(rpc, send, config, result)
+        config = {
+            "performance": env.get("LUMEN_PERFORMANCE_MONITOR_ENABLED") == "1",
+            "digest": digest_settings(env, require_recipient=False),
+            "sample": int(env["LUMEN_PROBE_SAMPLE"]),
+            "stall_minutes": int(env.get("LUMEN_CRITICAL_STALL_MINUTES", "15")),
+            "failures": int(env.get("LUMEN_CRITICAL_FAILURES", "3")),
+            "recoveries": int(env.get("LUMEN_CRITICAL_RECOVERIES", "2")),
+            "backlog": int(env.get("LUMEN_CRITICAL_BACKLOG", "20")),
+        }
+        outcome = tick(supabase_client(env), None, config, result)
     except (RuntimeError, KeyError, ValueError, TypeError, OSError):
         print("Lumen critical monitor: processing interrupted", file=sys.stderr)
         return 1

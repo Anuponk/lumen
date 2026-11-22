@@ -1,8 +1,9 @@
 """The probe and notice pipeline are exercised with synthetic responses only."""
 import json
 import unittest
+from unittest.mock import patch
 from lumen_activity_mail import format_notice
-from lumen_critical_monitor import KINDS, probe, tick
+from lumen_critical_monitor import KINDS, main, probe, tick
 
 SHA = "abcdef0" + "1" * 33
 VERSION = "1.11.1+741"
@@ -79,6 +80,31 @@ class CriticalMonitorTest(unittest.TestCase):
         self.assertEqual(sent[0]["to"], [{"email": "digest@example.test"}])
         self.assertIn("125.5 JPY", sent[0]["textContent"])
         self.assertNotIn("PRIVATE", sent[0]["textContent"])
+
+    def test_observer_queues_without_brevo_or_claiming_mail(self):
+        from datetime import datetime, timezone
+
+        env = {
+            "LUMEN_CRITICAL_MONITOR_ENABLED": "1", "LUMEN_PROBE_SAMPLE": "42",
+            "LUMEN_ACTIVITY_SUPABASE_URL": "https://fixture.supabase.co",
+            "LUMEN_ACTIVITY_SUPABASE_KEY": "fixture-key",
+            "LUMEN_PERFORMANCE_MONITOR_ENABLED": "1", "LUMEN_DAILY_SUMMARY_ENABLED": "1",
+            "LUMEN_DAILY_SUMMARY_TIME": "08:15",
+        }
+        with patch("lumen_critical_monitor.probe", return_value="healthy"), \
+             patch("lumen_critical_monitor.datetime") as clock, \
+             patch("lumen_activity_mail.post", return_value=(200, True)) as post:
+            clock.now.return_value = datetime(2026, 10, 26, 7, 19, tzinfo=timezone.utc)
+            self.assertEqual(main(env), 0)
+
+        urls = [args[0] for args, _ in post.call_args_list]
+        self.assertEqual(urls, [
+            f"https://fixture.supabase.co/rest/v1/rpc/{name}" for name in (
+                "lumen_observe_critical_incidents",
+                "lumen_observe_performance",
+                "lumen_enqueue_health_digest",
+            )
+        ])
 
     def test_tick_reuses_queue_and_holds_ambiguous_transport_outcome(self):
         calls = []
