@@ -331,6 +331,11 @@ de vente. `binding_probe_unsupported` désigne un marqueur absent ou inattendu,
 `binding_probe_failed` un rejet ou délai dépassé de la requête de sonde,
 `payment_unsupported` l'impossibilité de confirmer Payment Request et
 `account_binding_unavailable` une préparation de compte refusée ou indisponible.
+`client_app_unavailable` (#962) : Chrome n'atteint plus le service de délégation de
+l'app (`OperationError: clientAppUnavailable`, journal Chrome « Unable to execute
+getDetails »). Observé le 22/11/2026 après une réinstallation par le Play Store :
+aucun prix, aucune connexion au `BillingDelegationService`. Fermer complètement
+Lumen et Chrome puis rouvrir Lumen rétablit le lien ; l'offre affiche cette consigne.
 Les états de diagnostic sont éphémères et ne contiennent ni compte, ni jeton,
 ni détail brut du fournisseur.
 

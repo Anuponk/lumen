@@ -1458,6 +1458,7 @@
   "store.playAlreadyChecking": "b29cb262460f8136d384e327",
   "store.playAnItem": "8f358bd921fc4aa02bb1b97e",
   "store.playCancelled": "c2bcbca443cb16bc197bb04a",
+  "store.playClientUnavailable": "7bce9e4e8c04db1387eb7a70",
   "store.playConfirmed": "dbfa837a4e3bd7854c04982b",
   "store.playLoading": "079e4e098a47a7b506294346",
   "store.playNamedItem": "1c1b842ba6a51a35b6ef6f0d",

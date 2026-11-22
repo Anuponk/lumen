@@ -6,7 +6,7 @@ import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {PERFORMANCE_BADGES} from '../src/campaign/performance.js';
 import {ADVENTURE_PRICE_CENTS,SKY_PRICE_CENTS,formatEuros} from '../src/campaign/store-catalogue.js';
-import {adventureOfferModel,mainSkyOffer,masteryLine,purchaseProgressMessage,SUPPORT_LINE,SUPPORT_TEXT} from '../src/ui/adventure-offer.js';
+import {playUnavailableKey,adventureOfferModel,mainSkyOffer,masteryLine,purchaseProgressMessage,SUPPORT_LINE,SUPPORT_TEXT} from '../src/ui/adventure-offer.js';
 import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS} from '../src/campaign/store-catalogue.js';
 import {toPlayProductId} from '../src/persistence/play-billing.js';
 import {purchaseThanksModel} from '../src/ui/purchase-thanks.js';
@@ -167,3 +167,10 @@ assert.equal(unknownPlay.unitPrice,'Prix indisponible');assert.equal(unknownPlay
 }
 
 assert.equal(masteryLine({mastery:{status:'ready',missingQuests:1,missingBadges:2}},english),'Complete 1 quest and earn 2 badges to unlock this adventure for free.');
+
+// #962: Chrome lost the app's billing service: tell the player to close and reopen.
+assert.equal(playUnavailableKey([{reason:'details_request_failed'},{reason:'client_app_unavailable'}]),'store.playClientUnavailable');
+assert.equal(playUnavailableKey([{reason:'details_request_failed'}]),'store.playUnavailable');
+assert.equal(playUnavailableKey(undefined),'store.playUnavailable');
+for(const locale of ['fr','en','es'])assert.match(createTranslator({locale}).t('store.playClientUnavailable'),/Lumen.*Chrome|Chrome.*Lumen/);
+console.log('Adventure offer: clientAppUnavailable guidance localized');
