@@ -52,6 +52,10 @@ export function createRankingClient({storage,getContext,now=()=>Date.now(),curre
     if(!PERMANENT_RANKING_REFUSALS.includes(error?.reason))throw error;
     archive(c,entry);return {status:'refused',reason:error.reason};
    }
+   // #962: outside the leaderboard this capture is never published (withdrawal already
+   // retires captures). Archive it instead of resending it every 30 s: production saw
+   // one non-participating account replay 133 captures, ~4.4 finish calls per second.
+   if(finished?.status==='membership_required'){archive(c,entry);return {...finished,reason:'membership_required'}}
    const result=finished&&typeof finished==='object'?{...finished,reason:rankingReason(finished,begin,entry.result)}:finished;
    // Terminal receipt only; pending/missing victory receipts stay durable.
    if(result?.status==='confirmed'||result?.status==='ineligible'){
