@@ -19,17 +19,18 @@ console.log('Admin recent players use live activity RPC and expose failures');
 
 const nodes=new Map(),calls=[];let directoryRows,timelineData,supportOptions,lookupOptions,adventureOptions,dashboardInput;
 const document={getElementById(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:7,insertAdjacentHTML(){}});return nodes.get(id)},querySelectorAll(){return []}};
-const context={document,t:key=>key,renderAnalyticsEngagement:()=>{},renderVersionHealth:()=>{},renderCriticalIncidents:()=>{},Date,Intl,Math,Number,String,adminEsc:String,adminNumber:String,registeredPlayers,analyticsPlayers,
+const context={document,t:key=>key,renderAnalyticsEngagement:()=>{},renderVersionHealth:()=>{},renderCriticalIncidents:()=>{},renderHealthCockpit:(host,data)=>{host.snapshot=data},Date,Intl,Math,Number,String,adminEsc:String,adminNumber:String,registeredPlayers,analyticsPlayers,
  buildAnalyticsDashboard:input=>{dashboardInput=input;return input},renderAnalyticsDashboard:()=>{},adminCanonicalCatalogueTree:()=>[],
  mountSupportDossier:(_host,options)=>{supportOptions=options},
  mountSupportLookup:(_host,options)=>{lookupOptions=options},
  mountAdventureAccess:(_host,options)=>{adventureOptions=options},CONTENT_PACKS:[{id:'base-real-sky',access:'included'},{id:'real-adventure-02',access:'locked'}],
  rememberSessionExpansion:()=>{},renderPlayerDirectory:(_host,rows)=>{directoryRows=rows},renderPlayerSessions:(_host,data)=>{timelineData=data},
  lumenUser:{id:'fixture-admin'},hasInternalCapability:()=>true,buildIncidentInvestigation,incidentAlerts,renderIncidentInvestigation:()=>{},
- lumenSupabase:{async rpc(name,args){calls.push(name);if(name==='lumen_admin_quest_metrics')return {data:{friction:[{stable_quest_id:'new-grid',quest_ordinal:91,started:4,completed:1}],funnel:[],current_players:{'u:actor':91}}};if(name==='lumen_admin_accounts')return {data:[{user_id:'actor',current_quest:1,nickname:' ',email:'sans.pseudo@example.invalid'}]};if(name==='lumen_admin_recent_players')return {data:[{player_key:'a:guest',player_type:'anonymous',display_name:'Joueur 3E8B'},{player_key:'u:actor',player_type:'authenticated',current_quest:1}]};if(name==='lumen_admin_player_observations'){assert.deepEqual(Array.from(args.p_player_keys),['u:actor']);return {data:{players:{}}}}if(name==='lumen_admin_player_sessions')return {data:{analytics:[{event_name:'attempt_started',quest_ordinal:91,puzzle_id:null}],diagnostics:[]}};return {data:name==='lumen_admin_cockpit'?{}:[]}}}};
+ lumenSupabase:{async rpc(name,args){calls.push(name);if(name==='lumen_admin_quest_metrics')return {data:{friction:[{stable_quest_id:'new-grid',quest_ordinal:91,started:4,completed:1}],funnel:[],current_players:{'u:actor':91}}};if(name==='lumen_admin_health_snapshot'){assert.equal(args.p_days,7);return {data:{purchase_count:2}}}if(name==='lumen_admin_accounts')return {data:[{user_id:'actor',current_quest:1,nickname:' ',email:'sans.pseudo@example.invalid'}]};if(name==='lumen_admin_recent_players')return {data:[{player_key:'a:guest',player_type:'anonymous',display_name:'Joueur 3E8B'},{player_key:'u:actor',player_type:'authenticated',current_quest:1}]};if(name==='lumen_admin_player_observations'){assert.deepEqual(Array.from(args.p_player_keys),['u:actor']);return {data:{players:{}}}}if(name==='lumen_admin_player_sessions')return {data:{analytics:[{event_name:'attempt_started',quest_ordinal:91,puzzle_id:null}],diagnostics:[]}};return {data:name==='lumen_admin_cockpit'?{}:[]}}}};
 vm.createContext(context);
 for(const fn of ['adminEventLabel','adminAlerts','loadAdminTimeline','loadAdminCockpit'])vm.runInContext(functionSource(src,fn),context);
 await context.loadAdminCockpit();
+assert.equal(nodes.get('analyticsHealthCockpit').snapshot.purchase_count,2);
 assert.equal(lookupOptions.owner,'fixture-admin');assert.equal(lookupOptions.authorized(),true,'Reference lookup uses the current guarded cockpit scope');
 assert.match(nodes.get('adminFriction').innerHTML,/Q91/,'Stable quests appear by their visible ordinal');
 // The extracted loader now delegates DOM rendering. Assert the actual boundary;

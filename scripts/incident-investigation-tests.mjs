@@ -71,13 +71,14 @@ test('signature counts remain available without exporting raw signature/context'
  assert(!JSON.stringify(model).includes('SECRET'));assert(!JSON.stringify(model).includes('secret@'));
 });
 test('cockpit refuses non-admin requests and ignores an in-flight result after account switch',async()=>{
- const source=readFileSync('src/ui/game-screen.js','utf8');let calls=0,release,lookupOptions;
+ const source=readFileSync('src/ui/game-screen.js','utf8');const calls=[];let release,lookupOptions;
  const result=new Promise(resolve=>{release=resolve});
- const context=vm.createContext({lumenUser:{id:'synthetic-admin'},lumenSupabase:{rpc:()=>{calls++;return result}},hasInternalCapability:()=>false,
+ const context=vm.createContext({lumenUser:{id:'synthetic-admin'},lumenSupabase:{rpc:(name,args)=>{calls.push([name,args]);return result}},hasInternalCapability:()=>false,
   document:{getElementById:()=>({textContent:'',value:'7'})},mountSupportLookup:(_host,options)=>{lookupOptions=options}});
  vm.runInContext(functionSource(source,'loadAdminCockpit')+';globalThis.load=loadAdminCockpit',context);
- await context.load();assert.equal(calls,0);assert.equal(lookupOptions,undefined,'Non-admins cannot mount a reference lookup');
- context.hasInternalCapability=()=>true;const pending=context.load();assert.equal(calls,9,'The version metrics and critical incidents share the guarded cockpit load');
+ await context.load();assert.equal(calls.length,0);assert.equal(lookupOptions,undefined,'Non-admins cannot mount a reference lookup');
+ context.hasInternalCapability=()=>true;const pending=context.load();assert.equal(calls.length,10);
+ assert(calls.some(([name,args])=>name==='lumen_admin_health_snapshot'&&args.p_days===7),'The health snapshot shares the guarded cockpit load and period');
  context.lumenUser={id:'different-account'};context.document.getElementById=()=>{throw Error('stale result reached DOM')};
  assert.equal(lookupOptions.authorized(),false,'Reference lookup shares the live account guard');
  release({data:{},error:null});await pending;
