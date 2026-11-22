@@ -680,6 +680,8 @@ Such a capture is moved to `lumenRankingObsoleteV1:` (kept, never deleted) and i
 
 Production evidence (22 November 2026): one capture from 15 November, recorded before #777, carried `hintUsed=true` while its official timing counted zero hints. Its account was refused 250 times a day with `hint_flag_mismatch`.
 
+Captures for a non-participating account (#962) are archived when `lumen_ranking_finish` answers `membership_required`, as withdrawal already does. Before this, they stayed pending and were resent at every 30-second queue refresh. On 22 November 2026 one such account replayed 133 captures, about 4.4 finish calls a second, 33,935 calls in 16 hours.
+
 `lumen.profiles` owns the canonical unique nickname and durable ranking opposition;
 `ranking_members` owns public participation. Automatic participation is server-gated
 by the published information boundary, never inferred from reconnect.
