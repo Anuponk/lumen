@@ -40,3 +40,31 @@ console.log('Ranking staging: offline, reload, exact counters, owner changes, be
  assert.deepEqual(queue.entries('owner').map(e=>e.questId),['old'],'Only the exact rejected capture remains durable');
  queue=make();assert.deepEqual(queue.entries('owner').map(e=>e.questId),['old'],'Reload preserves the refused evidence without resurrecting the confirmed score');
 }
+
+// #962: production showed one pre-#777 capture (receipt hintUsed=true, 0 counted hint)
+// refused 250 times a day with ranking_finish_hint_flag_mismatch. A refusal that
+// describes the stored receipt is archived (kept, never deleted) and not replayed;
+// refusals that can change later stay pending.
+{
+ const store=memory(),sent=[];
+ const reasons={'stale-reset-0':'ranking_finish_hint_flag_mismatch','early-reset-0':'ranking_finish_seconds_out_of_range'};
+ const connection={async rpc(name,args){
+  if(name==='lumen_ranking_finish'){
+   sent.push(args.p_operation_id);
+   if(reasons[args.p_operation_id])return {error:{code:'22023',message:reasons[args.p_operation_id]}};
+   return {data:{status:'confirmed',questId:'fresh',improved:true}};
+  }
+  return {data:{eligible:true}};
+ }};
+ const queue=createRankingClient({storage:store,getContext:()=>({owner:'owner',client:connection})});
+ for(const id of ['stale','early','fresh'])queue.stage({id}, {...a,attemptId:id});
+ await assert.rejects(()=>queue.flush(),'a refusal that may change later still reports the queue as incomplete');
+ assert.deepEqual(queue.entries('owner').map(e=>e.questId),['early'],'only the transient refusal stays pending');
+ assert(store.getItem('lumenRankingObsoleteV1:owner:stale-reset-0'),'the permanently refused capture is archived, not deleted');
+ sent.length=0;await assert.rejects(()=>queue.flush());
+ assert.deepEqual(sent,['early-reset-0'],'an archived capture is never replayed');
+ const single=createRankingClient({storage:memory(),getContext:()=>({owner:'owner',client:connection})});
+ single.stage({id:'stale'}, {...a,attemptId:'stale'});
+ assert.deepEqual((await single.flush()).map(r=>[r.status,r.reason]),[['refused','ranking_finish_hint_flag_mismatch']]);
+ console.log('Ranking refusals: permanent receipt refusals archived once, time refusals kept pending');
+}

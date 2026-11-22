@@ -668,6 +668,18 @@ derive `hintUsed` from their own persisted hint counter, never a previous grid's
 UI flag; old unversioned attempts retain their historical fallback. Existing
 inconsistent receipts are preserved, not repaired or requalified by the client.
 
+Permanent ranking refusals (#962) apply when `lumen_ranking_finish` returns a #977 reason that describes the stored receipt itself:
+- `invalid_counts`, `retry_counts_mismatch`;
+- `quest_mismatch`, `facts_missing`, `started_at_mismatch`;
+- `hint_flag_mismatch`, `assistance_flag_mismatch`;
+- `invalid_official_timing`, `official_counts_mismatch`.
+
+Such a capture is moved to `lumenRankingObsoleteV1:` (kept, never deleted) and is no longer replayed at every sync. The view treats it like `ineligible`.
+
+`seconds_out_of_range`, `run_missing` and network errors stay pending as before. Server validation is unchanged.
+
+Production evidence (22 November 2026): one capture from 15 November, recorded before #777, carried `hintUsed=true` while its official timing counted zero hints. Its account was refused 250 times a day with `hint_flag_mismatch`.
+
 `lumen.profiles` owns the canonical unique nickname and durable ranking opposition;
 `ranking_members` owns public participation. Automatic participation is server-gated
 by the published information boundary, never inferred from reconnect.

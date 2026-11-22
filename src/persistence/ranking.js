@@ -12,6 +12,13 @@ export function rankingReason(result,begin,staged){
  if(result?.status==='confirmed')return result.improved?'improved':'not_better';
  return null;
 }
+// #962: server refusals that describe the stored capture itself (#977 reason codes).
+// Resending the same immutable receipt can never succeed: the capture is archived,
+// never deleted, and stops being replayed at every sync. Time and missing-run
+// refusals can change later and stay pending, like network errors.
+export const PERMANENT_RANKING_REFUSALS=Object.freeze(['ranking_finish_invalid_counts','ranking_finish_retry_counts_mismatch',
+ 'ranking_finish_quest_mismatch','ranking_finish_facts_missing','ranking_finish_started_at_mismatch','ranking_finish_hint_flag_mismatch',
+ 'ranking_finish_assistance_flag_mismatch','ranking_finish_invalid_official_timing','ranking_finish_official_counts_mismatch']);
 export function createRankingClient({storage,getContext,now=()=>Date.now(),currentGridRevision=null}={}){
  const prefix='lumenRankingPendingV1:',obsoletePrefix='lumenRankingObsoleteV1:',flights=new Map(),recent=new Map();
  // A run captured on a replaced board can never be accepted by the server.
@@ -31,7 +38,7 @@ export function createRankingClient({storage,getContext,now=()=>Date.now(),curre
  function save(value){const k=key(value.owner,value.operationId),raw=JSON.stringify(value);storage.setItem(k,raw);if(storage.getItem(k)!==raw)throw Error('Ranking capture unverified');return value}
  function read(k){const raw=storage.getItem(k);return raw?JSON.parse(raw):null}
  function valid(c){const live=context();return c.owner&&live.owner===c.owner&&live.client===c.client&&!live.qa}
- async function rpc(c,name,args){if(!valid(c))throw Error('Ranking account changed');const r=await c.client.rpc(name,args);if(!valid(c))throw Error('Ranking account changed');if(r.error)throw Error('Ranking unavailable');return r.data}
+ async function rpc(c,name,args){if(!valid(c))throw Error('Ranking account changed');const r=await c.client.rpc(name,args);if(!valid(c))throw Error('Ranking account changed');if(r.error)throw Object.assign(Error('Ranking unavailable'),{reason:String(r.error.message||'')});return r.data}
  function entries(owner){const out=[];for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k?.startsWith(prefix+owner+':')){const v=read(k);if(v?.owner!==owner||key(owner,v.operationId)!==k)throw Error('Ranking identity mismatch');out.push(v)}}return out.sort((a,b)=>a.createdAt-b.createdAt)}
  async function send(c,entry){
   const id=key(c.owner,entry.operationId);if(flights.has(id)){await flights.get(id);if(!read(id))return {status:'confirmed'};return send(c,entry)}
@@ -39,7 +46,12 @@ export function createRankingClient({storage,getContext,now=()=>Date.now(),curre
   const promise=(async()=>{
    const begin=await rpc(c,'lumen_ranking_begin',{p_operation_id:entry.operationId,p_quest_id:entry.questId,p_grid_revision:entry.gridRevision,p_started_at:entry.startedAt});
    if(!entry.result){if(JSON.stringify(read(id))===JSON.stringify(entry))storage.removeItem(id);return begin}
-   const finished=await rpc(c,'lumen_ranking_finish',{p_operation_id:entry.operationId,p_hint_uses:entry.result.hint,p_verify_uses:entry.result.verify});
+   let finished;
+   try{finished=await rpc(c,'lumen_ranking_finish',{p_operation_id:entry.operationId,p_hint_uses:entry.result.hint,p_verify_uses:entry.result.verify})}
+   catch(error){
+    if(!PERMANENT_RANKING_REFUSALS.includes(error?.reason))throw error;
+    archive(c,entry);return {status:'refused',reason:error.reason};
+   }
    const result=finished&&typeof finished==='object'?{...finished,reason:rankingReason(finished,begin,entry.result)}:finished;
    // Terminal receipt only; pending/missing victory receipts stay durable.
    if(result?.status==='confirmed'||result?.status==='ineligible'){
