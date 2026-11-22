@@ -317,6 +317,8 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/reliable-analytics.sql
           # #962: admin cockpit indexes (exact cockpit_events predicates, unchanged results).
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/admin-cockpit-indexes-962.sql
+          # #962: bounded device storage health in outbox_health (overload, summary, bounds, privileges).
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/outbox-storage-health-962.sql
       - name: Verify purchases, the 5 EUR cap, refunds and mastery unlocks (#728)
         env:
           PGPASSWORD: isolated-test-only

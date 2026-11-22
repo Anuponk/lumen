@@ -6,6 +6,14 @@ const states=new WeakMap();
 const rows=value=>Array.isArray(value)?value:[];
 const record=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
 const records=value=>rows(value).filter(record);
+// #962: bounded device storage health carried by outbox alerts (buckets and category only).
+export function storageAlertLine(alert){
+ const kb=Number(alert?.storage_kb),ratio=Number(alert?.storage_ratio),error=alert?.storage_error;
+ const parts=[];
+ if(alert?.storage_kb!=null&&Number.isFinite(kb))parts.push('Stockage local ≈ '+(kb>=1024?(kb/1024).toFixed(1).replace('.',',')+' Mo':kb+' Ko')+(Number.isFinite(ratio)&&alert?.storage_ratio!=null?' ('+ratio+' %)':''));
+ if(error==='quota')parts.push('écriture refusée : stockage plein');else if(error==='storage')parts.push('écriture locale en échec');
+ return parts.join(' · ');
+}
 export function observedCount(value){
  if(!['number','string'].includes(typeof value)||(typeof value==='string'&&!value.trim()))return null;
  const n=Number(value);return Number.isSafeInteger(n)&&n>=0?n:null;
@@ -68,7 +76,7 @@ export function buildAnalyticsDashboard({product=null,quests=null,health=null,pl
   milestones:records(quests?.funnel).map(row=>({label:String(row.label||'Jalon'),players:observedCount(row.players),uninstrumented:/tutoriel|apprentissage/i.test(row.label||'')})),
   daily:records(product?.daily).map(row=>({date:String(row.activity_date||''),players:observedCount(row.players)})).filter(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)).sort((a,b)=>a.date.localeCompare(b.date)).slice(-30),
   technical:{affected:observedCount(health?.affected_players),stalled:observedCount(health?.stalled_players),pending:observedCount(health?.outbox?.pending_players),
-   critical:observedCount(health?.outbox?.critical_players),freshPending:observedCount(health?.outbox?.fresh_pending_players),freshCritical:observedCount(health?.outbox?.fresh_critical_players),failures:observedCount(health?.failures),conflicts:observedCount(health?.blocked),
+   critical:observedCount(health?.outbox?.critical_players),storagePressure:observedCount(health?.outbox?.storage_pressure_players),freshPending:observedCount(health?.outbox?.fresh_pending_players),freshCritical:observedCount(health?.outbox?.fresh_critical_players),failures:observedCount(health?.failures),conflicts:observedCount(health?.blocked),
    reasons:records(health?.by_reason).map(r=>({label:Object.hasOwn(reasons,r.reason)?reasons[r.reason]:'Autre cause',count:observedCount(r.count)})),
    versions:[...records(health?.by_version).reduce((map,r)=>{const label=version(r.version),count=observedCount(r.count);if(count!==null)map.set(label,(map.get(label)||0)+count);return map},new Map())].map(([label,count])=>({label,count})),
    signatures:incidentModel.signatures.slice().sort((a,b)=>b.occurrences-a.occurrences),priority,
@@ -173,6 +181,7 @@ export function renderAnalyticsDashboard(hosts,model,{authorized=()=>false,onAct
   card(metrics,'Joueurs avec hydratation non résolue > 15 min',model.technical.stalled,'État non résolu connu, même si son début est plus ancien.');
   card(metrics,'Joueurs signalant un risque local',model.technical.critical,'Signal critique de conservation locale ; perte non établie.');
   card(metrics,'Risques locaux signalés récemment',model.technical.freshCritical,'Dernier signal critique reçu depuis moins de 15 minutes.');
+  card(metrics,'Joueurs au stockage local saturé',model.technical.storagePressure,'Stockage local ≥ 80 % (environ 10 Mo) ou écriture refusée depuis moins de 7 jours (#962).');
   if(!model.healthAvailable)notice(technical,'Source technique indisponible : les zéros ne peuvent pas être supposés.','warning');
   notice(technical,'Hydratation : '+model.healthDays+' jour(s) glissants. Files : état connu hors filtre de période. Diagnostics facultatifs : '+Math.min(7,model.healthDays)+' jour(s) maximum, échantillon incomplet. Les populations se recoupent et ne s’additionnent pas.');
   const queues=group(technical,'Files nécessitant une vérification');
@@ -183,6 +192,7 @@ export function renderAnalyticsDashboard(hosts,model,{authorized=()=>false,onAct
    row.append(element(technical.ownerDocument,'small',alert.fresh===true?'Signal de moins de 15 minutes':'Signal ancien ou fraîcheur inconnue'));
    row.append(element(technical.ownerDocument,'strong',label+' · '+number(observedCount(alert.pending))+' opération(s)'),element(technical.ownerDocument,'span',version(alert.version)));
    const stamp=Date.parse(alert.since);
+   const storageLine=storageAlertLine(alert);if(storageLine)row.append(element(technical.ownerDocument,'span',storageLine));
    if(Number.isFinite(stamp)){const date=element(technical.ownerDocument,'time','Plus ancienne opération signalée : '+new Date(stamp).toLocaleString('fr-FR'));date.dateTime=new Date(stamp).toISOString();date.title=date.dateTime;row.append(date)}
    queues.append(row);
   }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {observedCount,buildAnalyticsDashboard,analyticsPlayers} from '../src/ui/analytics-dashboard.js';
+import {observedCount,buildAnalyticsDashboard,analyticsPlayers,storageAlertLine} from '../src/ui/analytics-dashboard.js';
 
 const catalogue=[{id:'adventure',name:'Aventure réelle',constellations:[{id:'constellation',name:'Constellation réelle',quests:[{id:'quest-a',number:91},{id:'quest-b',number:92}]}]}];
 const now=Date.parse('2026-11-15T10:01:00Z');
@@ -95,4 +95,13 @@ test('disabled product collection never reports measured zero activity; server r
 test('different spellings of a build aggregate into one technical version',()=>{
  const model=buildAnalyticsDashboard({health:{by_version:[{version:'1.11.1+618',count:2},{version:'Lumen 1.11.1+618',count:3}]}});
  assert.deepEqual(model.technical.versions,[{label:'1.11.1+618',count:5}]);
+});
+// #962: storage health on outbox alerts and the dedicated count.
+test('storage pressure is summarised from buckets and category only',()=>{
+ assert.equal(storageAlertLine({storage_kb:8704,storage_ratio:85,storage_error:'quota'}),'Stockage local ≈ 8,5 Mo (85 %) · écriture refusée : stockage plein');
+ assert.equal(storageAlertLine({storage_kb:512,storage_ratio:5,storage_error:null}),'Stockage local ≈ 512 Ko (5 %)');
+ assert.equal(storageAlertLine({storage_error:'storage'}),'écriture locale en échec');
+ assert.equal(storageAlertLine({}),'');assert.equal(storageAlertLine(null),'');
+ const model=buildAnalyticsDashboard({health:{outbox:{storage_pressure_players:2,alerts:[]}}});
+ assert.equal(model.technical.storagePressure,2);
 });
