@@ -97,8 +97,9 @@ export async function tryCopyShare(navigator, text) {
 
 // #932 Lot C: the promotional picture of « Partager Lumen » is the discovery
 // page's own social preview (same file as og:image, same language).
+const PROMO_IMAGES = Object.freeze({ 'discover.html': '/src/landing/og-en.jpg', 'descubrir.html': '/src/landing/og-es.jpg' });
 export function promoImagePath(locale) {
-  return discoveryUrlFor(locale).endsWith('/discover.html') ? '/src/landing/og-en.jpg' : '/src/landing/og.jpg';
+  return PROMO_IMAGES[discoveryUrlFor(locale).split('/').pop()] ?? '/src/landing/og.jpg';
 }
 async function fetchPromoImage(path) {
   const response = await fetch(path, { cache: 'force-cache' });

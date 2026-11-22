@@ -19,6 +19,8 @@ const until = async (expr, label) => { for (let i = 0; i < 150; i++) { if (await
 export const COPY = {
   fr: {page: '/decouvrir.html', file: 'src/landing/og.jpg', lang: 'fr', hook: 'Peux-tu rallumer les constellations ?', sub: 'Un jeu de logique dans les étoiles', cta: '100 puzzles gratuits et sans pub'},
   en: {page: '/discover.html', file: 'src/landing/og-en.jpg', lang: 'en', hook: 'Can you relight the constellations?', sub: 'A logic puzzle among the stars', cta: '100 free puzzles · No ads'},
+  // #945 Lot C: same art direction, Spanish copy.
+  es: {page: '/descubrir.html', file: 'src/landing/og-es.jpg', lang: 'es', hook: '¿Puedes volver a encender las constelaciones?', sub: 'Un juego de lógica entre las estrellas', cta: '100 puzles gratis y sin anuncios'},
 };
 // Ursa Major (Grande Ourse), partly relit: 4 of its 6 quests solved, lit with the
 // same rule as the victory scene.

@@ -1,10 +1,11 @@
 // #933: the discovery page follows the language Lumen is displayed in (the
 // player's manual choice or its automatic resolution, never the raw browser
-// language). English → discover.html; French and any other language → the
-// French page, French being the app's default locale (DEFAULT_LOCALE, #754).
+// language). English → discover.html, Spanish → descubrir.html (#945); French and
+// any other language → the French page, French being the default locale (#754).
 export const DISCOVERY_PAGES = Object.freeze({
   fr: 'https://lumen.nopuna.fr/decouvrir.html',
   en: 'https://lumen.nopuna.fr/discover.html',
+  es: 'https://lumen.nopuna.fr/descubrir.html',
 });
 export function discoveryUrlFor(locale) {
   const language = String(locale || '').toLowerCase().split(/[-_]/)[0];
@@ -62,7 +63,7 @@ export function readDiscoveryCampaign(location, referrer) {
     const source = new URL(referrer);
     if (source.origin !== location.origin) return null;
     if (challengeReferrer(location, source)) return 'challenge_link';
-    if (source.pathname !== '/decouvrir.html' && source.pathname !== '/discover.html') return null;
+    if (!Object.values(DISCOVERY_PAGES).some(page => new URL(page).pathname === source.pathname)) return null;
     const [channel, ...otherChannels] = source.searchParams.getAll('utm_source');
     const [medium, ...otherMedia] = source.searchParams.getAll('utm_medium');
     if (!campaignMedia.has(channel) || campaignMedia.get(channel) !== medium) return null;

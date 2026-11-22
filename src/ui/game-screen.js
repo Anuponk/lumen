@@ -140,7 +140,8 @@ function translateGameCopy(){
  if(build&&buildLabel){buildLabel.textContent=t('app.buildVersion',{build});buildLabel.title=t('app.buildLoaded',{build})}
  for(const link of document.querySelectorAll("[data-game-href-en]")){
   link.dataset.gameHrefFr??=link.getAttribute('href');
-  link.href=localePreference?.locale==='en'?link.dataset.gameHrefEn:link.dataset.gameHrefFr;
+  const locale=localePreference?.locale;
+  link.href=locale==='en'?link.dataset.gameHrefEn:locale==='es'?(link.dataset.gameHrefEs??link.dataset.gameHrefEn):link.dataset.gameHrefFr;
  }
 }
 translateGameCopy();

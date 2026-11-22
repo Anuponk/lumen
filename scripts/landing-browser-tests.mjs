@@ -21,7 +21,7 @@ try{
  const results=[];
  for(const viewport of [{width:360,height:640,mobile:true},{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
-  results.push({viewport,...await verifyLanding({send,evaluate},url),...await verifyLanding({send,evaluate},url,'en'),...await verifyHowToPlay({send,evaluate},url),...await verifyHowToPlay({send,evaluate},url,'en'),...await verifyLearnConstellations({send,evaluate},url),...await verifyLearnConstellations({send,evaluate},url,'en'),...await verifyConstellationDirectory({send,evaluate},url,{slowMobile:viewport.width===360})});
+  results.push({viewport,...await verifyLanding({send,evaluate},url),...await verifyLanding({send,evaluate},url,'en'),...await verifyLanding({send,evaluate},url,'es'),...await verifyHowToPlay({send,evaluate},url),...await verifyHowToPlay({send,evaluate},url,'es'),...await verifyHowToPlay({send,evaluate},url,'en'),...await verifyLearnConstellations({send,evaluate},url),...await verifyLearnConstellations({send,evaluate},url,'en'),...await verifyConstellationDirectory({send,evaluate},url,{slowMobile:viewport.width===360})});
   const viewportResult=results.at(-1);
   const screenshotDir=process.env.LUMEN_FACT_SCREENSHOTS;
   if(screenshotDir&&viewport.width!==360){

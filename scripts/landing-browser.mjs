@@ -2,7 +2,7 @@
 // play button is reachable and nothing overflows. Called per viewport by the sky suite.
 import assert from 'node:assert/strict';
 export async function verifyLanding({send,evaluate},baseUrl,language='fr'){
- const page=language==='fr'?'/decouvrir.html':'/discover.html';
+ const page={fr:'/decouvrir.html',en:'/discover.html',es:'/descubrir.html'}[language];
  const previous=await evaluate('performance.timeOrigin');
  await send('Page.navigate',{url:new URL(page,baseUrl).href});
  for(let i=0;i<100;i++){
@@ -24,7 +24,7 @@ export async function verifyLanding({send,evaluate},baseUrl,language='fr'){
  assert.equal(r.language,language);
  assert.equal(r.alternate,language==='fr'?'/discover.html':'/decouvrir.html');
  assert.equal(r.focused,true,'Language switch is keyboard-focusable');
- assert.match(r.h1,/constellations/);assert.equal(r.images.length>=2&&r.images.every(Boolean),true,'Screenshots load');
+ assert.match(r.h1,/constel/);assert.equal(r.images.length>=2&&r.images.every(Boolean),true,'Screenshots load');
  assert.equal(r.overflow,false,'No horizontal overflow');assert.equal(r.play,'/');assert.equal(r.reachable,true,'The play button is reachable');
  // #748: a phone gets the install link, a computer the QR code (CSS only).
  assert.equal(r.install.href,'/?install=1');
@@ -32,12 +32,12 @@ export async function verifyLanding({send,evaluate},baseUrl,language='fr'){
  assert.deepEqual([r.install.link,r.install.qr],wide?[false,true]:[true,false],'Install link on phones, QR code on computers');
  if(wide)assert.equal(r.install.qrLoaded,true,'QR code loads');
  assert.equal(r.scripts,0,'No executable script');assert.equal(r.ld,'VideoGame','Structured data parses');
- return language==='fr'?{landing:true}:{englishLanding:true};
+ return {fr:{landing:true},en:{englishLanding:true},es:{spanishLanding:true}}[language];
 }
 // #758: « Comment jouer » renders without script, its four example grids load, the play
 // button is reachable and keyboard-focusable, and nothing overflows.
 export async function verifyHowToPlay({send,evaluate},baseUrl,language='fr'){
- const page=language==='fr'?'/comment-jouer.html':'/how-to-play.html';
+ const page={fr:'/comment-jouer.html',en:'/how-to-play.html',es:'/como-jugar.html'}[language];
  const previous=await evaluate('performance.timeOrigin');
  await send('Page.navigate',{url:new URL(page,baseUrl).href});
  for(let i=0;i<100;i++){
@@ -56,11 +56,11 @@ export async function verifyHowToPlay({send,evaluate},baseUrl,language='fr'){
    scripts:[...document.scripts].filter(s=>s.type!=='application/ld+json').length,imgWidth:Math.round(document.querySelector('.example img').getBoundingClientRect().width)}
  })()`,true);
  assert.equal(r.language,language);assert.equal(r.alternate,language==='fr'?'/how-to-play.html':'/comment-jouer.html');assert.equal(r.alternateFocused,true);
- assert.equal(r.h1,language==='fr'?'Comment jouer à Lumen':'How to play Lumen');assert.equal(r.images.length,4);assert.equal(r.images.every(Boolean),true,'Example grids load');
+ assert.equal(r.h1,{fr:'Comment jouer à Lumen',en:'How to play Lumen',es:'Cómo jugar a Lumen'}[language]);assert.equal(r.images.length,4);assert.equal(r.images.every(Boolean),true,'Example grids load');
  assert.equal(r.overflow,false,'No horizontal overflow');assert.equal(r.play,'/');assert.equal(r.reachable,true,'Play button reachable');
  assert.equal(r.focused,true,'Play button keyboard-focusable');assert(r.imgWidth>=200,'Example grid readable: '+r.imgWidth);
  assert.equal(r.scripts,0,'No executable script');
- return language==='fr'?{howToPlay:true,exampleWidth:r.imgWidth}:{englishHowToPlay:true,englishExampleWidth:r.imgWidth};
+ return {fr:{howToPlay:true,exampleWidth:r.imgWidth},en:{englishHowToPlay:true,englishExampleWidth:r.imgWidth},es:{spanishHowToPlay:true,spanishExampleWidth:r.imgWidth}}[language];
 }
 // #769: « Apprendre les constellations en jouant » renders without script, its image
 // loads, the play button is reachable and nothing overflows.
