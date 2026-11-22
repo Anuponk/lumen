@@ -1,3 +1,4 @@
+import {createTranslator} from './i18n.js';
 import {playerSyncStatus} from './cockpit-dates.js';
 import {buildIncidentInvestigation} from './incident-investigation.js';
 import {registeredPlayers} from './cockpit-sessions.js';
@@ -7,11 +8,15 @@ const rows=value=>Array.isArray(value)?value:[];
 const record=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
 const records=value=>rows(value).filter(record);
 // #962: bounded device storage health carried by outbox alerts (buckets and category only).
-export function storageAlertLine(alert){
+const adminT=createTranslator().t;
+export function storageAlertLine(alert,t=adminT){
  const kb=Number(alert?.storage_kb),ratio=Number(alert?.storage_ratio),error=alert?.storage_error;
  const parts=[];
- if(alert?.storage_kb!=null&&Number.isFinite(kb))parts.push('Stockage local ≈ '+(kb>=1024?(kb/1024).toFixed(1).replace('.',',')+' Mo':kb+' Ko')+(Number.isFinite(ratio)&&alert?.storage_ratio!=null?' ('+ratio+' %)':''));
- if(error==='quota')parts.push('écriture refusée : stockage plein');else if(error==='storage')parts.push('écriture locale en échec');
+ if(alert?.storage_kb!=null&&Number.isFinite(kb)){
+  const size=kb>=1024?t('admin.storage.mb',{value:(kb/1024).toFixed(1).replace('.',',')}):t('admin.storage.kb',{value:kb});
+  parts.push(alert?.storage_ratio!=null&&Number.isFinite(ratio)?t('admin.storage.sizeShare',{size,ratio}):t('admin.storage.size',{size}));
+ }
+ if(error==='quota')parts.push(t('admin.storage.quota'));else if(error==='storage')parts.push(t('admin.storage.failed'));
  return parts.join(' · ');
 }
 export function observedCount(value){
@@ -181,7 +186,7 @@ export function renderAnalyticsDashboard(hosts,model,{authorized=()=>false,onAct
   card(metrics,'Joueurs avec hydratation non résolue > 15 min',model.technical.stalled,'État non résolu connu, même si son début est plus ancien.');
   card(metrics,'Joueurs signalant un risque local',model.technical.critical,'Signal critique de conservation locale ; perte non établie.');
   card(metrics,'Risques locaux signalés récemment',model.technical.freshCritical,'Dernier signal critique reçu depuis moins de 15 minutes.');
-  card(metrics,'Joueurs au stockage local saturé',model.technical.storagePressure,'Stockage local ≥ 80 % (environ 10 Mo) ou écriture refusée depuis moins de 7 jours (#962).');
+  card(metrics,adminT('admin.storage.cardTitle'),model.technical.storagePressure,adminT('admin.storage.cardHint'));
   if(!model.healthAvailable)notice(technical,'Source technique indisponible : les zéros ne peuvent pas être supposés.','warning');
   notice(technical,'Hydratation : '+model.healthDays+' jour(s) glissants. Files : état connu hors filtre de période. Diagnostics facultatifs : '+Math.min(7,model.healthDays)+' jour(s) maximum, échantillon incomplet. Les populations se recoupent et ne s’additionnent pas.');
   const queues=group(technical,'Files nécessitant une vérification');
