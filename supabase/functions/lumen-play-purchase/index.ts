@@ -205,7 +205,18 @@ Deno.serve(async (request) => {
           p_provider: 'play', p_provider_ref: ref,
         });
         if (error) throw Error('lookup_failed');
-        if (!original) return deferred('refund_receipt_pending', 'rtdn_receipt_pending');
+        if (!original) {
+          // #962: a refund for a purchase Lumen never recorded has nothing to revoke. Close
+          // the delivery only when Google confirms this exact order is refunded or cancelled
+          // (a later purchase check would then grant nothing); otherwise keep it redeliverable.
+          const order = await play('/orders/' + encodeURIComponent(voided.orderId));
+          const settled = order.ok && order.data?.orderId === voided.orderId
+            && order.data?.purchaseToken === voided.purchaseToken
+            && (order.data?.state === 'REFUNDED' || order.data?.state === 'CANCELED');
+          if (!settled) return deferred('refund_receipt_pending', 'rtdn_receipt_pending');
+          console.log(JSON.stringify({ event: 'lumen_play_rtdn_closed', reason: 'refund_without_receipt', messageKey }));
+          return delivered;
+        }
         if (original.status === 'refunded') return delivered;
         result = await verify(original.product_id.replaceAll('-', '_'), voided.purchaseToken, null, true, voided.orderId);
       } else {
