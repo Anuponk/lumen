@@ -38,6 +38,48 @@ class CriticalMonitorTest(unittest.TestCase):
         self.assertIn("/admin/analytics?section=sync", copy)
         self.assertNotIn("PRIVATE", copy)
 
+    def test_digest_is_enqueued_after_local_time_and_routes_separately(self):
+        from datetime import datetime, timezone
+        from lumen_critical_monitor import digest_settings
+
+        settings = digest_settings({
+            "LUMEN_DAILY_SUMMARY_ENABLED": "1",
+            "LUMEN_DAILY_SUMMARY_ZONE": "Europe/Paris",
+            "LUMEN_DAILY_SUMMARY_TIME": "08:15",
+            "LUMEN_DAILY_SUMMARY_RECIPIENT": "digest@example.test",
+        })
+        calls, sent = [], []
+        event = {"id": "date", "lease": "lease", "kind": "daily_summary",
+                 "payload": {"date": "2026-10-25", "zone": "Europe/Paris",
+                             "signup_count": 1, "purchase_count": 2,
+                             "currencies": [{"currency": "EUR", "amount": "10.00", "count": 1},
+                                            {"currency": "JPY", "amount": "125.5", "count": 1}],
+                             "critical_count": 0, "affected_floor": 0, "active": [],
+                             "availability": {"state": "healthy"}, "performance": [],
+                             "user_id": "PRIVATE"}}
+
+        def rpc(name, payload):
+            calls.append((name, payload))
+            if name == "lumen_claim_activity_mail":
+                return [event] if any(key == "lumen_enqueue_health_digest" for key, _ in calls) else []
+            return True
+
+        def send(payload):
+            sent.append(payload)
+            return 201, {"messageId": "fixture"}
+
+        config = {"sample": 42, "stall_minutes": 15, "failures": 3, "recoveries": 2, "backlog": 20,
+                  "since": "2026-10-01T00:00:00Z", "kinds": KINDS, "daily": 120, "batch": 5,
+                  "sender": "app@example.test", "recipient": "admin@example.test", "digest": settings}
+        self.assertEqual(tick(rpc, send, config, "healthy", datetime(2026, 10, 26, 7, 14, tzinfo=timezone.utc)), {})
+        self.assertFalse(sent)
+        outcome = tick(rpc, send, config, "healthy", datetime(2026, 10, 26, 7, 19, tzinfo=timezone.utc))
+        self.assertEqual(outcome, {"accepted": 1})
+        self.assertIn(("lumen_enqueue_health_digest", {"p_date": "2026-10-25", "p_zone": "Europe/Paris"}), calls)
+        self.assertEqual(sent[0]["to"], [{"email": "digest@example.test"}])
+        self.assertIn("125.5 JPY", sent[0]["textContent"])
+        self.assertNotIn("PRIVATE", sent[0]["textContent"])
+
     def test_tick_reuses_queue_and_holds_ambiguous_transport_outcome(self):
         calls = []
         event = {"id": "event", "lease": "fixture-lease", "kind": "incident_resolved",

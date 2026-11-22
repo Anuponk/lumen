@@ -2686,3 +2686,13 @@ Manual acceptance:
 6. Android edge gesture (#821): swipe from each screen edge on a running quest,
    inside the grid, on the ranking podium and between results. Record whether
    the system Back preview appears (Android setting « Navigation par gestes »).
+
+
+### Supervision des performances (#948)
+
+Run `node scripts/performance-sampler-tests.mjs` for opt-in, closed metric payload, owner switching, timers, and bounded animation sampling. The **Performance monitoring tests** workflow uses PostgreSQL 17 with `scripts/fixtures/performance-monitor*.sql` after the activity and incident migrations. It checks permission boundaries, separated cohorts, the sample floor, a simulated slowdown and a hydration failure-rate increase, stable notification keys, retention and revocation. The deployment smoke check and real mailbox receipt remain separate.
+
+
+### Cockpit et bilan quotidien (#949)
+
+The `health-cockpit.yml` PostgreSQL job runs `scripts/fixtures/health-cockpit.sql` with the preceding observability migrations. It covers capability checks, verified signup and purchase sources, currency totals, timezone date bounds, outage state, aggregate privacy and one digest per local date. `python -B scripts/lumen_critical_monitor_tests.py` exercises local time and separate recipient routing with a synthetic transport. `analytics-admin-browser-tests.mjs` checks the health panel and filters through the real cockpit at 320, 390 and 1440 pixels, using mock Auth and database responses.

@@ -4,6 +4,8 @@ import json
 import os
 import re
 import sys
+from datetime import datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from html.parser import HTMLParser
 from urllib.error import URLError
 from urllib.request import Request, build_opener
@@ -66,18 +68,64 @@ def probe(read=public_read):
     return probe_once(read) if first == "revision_mismatch" else first
 
 
-def tick(rpc, send, config, result):
+def digest_settings(env):
+    if env.get("LUMEN_DAILY_SUMMARY_ENABLED") != "1":
+        return None
+    try:
+        zone = ZoneInfo(env.get("LUMEN_DAILY_SUMMARY_ZONE") or "Europe/Paris")
+        hour = env.get("LUMEN_DAILY_SUMMARY_TIME") or "08:15"
+        if not re.fullmatch(r"(?:[01][0-9]|2[0-3]):[0-5][0-9]", hour):
+            raise ValueError("invalid dispatch time")
+        recipient = env["LUMEN_DAILY_SUMMARY_RECIPIENT"]
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", recipient):
+            raise ValueError("invalid digest recipient")
+        return {"zone": zone, "time": time.fromisoformat(hour), "recipient": recipient}
+    except (KeyError, ValueError, ZoneInfoNotFoundError):
+        return {"invalid": True}
+
+
+def enqueue_digest(rpc, settings, now):
+    if not settings or settings.get("invalid"):
+        return
+    local = now.astimezone(settings["zone"])
+    if local.time() >= settings["time"]:
+        rpc("lumen_enqueue_health_digest", {
+            "p_date": (local.date() - timedelta(days=1)).isoformat(),
+            "p_zone": settings["zone"].key,
+        })
+
+
+def tick(rpc, send, config, result, now=None):
     if rpc("lumen_observe_critical_incidents", {
         "p_sample": config["sample"], "p_probe_ok": result == "healthy",
         "p_stall_minutes": config["stall_minutes"], "p_failures": config["failures"],
         "p_recoveries": config["recoveries"], "p_backlog": config["backlog"],
     }) is not True:
         raise RuntimeError("incident observation busy or unavailable")
-    return drain(
+    performance_unavailable = False
+    if config.get("performance"):
+        try:
+            rpc("lumen_observe_performance", {})
+        except RuntimeError:
+            performance_unavailable = True
+    digest = config.get("digest")
+    digest_unavailable = bool(digest and digest.get("invalid"))
+    try:
+        enqueue_digest(rpc, digest, now or datetime.now(timezone.utc))
+    except RuntimeError:
+        digest_unavailable = True
+    if digest and not digest.get("invalid"):
+        config = {**config, "kinds": [*config["kinds"], "daily_summary"], "digest_recipient": digest["recipient"]}
+    outcome = drain(
         lambda payload: rpc("lumen_claim_activity_mail", payload),
         lambda payload: rpc("lumen_finish_activity_mail", payload),
         send, config,
     )
+    if performance_unavailable:
+        outcome['performance_unavailable'] = 1
+    if digest_unavailable:
+        outcome['digest_unavailable'] = 1
+    return outcome
 
 
 def main(env):
@@ -86,8 +134,12 @@ def main(env):
     if env.get("LUMEN_CRITICAL_MONITOR_ENABLED") != "1":
         return int(result != "healthy")
     try:
-        config = configuration({**env, "LUMEN_ACTIVITY_KINDS": ",".join(KINDS)})
+        performance = env.get("LUMEN_PERFORMANCE_MONITOR_ENABLED") == "1"
+        kinds = [*KINDS, "performance_regression"] if performance else KINDS
+        config = configuration({**env, "LUMEN_ACTIVITY_KINDS": ",".join(kinds)})
         config.update(
+            performance=performance,
+            digest=digest_settings(env),
             sample=int(env["LUMEN_PROBE_SAMPLE"]),
             stall_minutes=int(env.get("LUMEN_CRITICAL_STALL_MINUTES", "15")),
             failures=int(env.get("LUMEN_CRITICAL_FAILURES", "3")),
@@ -101,7 +153,7 @@ def main(env):
         return 1
     if outcome:
         print(json.dumps(outcome, sort_keys=True))
-    return int(any(outcome.get(key) for key in ("rejected", "unknown")))
+    return int(any(outcome.get(key) for key in ("rejected", "unknown", "performance_unavailable", "digest_unavailable")))
 
 
 if __name__ == "__main__":
