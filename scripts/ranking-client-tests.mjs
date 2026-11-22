@@ -68,3 +68,22 @@ console.log('Ranking staging: offline, reload, exact counters, owner changes, be
  assert.deepEqual((await single.flush()).map(r=>[r.status,r.reason]),[['refused','ranking_finish_hint_flag_mismatch']]);
  console.log('Ranking refusals: permanent receipt refusals archived once, time refusals kept pending');
 }
+
+// #962: a non-participating account replayed 133 captures every 30 s (~4.4 finish
+// calls per second, 33,935 in 16 h). membership_required archives the capture once.
+{
+ const store=memory();let finishes=0;
+ const connection={async rpc(name){
+  if(name==='lumen_ranking_finish'){finishes++;return {data:{status:'membership_required'}}}
+  return {data:{eligible:true}};
+ }};
+ const queue=createRankingClient({storage:store,getContext:()=>({owner:'owner',client:connection})});
+ for(const id of ['m1','m2','m3'])queue.stage({id}, {...a,attemptId:id});
+ const results=await queue.flush();
+ assert.deepEqual(results.map(r=>[r.status,r.reason]),[['membership_required','membership_required'],['membership_required','membership_required'],['membership_required','membership_required']]);
+ assert.deepEqual(queue.entries('owner'),[],'nothing left to resend');
+ assert(store.getItem('lumenRankingObsoleteV1:owner:m1-reset-0'),'archived, never deleted');
+ for(let i=0;i<5;i++)await queue.flush();
+ assert.equal(finishes,3,'later periodic flushes send nothing');
+ console.log('Ranking membership: non-participating captures archived once, no periodic replay');
+}

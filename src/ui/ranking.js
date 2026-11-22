@@ -78,7 +78,7 @@ export function createRankingView({client,getContext,format,document=globalThis.
    if(token===generation&&quest===q&&getContext().owner===owner&&getContext().client===connection){
     const captured=operation?client.takeResult?.(operation):null;
     improvedForView=improvedForView||!!captured?.improved||(!operation&&results.some(r=>r?.questId===q.id&&r.improved));
-    excludedForView=excludedForView||captured?.status==='ineligible'||captured?.status==='refused'; // #962
+    excludedForView=excludedForView||captured?.status==='ineligible'||captured?.status==='refused'||captured?.status==='membership_required'; // #962
     reasonForView=captured?.reason??reasonForView;
     rows({...data,improved:improvedForView,excluded:excludedForView,reason:reasonForView});
    }
@@ -98,7 +98,7 @@ export function createRankingView({client,getContext,format,document=globalThis.
   }).catch(error=>{
    if(quest!==q||generation!==token)return;
    // An unrelated failed capture cannot hide this operation's terminal receipt.
-   if(operation&&error?.results?.some(r=>r.operationId===operation&&['confirmed','ineligible','refused'].includes(r.status))){void refresh(error.results);return}
+   if(operation&&error?.results?.some(r=>r.operationId===operation&&['confirmed','ineligible','refused','membership_required'].includes(r.status))){void refresh(error.results);return}
    if(quest===q&&generation===token)status(t('ranking.syncError'),'pending');
   })}
  function mount(){if(owner&&(getContext().owner!==owner||getContext().client!==connection)){clear();return}const slot=document.getElementById('skyRevealPodium'),sky=document.getElementById('skyRevealResults'),normal=document.getElementById('successRecord');const visibleSky=sky&&!sky.hidden&&!document.getElementById('skyReveal')?.hidden;if(visibleSky&&slot)slot.prepend(root);else if(visibleSky)document.getElementById('skyRevealRecord')?.after(root);else normal?.after(root)}
