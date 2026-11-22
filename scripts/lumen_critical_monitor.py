@@ -4,13 +4,12 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, time, timedelta, timezone
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from datetime import datetime, timezone
 from html.parser import HTMLParser
 from urllib.error import URLError
 from urllib.request import Request, build_opener
 
-from lumen_activity_mail import NoRedirect, drain, supabase_client
+from lumen_activity_mail import NoRedirect, digest_settings, drain, enqueue_digest, supabase_client
 
 SITE = "https://lumen.nopuna.fr"
 KINDS = ["incident_open", "incident_resolved", "purchase_missing_access", "purchase_access_restored"]
@@ -66,36 +65,6 @@ def probe_once(read):
 def probe(read=public_read):
     first = probe_once(read)
     return probe_once(read) if first == "revision_mismatch" else first
-
-
-def digest_settings(env, *, require_recipient=True):
-    if env.get("LUMEN_DAILY_SUMMARY_ENABLED") != "1":
-        return None
-    try:
-        zone = ZoneInfo(env.get("LUMEN_DAILY_SUMMARY_ZONE") or "Europe/Paris")
-        hour = env.get("LUMEN_DAILY_SUMMARY_TIME") or "08:15"
-        if not re.fullmatch(r"(?:[01][0-9]|2[0-3]):[0-5][0-9]", hour):
-            raise ValueError("invalid dispatch time")
-        settings = {"zone": zone, "time": time.fromisoformat(hour)}
-        if require_recipient:
-            recipient = env["LUMEN_DAILY_SUMMARY_RECIPIENT"]
-            if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", recipient):
-                raise ValueError("invalid digest recipient")
-            settings["recipient"] = recipient
-        return settings
-    except (KeyError, ValueError, ZoneInfoNotFoundError):
-        return {"invalid": True}
-
-
-def enqueue_digest(rpc, settings, now):
-    if not settings or settings.get("invalid"):
-        return
-    local = now.astimezone(settings["zone"])
-    if local.time() >= settings["time"]:
-        rpc("lumen_enqueue_health_digest", {
-            "p_date": (local.date() - timedelta(days=1)).isoformat(),
-            "p_zone": settings["zone"].key,
-        })
 
 
 def tick(rpc, send, config, result, now=None):
