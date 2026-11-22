@@ -370,6 +370,7 @@ probe behavior simulated. Explicit logout/password recovery/account switching
 remain covered. Real SDK 2.118.0 was additionally checked locally with blocked
 provider requests; that check is distinct from the required fixture transport.
 
+Spanish catalogue (#945) uses `i18n-es-tests.mjs` (parity, placeholders, plurals, punctuation, leftovers, glossary).
 Locale foundation (#754) uses `locale-tests.mjs` for browser preference resolution,
 storage isolation, catalogue parity and formatting. The welcome browser suite
 mounts an English fixture. `onboarding-locale-tests.mjs` covers the first two quests’

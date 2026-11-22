@@ -28,6 +28,40 @@ The public discovery page is available in French at `/decouvrir.html` and in Eng
 
 The public game exposes a language selector in the rules dialog. The player can choose Automatic, Français or English. Automatic selects the first supported browser language and falls back to French. The explicit choice is stored on the device. Switching updates the translated text and accessibility labels without rebuilding the board or restarting the attempt. English covers onboarding, board controls, help, verification feedback, the puzzle leaderboard, personal records and the quest review’s performance copy. The Daily Challenge surfaces also use FR/EN, including both leaderboards, the weekly recap and its share text. My Sky navigation, its guided tour and quest cards, sign-in and password recovery, primary sync notices, purchase offers and purchase confirmation also use FR/EN. The controls and successive explanations of logical hints follow the current language, including row and column coordinates. Guided-check conflict explanations, the accessible Guardian label and the quest 11 autonomy prompt also update when the player changes language. Constellation names and the 88 cultural facts follow the selected language in My Sky. The [public constellation directory](../constellations/index.html) also has an [English edition](../constellations/en.html). Adventure names in My Sky, offers and purchase confirmations and the current quest label and difficulty, and the achievement recap after a quest also follow the selected locale. The badge rules, replay cooldown and reward or pending-save labels in the victory view use the same locale. The legal notice, privacy policy, sales terms and account-deletion request have English pages. Some status messages and notification payloads can still appear in French. The remaining translations, cross-device preference, native Android app language, transactional copy, notifications and Play listing are tracked in #754.
 
+### Spanish (#945)
+
+`src/ui/locales/es/` mirrors every French domain (1 387 keys, same keys,
+placeholders and plural shapes; ordinals use the Spanish rule « 1.º »). Neutral
+international Spanish with « tú », Spanish punctuation (¿ ¡), no regional slang.
+The `es` registry entry stays `enabled: false` until the activation lot; while
+disabled, Spanish devices keep the French fallback. Player nicknames, IDs and
+protocol values (`SUPPRIMER` for account deletion) are never translated.
+
+| FR | EN | ES |
+|---|---|---|
+| Gardien | Guardian | Guardián |
+| territoire | territory | territorio |
+| case écartée / croix | excluded cell / cross | casilla descartada / cruz |
+| Marquage auto | Auto-marking | Marcado automático |
+| quête | quest | misión |
+| aventure · constellation | adventure · constellation | aventura · constelación |
+| Mon ciel | My Sky | Mi cielo |
+| Indice · Vérifier · Contrôle guidé | Hint · Check · guided check | Pista · Comprobar · Control guiado |
+| chrono · temps officiel · pénalité | timer · official time · penalty | cronómetro · tiempo oficial · penalización |
+| tentative (qualifiante) | (qualifying) attempt | intento (clasificatorio) |
+| Autonomie · Rapidité · Sans erreur · Maîtrise | Independence · Speed · Flawless · Mastery | Autonomía · Rapidez · Sin errores · Maestría |
+| Éclats · Série de lumière | Shards · Light Streak | Fragmentos · Racha de luz |
+| défi · Défi du jour | challenge · Daily Challenge | reto · Reto del día |
+| classement · record | ranking · record | clasificación · récord |
+| ami · cercle · pseudo | friend · circle · nickname | amigo · círculo · apodo |
+| compte · boutique | account · shop | cuenta · tienda |
+
+Choices to confirm in acceptance: « misión » for quête (rather than « búsqueda »);
+« reto » rather than « desafío »; « apodo » rather than « seudónimo »; the masculine
+generic for « creador » / « amigo » where French uses inclusive « ·e » (Spanish
+neutral rewordings are used when natural); constellation names follow the usual
+Spanish IAU names (Escorpio, Ofiuco, Vulpécula, Can Mayor…).
+
 ### Maintaining the translations
 
 Add or edit the French and English entries in the same PR. Keep messages complete and preserve the named variables in each plural form. Format the data at render time. Player nicknames, quest IDs, scores and reward state keep their existing meaning and ownership.
