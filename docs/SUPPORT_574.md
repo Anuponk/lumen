@@ -1,5 +1,21 @@
 # Temporary assistance — #574
 
+## One-tap transmission (#962)
+
+The assistance panel sits three levels deep (Mon espace → Données et diagnostic →
+Diagnostic de synchronisation → Assistance) and needs a checkbox plus three buttons;
+on 22 November 2026 a player with a blocked board had never found it. Mon espace now
+shows « Transmettre mon diagnostic » to signed-in, non-QA players. It opens the Lumen
+dialog stating what is sent (progress, badges, results, balance, incident codes,
+backup copies; no password or email), to whom (authorised Lumen support), for how
+long (24 h activation including incidents, seven days retention) and how to withdraw.
+Cancel sends nothing. Only « Accepter et transmettre » activates the existing dossier
+(or reuses an active one) and sends one manual capture through the same
+`lumen_support` path; the status shows the dossier reference only after the server
+receipt, reports offline/failed states honestly and never claims receipt otherwise.
+The detailed panel keeps the exact preview, withdrawal and erasure. No server,
+schema or permission change. Tests: `support-quick-send-tests.mjs`.
+
 ## Explicit sending and reference lookup (#776)
 
 The local diagnostic copy button only writes to the clipboard. Sharing that text

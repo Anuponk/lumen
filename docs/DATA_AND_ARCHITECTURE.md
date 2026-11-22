@@ -252,6 +252,9 @@ an older dossier rather than the latest one for its owner. The prepared
 only, preserving ownership, locks, audit, revocation and retention; it requires
 separate production authorization. No game writer, save format or ChatGPT
 retrieval channel is added. See SUPPORT_574 for the transport and acceptance limits.
+#962: Mon espace adds « Transmettre mon diagnostic » (`ui/support-quick-send.js`): the Lumen
+dialog asks explicit consent, then the same session activates the dossier and sends one
+manual capture; the reference appears only after the server receipt.
 No game writer, save mutation or reconciliation change; originals remain local.
 The migration/control are prepared and disabled pending explicit production
 authorization. A volatile one-hour queue deliberately does not survive page
