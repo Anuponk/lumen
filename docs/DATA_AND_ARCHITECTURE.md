@@ -273,6 +273,9 @@ for installation order, actual SQL evidence and outstanding physical gates.
 outbox state, fifteen-minute alert and capability; add a private companion
 detail stream, not another backlog/repair engine. `diagnostic-reporter.js` maps
 fixed cloud/outbox/runtime codes and #533 blocked/Undo/released transitions.
+#962: runtime exceptions and rejections carry `kind` `quota`/`storage`/`network` from the
+standard error name (or exact browser network messages) only; messages, stacks and
+URLs never leave the device. Before this, a full device storage stayed `unknown`.
 `lumen_record_diagnostics` derives Auth identity and checks the expected account;
 the same `lumen_admin_sync_health` response adds a bounded diagnostic sample,
 without profile/account joins. Public RPC wrappers are invokers; privileged

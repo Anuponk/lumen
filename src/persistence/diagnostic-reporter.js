@@ -130,9 +130,25 @@ export function createDiagnosticReporter({storage,context,send,uuid=()=>crypto.r
  return {capture,flush,pending:()=>queue.length,refresh(){try{bind();arm()}catch{}},
   clear(){if(timer!==null)cancel(timer);timer=null;queue=[];muted=false;attempts=0;nextAt=0;seen.clear();persist()}};
 }
+// #962: runtime errors were all recorded as kind `unknown`; a full device storage
+// (production, 22/11) stayed invisible. Only the standard error name and a few fixed
+// browser network messages are read, and only the category leaves the device.
+const QUOTA_ERRORS=new Set(['QuotaExceededError','NS_ERROR_DOM_QUOTA_REACHED']);
+const STORAGE_ERRORS=new Set(['InvalidStateError','UnknownError','DataError','VersionError','DataCloneError','ReadOnlyError','TransactionInactiveError','NotReadableError']);
+const NETWORK_MESSAGES=new Set(['Failed to fetch','NetworkError when attempting to fetch resource.','Load failed','Network request failed']);
+export function diagnosticErrorKind(error){
+ try{
+  if(!error||typeof error!=='object')return 'unknown';
+  const name=typeof error.name==='string'?error.name:'';
+  if(QUOTA_ERRORS.has(name)||error.code===22||error.code===1014)return 'quota';
+  if(STORAGE_ERRORS.has(name))return 'storage';
+  if(name==='NetworkError'||(name==='TypeError'&&NETWORK_MESSAGES.has(error.message)))return 'network';
+ }catch{}
+ return 'unknown';
+}
 export function installDiagnosticListeners(target,reporter){
- const error=event=>{try{reporter.capture(event.target!==target&&['SCRIPT','LINK','IMG'].includes(event.target?.tagName)?'resource_failed':'runtime_exception',{stage:'runtime'})}catch{}};
- const rejection=()=>{try{reporter.capture('unhandled_rejection',{stage:'runtime'})}catch{}};
+ const error=event=>{try{const resource=event.target!==target&&['SCRIPT','LINK','IMG'].includes(event.target?.tagName);reporter.capture(resource?'resource_failed':'runtime_exception',resource?{stage:'runtime'}:{stage:'runtime',kind:diagnosticErrorKind(event.error)})}catch{}};
+ const rejection=event=>{try{reporter.capture('unhandled_rejection',{stage:'runtime',kind:diagnosticErrorKind(event?.reason)})}catch{}};
  target.addEventListener('error',error,true);target.addEventListener('unhandledrejection',rejection);
  const reconnect=()=>{try{reporter.refresh()}catch{}};target.addEventListener('online',reconnect);
  return ()=>{target.removeEventListener('error',error,true);target.removeEventListener('unhandledrejection',rejection);target.removeEventListener('online',reconnect)};
