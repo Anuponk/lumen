@@ -21,6 +21,11 @@ export const PERMANENT_RANKING_REFUSALS=Object.freeze(['ranking_finish_invalid_c
  'ranking_finish_assistance_flag_mismatch','ranking_finish_invalid_official_timing','ranking_finish_official_counts_mismatch']);
 export function createRankingClient({storage,getContext,now=()=>Date.now(),currentGridRevision=null}={}){
  const prefix='lumenRankingPendingV1:',obsoletePrefix='lumenRankingObsoleteV1:',flights=new Map(),recent=new Map();
+ // #962: production device on the fixed build still replayed one refused capture; the
+ // archive write most likely failed (e.g. storage full). A terminal answer is remembered for
+ // the page lifetime, so it is never resent even if archiving fails; the capture stays.
+ const settled=new Map();
+ function retire(c,entry,result){settled.set(key(c.owner,entry.operationId),result);try{archive(c,entry)}catch{}return result}
  // A run captured on a replaced board can never be accepted by the server.
  // Archive it (never silently delete) so it cannot block later entries.
  function obsolete(entry){
@@ -41,7 +46,7 @@ export function createRankingClient({storage,getContext,now=()=>Date.now(),curre
  async function rpc(c,name,args){if(!valid(c))throw Error('Ranking account changed');const r=await c.client.rpc(name,args);if(!valid(c))throw Error('Ranking account changed');if(r.error)throw Object.assign(Error('Ranking unavailable'),{reason:String(r.error.message||'')});return r.data}
  function entries(owner){const out=[];for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k?.startsWith(prefix+owner+':')){const v=read(k);if(v?.owner!==owner||key(owner,v.operationId)!==k)throw Error('Ranking identity mismatch');out.push(v)}}return out.sort((a,b)=>a.createdAt-b.createdAt)}
  async function send(c,entry){
-  const id=key(c.owner,entry.operationId);if(flights.has(id)){await flights.get(id);if(!read(id))return {status:'confirmed'};return send(c,entry)}
+  const id=key(c.owner,entry.operationId);if(settled.has(id))return settled.get(id);if(flights.has(id)){await flights.get(id);if(!read(id))return {status:'confirmed'};return send(c,entry)}
   if(obsolete(entry)){archive(c,entry);return {status:'obsolete'}}
   const promise=(async()=>{
    const begin=await rpc(c,'lumen_ranking_begin',{p_operation_id:entry.operationId,p_quest_id:entry.questId,p_grid_revision:entry.gridRevision,p_started_at:entry.startedAt});
@@ -50,12 +55,12 @@ export function createRankingClient({storage,getContext,now=()=>Date.now(),curre
    try{finished=await rpc(c,'lumen_ranking_finish',{p_operation_id:entry.operationId,p_hint_uses:entry.result.hint,p_verify_uses:entry.result.verify})}
    catch(error){
     if(!PERMANENT_RANKING_REFUSALS.includes(error?.reason))throw error;
-    archive(c,entry);return {status:'refused',reason:error.reason};
+    return retire(c,entry,{status:'refused',reason:error.reason});
    }
    // #962: outside the leaderboard this capture is never published (withdrawal already
    // retires captures). Archive it instead of resending it every 30 s: production saw
    // one non-participating account replay 133 captures, ~4.4 finish calls per second.
-   if(finished?.status==='membership_required'){archive(c,entry);return {...finished,reason:'membership_required'}}
+   if(finished?.status==='membership_required')return retire(c,entry,{...finished,reason:'membership_required'});
    const result=finished&&typeof finished==='object'?{...finished,reason:rankingReason(finished,begin,entry.result)}:finished;
    // Terminal receipt only; pending/missing victory receipts stay durable.
    if(result?.status==='confirmed'||result?.status==='ineligible'){
