@@ -1,6 +1,6 @@
 // #945 · Spanish catalogue: complete, faithful to the French reference
 // (keys, placeholders, plurals), Spanish punctuation, no French leftovers, and
-// French/English unchanged. Activation of the language is a separate lot.
+// French/English unchanged. Lot B (#945) enables it in the selector.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -93,8 +93,8 @@ test('glossary terms are used consistently', () => {
   assert.match(es['account.deleteType'], /SUPPRIMER/);
 });
 
-test('French and English are unchanged and Spanish is not exposed before activation', () => {
-  assert.equal(locales.es.enabled, false, 'activation is its own lot');
+test('French and English are unchanged and Spanish is offered in the selector', () => {
+  assert.equal(locales.es.enabled, true, 'Lot B: Spanish is selectable and auto-detected');
   assert.equal(locales.es.fallback, 'fr');
   assert.equal(locales.fr.messages['board.ready'], 'Touchez la grille pour commencer');
   assert.equal(en['board.ready'], 'Tap the board to begin');

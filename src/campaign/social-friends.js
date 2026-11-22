@@ -16,8 +16,18 @@ const ERRORS=Object.freeze({
  not_friends:'Vous n’êtes pas (ou plus) amis.',
  not_challenge_owner:'Ce défi ne t’appartient pas.'
 });
-export function friendErrorMessage(error){
+// #945: the screen passes its translator; without one, the French reference copy.
+const ERROR_KEYS=Object.freeze({
+ account_required:'friends.error.account_required',nickname_required:'friends.error.nickname_required',
+ player_not_found:'friends.error.player_not_found',cannot_add_self:'friends.error.cannot_add_self',
+ request_cooldown:'friends.error.request_cooldown',too_many_pending:'friends.error.too_many_pending',
+ rate_limited:'friends.error.rate_limited',no_pending_request:'friends.error.no_pending_request',
+ not_related:'friends.error.not_related',not_friends:'friends.error.not_friends',
+ not_challenge_owner:'friends.error.not_challenge_owner'
+});
+export function friendErrorMessage(error,t=null){
  const code=String(error?.message||error||'');
+ if(t)return t(Object.hasOwn(ERROR_KEYS,code)?ERROR_KEYS[code]:'friends.error.unavailable');
  return ERRORS[code]||'Action impossible pour le moment. Réessaie plus tard.';
 }
 
@@ -51,11 +61,16 @@ export function createFriendsClient(supabase){
 // them by delegation. Only nicknames, quest numbers and statuses are shown.
 export function escapeSocialHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])}
 const button=(action,label,attr)=>'<button type="button" '+attr+'="'+action+'">'+label+'</button>';
-export function renderFriendRows(list=[]){
- if(!list.length)return '<p class="social-note">Aucun ami pour le moment. Ajoute un joueur avec son pseudonyme exact.</p>';
+const FRIEND_COPY=Object.freeze({empty:'Aucun ami pour le moment. Ajoute un joueur avec son pseudonyme exact.',accept:'Accepter',decline:'Refuser',remove:'Retirer',cancel:'Annuler'});
+const FRIEND_KEYS=Object.freeze({empty:'friends.empty',accept:'friends.accept',decline:'friends.decline',remove:'friends.remove',cancel:'friends.cancel',
+ friends:'friends.state.friends',incoming:'friends.state.incoming',outgoing:'friends.state.outgoing'});
+export function renderFriendRows(list=[],t=null){
+ const copy=key=>escapeSocialHtml(t?t(FRIEND_KEYS[key]):FRIEND_COPY[key]);
+ if(!list.length)return '<p class="social-note">'+copy('empty')+'</p>';
  return list.map(row=>{
-  const name=escapeSocialHtml(row.nickname),actions=row.state==='incoming'?button('accept','Accepter','data-friend-action')+button('decline','Refuser','data-friend-action'):row.state==='friends'?button('remove','Retirer','data-friend-action'):button('remove','Annuler','data-friend-action');
-  return '<div class="friend-row" data-nickname="'+name+'"><span class="friend-name">'+name+'</span><span class="friend-state">'+escapeSocialHtml(FRIEND_STATE_LABELS[row.state]||'')+'</span><span class="friend-actions">'+actions+'</span></div>';
+  const name=escapeSocialHtml(row.nickname),actions=row.state==='incoming'?button('accept',copy('accept'),'data-friend-action')+button('decline',copy('decline'),'data-friend-action'):row.state==='friends'?button('remove',copy('remove'),'data-friend-action'):button('remove',copy('cancel'),'data-friend-action');
+  const state=Object.hasOwn(FRIEND_STATE_LABELS,row.state)?(t?t(FRIEND_KEYS[row.state]):FRIEND_STATE_LABELS[row.state]):'';
+  return '<div class="friend-row" data-nickname="'+name+'"><span class="friend-name">'+name+'</span><span class="friend-state">'+escapeSocialHtml(state)+'</span><span class="friend-actions">'+actions+'</span></div>';
  }).join('');
 }
 export function renderReceivedChallenges(list=[],questLabel=()=>'Quête'){

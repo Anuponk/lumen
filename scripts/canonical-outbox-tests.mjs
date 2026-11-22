@@ -1,3 +1,4 @@
+import frPlay from "../src/ui/locales/fr/play.js";
 import assert from "node:assert/strict";
 import {createCanonicalVictoryOutbox,replayCanonicalVictoryOutbox} from "../src/persistence/canonical-outbox.js";
 const values=new Map();
@@ -71,8 +72,8 @@ assert.ok(ui.indexOf("const pending=await canonicalVictoryOutbox.enqueue(ownerId
 assert.ok(ui.includes("try{await canonicalVictoryOutbox.acknowledge(ownerId,q.id,pending.reward,pending.operationId)}catch(error)"),"failed local cleanup does not mask confirmed cloud victory or discard another run");
 
 assert.ok(ui.includes("locallySaved=!!lumenUser&&!!durableIntent&&(await canonicalVictoryOutbox.pending(lumenUser.id)).some(entry=>entry.operationId===durableIntent.operationId&&entry.questId===q.id)"),"pending message checks this run's durable intent, not another pending victory");
-assert.ok(ui.includes("Victoire conservée sur cet appareil, en attente de synchronisation."),"saved intent has honest pending copy");
-assert.ok(ui.includes("la conservation locale n'est pas confirmée"),"failed storage write never falsely claims durability");
+assert.ok(ui.includes("t('victory.localPendingSync')")&&frPlay["victory.localPendingSync"]==="Victoire conservée sur cet appareil, en attente de synchronisation.","saved intent has honest pending copy");
+assert.ok(ui.includes("t('victory.localUnconfirmed')")&&frPlay["victory.localUnconfirmed"].includes("la conservation locale n'est pas confirmée"),"failed storage write never falsely claims durability");
 assert.ok(ui.includes("async function retryPendingCanonicalOutboxOnReconnect()"),"recover pending wins on reconnection");
 assert.ok(ui.includes("void retryPendingCanonicalOutboxOnReconnect();"),"online and PWA resume initiate retry");
 assert.ok(ui.includes("canonicalOutboxRetryInFlight=true"),"replay has concurrent retry guard");

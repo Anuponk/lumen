@@ -20,5 +20,6 @@
   "src/ui/circles.js",
   "scripts/circles-tests.mjs",
   "scripts/circles-browser-tests.mjs",
-  "scripts/i18n-es-tests.mjs"
+  "scripts/i18n-es-tests.mjs",
+  "scripts/es-journeys-browser-tests.mjs"
 ]

@@ -1,6 +1,7 @@
 // #752: the Série de lumière is paused without deleting code or history.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import frPlay from '../src/ui/locales/fr/play.js';
 import {DAILY_LIGHT_STREAK_ENABLED} from '../src/campaign/feature-flags.js';
 import {grantDaily,streakFromDates} from '../src/campaign/daily-engagement.js';
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8').replace(/\r\n/g,'\n');
@@ -30,7 +31,8 @@ assert.match(fn('renderDaily'),/^function renderDaily\(\)\{\n if\(!DAILY_LIGHT_S
 for(const id of ['dailyCard','dailyCompactHelp','dailyHelpModal','dailyCelebration','streakLossModal'])assert.ok(fn('hideDailyLightStreak').includes('"'+id+'"'),id+' hidden while paused');
 assert.match(fn('maybeShowStreakLoss'),/^function maybeShowStreakLoss\(\)\{\n if\(!DAILY_LIGHT_STREAK_ENABLED\)return;/);
 assert.match(fn('scheduleDailyCelebration'),/if\(!DAILY_LIGHT_STREAK_ENABLED\)return;/);
-assert.match(fn('maybeShowReturnWelcome'),/if\(!DAILY_LIGHT_STREAK_ENABLED\)\{copy\.textContent="Reprends ton exploration du ciel là où tu l’as laissée\.";stars\.hidden=true;/);
+assert.match(fn('maybeShowReturnWelcome'),/if\(!DAILY_LIGHT_STREAK_ENABLED\)\{copy\.textContent=t\('return\.explore'\);stars\.hidden=true;/);
+assert.equal(frPlay['return.explore'],'Reprends ton exploration du ciel là où tu l’as laissée.','#945: same French copy, now from the catalogue');
 assert.match(fn('setupStreakLoss'),/if\(!DAILY_LIGHT_STREAK_ENABLED\)qaPreview\.hidden=true;/);
 // The player client always records history without adding a currency reward.
 assert.match(src,/grantDaily\(lumenProgress,today,\{rewards:false\}\)/);
