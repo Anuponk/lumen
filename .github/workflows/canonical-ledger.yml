@@ -315,6 +315,8 @@ jobs:
           LUMEN_SQL_FIXTURE: '1'
         run: |
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/reliable-analytics.sql
+          # #962: admin cockpit indexes (exact cockpit_events predicates, unchanged results).
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/admin-cockpit-indexes-962.sql
       - name: Verify purchases, the 5 EUR cap, refunds and mastery unlocks (#728)
         env:
           PGPASSWORD: isolated-test-only
