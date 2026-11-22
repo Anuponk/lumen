@@ -51,7 +51,7 @@ import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSn
 import {installVerifiedQuestResets} from '../persistence/quest-reset-install.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation,guestAcquisitionRecoveryEligible} from '../persistence/guest-account.js';
-import {storageReport,archiveRecoveryBackups} from '../persistence/storage-maintenance.js';
+import {storageReport,archiveRecoveryBackups,maintainRecoveryBackups} from '../persistence/storage-maintenance.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
 import {isNetworkFailure,preserveRecoverySnapshot,CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
@@ -5174,6 +5174,19 @@ async function autoArchiveAccountSwitchCopies(){
  if(result.interrupted)setTimeout(()=>void autoArchiveAccountSwitchCopies(),60000);
 }
 setTimeout(()=>void autoArchiveAccountSwitchCopies(),15000);
+// #962: every backup family once the local copies exceed 1 MiB (same verified archive
+// policy; nothing is purged, pending work is never touched).
+let backupMaintenanceTries=0;
+async function autoMaintainRecoveryBackups(){
+ if(qaActive||backupMaintenanceTries>=3)return;
+ if(authSessionPending){setTimeout(()=>void autoMaintainRecoveryBackups(),30000);return}
+ backupMaintenanceTries++;
+ const user=lumenUser,client=lumenSupabase;
+ const result=await maintainRecoveryBackups(localStorage,{sessionValid:()=>lumenUser===user&&lumenSupabase===client&&!authSessionPending}).catch(()=>({interrupted:true}));
+ if(result.ran)recordCloudDiagnostic('local_backups_maintained',{archived:result.archived,batches:result.batches,failed:!!result.failed,interrupted:!!result.interrupted});
+ if(result.interrupted)setTimeout(()=>void autoMaintainRecoveryBackups(),60000);
+}
+setTimeout(()=>void autoMaintainRecoveryBackups(),20000);
 // #730: Stripe Checkout on the web/PWA only, never in the Play app. TEST phase: only
 // accounts holding the server capability « stripe_test_checkout ». The server reads every
 // payment back from Stripe and records it (#728); a Stripe return URL never grants.

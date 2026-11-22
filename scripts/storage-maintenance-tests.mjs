@@ -204,3 +204,28 @@ test('#723: the game runs the silent launch maintenance for account-switch copie
  assert.match(source,/\nsetTimeout\(\(\)=>void autoArchiveAccountSwitchCopies\(\),15000\);\n/);
  assert.match(source,/if\(qaActive\|\|switchCopiesTries>=3\)return;/);
 });
+
+// #962: above the threshold every backup family is archived automatically, in batches,
+// keeping the two newest copies per family; below it nothing moves.
+test('automatic maintenance archives every family beyond two copies when over the threshold',async()=>{
+ const {maintainRecoveryBackups}=await load();
+ const f=fixture();
+ for(let i=0;i<120;i++)f.values.set('lumenBeforeCloudRestore_'+(1000+i),'copy-'+i+'-'+'x'.repeat(5000));
+ const idle=await maintainRecoveryBackups(f.storage,{indexedDB:f.indexedDB,thresholdBytes:1e12});
+ assert.equal(idle.ran,false);assert.equal(f.archives.size,0);
+ const done=await maintainRecoveryBackups(f.storage,{indexedDB:f.indexedDB,thresholdBytes:1024});
+ assert.equal(done.ran,true);assert(done.batches>=3,'more than one 50-copy batch');assert.equal(done.failed,false);
+ const left=[...f.values.keys()].filter(k=>k.startsWith('lumenBeforeCloudRestore_'));
+ assert.equal(left.length,2,'two newest copies kept');assert.deepEqual(left.sort(),['lumenBeforeCloudRestore_1118','lumenBeforeCloudRestore_1119']);
+ assert.equal(f.archives.size,done.archived,'every removed copy is in the archive');
+ assert.equal(f.values.get('lumenCanonicalOutboxV2:private'),'pending-intent','pending work untouched');
+ assert.equal(f.values.get('lumenProgressV1'),'private-current');
+});
+test('automatic maintenance stops on a failed archive without removing copies',async()=>{
+ const {maintainRecoveryBackups}=await load();
+ const f=fixture({fault:'commit'});
+ for(let i=0;i<10;i++)f.values.set('lumenBeforeCloudRestore_'+(1000+i),'copy-'+i);
+ const before=[...f.values.keys()].length;
+ const result=await maintainRecoveryBackups(f.storage,{indexedDB:f.indexedDB,thresholdBytes:1});
+ assert.equal(result.failed,true);assert.equal([...f.values.keys()].length,before,'nothing removed without a committed archive');
+});
