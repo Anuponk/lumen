@@ -1,9 +1,10 @@
 """Local tests use synthetic payloads and never initialize an external transport."""
 import unittest
 from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from urllib.error import HTTPError
-from lumen_activity_mail import brevo_outcome, configuration, drain, format_notice, post
+from lumen_activity_mail import brevo_outcome, configuration, drain, format_notice, main, post
+from lumen_activity_mail_receipt import host_receipt
 
 
 class ActivityMailTest(unittest.TestCase):
@@ -87,6 +88,29 @@ class ActivityMailTest(unittest.TestCase):
         self.assertEqual([row["p_lease"] for row in completions], ["lease-0", "lease-1", "lease-2"])
         self.assertEqual(delivered[0]["to"], [{"email": "admin@example.test"}])
         self.assertEqual(len(delivered), 3)
+
+    def test_host_worker_and_receipt_route_digest_to_its_own_mailbox(self):
+        env = {
+            "LUMEN_ACTIVITY_ENABLED": "1", "LUMEN_ACTIVITY_KINDS": "daily_summary",
+            "LUMEN_ACTIVITY_START": "2026-11-21T00:00:00Z",
+            "LUMEN_ACTIVITY_SUPABASE_URL": "https://fixture.supabase.co",
+            "LUMEN_ACTIVITY_SUPABASE_KEY": "fixture-key",
+            "LUMEN_ACTIVITY_SENDER": "app@example.test",
+            "LUMEN_ACTIVITY_RECIPIENT": "activity@example.test",
+            "LUMEN_DAILY_SUMMARY_RECIPIENT": "digest@example.test",
+        }
+        with patch("lumen_activity_mail.clients", return_value=(None, None)), \
+             patch("lumen_activity_mail.drain", return_value={}) as drain_mail:
+            self.assertEqual(main(env), 0)
+            self.assertEqual(drain_mail.call_args.args[-1]["digest_recipient"], "digest@example.test")
+        with patch.dict("os.environ", env, clear=True), \
+             patch("lumen_activity_mail_receipt.verify_supabase"), \
+             patch("lumen_activity_mail_receipt.clients") as clients_for_receipt:
+            send = Mock(return_value=(201, {"messageId": "x"}))
+            clients_for_receipt.return_value = (None, send)
+            host_receipt()
+            self.assertEqual([call.args[0]["to"][0]["email"] for call in send.call_args_list],
+                             ["activity@example.test"] * 3 + ["digest@example.test"])
 
     def test_config_rejects_non_supabase_destination(self):
         with self.assertRaises(ValueError):

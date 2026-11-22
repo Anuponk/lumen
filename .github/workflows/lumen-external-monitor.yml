@@ -31,25 +31,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Observe public availability and drain critical notices
+      - name: Observe public availability and queue notices
         env:
           LUMEN_CRITICAL_MONITOR_ENABLED: '1'
           LUMEN_PERFORMANCE_MONITOR_ENABLED: ${{ vars.LUMEN_PERFORMANCE_MONITOR_ENABLED || '0' }}
           LUMEN_DAILY_SUMMARY_ENABLED: ${{ vars.LUMEN_DAILY_SUMMARY_ENABLED || '0' }}
           LUMEN_DAILY_SUMMARY_TIME: ${{ vars.LUMEN_DAILY_SUMMARY_TIME || '08:15' }}
           LUMEN_DAILY_SUMMARY_ZONE: ${{ vars.LUMEN_DAILY_SUMMARY_ZONE || 'Europe/Paris' }}
-          LUMEN_DAILY_SUMMARY_RECIPIENT: ${{ secrets.LUMEN_DAILY_SUMMARY_RECIPIENT }}
           LUMEN_PROBE_SAMPLE: ${{ github.run_id }}
-          LUMEN_ACTIVITY_START: ${{ vars.LUMEN_ACTIVITY_START }}
           LUMEN_ACTIVITY_SUPABASE_URL: ${{ vars.LUMEN_ACTIVITY_SUPABASE_URL }}
-          LUMEN_ACTIVITY_SENDER: ${{ vars.LUMEN_ACTIVITY_SENDER }}
-          LUMEN_ACTIVITY_RECIPIENT: ${{ secrets.LUMEN_ACTIVITY_RECIPIENT }}
           LUMEN_ACTIVITY_SUPABASE_KEY: ${{ secrets.LUMEN_ACTIVITY_SUPABASE_KEY }}
-          LUMEN_ACTIVITY_BREVO_KEY: ${{ secrets.LUMEN_ACTIVITY_BREVO_KEY }}
           LUMEN_CRITICAL_STALL_MINUTES: ${{ vars.LUMEN_CRITICAL_STALL_MINUTES || '15' }}
           LUMEN_CRITICAL_FAILURES: ${{ vars.LUMEN_CRITICAL_FAILURES || '3' }}
           LUMEN_CRITICAL_RECOVERIES: ${{ vars.LUMEN_CRITICAL_RECOVERIES || '2' }}
           LUMEN_CRITICAL_BACKLOG: ${{ vars.LUMEN_CRITICAL_BACKLOG || '20' }}
-          LUMEN_ACTIVITY_BATCH: '5'
-          LUMEN_ACTIVITY_DAILY_LIMIT: '120'
         run: python3 -B scripts/lumen_critical_monitor.py

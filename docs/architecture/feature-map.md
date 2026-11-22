@@ -112,7 +112,7 @@ Health cockpit and digest (#949): `src/ui/health-cockpit.js` presents the capabi
 
 Performance monitoring (#948): `src/analytics/performance-sampler.js` collects bounded optional timing metrics. `lumen_admin_performance_health` presents grouped comparison data, and the existing external monitor queues P1 notifications. See [performance monitoring](../OBSERVABILITY_946.md#détection-des-régressions-948).
 
-Admin activity notifications (#950): the private activity-mail queue reads verified Auth membership and the purchase ledger. The cPanel worker in `scripts/lumen_activity_mail.py` sends with Brevo. See [supervision](../OBSERVABILITY_946.md).
+Admin activity notifications (#950): the private activity-mail queue reads verified Auth membership and the purchase ledger. The cPanel worker started by `scripts/o2switch-activity-mail.sh` dispatches the shared queue through Brevo. See [supervision](../OBSERVABILITY_946.md).
 
 Payment providers: Google Play #729 `persistence/play-billing.js` → Edge
 `lumen-play-purchase` → Google Orders API → `lumen_record_play_purchase`; Stripe web/PWA TEST #730 `persistence/stripe-checkout.js` →
