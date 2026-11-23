@@ -149,7 +149,8 @@ Historical recreated-capture recovery: `canonical-durable-outbox-tests.mjs`
 covers paused duplicates, immutable facts, receipt/projection proof, archival and
 session/storage refusals, including an older slower copy while retaining older
 better/changed claims. `legacy-command-client-tests.mjs` exercises the real
-UI reconnect helper; `cloud-unsynced-recovery-tests.mjs` verifies local archive
+UI reconnect helper and the #1010 cold start of an acknowledged run
+(`legacy-ack-memo-tests.mjs` covers the memo); `cloud-unsynced-recovery-tests.mjs` verifies local archive
 export alongside both IndexedDB stores. These fixtures do not prove phone recovery.
 
 Player ergonomics (#791/#552/#566): `ux-lot-tests.mjs` (catalogue successor,

@@ -83,6 +83,7 @@ import {replayCanonicalVictoryOutbox} from "../persistence/canonical-outbox.js";
 import {configureCommandSession,inspectCommandOutboxes,exportCommandStorage,createDurableCanonicalVictoryOutbox,commitCanonicalVictoryViaLedger as commitCanonicalVictory,commitLegacyVictoryCommand,submitWalletCommand} from '../persistence/coordinated-command-adapters.js';
 import {createCloudRetryScheduler} from "../persistence/cloud-retry-scheduler.js";
 import {legacyCommandsSupported,loadCommittedLegacyAttempt,replayLegacyVictoryOutbox} from "../persistence/legacy-command.js";
+import {rememberLegacyAck,findLegacyAck} from "../persistence/legacy-ack-memo.js";
 import {pendingNavigationProfile} from "../persistence/pending-navigation.js";
 import {createPlayReviewNavigation,hasPlayReviewAttempt,playReviewQuestDecision,switchPlayReviewAttempt} from "../persistence/play-review-navigation.js";
 import {rememberVerifiedOfflineOwner,clearVerifiedOfflineOwner,isVerifiedOfflineOwner,preparedOfflineUser} from '../persistence/offline-verified-owner.js';
@@ -820,6 +821,7 @@ async function recoverQueuedLegacyReceipt(ownerId,client,entry,sessionValid){
  if(!sessionValid()||!committed)return null;
  await legacyVictoryOutbox.archiveRecreatedCapture(ownerId,entry,committed,{sessionValid});
  if(!sessionValid())return null;
+ rememberLegacyAck(localStorage,ownerId,committed.receipt);
  recordCloudDiagnostic('legacy_queued_receipt_recovered',{count:1});
  return committed;
 }
@@ -1038,7 +1040,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   hydrationStage="legacy_replay";
   try{await legacyVictoryOutbox.resume(accountId,{kind:'auth'})}catch{recordCloudDiagnostic('legacy_outbox_resume_pending',{reason:'storage'})}
   if(!sessionValid())return;
-  const legacyRecovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,accountId,(questId,facts,id,options)=>commitLegacyVictoryCommand(hydrationClient,questId,facts,id,options),{sessionValid,recoverCommitted:entry=>recoverQueuedLegacyReceipt(accountId,hydrationClient,entry,sessionValid)});
+  const legacyRecovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,accountId,(questId,facts,id,options)=>commitLegacyVictoryCommand(hydrationClient,questId,facts,id,options).then(c=>{rememberLegacyAck(localStorage,accountId,c?.receipt);return c}),{sessionValid,recoverCommitted:entry=>recoverQueuedLegacyReceipt(accountId,hydrationClient,entry,sessionValid)});
   if(!sessionValid())return;
   if(legacyRecovered.length)recordCloudDiagnostic('legacy_outbox_replayed',{count:legacyRecovered.length});
   if(recovered.length||legacyRecovered.length){
@@ -3955,7 +3957,7 @@ async function retryPendingLegacyOutboxOnReconnect(){
  canonicalOutboxRetryInFlight=true;
  try{
   const recovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,ownerId,
-   (id,facts,op,options)=>commitLegacyVictoryCommand(client,id,facts,op,options),
+   (id,facts,op,options)=>commitLegacyVictoryCommand(client,id,facts,op,options).then(c=>{rememberLegacyAck(localStorage,ownerId,c?.receipt);return c}),
    {sessionValid:sameSession,recoverCommitted:entry=>recoverQueuedLegacyReceipt(ownerId,client,entry,sameSession),onIssue:issue=>recordCloudDiagnostic('legacy_outbox_recovery_pending',{reason:issue.kind})});
   if(!sameSession()||!recovered.length)return false;
   if(cloudProfileReady){location.reload();return true}
@@ -4238,6 +4240,15 @@ async function captureLegacyCommandVictory(){
   const prior=(await legacyVictoryOutbox.pending(ownerId)).find(e=>e.operationId===operationId);
   if(!sameContext())return {handled:true};
   const facts=prior?.reward.facts||{seconds:activeGameSeconds(),assistanceUsed:!!attempt.assistanceUsed,mistakeCommitted:!!attempt.mistakeCommitted,qualifying:!!attempt.qualifying,hintUsed:hintUsedInAttempt(),challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date(attempt.startedAt||Date.now()).toISOString(),...capturedTiming()};
+  // #1010: a cold start re-celebrates the restored, already-won board before the
+  // cloud profile is ready. A run the server already acknowledged is shown as
+  // saved instead of being captured, replayed and reloaded again.
+  const acknowledged=!prior&&findLegacyAck(localStorage,ownerId,operationId,quest.id);
+  if(acknowledged){
+   recordCloudDiagnostic('legacy_victory_already_acknowledged',{count:1});
+   pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
+   return {handled:true,saved:true,outcome:acknowledged.outcome,facts:acknowledged.facts,recovered:true};
+  }
   if(!cloudProfileReady||(typeof navigator!=="undefined"&&navigator.onLine===false)){
    // A held replay needs only local durability. A capability read can hang
    // offline and must never delay the sole immutable capture of this run.
@@ -4259,6 +4270,7 @@ async function captureLegacyCommandVictory(){
    catch(error){capabilityFailure=error}
    if(!sameContext())return {handled:true};
    if(restored){
+    rememberLegacyAck(localStorage,ownerId,restored.receipt);
     if(!sameCloudProfile(before,lumenProgress)||!sameCloudProfile(before,restored.profile))throw Error('Restored victory requires reconciliation');
     pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
     return {handled:true,saved:true,outcome:restored.receipt.outcome,facts:restored.receipt.request.facts,recovered:true};
@@ -4284,6 +4296,7 @@ async function captureLegacyCommandVictory(){
   legacyCommandInFlight=true;
   victoryStage='command';
   const committed=await commitLegacyVictoryCommand(client,quest.id,intent.reward.facts,intent.operationId,{userId:ownerId,sessionValid:sameContext});
+  rememberLegacyAck(localStorage,ownerId,committed.receipt);
   if(!sameContext())return {handled:true};
   // An asynchronous hint/spend/preference edit must never be lost by installing
   // an older in-memory copy. Keep both the receipt and local evidence for review.
