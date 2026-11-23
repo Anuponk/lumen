@@ -1792,3 +1792,16 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 .beta-modal .primary{background:linear-gradient(180deg,#9be8f4,#4fb9d3);color:#05202b;border-color:transparent;font-weight:800}
 /* #962: one-tap diagnostic transmission status. */
 .support-quick-status{margin:4px 12px 8px;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+
+/* #1003: compact Défi du jour access in the existing header row (no new row,
+   no grid space). Text collapses to the trophy on narrow screens. */
+.daily-chip{display:inline-flex;align-items:center;gap:5px;min-height:44px;min-width:44px;margin:0 6px;padding:0 12px;border-radius:22px;border:1px solid #6b5a22;background:linear-gradient(180deg,#2a2412,#17140b);color:#f3d77a;font:inherit;font-size:13px;font-weight:800;line-height:1;white-space:nowrap;cursor:pointer;flex:0 1 auto;position:relative}
+.daily-chip[hidden]{display:none!important}
+.daily-chip-icon{font-size:16px}
+.daily-chip-state:empty{display:none}
+.daily-chip-state{color:#9be8a8}
+.daily-chip[data-state="done"]{border-color:#2f4a36;background:#121c16;color:#b9cee1}
+.daily-chip:hover,.daily-chip:focus-visible{border-color:#f3d77a;outline:none;box-shadow:0 0 0 2px rgba(243,215,122,.35)}
+@media (max-width:430px){.daily-chip{padding:0;width:44px;justify-content:center;margin:0 4px;flex:0 0 44px}.daily-chip-text,.daily-chip-state{display:none}.daily-chip[data-state="done"]::after{content:"✓";position:absolute;transform:translate(11px,-11px);font-size:11px;color:#9be8a8}}
+@media (prefers-reduced-motion:no-preference){.daily-chip[data-state="open"] .daily-chip-icon{animation:dailyChipGlow 2.4s ease-in-out 2}}
+@keyframes dailyChipGlow{50%{filter:drop-shadow(0 0 5px rgba(243,215,122,.8))}}

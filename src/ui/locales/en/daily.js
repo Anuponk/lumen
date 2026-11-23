@@ -1,5 +1,8 @@
 export default Object.freeze({
   'daily.title': "Daily Challenge",
+  'daily.chip': "Daily Challenge",
+  'daily.chipOpenLabel': "Daily Challenge for {date}: play",
+  'daily.chipDoneLabel': "Daily Challenge for {date}: already played, see the ranking",
   'daily.entryFallback': "One shared puzzle, one official attempt",
   'daily.weekEntry': "My week ✦",
   'daily.ruleOfficial': "1 official attempt",

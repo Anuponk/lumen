@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 import {navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 
@@ -18,7 +19,7 @@ const board=(me)=>({day:DAY,final:false,closes_at:'2026-11-23T23:00:00Z',my_run:
  general:{participants:12,top:[{nickname:'Ana',score:95,rank:1,mine:false},{nickname:'Bo',score:95,rank:1,mine:false},{nickname:'Cy',score:120,rank:3,mine:false}],me:me?.status==='completed'?{rank:5,score:me.score}:null},
  friends:{participants:1,top:me?.status==='completed'?[{nickname:'Moi',score:me.score,rank:1,mine:true}]:[],me:me?.status==='completed'?{rank:1,score:me.score}:null}});
 
-function fixture({signedIn,enabled=true,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr'}){
+function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr'}){
  return `
   localStorage.clear();
   localStorage.setItem('lumen.locale',${JSON.stringify(locale)});
@@ -26,6 +27,7 @@ function fixture({signedIn,enabled=true,preview=false,run=null,beginResume=false
   for(const k of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');
   localStorage.setItem('lumenPushChoice','off');
   ${signedIn?`localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(OWNER)});`:''}
+  ${done?`localStorage.setItem('lumenDailyDoneV1',${JSON.stringify(JSON.stringify({day:DAY,owner:OWNER}))});`:''}
   window.__dailyCalls=[];let run=${JSON.stringify(run)};let finishFails=${finishFails};
   const now=()=>new Date().toISOString(),closes=new Date(Date.now()+5*3600000).toISOString();
   const DAY=${JSON.stringify(DAY)};const boardOf=${board.toString()};
@@ -73,15 +75,46 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
  const results=[];
 
- // Ordinary traffic does not discover the feature on boot or on opening the map.
+ // #1003: public discovery reads lumen_daily_today at most once per session and
+ // day (boot, Mon ciel and Social reuse the memo). Closed: nothing is shown.
  for(const signedIn of [false,true]){
   await open({send,evaluate},url,{signedIn,enabled:false},{daily:false});
   await acknowledgeLearningMilestones(evaluate);
   await evaluate("document.getElementById('openSky').click()");
   await sleep(400);
-  assert.equal((await calls(evaluate,'lumen_daily_today')).length,0,'disabled public discovery never queries Supabase');
+  await evaluate("document.getElementById('closeMap')?.click()");await evaluate("document.getElementById('openSky').click()");await sleep(300);
+  assert((await calls(evaluate,'lumen_daily_today')).length<=(signedIn?2:1),'one discovery read per session and day (re-read once after sign-in while closed)');
   assert.equal(await evaluate("document.getElementById('openDaily').hidden"),true);
+  assert.equal(await evaluate("document.getElementById('dailyChip').hidden"),true,'no header chip while closed');
  }
+ // Open to everyone: the header chip is visible on the main screen without
+ // opening Mon ciel or Social, keeps the header on one row and leaves the grid
+ // untouched; one read serves the chip, Mon ciel and Social.
+ for(const [width,height] of [[320,640],[360,740],[390,844],[1280,800]]){
+  for(const signedIn of [false,true]){
+   await open({send,evaluate},url,{signedIn,enabled:true},{daily:false,width,height});
+   await acknowledgeLearningMilestones(evaluate);
+   await until(evaluate,"!document.getElementById('dailyChip').hidden",'header daily chip');
+   const layout=await evaluate(`(()=>{const chip=document.getElementById('dailyChip').getBoundingClientRect(),head=document.querySelector('.head').getBoundingClientRect(),acts=document.querySelector('.head-actions').getBoundingClientRect(),brand=document.querySelector('.head h1').getBoundingClientRect();
+    return {chipH:chip.height,chipW:chip.width,oneRow:Math.abs(chip.top+chip.height/2-(acts.top+acts.height/2))<6,noOverlap:chip.left>=brand.right-1&&chip.right<=acts.left+1,headH:head.height,scrollX:document.documentElement.scrollWidth>innerWidth}})()`);
+   assert(layout.chipH>=44&&layout.chipW>=44,'44 px touch target '+JSON.stringify(layout));
+   assert(layout.oneRow&&layout.noOverlap&&!layout.scrollX,'chip stays in the header row '+width+' '+JSON.stringify(layout));
+   assert.equal(await evaluate("document.getElementById('dailyChip').dataset.state"),'open');
+   await evaluate("document.getElementById('openSky').click()");await sleep(300);
+   assert.equal(await evaluate("document.getElementById('openDaily').hidden"),false,'Mon ciel keeps its entry');
+   assert.equal((await calls(evaluate,'lumen_daily_today')).length,1,'chip and Mon ciel share one read');
+   if(captureDir&&signedIn){await evaluate("document.getElementById('closeMap')?.click()");await sleep(6000);const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(captureDir,`daily-chip-${width}.png`),Buffer.from(shot.data,'base64'))}
+  }
+ }
+ // A finished player is not invited again: the chip shows ✓ and still opens
+ // the daily screen (result and ranking), which owns the one-attempt rule.
+ await open({send,evaluate},url,{signedIn:true,enabled:true,done:true},{daily:false});
+ await until(evaluate,"!document.getElementById('dailyChip').hidden",'done chip');
+ assert.equal(await evaluate("document.getElementById('dailyChip').dataset.state"),'done');
+ assert.match(await evaluate("document.getElementById('dailyChip').getAttribute('aria-label')"),/déjà joué/);
+ await evaluate("document.getElementById('dailyChip').click()");
+ await until(evaluate,`new URL(location.href).searchParams.get('daily')==='1'&&!!window.lumenDiagnostics`,'chip opens the daily');
+ results.push({kind:'header-chip'});
 
  // Disabled: no entry in « Mes quêtes », ?daily=1 falls back to the campaign.
  await open({send,evaluate},url,{signedIn:false,enabled:false});

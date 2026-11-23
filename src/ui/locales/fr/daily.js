@@ -1,5 +1,8 @@
 export default Object.freeze({
   'daily.title': "Défi du jour",
+  'daily.chip': "Défi du jour",
+  'daily.chipOpenLabel': "Défi du jour du {date} : jouer",
+  'daily.chipDoneLabel': "Défi du jour du {date} : déjà joué, voir le classement",
   'daily.entryFallback': "Une grille commune, une tentative officielle",
   'daily.weekEntry': "Ma semaine ✦",
   'daily.ruleOfficial': "1 tentative officielle",

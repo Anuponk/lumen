@@ -2397,20 +2397,51 @@ const dailyLocale=()=>localePreference?.locale??'fr';
 const dailyDate=day=>formatDailyDate(day,dailyLocale());
 const dailyDuration=ms=>formatRemaining(ms,t);
 function dailyUrl(training=false){const u=new URL(location.origin+location.pathname);u.searchParams.set('daily','1');if(training)u.searchParams.set('training','1');return u.toString()}
+// #1003: one lumen_daily_today read per account and day (Free-first). The memo
+// lasts until the server's closing time, or 6 h while the challenge is closed.
+let dailyTodayMemo=null;
+function discoverDailyToday(owner){
+ const now=Date.now();
+ // An open challenge is the same for every account; a closed answer is re-read
+ // after sign-in because a preview capability may open it for that account.
+ if(dailyTodayMemo&&now<dailyTodayMemo.until&&(dailyTodayMemo.owner===owner||dailyTodayMemo.open||!dailyTodayMemo.settled))return dailyTodayMemo.promise;
+ const promise=dailyClient.discover();
+ const memo={owner,promise,until:now+6*3600e3};dailyTodayMemo=memo;
+ promise.then(today=>{const left=Date.parse(today?.closes_at)-Date.parse(today?.server_now);memo.settled=true;if(today?.enabled&&left>0){memo.until=now+left;memo.open=true}},()=>{if(dailyTodayMemo===memo)dailyTodayMemo=null});
+ return promise;
+}
+// Local-only player state for the header chip: no extra RPC. The official run
+// itself stays server-owned; this only avoids inviting a finished player again.
+const DAILY_DONE_KEY='lumenDailyDoneV1';
+function dailyChipState(day,owner){
+ try{const done=JSON.parse(localStorage.getItem(DAILY_DONE_KEY)||'null');if(done?.day===day&&done?.owner===(owner||'guest'))return 'done'}catch{}
+ const pending=readPendingDaily();if(pending?.day===day)return 'done';
+ return 'open';
+}
+function rememberDailyDone(day){try{if(day)localStorage.setItem(DAILY_DONE_KEY,JSON.stringify({day,owner:lumenUser?.id||'guest'}))}catch{}}
+function renderDailyChip(today,owner){
+ const chip=document.getElementById('dailyChip');if(!chip)return;
+ const enabled=!!today?.enabled&&!socialChallenge;chip.hidden=!enabled;if(!enabled)return;
+ const state=dailyChipState(today.day,owner),label=document.getElementById('dailyChipState');
+ chip.dataset.state=state;
+ if(label)label.textContent=state==='done'?'✓':'';
+ const label2=t(state==='done'?'daily.chipDoneLabel':'daily.chipOpenLabel',{date:dailyDate(today.day)});chip.setAttribute('aria-label',label2);chip.title=label2;
+ chip.onclick=()=>{trackDaily('chip_opened');location.href=dailyUrl()};
+}
 async function refreshDailyEntry(){
- const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek');
+ const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek'),chip=document.getElementById('dailyChip');
  const request=++dailyEntryRequest,owner=lumenUser?.id;
- if(!entry||socialChallenge)return;
+ if(!entry||socialChallenge){if(chip)chip.hidden=true;return}
  const current=()=>request===dailyEntryRequest&&owner===lumenUser?.id&&!socialChallenge;
- const previewAllowed=!!owner&&(hasInternalCapability('daily_preview')||hasInternalCapability('analytics_cockpit'));
  entry.onclick=()=>{location.href=dailyUrl()};
  try{
-  const today=await dailyClient.discover(previewAllowed);
+  const today=await discoverDailyToday(owner);
   if(!current())return;
   entry.hidden=!today?.enabled;
   if(today?.enabled)document.getElementById('dailyEntryState').textContent=t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
   if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}
- }catch{if(current()){entry.hidden=true;if(week)week.hidden=true}}
+  renderDailyChip(today,owner);
+ }catch{if(current()){entry.hidden=true;if(week)week.hidden=true;if(chip)chip.hidden=true}}
 }
 function renderDailyBanner(){
  const banner=document.getElementById('dailyBanner');if(!banner||!socialChallenge?.daily)return;
@@ -2424,6 +2455,7 @@ function showDailyBoardTab(board,scope,track=true){
  document.getElementById('dailyBoardPanel').innerHTML=renderDailyBoard(board?.[scope],{scope,formatDuration,t});
 }
 function showDailyResult({run=null,board=null,training=false,pending=false,official=null}={}){
+ if(!training&&(pending||['completed','abandoned'].includes(run?.status)))rememberDailyDone(run?.day||socialChallenge?.day);
  const modal=document.getElementById('dailyResultModal'),note=document.getElementById('dailyResultNote');
  const status=run?.status,score=run?.score??official;
  document.getElementById('dailyResultTitle').textContent=t(training?'daily.trainingComplete':status==='abandoned'?'daily.abandoned':'daily.complete');
