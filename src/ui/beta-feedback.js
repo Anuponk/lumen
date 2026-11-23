@@ -190,7 +190,9 @@ export function createBetaFeedback({
       ctx.error_code ? [t('feedback.ctx.error'), ctx.error_code] : null,
       ctx.session_id ? [t('feedback.ctx.session'), ctx.session_id] : null,
       // #1010: the sync journal goes with the report; no separate diagnostic step.
-      journal().length ? [t('feedback.ctx.journal'), t('feedback.ctx.journalCount', { count: journal().length })] : null,
+      journal().length
+        ? [t('feedback.ctx.journal'), t('feedback.ctx.journalCount', { count: journal().length })]
+        : null,
     ].filter(Boolean);
     list.replaceChildren(
       ...rows.map(([label, value]) => {

@@ -15,7 +15,7 @@ declare v_out jsonb := '[]'::jsonb; v_item jsonb; v_clean jsonb; v_key text; v_v
 begin
   if p is null or jsonb_typeof(p) <> 'array' then return null; end if;
   for v_item in select value from jsonb_array_elements(p) limit 60 loop
-    if jsonb_typeof(v_item) <> 'object' or jsonb_typeof(v_item -> 'event') <> 'string' then continue; end if;
+    if jsonb_typeof(v_item) is distinct from 'object' or jsonb_typeof(v_item -> 'event') is distinct from 'string' then continue; end if;
     v_clean := '{}'::jsonb;
     for v_key, v_value in select key, value from jsonb_each(v_item) limit 24 loop
       if v_key !~ '^[A-Za-z][A-Za-z0-9_]{0,39}$' then continue; end if;
