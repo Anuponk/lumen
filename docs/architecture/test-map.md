@@ -76,6 +76,10 @@ erasure races and adds real support lock ordering. See `docs/TESTING.md`.
 
 Technical retention: `scripts/fixtures/technical-retention*.sql` and
 `scripts/technical-retention-concurrency.py` in disposable PostgreSQL 17 CI.
+Free-first #995 (canonical-ledger CI): `play-ack-cron-guard.sql` (due/not-due
+acknowledgement work, idempotent command rewrite), `cron-run-details-retention.sql`
+(7 days, latest run per job and running rows kept, bounded batches) and
+`analytics-duplicate-indexes.sql` (only exact twins dropped, rows untouched).
 See `docs/TESTING.md` for preview, dates, held/open data, rollback, role denial,
 concurrent reenabling and DDL checks; no production purge is tested.
 
