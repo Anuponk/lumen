@@ -1,6 +1,9 @@
 // #945 Español · Reto del día y semana.
 export default Object.freeze({
   'daily.title': "Reto del día",
+  'daily.chip': "Reto del día",
+  'daily.chipOpenLabel': "Reto del día del {date}: jugar",
+  'daily.chipDoneLabel': "Reto del día del {date}: ya jugado, ver la clasificación",
   'daily.entryFallback': "Una cuadrícula común, un intento oficial",
   'daily.weekEntry': "Mi semana ✦",
   'daily.ruleOfficial': "1 intento oficial",
