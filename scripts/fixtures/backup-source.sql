@@ -25,3 +25,15 @@ insert into lumen.profile_snapshots(user_id,payload) select id, jsonb_build_obje
 insert into lumen.analytics_events(user_id,event_name) select id, 'puzzle_start' from auth.users;
 insert into lumen_commands.purchases(user_id,product_id,status) select id, 'real-adventure-02', 'paid' from auth.users limit 2;
 insert into lumen_privacy.erasure_ledger(subject_digest) values ('synthetic');
+
+-- Production shape: a lumen_commands trigger calls a lumen_ops function, and
+-- lumen_private holds data; both schemas must be part of the dump.
+create schema lumen_ops;
+create schema lumen_private;
+create table lumen_ops.critical_incidents(id bigserial primary key, kind text not null);
+create function lumen_ops.clear_after_opt_out() returns trigger language plpgsql as $$ begin return new; end $$;
+create table lumen_commands.diagnostic_preferences(user_id uuid primary key references auth.users(id), enabled boolean not null default true);
+create trigger diagnostic_clear after update on lumen_commands.diagnostic_preferences for each row execute function lumen_ops.clear_after_opt_out();
+create table lumen_private.auth_mail_limits(bucket text primary key, hits int not null);
+insert into lumen_commands.diagnostic_preferences(user_id) select id from auth.users limit 3;
+insert into lumen_private.auth_mail_limits values ('synthetic', 1);

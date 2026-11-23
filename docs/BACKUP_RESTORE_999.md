@@ -6,7 +6,7 @@ Le plan Supabase Free ne fait aucune sauvegarde automatique. Le workflow **Lumen
 
 - **Fréquence** : il tourne chaque dimanche à 02:17 UTC, en dehors des fenêtres de rétention (03:17 à 04:13 UTC). On peut aussi le lancer à la main sur `main`.
 - **Contenu de l'export** :
-  - les schémas `lumen`, `lumen_commands` et `lumen_privacy`, structure et données : progression, reçus, achats, droits et registre d'effacement ;
+  - les schémas `lumen`, `lumen_commands`, `lumen_privacy`, `lumen_ops` et `lumen_private`, structure et données : progression, reçus, achats, droits, registre d'effacement, fonctions d'exploitation et limites d'envoi de mails ;
   - les tables `auth.users` et `auth.identities`.
 
   `lumen.analytics_events` est exporté sans ses lignes. C'est de la télémétrie facultative, et ses 116 Mo coûteraient environ 200 Mo d'egress par export.

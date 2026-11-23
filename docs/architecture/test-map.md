@@ -84,7 +84,7 @@ acknowledgement work, idempotent command rewrite), `cron-run-details-retention.s
 `analytics-duplicate-indexes.sql` (only exact twins dropped, rows untouched).
 Backup #999: `lumen-backup-script.yml` runs `scripts/lumen-backup.sh` on
 `fixtures/backup-source.sql` in disposable PostgreSQL 17 (export, restore counts,
-analytics rows excluded, RLS kept, missing table fails, no personal data in logs).
+analytics rows excluded, RLS kept, cross-schema `lumen_ops` trigger and `lumen_private` data restored, missing table fails, no personal data in logs).
 The weekly production run is `lumen-backup.yml`; see [BACKUP_RESTORE_999](../BACKUP_RESTORE_999.md).
 See `docs/TESTING.md` for preview, dates, held/open data, rollback, role denial,
 concurrent reenabling and DDL checks; no production purge is tested.
