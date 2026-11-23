@@ -334,3 +334,31 @@ test('#754 ranking and official records use English without changing player nick
   assert.equal(model.kicker, 'YOUR RESULTS · QUEST 4');
   assert.deepEqual(model.slots.map(s => s.label), ['Star', 'Independence', 'Speed', 'Flawless', 'Mastery']);
 });
+
+test('#995: the 30 s background wake never re-reads a ready podium without a new receipt', async () => {
+  let boardReads = 0;
+  let board = async () => (boardReads++, { top: [{ position: 1, place: 1, nickname: 'A', score: 60, mine: true }], personal: { position: 1, place: 1, score: 60 }, participating: true });
+  const client = { flush: async () => [], entries: () => [], board: (...a) => board(...a) };
+  const view = createRankingView({ client, getContext: () => ({ owner: 'o', client }), format, document: fakeDocument() });
+  view.show(quest, 'op-1');
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(view.root.dataset.state, 'ready');
+  assert.equal(boardReads, 1);
+  // Victory screen left open: every 30 s tick used to read the board again.
+  for (let i = 0; i < 4; i++) await view.refresh([], { background: true });
+  assert.equal(boardReads, 1, 'No board read while nothing changed');
+  // A settled capture in the same tick still refreshes the podium.
+  await view.refresh([{ operationId: 'op-2', status: 'confirmed', questId: quest.id, improved: true }], { background: true });
+  assert.equal(boardReads, 2);
+  // Reconnect or explicit refresh keeps reading the board.
+  await view.refresh([]);
+  assert.equal(boardReads, 3);
+  // A board that failed to load is retried by the background wake.
+  board = async () => { boardReads++; throw Error('down'); };
+  await view.refresh([]);
+  assert.notEqual(view.root.dataset.state, 'ready');
+  board = async () => (boardReads++, { top: [], participating: true });
+  await view.refresh([], { background: true });
+  assert.equal(view.root.dataset.state, 'ready', 'A non-ready podium is retried in the background');
+  assert.equal(boardReads, 5);
+});
