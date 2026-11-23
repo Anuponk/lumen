@@ -184,18 +184,13 @@ Audit en lecture seule du 23/11/2026 sur le même projet. `pg_stat_statements` e
 | Edge Functions | 2 921 invocations par jour, dont ~95 % pour la tâche Play | Corrigé par #995 (garde et cadence de 2 min) | Non limitant après correction | — |
 | Auth, Realtime, Storage | ~290 événements Auth, < 10 Realtime et < 15 Storage par jour | Négligeables | — | Aucune |
 | Conseils Supabase (Lumen) | RLS `lumen.entitlements` réévaluée par ligne. Clés étrangères non indexées sur de petites tables. Doublons d'index déjà supprimés (#995) | Faible enjeu à ce volume | — | Traiter seulement si une mesure le justifie |
-| **Sauvegardes** | Le plan Free n'a **aucune** sauvegarde automatique (documentation Supabase : sauvegardes quotidiennes à partir de Pro) | Reçus, achats et progression n'ont pas de copie hors Supabase | **Perte de données irréversible** en cas d'incident projet | Export régulier des schémas Lumen, chiffré, avec restauration testée (décision du propriétaire en attente) |
+| **Sauvegardes** | Le plan Free n'a **aucune** sauvegarde automatique (documentation Supabase : sauvegardes quotidiennes à partir de Pro) | Reçus, achats et progression n'ont pas de copie hors Supabase | **Perte de données irréversible** en cas d'incident projet | Export hebdomadaire chiffré, avec restauration testée : [BACKUP_RESTORE_999](BACKUP_RESTORE_999.md) |
 
 Les deux autres produits du projet partagé (SoldeZen et ses applications) comptent dans les mêmes quotas de l'organisation. Ce tableau ne couvre que Lumen. Les projections supposent que leur consommation reste négligeable, ce qu'il faut vérifier sur la page Usage.
 
 **Correction des projections.** L'estimation d'egress (~2,6 Mo par joueur actif et par jour) vient d'un échantillon de 10 joueurs très actifs, aux gros profils. Elle doit être recalée avec la valeur réelle de la page Usage. La base grossit surtout avec les **joueurs** (profil mis à jour sur place, ~5 à 50 Ko compressés chacun) et les reçus par partie, plus qu'avec les journaux.
 
-**Sauvegarde proposée.**
-- **Fréquence et périmètre** : export hebdomadaire `pg_dump` des schémas `lumen` et `lumen_commands`, sans `lumen.analytics_events`. Un export complet coûterait ~200 Mo d'egress, celui-ci ~30 Mo.
-- **Chiffrement** : chiffrement asymétrique avant stockage. Le dépôt est public et l'export contient des données personnelles.
-- **Restauration testée** : restauration automatique dans un PostgreSQL jetable, avec comptages de contrôle.
-- **Secrets** : la connexion passe par un secret GitHub, jamais en clair.
-- **Prérequis du propriétaire** : URL de connexion, clé publique de chiffrement et lieu de conservation (artefacts GitHub chiffrés ou o2switch).
+**Sauvegarde (décision du propriétaire du 23/11 : artefacts GitHub chiffrés, `auth.users` et `auth.identities` inclus).** Export hebdomadaire chiffré avec `age`, avec contrôle de restauration et conservation 90 jours. Le contenu, la configuration et la procédure de restauration sont dans [BACKUP_RESTORE_999](BACKUP_RESTORE_999.md). Pour être actif, le workflow a besoin de deux réglages du propriétaire : le secret `LUMEN_BACKUP_DATABASE_URL` et la variable `LUMEN_BACKUP_AGE_RECIPIENT`.
 
 ### Politique d'observabilité frugale
 
