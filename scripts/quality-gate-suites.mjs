@@ -196,6 +196,7 @@ export const nodeSuites=[
  "menu-pause-tests.mjs",
  "circles-tests.mjs",
  "i18n-es-tests.mjs",
+  "beta-feedback-tests.mjs",
   "production-isolation-tests.mjs",
  "support-quick-send-tests.mjs",
  "performance-badge-tests.mjs",

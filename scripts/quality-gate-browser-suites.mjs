@@ -224,6 +224,11 @@ export const browserSuites=[
     "script": "my-space-browser-tests.mjs",
     "output": "ci-my-space.json",
     "port": 9274
+  },
+  {
+    "script": "beta-feedback-browser-tests.mjs",
+    "output": "ci-beta-feedback.json",
+    "port": 9275
   }
 ];
 
