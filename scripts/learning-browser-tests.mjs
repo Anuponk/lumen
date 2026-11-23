@@ -146,7 +146,7 @@ try {
     await input(await point(2,4),viewport.mobile);
     assert.equal((await snapshot()).state[2][4],2,'Quest 2 free placement: '+JSON.stringify({viewport,board:await snapshot(),layout:await geometry()}));
     assert.equal(await evaluate('document.getElementById("verify").disabled'),false);
-    assert.equal(await evaluate('document.getElementById("hint").textContent'),'Indice · +15 s','Quest 2 announces the only penalty');
+    assert.equal(await evaluate('document.getElementById("hint").getAttribute("aria-label")'),'Indice · +15 s','Quest 2 announces the only penalty');
     const shardsBeforeHint=await evaluate('lumenDiagnostics.snapshot().progress.shards||0');
     await evaluate('document.getElementById("hint").click()');await sleep(40);
     assert.equal(await evaluate('lumenDiagnostics.snapshot().progress.shards||0'),shardsBeforeHint,'Quest 2 hint never spends a shard');
