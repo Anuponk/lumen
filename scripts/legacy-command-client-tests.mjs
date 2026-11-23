@@ -6,6 +6,7 @@ import {attemptTiming} from '../src/campaign/official-time.js';
 import {legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,replayLegacyVictoryOutbox} from '../src/persistence/legacy-command.js';
 import {applyLegacyVictory,legacyVictoryRules} from '../src/campaign/legacy-victory.js';
 import {createDurableCanonicalVictoryOutbox} from '../src/persistence/durable-canonical-outbox.js';
+import {rememberLegacyAck,findLegacyAck} from '../src/persistence/legacy-ack-memo.js';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {functionSource} from './source-tools.mjs';
@@ -239,7 +240,7 @@ function uiFixture({now}={}){
  const ctx={officialTimingSupported,attemptTiming,classifyCanonicalRecoveryError,cloudHydrationGeneration:0,lumenUser:{id:userId},lumenSupabase:client,levelIndex:0,attemptEngine:{snapshot:()=>attempt},canonicalQuestForLegacy:()=>({id:legacyVictoryRules()[0].questId}),
   authSessionPending:false,qaActive:false,legacyVictoryBusy:false,legacyCommandInFlight:false,legacyVictoryRetry:null,legacyVictoryOutbox:box,
   activeGameSeconds:()=>45,localCalendarDay:()=>facts.qualifiedDay,hintUsedInAttempt:()=>false,usedHintThisGame:false,questFailed:false,cloudProfileReady:true,cloudProfileDirty:false,cloudProfileTimer:null,
-  canonicalOutboxRetryInFlight:false,lumenProgress:base(),legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,structuredClone,
+  canonicalOutboxRetryInFlight:false,lumenProgress:base(),legacyCommandsSupported,commitLegacyVictoryCommand,loadCommittedLegacyAttempt,structuredClone,rememberLegacyAck,findLegacyAck,localStorage:store,
   flushCloudProfile:async()=>true,sameCloudProfile:(a,b)=>JSON.stringify(a)===JSON.stringify(b),saveLumenProgress:()=>{},recordCloudDiagnostic:()=>{},
   refreshCanonicalOutboxNotice:async()=>{},canonicalRecovery:{schedule:()=>{}},scheduleCloudProfile:()=>{},msg:{textContent:'',append:()=>{}},
   pendingVictoryView:null,presented:[],presentPendingVictory:(...args)=>ctx.presented.push(args),syncPresentation:{failed(){},acknowledged(){},celebration(){}},
@@ -256,6 +257,24 @@ test('real UI coordinator persists pending victory before readiness without opti
  assert.equal((await box.pending(userId)).length,1);assert.equal(state.receipts.size,0);
  assert.equal(ctx.presented.length,1,'A durably captured win receives its pending celebration');
  assert.match(ctx.msg.textContent,/conservée sur cet appareil/);
+});
+// #1010: a cold start re-celebrates the restored, already-won board before the
+// cloud profile is ready; an acknowledged run is shown as saved, never recaptured.
+test('a cold start does not recapture, replay or reload an acknowledged run',async()=>{
+ const {ctx,box,state,run}=uiFixture();const events=[];ctx.recordCloudDiagnostic=e=>events.push(e);
+ const first=await run();
+ assert.equal(first.saved,true);assert.equal(state.receipts.size,1);assert.equal((await box.pending(userId)).length,0);
+ ctx.cloudProfileReady=false;ctx.legacyVictoryBusy=false;ctx.legacyCommandInFlight=false;
+ const again=await run();
+ assert.equal(again.handled,true);assert.equal(again.saved,true);assert.equal(again.recovered,true);
+ assert.deepEqual(again.outcome,first.outcome,'the server outcome is shown again, unchanged');
+ assert.equal((await box.pending(userId)).length,0,'no new durable capture');
+ assert.equal(state.receipts.size,1,'no second command');
+ assert.ok(events.includes('legacy_victory_already_acknowledged'));
+ assert.ok(!events.includes('legacy_victory_pending'));
+ // Another account on the same device never matches this memo.
+ ctx.lumenUser={id:'someone-else'};ctx.legacyVictoryBusy=false;
+ const other=await run();assert.notEqual(other.recovered,true);
 });
 test('a Wallet hold with an old server cannot fall through to local authenticated rewards',async()=>{
  const {ctx,box,state,run}=uiFixture();ctx.cloudProfileReady=false;ctx.legacyCommandsSupported=async()=>false;

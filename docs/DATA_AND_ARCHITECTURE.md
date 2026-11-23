@@ -1606,6 +1606,11 @@ public invoker RPCs call private definers with empty search paths and auth check
 
 Legacy intents use disjoint `lumenLegacyVictoryOutboxV2:` and
 `lumenLegacyVictoryRetryV1:` keys in the existing IndexedDB/localStorage adapter.
+#1010: `lumenLegacyAcknowledgedV1` (`src/persistence/legacy-ack-memo.js`, 30 runs
+per account) remembers server receipts only. On a cold start, before the cloud
+profile is ready, the restored already-won board of an acknowledged run is shown
+with its receipt outcome instead of being captured, replayed and reloaded twice.
+It never grants, acknowledges an intent or replaces the server receipt.
 Canonical clients cannot replay/acknowledge them. Exact same-account receipt and
 current completion, requested badges and attempt counter precede acknowledgement.
 Duplicates retain the initial outcome and return current state. Startup replays
