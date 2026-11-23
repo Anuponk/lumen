@@ -118,3 +118,76 @@ Après confirmation de la recette, fixer `LUMEN_ACTIVITY_START` à l'heure du pa
 ```
 
 Le script utilise `flock` pour garantir un seul traitement à la fois. Activer ensuite les variables du dépôt GitHub `LUMEN_CRITICAL_MONITOR_ENABLED=1`, `LUMEN_PERFORMANCE_MONITOR_ENABLED=1`. Contrôler le premier passage planifié. Si GitHub tarde à lancer le planning, exécuter **External Lumen health probe** sur `main` avec **Record the observation in SoldeZen**. Ce passage utilise les mêmes RPC et garde les mêmes limites que la planification. Pour suspendre les e-mails, remettre `LUMEN_ACTIVITY_ENABLED` à `0` côté o2switch.
+
+
+## Sobriété Supabase Free-first (#995)
+
+Lumen vise à rester durablement sur Supabase Free. Ce chapitre contient l'audit du 23/11/2026, la politique d'observabilité et les garde-fous. La règle courte se trouve dans `AGENTS.md`. Mesures prises en lecture seule sur le projet SoldeZen `tjdjlavmusmncuszhsuw` (schémas Lumen partagés), clone `main` `81bab1c5`. Aucun identifiant de joueur n'est reporté : les acteurs ont été regroupés par empreinte réseau tronquée.
+
+### Méthode et limites d'attribution
+
+- **Log Ingestion** (volume écrit dans les logs) et **Log Query** (volume parcouru par les consultations) sont deux métriques distinctes. Les volumes ci-dessous estiment l'ingestion : taille sérialisée du message et des attributs, soit environ **2,5 Ko par requête API** dans `edge_logs`. Supabase peut facturer une taille différente. L'ordre de grandeur concorde avec les 0,89 Go affichés pour le cycle.
+- **Log Query, 276 Go** : non attribuable avec les outils disponibles. Aucun script, workflow ni cockpit du dépôt n'interroge l'API des logs. Les candidats restent l'explorateur de logs et les rapports du tableau de bord, ainsi que les requêtes d'agents (MCP `query_logs`) faites pendant l'incident #962. Chaque requête parcourt sa fenêtre complète, jusqu'à 24 h. Le présent audit en a exécuté une quinzaine, au plus quelques Go. Pour obtenir la ventilation par origine, la demander au support Supabase. Ne pas l'extrapoler depuis le trafic API.
+- **Egress** : non mesurable par les logs, car environ 60 % des réponses RPC n'ont pas de `content-length`. Lire la page Usage de l'organisation.
+- La rétention des logs du plan Free limite l'historique consultable à environ un jour. Les comparaisons à 7 et 30 jours se feront avec le relevé quotidien proposé plus bas.
+
+### Tableau source → volume → cause → action
+
+| Source | Volume mesuré | Cause | Statut | Action | Gain |
+|---|---|---|---|---|---|
+| Tests navigateur CI vers la production | 21/11 : ~57 000 requêtes HeadlessChrome sur 126 000 (`daily_today`, `list_quest_challenges_v2`, `get_historical_performance`), environ 245 adresses de runners | Prouvée | Corrigé par #979. **Zéro** requête HeadlessChrome depuis le 22/11 à 12 h UTC, malgré les PR passées ensuite en CI | Conserver le blocage. Toute nouvelle suite doit bloquer les domaines de production | ~45 % des requêtes du 21/11 |
+| Boucle de rejeu `ranking_begin`/`finish` | 22/11 de 11 h à 15 h UTC : ~58 000 appels pour moins de 80 parties. 14 561 appels à 11 h pour **une** partie | Prouvée (#962) | Corrigé par #981, #983 et #988 | Aucune | Pic de 31 000 requêtes/h |
+| Séries résiduelles après 17:40 UTC | Un acteur Android (TWA) : 1 488 `begin` de 17:44 à 18:31 pour ~15 parties, environ un toutes les 2 s, puis rythme normal à partir de 19 h | Hypothèse forte : onglet TWA resté sur un JS antérieur à #988 (16:12 UTC) jusqu'à son rechargement. La TWA charge le site et n'embarque aucune copie | Arrêt constaté | Le cockpit outbox (#986) permet de confirmer la version | — |
+| Rythme normal du classement | 19–22 h : ~3 `begin` par partie (283 parties, 3 à 6 joueurs) | Comportement attendu : `begin` au départ, puis `begin` et `finish` idempotents à la victoire | Normal | Fusion possible du second `begin` dans `finish` (à étudier) | ~1 requête/partie |
+| Tâche pg_cron `lumen-play-acknowledge` | Toutes les 30 s : 1 Edge Function, 2 RPC, 1 ligne `net._http_response` et 1 ligne `cron.job_run_details`. 240 des ~256 requêtes/h au repos, ≈ 20 Mo/jour de logs, 86 000 invocations Edge/mois. 10 390 des 12 921 lignes de `cron.job_run_details` | Prouvée. File vide : 0 acquittement dû le 23/11 | **Corrigé ici** (`20261123060000_play_ack_cron_guard_995.sql`) | L'appel HTTP n'a lieu que si un claim ou un prune a du travail. La cadence et la latence sont conservées quand un acquittement est dû | ≈ 94 % des logs au repos, soit ~0,6 Go/mois |
+| `lumen.analytics_events` | 134 Mo (tas 76 Mo, index 58 Mo), 163 742 lignes, **aucune insertion depuis le 26/10** | Stock historique. Collecte publique désactivée (#708) | Stable | Index redondants : `analytics_events_anon_idx` (14 Mo, 8 lectures) doublonne `anonymous_occurred_idx`, `occurred_idx` doublonne `occurred_at_idx`. Rétention à décider (voir [TECHNICAL_RETENTION_RUNBOOK](TECHNICAL_RETENTION_RUNBOOK.md)) | ~18 Mo par la suppression des index, après accord |
+| `net._http_response` | 20 Mo pour 732 lignes (TTL pg_net de 6 h) | Encombrement de la table après les appels cron | Diminuera avec la garde | Aucune purge manuelle nécessaire | — |
+| `cron.job_run_details` | 8,4 Mo, croissance d'environ 2 900 lignes/jour avant la garde | Pas de rétention configurée. pg_cron journalise chaque exécution, même sans travail | Ralenti par la garde (la ligne d'exécution subsiste) | Purge des lignes de plus de 14 jours, à valider | Croissance bornée |
+| Worker et sondes d'exploitation | `claim_activity_mail` ~280/jour, sonde externe toutes les 5 min (#947) | Attendu | Borné | Aucune | — |
+| Préflights CORS `OPTIONS` | ~10 % des requêtes du 21/11 | Inhérent aux appels navigateur | — | Non pilotable côté Lumen | — |
+
+Base de données : 198 Mo sur 500 Mo. Les données métier de `lumen_commands` pèsent **13 Mo** pour 72 comptes Auth partagés. Seuls 29 comptes se sont connectés dans les 30 derniers jours, ce qui ne correspond pas au MAU facturé.
+
+### Projections de capacité
+
+Hypothèses mesurées le 22/11 de 19 h à 22 h UTC : environ 25 requêtes API par partie terminée, en incluant classement, défis, aide et synchronisation. Une partie classée représente environ 3 Ko de données durables (reçus canoniques, autorité de quête, classement). Le scénario retient **10 parties par joueur actif et par jour**, soit environ 250 requêtes et 0,6 Mo de logs par joueur actif et par jour. Ces chiffres viennent d'un très petit échantillon, partiellement QA. Ils doivent être recalés avec le relevé quotidien.
+
+| DAU | Log Ingestion/mois (Free : 1 Go) | Croissance base/mois (marge ~300 Mo) | Invocations Edge/mois (Free : 500 000) | MAU Auth (Free : 50 000) |
+|---|---|---|---|---|
+| 100 | ~1,9 Go | ~90 Mo, saturation en ~3 mois | Achats seulement | Non limitant |
+| 500 | ~9 Go | ~450 Mo, saturation en < 1 mois | Non limitant | Non limitant |
+| 1 000 | ~19 Go | ~0,9 Go, saturation en ~10 jours | Non limitant | Non limitant |
+| 5 000 | ~94 Go | ~4,5 Go, saturation en ~2 jours | Non limitant | Non limitant |
+
+**Premier quota limitant : Log Ingestion**, dès ~50 joueurs actifs par jour, si le dépassement est facturé ou bloquant après la période de grâce. Ces conditions restent à vérifier avant toute conclusion financière. Vient ensuite la **taille de base**, à partir de quelques centaines de joueurs actifs par jour. Leviers, par ordre de rendement :
+
+1. Réduire les requêtes par partie : regrouper les lectures au chargement, mettre en cache côté client les listes stables (`daily_today`, `list_quest_challenges_v2`, performances historiques) et supprimer les appels redondants du classement.
+2. Purger les tables techniques sans valeur métier : `cron.job_run_details`, puis la politique d'`analytics_events`.
+3. Ne jamais réduire les reçus, l'outbox, les achats ni les preuves de progression pour gagner de la place.
+
+Seuil de décision Pro : une projection qui atteint 85 % d'un quota bloquant avant la fin du cycle, sans levier sûr restant.
+
+### Politique d'observabilité frugale
+
+- **Niveau 1, agrégats** : compteurs par RPC et par code de raison, versions et taille de base relevés au plus une fois par jour. Pas d'événement par interaction pour les statistiques ordinaires.
+- **Niveau 2, événements actionnables** : erreurs inédites, avertissements utiles et transitions critiques (sync, ranking, RTDN, achat, Auth), avec version, code de raison et corrélation pseudonymisée. La première occurrence est toujours conservée, les répétitions sont comptées.
+- **Niveau 3, diagnostic temporaire** : consentement explicite (#992), portée limitée à une session, durée courte. Jamais de DEBUG permanent, de payload complet, de token ou d'email.
+- **Tâches planifiées** : une tâche fréquente vérifie en SQL qu'elle a du travail avant tout appel HTTP ou Edge, comme la garde de #995. Les boucles de retry restent bornées, avec backoff et jitter. Les refus définitifs sont archivés (#981, #983, #988).
+- **Consultation des logs** : préférer les tables et RPC agrégées aux requêtes de logs. Pour une requête de logs, choisir la fenêtre la plus courte possible, sélectionner seulement les colonnes utiles et ne pas relancer la même requête en boucle. Chaque consultation compte dans Log Query.
+- **Données durables** : reçus, progression confirmée, commandes idempotentes, outbox et achats ne sont pas des logs. Ils sont exclus de toute purge d'économie. Une panne de télémétrie ne bloque jamais le jeu.
+
+### Garde-fous et alertes
+
+- La sonde #947 et le bilan quotidien #949 existent déjà. Le prochain lot ajoutera au bilan une ligne de capacité calculée en SQL, sans lecture de logs : taille de la base, cinq plus grosses tables, lignes `cron.job_run_details` et RPC du jour si disponible. Seuils proposés : 50, 70, 85 et 95 % de 500 Mo, plus une projection de saturation sur 7 jours.
+- Les quotas de logs (ingestion et consultation) ne sont pas lisibles depuis la base. Relevé manuel hebdomadaire sur la page Usage de l'organisation. Activer les notifications d'usage de Supabase si le plan Free les propose.
+- **Plan d'urgence** si un quota approche : suspendre la télémétrie facultative (diagnostics, mesures de performance #948), espacer les sondes, interrompre toute consultation de logs automatisée. Le jeu, la synchronisation, les achats et la sécurité ne sont pas touchés.
+
+### Recette de la garde #995
+
+La fixture `scripts/fixtures/play-ack-cron-guard.sql` couvre plusieurs cas : file vide sans appel, achat nouveau dû, bail en cours non dû, jeton expiré dû pour le prune, réécriture idempotente, commande `voided` inchangée. En production, vérifier après application :
+
+```sql
+select command like '%play_acknowledgement_due()%' from cron.job where jobname='lumen-play-acknowledge';
+```
+
+Ensuite, contrôler qu'aucune requête `lumen_claim_play_acknowledgements` n'apparaît dans `edge_logs` sur une heure calme. Lors d'un vrai achat Play, l'acquittement en ligne reste inchangé. Si l'acquittement en ligne échoue, la reprise intervient au plus 30 s après l'échéance du bail. **Retour arrière** : `cron.alter_job(<id>, command := <commande sans la dernière ligne and …_due()>)`.

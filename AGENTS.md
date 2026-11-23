@@ -10,6 +10,9 @@
 - Prefer a small PR with a clear acceptance checklist. Separate server activation, production migrations and real-device acceptance from implementation when safe; do not claim they are complete. Do not change the established issue lifecycle or automatic merge authorization when all applicable checks actually pass.
 - At completion, report concise evidence: files/areas changed, targeted/full tests actually run, PR/commit, CI/deployment state, and outstanding manual or production checks. Duration and token use should be measured from Codex session data when available; do not infer token savings from elapsed time alone.
 
+## Supabase Free-first
+- Lumen is Free-first on Supabase. Every feature or instrumentation must minimise requests, egress, logs and storage; prefer aggregates, actionable structured logs, sampling/TTL, guards and frugal alerts. No permanent DEBUG and no unbounded polling in production; scheduled jobs check for due work in SQL before any HTTP/Edge call. Never compromise progression, synchronisation, purchases, security or diagnosis of critical incidents. Measure the quota impact before/after and document any exception. Details and audit: [Free-first observability](docs/OBSERVABILITY_946.md#sobriété-supabase-free-first-995).
+
 ## Fresh clone before any work — mandatory
 - Before every task (investigation, fix, feature, documentation or backlog review), make a **fresh clone** of the remote repository (`git clone https://github.com/Anuponk/lumen.git`) into a new, empty directory outside the user's existing checkout (for example a temporary/scratch directory), then create the task branch from the freshly cloned `main`. Never start work in, or reuse, a pre-existing local checkout.
 - The user's local checkout may be on an unrelated branch, behind `origin/main`, or contain untracked/uncommitted files (IDE folders, release builds, local saves). Never modify, stash, reset, clean, commit or push from it; leave it exactly as found.

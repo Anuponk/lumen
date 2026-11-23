@@ -405,6 +405,9 @@ jobs:
             -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
             -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
             -f scripts/fixtures/play-acknowledgement.sql \
+            -f supabase/migrations/20261123060000_play_ack_cron_guard_995.sql \
+            -f supabase/migrations/20261123060000_play_ack_cron_guard_995.sql \
+            -f scripts/fixtures/play-ack-cron-guard.sql \
             -f supabase/migrations/20261119092419_distinct_adventures_728.sql \
             -f supabase/migrations/20261119092419_distinct_adventures_728.sql \
             -f scripts/fixtures/distinct-adventures.sql
