@@ -119,7 +119,8 @@ import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,create
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campaign/store-catalogue.js';
 import {setupToggletips,setupExclusiveSections} from "./toggletip.js";
-import {createBetaFeedback,buildFeedbackContext,feedbackSessionId} from "./beta-feedback.js";
+import {createBetaFeedback,buildFeedbackContext,feedbackSessionId,newClientRef} from "./beta-feedback.js";
+import {buildFeedbackJournal,createAutoIncidentReporter} from "../persistence/feedback-journal.js";
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
@@ -218,6 +219,7 @@ let legacyVictoryBusy=false,legacyCommandInFlight=false,legacyVictoryRetry=null;
 let pendingVictoryView=null;
 let pendingNavigationEntries=[],syncPresentationOwner=null;
 const shownPendingVictories=new Set();
+let autoIncidentReporter=null;
 let diagnosticEnabled=false,diagnosticOwner=null,diagnosticClient=null,diagnosticPending=false,guidedDiagnosticTrace=null;
 let supportSession=null;
 const diagnosticChoiceKey='lumenDiagnosticChoiceV1';
@@ -488,6 +490,7 @@ function confirmedReplayAllowed(quest){return !qaActive&&gameplaySyncState().con
 const cloudDiagKey="lumenCloudDiagnosticsV1";
 function recordCloudDiagnostic(event,details={}){
  if(event==='local_preservation_failed')try{noteLocalStorageError('storage')}catch{}
+ try{autoIncidentReporter?.observe(event)}catch{}
  try{const detail=mapCloudDiagnostic(event,details);if(detail){incidentReporter.capture(detail.code,detail);supportSession?.incident(detail.code)}}catch{}
  try{
   const previous=JSON.parse(localStorage.getItem(cloudDiagKey)||"[]");
@@ -3469,10 +3472,18 @@ function adminFeedbackRow(x){
  const c=x.context&&typeof x.context==='object'?x.context:{};
  const facts=[c.platform,c.browser,c.screen,c.locale,c.quest_ordinal?'Q'+c.quest_ordinal:(x.puzzle_id?'Q'+x.puzzle_id:null),c.surface,c.error_code,c.offline?t('admin.feedback.offline'):null,c.session_id].filter(Boolean).map(adminEsc).join(' · ');
  const status=x.status&&FEEDBACK_STATUS_KEYS[x.status]?'<select data-feedback-status="'+adminEsc(x.id)+'" aria-label="'+adminEsc(t('admin.feedback.statusLabel',{id:String(x.id)}))+'">'+Object.entries(FEEDBACK_STATUS_KEYS).map(([v,k])=>'<option value="'+v+'"'+(v===x.status?' selected':'')+'>'+adminEsc(t(k))+'</option>').join('')+'</select>':'';
- return '<div class="admin-feedback"><strong>'+(x.id?'n° '+adminEsc(x.id)+' · ':'')+adminEsc(FEEDBACK_KIND_KEYS[x.kind]?t(FEEDBACK_KIND_KEYS[x.kind]):x.kind)+' · '+adminEsc(x.player_label)+'</strong>'+status+'<p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+(facts?' · '+facts:'')+'</small></div>';
+ return '<div class="admin-feedback"><strong>'+(x.id?'n° '+adminEsc(x.id)+' · ':'')+adminEsc(FEEDBACK_KIND_KEYS[x.kind]?t(FEEDBACK_KIND_KEYS[x.kind]):x.kind)+' · '+adminEsc(x.player_label)+'</strong>'+status+'<p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+(facts?' · '+facts:'')+'</small>'+(x.id?'<details class="admin-feedback-journal" data-feedback-journal="'+adminEsc(x.id)+'"><summary>'+adminEsc(t('admin.feedback.journal'))+'</summary><pre></pre></details>':'')+'</div>';
 }
 function bindAdminFeedbackTriage(root){
  if(!root||root.dataset.triageBound)return;root.dataset.triageBound='1';
+ // #1010: the sync journal attached to a report, read on demand (administrators only).
+ root.addEventListener('toggle',async e=>{
+  const box=e.target.closest?.('details[data-feedback-journal]');if(!box||!box.open||box.dataset.loaded||!lumenSupabase)return;
+  const pre=box.querySelector('pre');box.dataset.loaded='1';pre.textContent='…';
+  const {data,error}=await lumenSupabase.rpc('lumen_admin_feedback_journal',{p_id:Number(box.dataset.feedbackJournal)});
+  if(error){delete box.dataset.loaded;pre.textContent=t('admin.feedback.journalError');return}
+  pre.textContent=Array.isArray(data)&&data.length?JSON.stringify(data,null,1):t('admin.feedback.journalEmpty');
+ },true);
  root.addEventListener('change',async e=>{
   const select=e.target.closest('select[data-feedback-status]');if(!select||!lumenSupabase)return;
   select.disabled=true;
@@ -3779,20 +3790,31 @@ function setupBetaFeedback(){
  // #960: compact report form (bug, question, suggestion) with a receipt, a kept
  // draft and idempotent retries. The board is untouched: the modal pauses the clock.
  const feedbackPlatform=()=>{const p=diagnosticContext().platform;return p==='android-web'&&document.referrer.startsWith('android-app://')?'android-twa':p};
- betaFeedback=createBetaFeedback({document,storage:localStorage,t,
-  context:({surface,errorCode}={})=>{
+ const feedbackContext=({surface,errorCode}={})=>{
    const q=activeQuest(),pack=q?CONTENT_PACKS.find(item=>item.id===q.packId):null;
    return buildFeedbackContext({appVersion:LUMEN_APP_VERSION,locale:document.documentElement.lang,platform:feedbackPlatform(),
     userAgent:navigator.userAgent,screen:innerWidth+'x'+innerHeight,standalone:lumenIsStandalone(),online:navigator.onLine,
     quest:q?{id:q.id,ordinal:q.ordinal,puzzleId:q.legacyIndex===null?undefined:q.legacyIndex+1,inProgress:!!state&&!celebrated}:null,
     adventure:pack?adventureDisplayName(pack,t):null,surface,errorCode,sessionId:feedbackSessionId(sessionStorage)});
-  },
-  send:async({kind,message,context,clientRef})=>{
-   if(!lumenSupabase)throw Error('offline');
-   const {data,error}=await lumenSupabase.rpc("lumen_send_feedback_v2",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef});
-   if(error){console.warn("LUMEN feedback",error);throw Error(error.message||'failed')}
-   return data;
-  },
+ };
+ // #1010: the report carries the sync journal (v3); an older server keeps v2.
+ const sendFeedback=async({kind,message,context,clientRef,journal})=>{
+  if(!lumenSupabase)throw Error('offline');
+  let {data,error,status}=await lumenSupabase.rpc("lumen_send_feedback_v3",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef,p_journal:journal?.length?journal:null});
+  if(error?.code==='PGRST202'&&status===404)({data,error}=await lumenSupabase.rpc("lumen_send_feedback_v2",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef}));
+  if(error){console.warn("LUMEN feedback",error);throw Error(error.message||'failed')}
+  return data;
+ };
+ // Players who share technical diagnostics send one report by themselves when
+ // the game is visibly stuck (hydration failure, repeated pending victories or
+ // saves); at most one per device every 6 hours. Never for guests or QA.
+ autoIncidentReporter=createAutoIncidentReporter({storage:localStorage,
+  enabled:()=>!!lumenUser&&!!lumenSupabase&&!qaActive&&diagnosticEnabled&&diagnosticOwner===lumenUser?.id,
+  send:({code,count,journal})=>sendFeedback({kind:'bug',message:'[auto] '+code+' x'+count,context:feedbackContext({surface:'auto',errorCode:code}),clientRef:newClientRef(),journal})});
+ betaFeedback=createBetaFeedback({document,storage:localStorage,t,
+  context:feedbackContext,
+  journal:()=>buildFeedbackJournal(localStorage),
+  send:sendFeedback,
   onSent:()=>trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,analyticsContext())
  });
  document.getElementById("betaFeedbackBtn").onclick=e=>openBetaFeedback({surface:'menu',origin:document.getElementById('mobileAccount')});

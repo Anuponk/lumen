@@ -35,7 +35,7 @@ function fixture(signedIn, locale) {
   window.supabase={createClient:()=>({auth:{getSession:async()=>(${signedIn}?{data:{session:{user:{id:${JSON.stringify(OWNER)}}}}}:{data:{session:null}}),
    getUser:async()=>({data:{user:${signedIn ? `{id:${JSON.stringify(OWNER)}}` : 'null'}}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
    rpc:async(name,args)=>{
-    if(name==='lumen_send_feedback_v2'){window.__feedbackCalls.push(args);
+    if(name==='lumen_send_feedback_v3'||name==='lumen_send_feedback_v2'){window.__feedbackCalls.push(args);if(name==='lumen_send_feedback_v3'&&args.p_journal!==null&&!Array.isArray(args.p_journal))throw Error('journal must be an array or null');
      if(window.__feedbackMode==='network')return {error:{message:'TypeError: Failed to fetch'}};
      if(window.__feedbackMode==='rate')return {error:{message:'rate_limited'}};
      return {data:{id:4242,status:'received',duplicate:window.__feedbackCalls.filter(c=>c.p_client_ref===args.p_client_ref).length>1}}}

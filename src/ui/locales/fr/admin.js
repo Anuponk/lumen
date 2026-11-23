@@ -151,5 +151,8 @@ export default Object.freeze({
   'admin.feedback.status.closed': "Clos",
   'admin.feedback.statusLabel': "Statut du signalement n° {id}",
   'admin.feedback.statusError': "Statut non enregistré",
+  'admin.feedback.journal': "Journal technique",
+  'admin.feedback.journalEmpty': "Aucun journal joint.",
+  'admin.feedback.journalError': "Journal indisponible",
   'admin.feedback.offline': "hors ligne",
 });

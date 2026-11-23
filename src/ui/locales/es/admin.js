@@ -151,5 +151,8 @@ export default Object.freeze({
   'admin.feedback.status.closed': "Cerrado",
   'admin.feedback.statusLabel': "Estado del informe n.º {id}",
   'admin.feedback.statusError': "Estado no guardado",
+  'admin.feedback.journal': "Registro técnico",
+  'admin.feedback.journalEmpty': "Sin registro adjunto.",
+  'admin.feedback.journalError': "Registro no disponible",
   'admin.feedback.offline': "sin conexión",
 });

@@ -526,9 +526,11 @@ jobs:
             -c "alter default privileges in schema public grant execute on functions to anon,authenticated" \
             -f scripts/fixtures/beta-feedback-960-bootstrap.sql \
             -f supabase/migrations/20261122240000_beta_feedback_v2_960.sql \
-            -f supabase/migrations/20261122240000_beta_feedback_v2_960.sql \
+            -f supabase/migrations/20261123080000_feedback_journal_960.sql \
+            -f supabase/migrations/20261123080000_feedback_journal_960.sql \
             -c "alter default privileges in schema public revoke execute on functions from anon,authenticated" \
-            -f scripts/fixtures/beta-feedback-960.sql
+            -f scripts/fixtures/beta-feedback-960.sql \
+            -f scripts/fixtures/feedback-journal-960.sql
       - name: Verify Analytics acquisition & engagement aggregates and their access (#708)
         env:
           PGPASSWORD: isolated-test-only
