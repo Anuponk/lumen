@@ -54,3 +54,15 @@ export function abandonConfirmModel({mode='campaign',daily=false,qualifying=fals
   copy:minutes?t("board.abandonCooldownCopy",{minutes}):t("board.abandonFreeCopy"),
   confirm:t("board.abandonConfirmSky"),cancel:t("board.abandonContinue"),sky:true,minutes};
 }
+
+// #998 · Stamps a qualifying start on an existing performance record only.
+// lastQualified* are the sole performance keys the server legacy guard ignores;
+// creating a new entry (even {questIndex}) changes the protected projection and
+// every profile save is refused until the victory command lands. A first
+// qualifying run is covered by recordQualifyingStart and by the victory itself.
+export function markQualifiedStart(progress,index,{day,at}){
+ const old=progress?.performances?.[index];
+ if(!old||typeof old!=='object'||Array.isArray(old))return false;
+ progress.performances[index]={...old,lastQualifiedDay:day,lastQualifiedAt:at};
+ return true;
+}
