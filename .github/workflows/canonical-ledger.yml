@@ -226,6 +226,13 @@ jobs:
             -f scripts/fixtures/technical-retention.sql \
             -f scripts/fixtures/technical-retention-readonly.sql
           LUMEN_SQL_TEST_DB=lumen_privacy_test python3 scripts/technical-retention-concurrency.py
+      - name: Verify that only exact duplicate analytics indexes are dropped (#995)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/analytics-duplicate-indexes.sql
 
       - name: Verify current schema erasure, export and support isolation
         env:
@@ -405,6 +412,12 @@ jobs:
             -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
             -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
             -f scripts/fixtures/play-acknowledgement.sql \
+            -f supabase/migrations/20261123060000_play_ack_cron_guard_995.sql \
+            -f supabase/migrations/20261123060000_play_ack_cron_guard_995.sql \
+            -f scripts/fixtures/play-ack-cron-guard.sql \
+            -f supabase/migrations/20261123061000_cron_run_details_retention_995.sql \
+            -f supabase/migrations/20261123061000_cron_run_details_retention_995.sql \
+            -f scripts/fixtures/cron-run-details-retention.sql \
             -f supabase/migrations/20261119092419_distinct_adventures_728.sql \
             -f supabase/migrations/20261119092419_distinct_adventures_728.sql \
             -f scripts/fixtures/distinct-adventures.sql
