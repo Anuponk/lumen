@@ -56,6 +56,8 @@ jobs:
           test "$(psql "$BASE/restore_ok" -X -A -t -c 'select count(*) from auth.users')" = 5
           test "$(psql "$BASE/restore_ok" -X -A -t -c 'select count(*) from lumen_commands.purchases')" = 2
           test "$(psql "$BASE/restore_ok" -X -A -t -c 'select count(*) from lumen.analytics_events')" = 0
+          test "$(psql "$BASE/restore_ok" -X -A -t -c "select count(*) from pg_trigger where tgname = 'diagnostic_clear'")" = 1
+          test "$(psql "$BASE/restore_ok" -X -A -t -c 'select count(*) from lumen_private.auth_mail_limits')" = 1
           test "$(psql "$BASE/restore_ok" -X -A -t -c "select relrowsecurity from pg_class where oid = 'lumen.profile_snapshots'::regclass")" = t
       - name: A short or missing table fails the check
         run: |
