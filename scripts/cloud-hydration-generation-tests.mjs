@@ -13,6 +13,7 @@ for(const change of ['account','client','generation','logout','none'])test('late
   canonicalRecoveryContext:null,canonicalRecovery:{cancel(){}},cloudProfileReady:true,cloudProfileBaseline:{},cloudProfileFailure:null,
   sessionStorage:{getItem:()=>null},localStorage:{getItem:key=>key==='lumenProgressV1'?raw:key==='lumenCloudOwnerId'?'a':null},
   recordCloudDiagnostic:event=>events.push(event),hydrationFailureDiagnostic,updateAuthUI:()=>calls.push('auth'),console:{warn(){}},
+  confirmVerifiedProfile:(...args)=>ctx.loadVerifiedProfile(...args),
   loadVerifiedProfile:async()=>{
    if(change==='account')ctx.lumenUser={id:'b'};
    if(change==='client')ctx.lumenSupabase={replacement:true};

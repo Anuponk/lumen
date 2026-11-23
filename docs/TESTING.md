@@ -443,6 +443,14 @@ read equals both independent reads, never writes, keeps the account guard
 and denies `anon`.
 Admin recent-player tests execute the actual metrics/timeline renderers.
 
+Digest profile read (#1000): `node --test scripts/profile-digest-read-tests.mjs` covers
+`confirmVerifiedProfile`: a matching digest returns a copy of the known profile with
+no download; mismatch, malformed answer, error, missing endpoint (remembered), no
+profile, no userId or no candidate all keep the full verified read. In
+`canonical-ledger`, `scripts/fixtures/profile-digest-read.sql` checks that
+`lumen_profile_digest` hashes the exact `lumen_restore_profile` text and its account
+guard and grants.
+
 Digest profile CAS: `node --test scripts/profile-digest-cas-tests.mjs` covers the
 jsonb text rules, an exact digest (single call, expected profile not uploaded), the
 fallback to the full CAS on mismatch, missing endpoint or unexpected answer, a
