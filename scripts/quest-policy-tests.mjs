@@ -72,9 +72,10 @@ test('the same official-time hint penalty applies at each quest milestone',()=>{
  for(const ordinal of [6,7,10,11,80]){
    const button={};
    const ctx={t:createTranslator().t,canonicalActiveQuest:{id:'active',ordinal},levelIndex:0,document:{getElementById:()=>button}};
-   vm.createContext(ctx);vm.runInContext(functionSource(source,'updateHintButton'),ctx);
-   ctx.updateHintButton();assert.equal(button.textContent,'Indice · +15 s');
-   ctx.levelIndex=70;ctx.updateHintButton();assert.equal(button.textContent,'Indice · +15 s');
+   ctx.document.createElement=()=>({append(){},setAttribute(){},className:'',textContent:''});button.replaceChildren=(...parts)=>{button.parts=parts};button.setAttribute=(k,v)=>{button[k]=v};
+   vm.createContext(ctx);vm.runInContext(functionSource(source,'renderActionButton'),ctx);vm.runInContext(functionSource(source,'updateHintButton'),ctx);
+   ctx.updateHintButton();assert.equal(button['aria-label'],'Indice · +15 s');
+   ctx.levelIndex=70;ctx.updateHintButton();assert.equal(button['aria-label'],'Indice · +15 s');
  }
 });
 test('a reloaded paid/free hint remains a hint in victory facts after the volatile flag resets',()=>{

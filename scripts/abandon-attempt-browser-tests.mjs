@@ -51,6 +51,7 @@ try{
   assert.match(await status(),/Tentative qualifiante/);
   assert.equal(await startOf(),new Date(live.startedAt).toISOString(),'the window starts with the run');
   assert.equal(await evaluate(visible('attemptAbandon')),true,'Abandonner is offered after the first move');
+  assert.equal(await evaluate("document.getElementById('attemptAbandon').textContent"),'Quitter','#1008: the top action reads Quitter; its dialog names the consequences');
 
   // 3. Cancel: the attempt is untouched.
   await evaluate('document.getElementById("attemptAbandon").click()');

@@ -31,8 +31,8 @@ const progress = {
   fullBadgeIntroSeen: 1,
 };
 const copy = {
-  fr: { title: 'Recommencer la grille ?', keep: 'Continuer à jouer', yes: 'Recommencer' },
-  en: { title: 'Start the board over?', keep: 'Keep playing', yes: 'Start over' },
+  fr: { title: 'Effacer tes placements ?', keep: 'Continuer à jouer', yes: 'Effacer' },
+  en: { title: 'Clear your placements?', keep: 'Keep playing', yes: 'Clear' },
 };
 
 async function tapCell(row, col) {

@@ -2890,8 +2890,17 @@ function finishLearningReplay(){
  refreshJourney();
 }
 
-function updateHintButton(){const button=document.getElementById("hint");if(button){button.textContent=t("board.hint");button.title=t("board.hintTitle")}}
-function updateVerifyButton(){const button=document.getElementById("verify");if(button){button.textContent=t("board.verify");button.title=t("board.verifyTitle")}}
+// #1008: one row of four two-line buttons (icon and cost above a short label).
+// The accessible name keeps the full wording, cost included.
+function renderActionButton(button,icon,cost,label,name,title){
+ if(!button)return;
+ const top=document.createElement('span');top.className='action-top';top.setAttribute('aria-hidden','true');top.append(icon+' ');
+ const small=document.createElement('small');small.textContent=cost;top.append(small);
+ const text=document.createElement('span');text.className='action-label';text.textContent=label;
+ button.replaceChildren(top,text);button.setAttribute('aria-label',name);button.title=title;
+}
+function updateHintButton(){renderActionButton(document.getElementById("hint"),'💡','+15 s',t("board.hintShort"),t("board.hint"),t("board.hintTitle"))}
+function updateVerifyButton(){renderActionButton(document.getElementById("verify"),'✓','+5 s',t("board.verifyShort"),t("board.verify"),t("board.verifyTitle"))}
 
 function verificationHappyCopy(){
  const q=state.flat().filter(v=>v===2).length;

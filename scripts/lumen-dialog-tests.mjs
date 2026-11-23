@@ -70,9 +70,9 @@ test('dialog copy is warm, explicit and translated in French and English', () =>
     assert.notEqual(en(key), key, key + ' EN');
     assert.notEqual(fr(key), en(key), key + ' is really translated');
   }
-  assert.equal(fr('board.resetTitle'), 'Recommencer la grille ?');
+  assert.equal(fr('board.resetTitle'), 'Effacer tes placements ?');
   assert.equal(fr('board.resetKeep'), 'Continuer à jouer');
-  assert.equal(fr('board.resetYes'), 'Recommencer');
+  assert.equal(fr('board.resetYes'), 'Effacer');
   // The consequence is never hidden: time, aids and mistakes keep counting.
   assert.match(fr('board.resetCopy'), /chrono continuera.*aides ou erreurs déjà comptées/);
   assert.match(en('board.resetCopy'), /timer keeps running.*hints or mistakes already counted/);

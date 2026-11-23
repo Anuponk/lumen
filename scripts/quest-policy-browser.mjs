@@ -27,7 +27,7 @@ export async function verifyQuestPolicy(browser,baseUrl){
   }
   const state=await evaluate(`(()=>{const auto=document.getElementById('autoCross'),guided=document.getElementById('guidedErrors'),badge=document.getElementById('badgeUnlockOverlay');return {
    label:document.getElementById('campaignMapLabel').textContent,autoDisabled:auto.disabled,autoChecked:auto.checked,guidedDisabled:guided.disabled,guidedChecked:guided.checked,
-   badge:!badge.hidden?badge.dataset.kind:null,autonomy:!document.getElementById('autonomyOverlay').hidden,hint:document.getElementById('hint').textContent}})()`);
+   badge:!badge.hidden?badge.dataset.kind:null,autonomy:!document.getElementById('autonomyOverlay').hidden,hint:document.getElementById('hint').getAttribute('aria-label')}})()`);
   assert(state.label.startsWith('Quête '+ordinal+' -'),JSON.stringify(state));
   assert.equal(state.autoDisabled,true,'Retired auto-marking stays disabled at quest '+ordinal);
   assert.equal(state.autoChecked,false);assert.equal(state.guidedDisabled,ordinal<6);assert.equal(state.guidedChecked,ordinal<11);

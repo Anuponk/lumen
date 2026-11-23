@@ -40,4 +40,4 @@ assert.match(css,/\.actions button\{min-width:0;min-height:40px!important/);
 // #858: Réinitialiser is a narrow game action under the grid, never a header icon.
 assert.match(css,/\.actions\{display:grid!important;grid-template-columns:44px minmax\(0,\.8fr\) minmax\(0,1\.1fr\) minmax\(0,1\.1fr\)!important/);
 assert.doesNotMatch(css,/\.head #new/);
-assert.match(fs.readFileSync('index.html','utf8'),/<div class="actions"><button id="new"[^>]*aria-label="Réinitialiser la grille"/);
+assert.match(fs.readFileSync('index.html','utf8'),/<div class="actions"><button id="undo"[^>]*>.*?<\/button><button id="new"[^>]*title="Effacer tous les placements de la grille"/);

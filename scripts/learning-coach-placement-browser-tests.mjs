@@ -68,9 +68,9 @@ try {
     const help = locale === 'en' ? 'Help and rules' : 'Aide et règles';
     const menuTitle = locale === 'en' ? 'LUMEN help' : 'Aide LUMEN';
     assert.equal(await evaluate("document.getElementById('tutorialHelp').getAttribute('aria-label')"), help);
-    assert.equal(await evaluate("document.getElementById('undo').textContent"), locale === 'en' ? 'Undo' : 'Annuler');
-    assert.equal(await evaluate("document.getElementById('hint').textContent"), locale === 'en' ? 'Hint · +15 s' : 'Indice · +15 s');
-    assert.equal(await evaluate("document.getElementById('verify').textContent"), locale === 'en' ? '✓ Check · +5 s' : '✓ Vérifier · +5 s');
+    assert.equal(await evaluate("document.querySelector('#undo .action-label').textContent"), locale === 'en' ? 'Undo' : 'Annuler');
+    assert.equal(await evaluate("document.getElementById('hint').getAttribute('aria-label')"), locale === 'en' ? 'Hint · +15 s' : 'Indice · +15 s');
+    assert.equal(await evaluate("document.getElementById('verify').getAttribute('aria-label')"), locale === 'en' ? '✓ Check · +5 s' : '✓ Vérifier · +5 s');
     assert.equal(await evaluate("document.querySelector('.learning-territory-number').getAttribute('aria-label').split(' ')[0]"), locale === 'en' ? 'Territory' : 'Territoire');
     await evaluate("document.getElementById('tutorialHelp').click()");
     await until("!document.getElementById('rulesModal').hidden");
@@ -125,7 +125,7 @@ try {
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
   await selectMode('fr');
   assert.equal(await evaluate("document.getElementById('rulesModalTitle').textContent"), 'Aide LUMEN');
-  assert.equal(await evaluate("document.getElementById('undo').textContent"), 'Annuler');
+  assert.equal(await evaluate("document.querySelector('#undo .action-label').textContent"), 'Annuler');
   assert.equal(await evaluate("i18nBoardCell.querySelector('.lumen-dim').getAttribute('aria-label')"), 'Emplacement assombri');
   assert.equal(await evaluate("localStorage.getItem('lumen.locale')"), 'fr');
   assert.equal(await evaluate("document.documentElement.lang"), 'fr');
