@@ -17,6 +17,10 @@ concurrency:
   group: lumen-backup
   cancel-in-progress: false
 
+defaults:
+  run:
+    shell: bash  # -eo pipefail: tar | age fails if either side fails
+
 jobs:
   backup:
     if: github.ref == 'refs/heads/main'

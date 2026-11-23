@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash  # -eo pipefail: a failing command is never hidden by tee
+
 jobs:
   backup-script:
     runs-on: ubuntu-latest
