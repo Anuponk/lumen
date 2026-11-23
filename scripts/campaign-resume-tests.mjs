@@ -99,11 +99,15 @@ test('starting Dauphin must not create a performance under the dormant legacy in
  const ctx={canonicalActiveQuest:next,levelIndex:198,lumenProgress:{performances:{}},
   ATTEMPT_STATES:{READY:'READY'},attemptEngine:{snapshot:()=>({state:'READY',qualifying:true}),start(){starts++}},
   saveLumenProgress(){saves++},trackAttemptEvent(){},attemptMode:()=> 'campaign',localCalendarDay:()=> '2026-10-20',
-  socialChallenge:null,localStorage:null,qualificationOwner:()=>'guest',activeQuest:()=>next,recordQualifyingStart(){}};
+  socialChallenge:null,localStorage:null,qualificationOwner:()=>'guest',activeQuest:()=>next,recordQualifyingStart(){},markQualifiedStart:(await import('../src/campaign/qualification-window.js')).markQualifiedStart};
  vm.createContext(ctx);vm.runInContext(functionSource(source,'ensureAttemptStarted'),ctx);ctx.ensureAttemptStarted();
  assert.deepEqual(ctx.lumenProgress.performances,{});assert.equal(saves,0);assert.equal(starts,1);
  ctx.canonicalActiveQuest=null;ctx.ensureAttemptStarted();
- assert.equal(saves,1);assert.equal(starts,2);assert.equal(ctx.lumenProgress.performances[198].questIndex,198,'Legacy qualification remains unchanged');
+ // #998: a never-won legacy quest gets no guarded performance entry.
+ assert.deepEqual(ctx.lumenProgress.performances,{});assert.equal(saves,0);assert.equal(starts,2);
+ ctx.lumenProgress.performances[198]={version:3,questIndex:198,attempts:1};ctx.ensureAttemptStarted();
+ assert.equal(saves,1);assert.equal(starts,3);assert.equal(ctx.lumenProgress.performances[198].questIndex,198,'Legacy qualification remains unchanged');
+ assert.equal(ctx.lumenProgress.performances[198].lastQualifiedDay,'2026-10-20');
 });
 
 test('a canonical board never renders the dormant legacy challenge banner',async()=>{

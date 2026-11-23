@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {recordQualifyingStart} from '../src/campaign/qualification-window.js';
+import {recordQualifyingStart,markQualifiedStart} from '../src/campaign/qualification-window.js';
 import {networkContext,withNetworkContext} from './fixtures/network-context.mjs';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
@@ -266,11 +266,13 @@ for(const backupFailed of [false,true]){
  f.ctx.saveLumenProgress=()=>f.storage.setItem('lumenProgressV1',JSON.stringify(f.ctx.lumenProgress));
  f.ctx.trackAttemptEvent=()=>{};f.ctx.attemptMode=()=>attempt.mode;
  // #908: the first move of a qualifying run also records its start (window from start).
- f.ctx.qualificationOwner=()=>'guest';f.ctx.activeQuest=()=>({id:'base-q001'});f.ctx.recordQualifyingStart=recordQualifyingStart;f.ctx.localStorage=f.storage;
+ f.ctx.qualificationOwner=()=>'guest';f.ctx.activeQuest=()=>({id:'base-q001'});f.ctx.recordQualifyingStart=recordQualifyingStart;f.ctx.markQualifiedStart=markQualifiedStart;f.ctx.localStorage=f.storage;
  f.ctx.attemptEngine={storageKey:key,snapshot:()=>attempt,start:()=>{attempt.state='RUNNING';f.storage.setItem(key,JSON.stringify(attempt))}};
  const begin=vm.runInContext('('+functionSource(source,'ensureAttemptStarted')+')',f.ctx);begin();
  const raw=f.storage.getItem('lumenProgressV1'),attemptRaw=f.storage.getItem(key);
- assert.equal(Object.keys(JSON.parse(raw).performances).length,1,'Actual first-gesture producer ran before login');
+ // #998: a never-won quest gets no performance entry (the legacy guard refuses it);
+ assert.equal(Object.keys(JSON.parse(raw).performances).length,0,'No guarded performance entry on a first qualifying start');
+ assert.equal(attempt.state,'RUNNING','Actual first-gesture producer ran before login');
  if(backupFailed){const set=f.storage.setItem;f.storage.setItem=(k,v)=>{if(!k.startsWith('lumenBeforeAccountSwitchAttempt_'))set(k,v)};}
  await f.hook();
  if(backupFailed){

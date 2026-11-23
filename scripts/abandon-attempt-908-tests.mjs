@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createAttemptEngine,ATTEMPT_STATES} from '../src/game/attempt-engine.js';
 import {BADGE_COOLDOWN_MS,badgeCooldownRemaining} from '../src/campaign/performance.js';
-import {QUALIFYING_STARTS_KEY,qualifyingStartedAt,recordQualifyingStart,withQualifyingStart,cooldownMinutes,abandonConfirmModel} from '../src/campaign/qualification-window.js';
+import {QUALIFYING_STARTS_KEY,qualifyingStartedAt,recordQualifyingStart,withQualifyingStart,cooldownMinutes,abandonConfirmModel,markQualifiedStart} from '../src/campaign/qualification-window.js';
 import {createTranslator} from '../src/ui/i18n.js';
 
 const fr=createTranslator({locale:'fr'}).t,en=createTranslator({locale:'en'}).t;
@@ -116,4 +116,24 @@ const quest='planned-real-01-q07';
  assert.ok(source.includes('if(socialChallenge){trackAttemptEvent("challenge_abandoned",{reason:"explicit"});await finishSocialChallenge("abandoned");return}'),'challenges and the Défi du jour keep their recorded abandon');
  assert.doesNotMatch(source,/confirm\(t\("board\.abandonConfirm"\)\)/,'the native confirm is replaced by the explicit dialog');
 }
-console.log('abandon-attempt-908-tests: window from start, T+1/T+15, reload, owners, demotion, cancel, FR/EN copy OK');
+
+// #998 · A qualifying start never creates a performance entry: the server legacy
+// guard ignores only lastQualified*, so a new {questIndex} entry made every
+// profile save fail with "legacy victory command required" until the victory.
+{
+ const guarded=p=>Object.fromEntries(Object.entries(p.performances||{}).map(([k,v])=>[k,Object.fromEntries(Object.entries(v).filter(([f])=>!['lastQualifiedAt','lastQualifiedDay','attempts'].includes(f)))]));
+ const fresh={performances:{}},before=guarded(fresh);
+ assert.equal(markQualifiedStart(fresh,7,{day:'2026-11-23',at:'2026-11-23T10:00:00.000Z'}),false,'first run: nothing written');
+ assert.deepEqual(fresh,{performances:{}});
+ assert.deepEqual(guarded(fresh),before);
+ assert.equal(markQualifiedStart({},7,{day:'2026-11-23',at:'2026-11-23T10:00:00.000Z'}),false,'no performances map: nothing written');
+ const known={performances:{7:{version:3,questIndex:7,attempts:2,bestTime:40,badges:{speed:true}}}},guard=guarded(known);
+ assert.equal(markQualifiedStart(known,7,{day:'2026-11-23',at:'2026-11-23T10:00:00.000Z'}),true);
+ assert.equal(known.performances[7].lastQualifiedAt,'2026-11-23T10:00:00.000Z');
+ assert.equal(known.performances[7].lastQualifiedDay,'2026-11-23');
+ assert.deepEqual(guarded(known),guard,'only guard-ignored keys change on an existing record');
+ const screen=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8');
+ assert.ok(screen.includes('if(markQualifiedStart(lumenProgress,levelIndex,'),'attempt start uses the guard-safe stamp');
+ assert.doesNotMatch(screen,/performances[levelIndex]={...old,questIndex:levelIndex,lastQualifiedDay/,'no performance entry is created at attempt start');
+}
+console.log('abandon-attempt-908-tests: window from start, T+1/T+15, reload, owners, demotion, cancel, FR/EN copy, guard-safe start stamp (#998) OK');
