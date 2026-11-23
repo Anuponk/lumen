@@ -142,6 +142,8 @@ export default Object.freeze({
   'feedback.ctx.questNumber': "quest {quest}",
   'feedback.ctx.error': "Error",
   'feedback.ctx.session': "Session",
+  'feedback.ctx.journal': "Sync journal",
+  'feedback.ctx.journalCount': "{count} technical events",
   'feedback.send': "Send",
   'feedback.sending': "Sending…",
   'feedback.draftRestored': "Draft restored.",

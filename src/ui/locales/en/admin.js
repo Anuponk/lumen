@@ -151,5 +151,8 @@ export default Object.freeze({
   'admin.feedback.status.closed': "Closed",
   'admin.feedback.statusLabel': "Status of report no. {id}",
   'admin.feedback.statusError': "Status not saved",
+  'admin.feedback.journal': "Technical journal",
+  'admin.feedback.journalEmpty': "No journal attached.",
+  'admin.feedback.journalError': "Journal unavailable",
   'admin.feedback.offline': "offline",
 });

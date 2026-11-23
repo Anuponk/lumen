@@ -142,6 +142,7 @@ export function createBetaFeedback({
   t,
   send,
   context,
+  journal = () => [],
   onSent = () => {},
   onOpen = () => {},
   onClose = () => {},
@@ -188,6 +189,10 @@ export function createBetaFeedback({
         : null,
       ctx.error_code ? [t('feedback.ctx.error'), ctx.error_code] : null,
       ctx.session_id ? [t('feedback.ctx.session'), ctx.session_id] : null,
+      // #1010: the sync journal goes with the report; no separate diagnostic step.
+      journal().length
+        ? [t('feedback.ctx.journal'), t('feedback.ctx.journalCount', { count: journal().length })]
+        : null,
     ].filter(Boolean);
     list.replaceChildren(
       ...rows.map(([label, value]) => {
@@ -256,6 +261,7 @@ export function createBetaFeedback({
         message,
         context: context(extra),
         clientRef: draft.ref,
+        journal: journal(),
       });
       clearDraft(storage);
       draft = { kind: 'bug', message: '', ref: newClientRef() };
