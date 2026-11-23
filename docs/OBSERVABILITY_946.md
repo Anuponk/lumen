@@ -162,13 +162,40 @@ Hypothèses mesurées le 22/11 de 19 h à 22 h UTC : environ 25 requêtes API pa
 | 1 000 | ~19 Go | ~0,9 Go, saturation en ~10 jours | Non limitant | Non limitant |
 | 5 000 | ~94 Go | ~4,5 Go, saturation en ~2 jours | Non limitant | Non limitant |
 
-**Premier quota limitant : Log Ingestion**, dès ~50 joueurs actifs par jour, si le dépassement est facturé ou bloquant après la période de grâce. Ces conditions restent à vérifier avant toute conclusion financière. Vient ensuite la **taille de base**, à partir de quelques centaines de joueurs actifs par jour. Leviers, par ordre de rendement :
+**Premiers quotas limitants : egress et Log Ingestion**, à égalité autour de 50 à 60 joueurs actifs par jour. Le détail de l'egress figure plus bas, dans [la section hors logs](#hors-logs--capacité-sql-egress-et-sauvegardes-999). Pour les logs, la limite ne joue que si le dépassement est facturé ou bloquant après la période de grâce. Ces conditions restent à vérifier avant toute conclusion financière. Vient ensuite la **taille de base**, à partir de quelques centaines de joueurs actifs par jour. Leviers, par ordre de rendement :
 
 1. Réduire les requêtes par partie : regrouper les lectures au chargement, mettre en cache côté client les listes stables (`daily_today`, `list_quest_challenges_v2`, performances historiques) et supprimer les appels redondants du classement.
 2. Purger les tables techniques sans valeur métier. `cron.job_run_details` est traité par #995, à 7 jours. La politique d'`analytics_events` reste à définir.
 3. Ne jamais réduire les reçus, l'outbox, les achats ni les preuves de progression pour gagner de la place.
 
 Seuil de décision Pro : une projection qui atteint 85 % d'un quota bloquant avant la fin du cycle, sans levier sûr restant.
+
+### Hors logs : capacité SQL, egress et sauvegardes (#999)
+
+Audit en lecture seule du 23/11/2026 sur le même projet. `pg_stat_statements` est cumulé depuis le 01/08/2026. Toutes les mesures sont agrégées, sans contenu de profil ni identifiant de joueur.
+
+| Poste | Mesure | Constat | Risque | Action proposée |
+|---|---|---|---|---|
+| **Taille du profil cloud** | `lumen.profile_snapshots` : 32 profils, 43 Ko de JSON en moyenne, 360 Ko au maximum (~5 Ko une fois compressé en base). `canonicalQuestState` pèse 54 % et `performances` 40 %, soit ~430 et ~100 octets par quête terminée | Croissance linéaire avec la progression : ~470 Ko pour un catalogue de 880 quêtes terminé. La limite serveur est de 1 Mo (`profile_size_limit_1mib`) | Egress, CPU et à terme la limite de 1 Mo | #1000 |
+| **Relecture complète du profil** | `lumen_restore_profile` : ~600 appels le 22/11, jusqu'à un toutes les ~50 s pour un joueur actif. Elle est appelée après chaque commande canonique ou legacy et chaque CAS (`loadVerifiedProfile`) | Le contrat veut que la relecture serveur fasse foi. Elle renvoie aujourd'hui tout le profil | **Egress, probable premier quota limitant** : ~2,6 Mo par joueur actif et par jour, estimé à partir des appels × taille moyenne. Les 5 Go Free sont atteints vers 60 joueurs actifs par jour | #1000 : vérification par empreinte ou par quête, en gardant l'autorité serveur |
+| **CPU des sauvegardes** | Temps SQL cumulé : `cas_profile_digest` 156 ms en moyenne, `cas_profile` 102 ms, `commit_quest_command` 294 ms, `commit_legacy_command` 215 ms | Traitement du JSON complet à chaque écriture. ~0,5 à 0,8 s de CPU base par victoire | Latence et instance Free partagée lors des pics | Même levier que l'egress. Mesurer `EXPLAIN` avant tout index |
+| Refus de sauvegarde rapide | 19 % des `cas_profile_digest` refusés (`legacy victory command required`) | Ordre client entre commande et sauvegarde | Requêtes et logs inutiles | #998 |
+| Classement et sondages | `ranking_board` relu toutes les 30 s sur l'écran de victoire | Corrigé par #997 | — | Mesurer après déploiement |
+| Edge Functions | 2 921 invocations par jour, dont ~95 % pour la tâche Play | Corrigé par #995 (garde et cadence de 2 min) | Non limitant après correction | — |
+| Auth, Realtime, Storage | ~290 événements Auth, < 10 Realtime et < 15 Storage par jour | Négligeables | — | Aucune |
+| Conseils Supabase (Lumen) | RLS `lumen.entitlements` réévaluée par ligne. Clés étrangères non indexées sur de petites tables. Doublons d'index déjà supprimés (#995) | Faible enjeu à ce volume | — | Traiter seulement si une mesure le justifie |
+| **Sauvegardes** | Le plan Free n'a **aucune** sauvegarde automatique (documentation Supabase : sauvegardes quotidiennes à partir de Pro) | Reçus, achats et progression n'ont pas de copie hors Supabase | **Perte de données irréversible** en cas d'incident projet | Export régulier des schémas Lumen, chiffré, avec restauration testée (décision du propriétaire en attente) |
+
+Les deux autres produits du projet partagé (SoldeZen et ses applications) comptent dans les mêmes quotas de l'organisation. Ce tableau ne couvre que Lumen. Les projections supposent que leur consommation reste négligeable, ce qu'il faut vérifier sur la page Usage.
+
+**Correction des projections.** L'estimation d'egress (~2,6 Mo par joueur actif et par jour) vient d'un échantillon de 10 joueurs très actifs, aux gros profils. Elle doit être recalée avec la valeur réelle de la page Usage. La base grossit surtout avec les **joueurs** (profil mis à jour sur place, ~5 à 50 Ko compressés chacun) et les reçus par partie, plus qu'avec les journaux.
+
+**Sauvegarde proposée.**
+- **Fréquence et périmètre** : export hebdomadaire `pg_dump` des schémas `lumen` et `lumen_commands`, sans `lumen.analytics_events`. Un export complet coûterait ~200 Mo d'egress, celui-ci ~30 Mo.
+- **Chiffrement** : chiffrement asymétrique avant stockage. Le dépôt est public et l'export contient des données personnelles.
+- **Restauration testée** : restauration automatique dans un PostgreSQL jetable, avec comptages de contrôle.
+- **Secrets** : la connexion passe par un secret GitHub, jamais en clair.
+- **Prérequis du propriétaire** : URL de connexion, clé publique de chiffrement et lieu de conservation (artefacts GitHub chiffrés ou o2switch).
 
 ### Politique d'observabilité frugale
 
