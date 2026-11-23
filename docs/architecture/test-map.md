@@ -44,6 +44,8 @@ Ranking/manual marking #638/#647: `ranking-tests.mjs`, `ranking-client-tests.mjs
 `manual-marking-tests.mjs`, `ranking-browser-tests.mjs`, disposable SQL
 `fixtures/ranking.sql` and PostgreSQL `ranking-concurrency.py`. Full gate includes
 the new Node/browser suites; SQL concurrency runs in canonical-ledger CI.
+Free-first #995: `quest-review-tests.mjs` proves the 30 s ranking wake reads the
+board only when a capture settled or the podium is not ready; reconnects still re-read it.
 
 Support: `support-tests.mjs` covers full catalogue copies, source preservation,
 metadata headroom, oversized optional checkpoints, compact-versus-jsonb/exponent

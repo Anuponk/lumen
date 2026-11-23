@@ -2708,7 +2708,7 @@ async function refreshOfficialRecordLabel(){
 // #851: the private record shown beside the best officially ranked time.
 function personalBestSeconds(quest){try{const best=officialRecordTime(questPerformanceRecord(quest,lumenProgress),quest?.gridRevision??0);return Number.isSafeInteger(best)?best:null}catch{return null}}
 function showRanking(){if(socialChallenge||learningReplayActive()||qaActive||!lumenUser)return;const a=attemptEngine.snapshot();rankingView.show(activeQuest(),attemptOperationId(a),{personalBest:personalBestSeconds(activeQuest())});rankingView.mount()}
-function refreshRankingQueue(){return rankingClient.flush().then(r=>rankingView.refresh(r)).catch(error=>{if(error?.results?.length)return rankingView.refresh(error.results)})}
+function refreshRankingQueue(options){return rankingClient.flush().then(r=>rankingView.refresh(r,options)).catch(error=>{if(error?.results?.length)return rankingView.refresh(error.results,options)})}
 addEventListener('online',()=>{void refreshRankingQueue()});
 document.getElementById('rankingWithdraw').onclick=async()=>{
  const c=rankingContext(),button=document.getElementById('rankingWithdraw');button.disabled=true;
@@ -2716,7 +2716,7 @@ document.getElementById('rankingWithdraw').onclick=async()=>{
  catch{if(rankingContext().owner===c.owner)document.getElementById('rankingAccountStatus').textContent='Retrait non confirmé. Réessaie.'}
  finally{button.disabled=false}
 };
-setInterval(()=>{if(lumenUser&&!qaActive)void refreshRankingQueue()},30000);
+setInterval(()=>{if(lumenUser&&!qaActive)void refreshRankingQueue({background:true})},30000);
 new MutationObserver(()=>rankingView.mount()).observe(document.getElementById('skyReveal'),{attributes:true,attributeFilter:['hidden']});
 function attemptMode(){return socialChallenge?"challenge":replayMode?"replay":"campaign"}
 function activeQuest(){return canonicalActiveQuest??canonicalQuestForLegacy(levelIndex)}

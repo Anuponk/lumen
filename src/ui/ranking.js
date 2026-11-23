@@ -67,8 +67,10 @@ export function createRankingView({client,getContext,format,document=globalThis.
   }
   onUpdate({state:'ready',quest,data});
  }
- async function refresh(results=[]){
+ async function refresh(results=[],{background=false}={}){
   const token=generation,q=quest;if(!q||getContext().owner!==owner||getContext().client!==connection)return;
+  // #995 Free-first: the 30 s wake re-reads a ready podium only when a capture settled.
+  if(background&&root.dataset.state==='ready'&&!results?.length)return;
   try{
    // Reconnect/timer updates must not replace a still-pending result with an old board.
    if(!review&&operation&&client.entries?.(owner).some(e=>e.operationId===operation)){
