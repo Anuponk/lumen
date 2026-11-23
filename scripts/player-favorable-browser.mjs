@@ -113,10 +113,10 @@ export async function verifyPlayerFavorableRecovery({send,evaluate,navigate,url,
    const target=await evaluate(`(()=>{const cell=document.querySelector('#board .cell[data-row="${row}"][data-col="${col}"]');cell.scrollIntoView({block:'center'});const r=cell.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
    await send('Input.dispatchMouseEvent',{type:'mousePressed',...target,button:'left',clickCount:1});
    await send('Input.dispatchMouseEvent',{type:'mouseReleased',...target,button:'left',clickCount:1});
-   await until(`Object.keys(JSON.parse(localStorage.getItem('lumenProgressV1')).performances||{}).length===1`);
+   await until(`JSON.parse(localStorage.getItem('lumenActiveAttemptV1')||'null')?.state==='RUNNING'`);
    guestRaw=await evaluate(`localStorage.getItem('lumenProgressV1')`);guestAttempt=await evaluate(`localStorage.getItem('lumenActiveAttemptV1')`);
-   const start=Object.values(JSON.parse(guestRaw).performances)[0];
-   assert.deepEqual(Object.keys(start).sort(),['lastQualifiedAt','lastQualifiedDay','questIndex']);
+   // #998: a first qualifying start creates no guarded performance entry.
+   assert.deepEqual(Object.keys(JSON.parse(guestRaw).performances||{}),[]);
    assert(guestAttempt,'The real first gesture persisted an active guest attempt');
    await evaluate(`sessionStorage.removeItem('favorableGuestStart');__favGuestStart=false;__favAuth('SIGNED_IN',{user:{id:${JSON.stringify(owner)}}})`);
   }

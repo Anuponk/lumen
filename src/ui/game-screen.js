@@ -71,7 +71,7 @@ import {astronomicalReferenceSvg,astronomicalPrimarySvg} from "./astronomical-re
 import {setSecondaryStarsLabel} from "./quest-secondary-stars.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
-import {qualifyingStartedAt,recordQualifyingStart,withQualifyingStart,abandonConfirmModel} from "../campaign/qualification-window.js";
+import {qualifyingStartedAt,recordQualifyingStart,withQualifyingStart,abandonConfirmModel,markQualifiedStart} from "../campaign/qualification-window.js";
 import {challengeAttemptClosed,challengeEligibility,challengeResumePlan,challengeSnapshot,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {challengeQuestLabel,resolveChallengeQuest} from "../campaign/canonical-challenges.js";
 import {createFriendsClient,escapeSocialHtml,friendErrorMessage,friendsOnly,renderFriendRows,validNickname} from "../campaign/social-friends.js";
@@ -2780,10 +2780,7 @@ function ensureAttemptStarted(){
  // Promotion only: an already qualifying run is never demoted here.
  if(!a.qualifying&&!socialChallenge&&currentBadgeQualification()){a=attemptEngine.requalify(true);updateBadgeQualificationStatus()}
  if(a.qualifying&&!canonicalActiveQuest){
-  lumenProgress.performances=lumenProgress.performances||{};
-  const old=lumenProgress.performances[levelIndex]||{};
-  lumenProgress.performances[levelIndex]={...old,questIndex:levelIndex,lastQualifiedDay:localCalendarDay(),lastQualifiedAt:new Date().toISOString()};
-  saveLumenProgress();
+  if(markQualifiedStart(lumenProgress,levelIndex,{day:localCalendarDay(),at:new Date().toISOString()}))saveLumenProgress();
  }
  attemptEngine.start();
  const started=attemptEngine.snapshot();
