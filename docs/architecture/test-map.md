@@ -82,6 +82,10 @@ Free-first #995 (canonical-ledger CI): `play-ack-cron-guard.sql` (due/not-due
 acknowledgement work, idempotent command rewrite), `cron-run-details-retention.sql`
 (7 days, latest run per job and running rows kept, bounded batches) and
 `analytics-duplicate-indexes.sql` (only exact twins dropped, rows untouched).
+Backup #999: `lumen-backup-script.yml` runs `scripts/lumen-backup.sh` on
+`fixtures/backup-source.sql` in disposable PostgreSQL 17 (export, restore counts,
+analytics rows excluded, RLS kept, missing table fails, no personal data in logs).
+The weekly production run is `lumen-backup.yml`; see [BACKUP_RESTORE_999](../BACKUP_RESTORE_999.md).
 See `docs/TESTING.md` for preview, dates, held/open data, rollback, role denial,
 concurrent reenabling and DDL checks; no production purge is tested.
 
