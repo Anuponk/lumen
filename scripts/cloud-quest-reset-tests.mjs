@@ -89,6 +89,7 @@ for(const changeSession of [false,true]){
  context=vm.createContext({cloudHydrationGeneration:0,qaActive:false,lumenUser:{id:'player'},lumenSupabase:{},
   canonicalRecoveryContext:null,canonicalRecovery:{cancel(){}},sessionStorage:{getItem:()=>null},
   cloudProfileReady:false,cloudProfileBaseline:null,localStorage:cache,lumenProgress:local,
+  confirmVerifiedProfile:(...args)=>context.loadVerifiedProfile(...args),
   loadVerifiedProfile:async()=>{if(changeSession)context.lumenUser={id:'replacement'};return structuredClone(remote)},
   currentCatalogueOrigin:{},canonicalVictoryOutbox:queue,installVerifiedQuestResets,
   location:{reload:()=>reloads++},console:{warn:()=>assert.fail('Reset hydration unexpectedly failed')},

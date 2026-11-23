@@ -33,6 +33,7 @@ export const nodeSuites=[
  'victory-clock-freeze-tests.mjs',
  'test-tools-tests.mjs',
  'profile-digest-cas-tests.mjs',
+ 'profile-digest-read-tests.mjs',
  'nickname-tests.mjs',
  'ranking-client-tests.mjs',
  'manual-marking-tests.mjs',
