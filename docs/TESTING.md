@@ -357,6 +357,26 @@ number, currency, date and plural formatting, including a partial German fixture
 - a tip opens on tap as a status region inside the screen; Escape closes the tip, then the menu, and focus returns to Mon espace;
 - help opens from Mon espace with gestures and timer folded, and focus returns on close;
 - the English labels follow the language chosen in Mon espace.
+
+`node --test scripts/beta-feedback-tests.mjs` (#960) checks:
+- the report context holds only allowlisted technical fields (version, platform, browser family, screen, locale, quest, adventure, surface, error code, per-tab session id), never the raw user agent;
+- error classes (offline, rate limited, message required) and kept drafts whose reference matches the server rule;
+- that blocking errors, the quest help and Mon espace offer a report entry, with no floating bubble;
+- that the migration is additive.
+
+`node scripts/beta-feedback-browser-tests.mjs` (#960, browser gate) reports during a quest from Mon espace and from the help, at 360 and 390 px, as a guest and signed in. It checks:
+- the attempt is paused and then unchanged;
+- the draft survives closing;
+- a too-short message is refused locally;
+- network and rate-limit failures keep the message, and every retry reuses the same reference;
+- the confirmation shows the receipt number and the sent payload carries no user agent, token or email;
+- Escape returns focus, and the English labels.
+
+`scripts/fixtures/beta-feedback-960.sql` (canonical-ledger CI) checks:
+- validation, the allowlisted context and bounded strings;
+- idempotent retries and the 10-per-hour limit across devices of one account;
+- that legacy kinds still work;
+- that guests can report while only `analytics_cockpit` holders read and triage.
 `node scripts/onboarding-locale-tests.mjs` checks French and English catalogue parity
 and the English copy for the actual pre-action, placement and drag steps. The
 coach-placement browser suite runs the English first-open-to-tutorial path from the public game entry point in

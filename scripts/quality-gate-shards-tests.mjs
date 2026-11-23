@@ -11,10 +11,10 @@ import {assertQualityResults} from './quality-gate-result.mjs';
 test('three CI shards cover the local browser inventory exactly once', () => {
  const local=selectQualityPlan([],{});
  assert.equal(local.phase,'full');
- assert.equal(local.suites.length,45);
+ assert.equal(local.suites.length,46);
  const shards=[1,2,3].map(i=>selectQualityPlan([`--browser-shard=${i}/3`],{}));
  const selected=shards.flatMap(plan=>plan.suites.map(s=>s.script));
- assert.equal(new Set(selected).size,45);
+ assert.equal(new Set(selected).size,46);
  assert.deepEqual(selected.sort(),local.suites.map(s=>s.script).sort());
  for(const field of ['script','output','port'])assert.equal(new Set(browserSuites.map(s=>s[field])).size,browserSuites.length);
  for(const shard of shards)assert.equal(shard.phase,'browser');
@@ -25,7 +25,7 @@ test('learning selection preserves exactly the same omission in local and CI mod
  const env={LUMEN_RUN_LEARNING_BROWSER:'false'};
  const local=selectQualityPlan([],env).suites.map(s=>s.script);
  const ci=[1,2,3].flatMap(i=>selectQualityPlan([`--browser-shard=${i}/3`],env).suites.map(s=>s.script));
- assert.equal(local.length,44);
+ assert.equal(local.length,45);
  assert(!ci.includes('learning-browser-tests.mjs'));
  assert.deepEqual(ci.sort(),local.sort());
 });
@@ -35,7 +35,7 @@ test('#744: a presentation-page-only PR runs only the page suite, on shard 1', (
  assert.deepEqual(selectQualityPlan([],env).suites.map(s=>s.script),['landing-browser-tests.mjs']);
  assert.deepEqual([1,2,3].map(i=>selectQualityPlan([`--browser-shard=${i}/3`],env).suites.map(s=>s.script)),[['landing-browser-tests.mjs'],[],[]]);
  assert.equal(selectQualityPlan(['--node-only'],env).scope,'landing');
- for(const scope of [undefined,'full','docs'])assert.equal(selectQualityPlan([],{LUMEN_QUALITY_SCOPE:scope}).suites.length,45,'Full inventory for '+scope);
+ for(const scope of [undefined,'full','docs'])assert.equal(selectQualityPlan([],{LUMEN_QUALITY_SCOPE:scope}).suites.length,46,'Full inventory for '+scope);
  assert.throws(()=>selectQualityPlan([],{LUMEN_QUALITY_SCOPE:'everything-skipped'}),/Unknown LUMEN_QUALITY_SCOPE/);
 });
 
@@ -83,6 +83,7 @@ test('the checked CI browser inventory retains all prior suites and Play review'
   "adventure-05-browser-tests.mjs",
   "adventure-mastery-browser-tests.mjs",
   "analytics-admin-browser-tests.mjs",
+  "beta-feedback-browser-tests.mjs",
   "browser-tests.mjs",
   "campaign-resume-browser-tests.mjs",
   "canonical-replay-browser-tests.mjs",

@@ -169,6 +169,22 @@ functional historical analytics, accounts, receipts, recovery and unresolved
 incidents. No production migration, cron or cleanup is enabled. Procedure and
 rollback limits: [runbook](TECHNICAL_RETENTION_RUNBOOK.md).
 
+## Beta reports v2 — #960
+
+`20261122240000_beta_feedback_v2_960.sql` is additive. It only touches `lumen.feedback` (no gameplay table), and v1 (`lumen_send_feedback`, `lumen_admin_feedback`) stays as it was.
+
+- **Kinds:** `feedback_kind_check` keeps every existing kind and adds `question` and `idea`.
+- **New columns:**
+  - `context jsonb` holds an allowlisted technical context: version, platform, browser family, screen, locale, quest, adventure, surface, error code and a per-tab session id. It never holds tokens, emails, the board or the raw user agent.
+  - `client_ref` is the draft reference. It is unique per reporter, so a retry or a concurrent send returns the same receipt.
+- **`lumen_send_feedback_v2`** (anon and authenticated) validates the kind (`bug`, `question`, `idea`), the message and the reference. It limits each device or account to 10 reports per hour and returns `{id, status, duplicate}`.
+- **Administrators** read reports with `lumen_admin_feedback_v2` and set `new` → `reviewed` → `fixed` → `closed` with `lumen_admin_feedback_set_status`. Both require `analytics_cockpit`.
+  - Closing starts the existing 180-day technical retention.
+- **Erasure and rights export** cover the new columns, because reports stay owned by `user_id` / `anonymous_id`.
+- **Client:** `src/ui/beta-feedback.js`.
+  - The draft is kept in `lumenFeedbackDraftV1`, and the per-tab session id in `sessionStorage`.
+  - Reporting never touches the board: the modal pauses the attempt like any menu.
+
 ## Prepared operator access and portability (#316)
 
 `20261022184145_lumen_account_rights_export.sql` adds only a private SECURITY
@@ -1589,6 +1605,11 @@ public invoker RPCs call private definers with empty search paths and auth check
 
 Legacy intents use disjoint `lumenLegacyVictoryOutboxV2:` and
 `lumenLegacyVictoryRetryV1:` keys in the existing IndexedDB/localStorage adapter.
+#1010: `lumenLegacyAcknowledgedV1` (`src/persistence/legacy-ack-memo.js`, 30 runs
+per account) remembers server receipts only. On a cold start, before the cloud
+profile is ready, the restored already-won board of an acknowledged run is shown
+with its receipt outcome instead of being captured, replayed and reloaded twice.
+It never grants, acknowledges an intent or replaces the server receipt.
 Canonical clients cannot replay/acknowledge them. Exact same-account receipt and
 current completion, requested badges and attempt counter precede acknowledgement.
 Duplicates retain the initial outcome and return current state. Startup replays

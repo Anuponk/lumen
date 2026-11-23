@@ -1762,6 +1762,34 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 .my-space #mobileAuthAction.primary{background:linear-gradient(180deg,#9be8f4,#4fb9d3);color:#05202b;border-color:transparent}
 .help-more>summary{font:inherit;font-size:15px;font-weight:800}
 
+/* #960 · Report form: compact, three kinds, kept draft, explicit confirmation. */
+.beta-form{display:flex;flex-direction:column;gap:10px}
+.beta-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.beta-head h2{margin:0;font-size:18px;color:#eafaff}
+.beta-close{width:40px;height:40px;padding:0;border-radius:50%;font-size:22px;line-height:1}
+.beta-kinds{display:flex;gap:6px;margin:0;padding:0;border:0}
+.beta-kinds label{flex:1 1 0;display:flex}
+.beta-kinds input{position:absolute;opacity:0;pointer-events:none}
+.beta-kinds span{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;padding:6px 4px;border:1px solid #28415b;border-radius:12px;background:#101d2e;color:#cfe0ee;font-weight:800;font-size:13px;text-align:center;cursor:pointer}
+.beta-kinds input:checked+span{background:#68e7ff;color:#05202b;border-color:#68e7ff}
+.beta-kinds input:focus-visible+span{outline:3px solid #68e7ff;outline-offset:2px}
+.beta-form textarea{width:100%;box-sizing:border-box;min-height:96px;padding:10px 12px;border-radius:12px;border:1px solid #28415b;background:#08131f;color:#eafaff;font:inherit;font-size:15px;resize:vertical}
+.beta-context{font-size:12.5px;color:#9fb3c8}
+.beta-context summary{min-height:36px;display:flex;align-items:center;cursor:pointer;font-weight:700;color:#bcd2e3}
+.beta-context ul{margin:4px 0 6px;padding-left:18px}
+.beta-context p{margin:4px 0}
+.beta-status{min-height:1.2em;margin:0;font-size:13px;color:#9fb3c8}
+.beta-status[data-state="offline"],.beta-status[data-state="failed"],.beta-status[data-state="rateLimited"],.beta-status[data-state="messageRequired"]{color:#ffd28a}
+.beta-actions{display:flex;justify-content:flex-end}
+.beta-actions .primary{min-width:140px;min-height:44px}
+.beta-done{text-align:center}
+.beta-done[hidden],.beta-form[hidden]{display:none}
+.beta-done-icon{font-size:34px;color:#5fd39a}
+.help-report{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;min-height:44px}
+.report-problem{margin-left:4px}
+.admin-feedback select{margin:4px 0;font:inherit}
+.admin-feedback select.admin-error{outline:2px solid #ff8a7a}
+.beta-modal .primary{background:linear-gradient(180deg,#9be8f4,#4fb9d3);color:#05202b;border-color:transparent;font-weight:800}
 /* #962: one-tap diagnostic transmission status. */
 .support-quick-status{margin:4px 12px 8px;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
 
@@ -1779,3 +1807,15 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 /* Pause and Quitter keep their row; their hit area reaches 44 px. */
 .attempt-controls button{position:relative}
 .attempt-controls button::after{content:"";position:absolute;left:-4px;right:-4px;top:50%;height:44px;transform:translateY(-50%)}
+/* #1003: compact Défi du jour access in the existing header row (no new row,
+   no grid space). Text collapses to the trophy on narrow screens. */
+.daily-chip{display:inline-flex;align-items:center;gap:5px;min-height:44px;min-width:44px;margin:0 6px;padding:0 12px;border-radius:22px;border:1px solid #6b5a22;background:linear-gradient(180deg,#2a2412,#17140b);color:#f3d77a;font:inherit;font-size:13px;font-weight:800;line-height:1;white-space:nowrap;cursor:pointer;flex:0 1 auto;position:relative}
+.daily-chip[hidden]{display:none!important}
+.daily-chip-icon{font-size:16px}
+.daily-chip-state:empty{display:none}
+.daily-chip-state{color:#9be8a8}
+.daily-chip[data-state="done"]{border-color:#2f4a36;background:#121c16;color:#b9cee1}
+.daily-chip:hover,.daily-chip:focus-visible{border-color:#f3d77a;outline:none;box-shadow:0 0 0 2px rgba(243,215,122,.35)}
+@media (max-width:430px){.daily-chip{padding:0;width:44px;justify-content:center;margin:0 4px;flex:0 0 44px}.daily-chip-text,.daily-chip-state{display:none}.daily-chip[data-state="done"]::after{content:"✓";position:absolute;transform:translate(11px,-11px);font-size:11px;color:#9be8a8}}
+@media (prefers-reduced-motion:no-preference){.daily-chip[data-state="open"] .daily-chip-icon{animation:dailyChipGlow 2.4s ease-in-out 2}}
+@keyframes dailyChipGlow{50%{filter:drop-shadow(0 0 5px rgba(243,215,122,.8))}}

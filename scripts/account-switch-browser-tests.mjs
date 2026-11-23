@@ -107,12 +107,13 @@ window.__bootHold = new Promise(resolve => {
   assert.equal(await evaluate('window.__bootHold',true),true,'A stored session without a local profile gets the neutral screen at startup');
   assert.deepEqual(await evaluate('window.__coldLocale'), ['es', 'Cargando tu cielo\u2026', 'Recuperando tu progreso.', 'Cerrar sesi\u00f3n'], '#971: the first visible hold is in the saved language, before the game loads');
   await until("!!window.lumenDiagnostics&&document.getElementById('accountSwitchHold').hidden", 'A hydrated in Spanish');
-  const feedback = "[document.getElementById('feedbackTitle').textContent,document.getElementById('feedbackChoice').textContent,document.getElementById('feedbackCancel').textContent,document.getElementById('feedbackSend').textContent]";
-  await evaluate("document.getElementById('betaFeedbackBtn').click(); document.querySelector('#feedbackModal [data-kind=rule] span').click()");
-  assert.deepEqual(await evaluate(feedback),['Comentarios de la beta','Tipo seleccionado: Regla / pista','Cancelar','Enviar']);
+  // #960 report form: title, the checked kind label, the close button's accessible name and Send.
+  const feedback = "[document.getElementById('feedbackTitle').textContent,document.querySelector('input[name=feedbackKind]:checked+span').textContent,document.getElementById('feedbackCancel').getAttribute('aria-label'),document.getElementById('feedbackSend').textContent]";
+  await evaluate("document.getElementById('betaFeedbackBtn').click(); document.querySelector('input[name=feedbackKind][value=question]').click()");
+  assert.deepEqual(await evaluate(feedback),['Informar de un problema','❓ Pregunta','Cerrar','Enviar']);
   await evaluate("{const select=document.getElementById('gameLocaleMode'); select.value='fr'; select.dispatchEvent(new Event('change'));}");
   await until("document.documentElement.lang==='fr'&&localStorage.getItem('lumen.locale')==='fr'", 'language switches live and is persisted');
-  assert.deepEqual(await evaluate(feedback),['Retour b\u00eata','Type s\u00e9lectionn\u00e9 : R\u00e8gle / indice','Annuler','Envoyer']);
+  assert.deepEqual(await evaluate(feedback),['Signaler un probl\u00e8me','❓ Question','Fermer','Envoyer']);
   await evaluate("document.getElementById('feedbackCancel').click(); history.replaceState(null,'','/')");
   await acknowledgeLearningMilestones(evaluate);
   timeline.push({ step: 'A', local: await evaluate(local), server: await evaluate(server) });
@@ -220,7 +221,7 @@ Object.defineProperty(navigator,'onLine',{get:()=>!window.__offline});
   await until("localStorage.getItem('lumenCloudOwnerId')==='a'&&document.getElementById('accountSwitchHold').hidden",'A restores automatically after reconnect',250);
   assert.equal(await evaluate("document.documentElement.lang"),'en','Reconnecting preserves the saved language');
   await evaluate("document.getElementById('betaFeedbackBtn').click()");
-  assert.deepEqual(await evaluate(feedback),['Beta feedback','Selected type: Bug','Cancel','Send']);
+  assert.deepEqual(await evaluate(feedback),['Report a problem','🐞 Bug','Close','Send']);
   await evaluate("document.getElementById('feedbackCancel').click()");
   await evaluate("{const select=document.getElementById('gameLocaleMode'); select.value='fr'; select.dispatchEvent(new Event('change'));}");
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:offline.identifier});

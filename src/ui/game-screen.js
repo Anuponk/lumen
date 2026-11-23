@@ -83,6 +83,7 @@ import {replayCanonicalVictoryOutbox} from "../persistence/canonical-outbox.js";
 import {configureCommandSession,inspectCommandOutboxes,exportCommandStorage,createDurableCanonicalVictoryOutbox,commitCanonicalVictoryViaLedger as commitCanonicalVictory,commitLegacyVictoryCommand,submitWalletCommand} from '../persistence/coordinated-command-adapters.js';
 import {createCloudRetryScheduler} from "../persistence/cloud-retry-scheduler.js";
 import {legacyCommandsSupported,loadCommittedLegacyAttempt,replayLegacyVictoryOutbox} from "../persistence/legacy-command.js";
+import {rememberLegacyAck,findLegacyAck} from "../persistence/legacy-ack-memo.js";
 import {pendingNavigationProfile} from "../persistence/pending-navigation.js";
 import {createPlayReviewNavigation,hasPlayReviewAttempt,playReviewQuestDecision,switchPlayReviewAttempt} from "../persistence/play-review-navigation.js";
 import {rememberVerifiedOfflineOwner,clearVerifiedOfflineOwner,isVerifiedOfflineOwner,preparedOfflineUser} from '../persistence/offline-verified-owner.js';
@@ -119,6 +120,7 @@ import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,create
 import {rememberPlayAppLaunch,isPlayDistributedApp,stripeCheckoutAvailable,startStripeCheckout,stripeSessionStatus,restoreStripePurchases,consumeCheckoutReturn,waitForStripeConfirmation,stripeMessage} from '../persistence/stripe-checkout.js';
 import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../campaign/store-catalogue.js';
 import {setupToggletips,setupExclusiveSections} from "./toggletip.js";
+import {createBetaFeedback,buildFeedbackContext,feedbackSessionId} from "./beta-feedback.js";
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
@@ -356,6 +358,7 @@ function renderSyncStatus(view,{announce=true}={}){
  if(view.status==='critical'||view.status==='persistent'){
   const retry=document.createElement('button');retry.textContent=t('app.retry');retry.onclick=()=>retryAccountCloudSync();status.append(' ',retry);
   const exportButton=document.createElement('button');exportButton.textContent=t('sync.exportSave');exportButton.onclick=()=>exportLumenRecoveryBundle().catch(()=>{});status.append(' ',exportButton);
+  status.append(' ',reportProblemButton('sync_'+view.status,'sync'));
  }
  if(announce&&view.alert&&view.status==='persistent')queueMicrotask(()=>syncPresentation.announced());
 }
@@ -818,6 +821,7 @@ async function recoverQueuedLegacyReceipt(ownerId,client,entry,sessionValid){
  if(!sessionValid()||!committed)return null;
  await legacyVictoryOutbox.archiveRecreatedCapture(ownerId,entry,committed,{sessionValid});
  if(!sessionValid())return null;
+ rememberLegacyAck(localStorage,ownerId,committed.receipt);
  recordCloudDiagnostic('legacy_queued_receipt_recovered',{count:1});
  return committed;
 }
@@ -1036,7 +1040,7 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   hydrationStage="legacy_replay";
   try{await legacyVictoryOutbox.resume(accountId,{kind:'auth'})}catch{recordCloudDiagnostic('legacy_outbox_resume_pending',{reason:'storage'})}
   if(!sessionValid())return;
-  const legacyRecovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,accountId,(questId,facts,id,options)=>commitLegacyVictoryCommand(hydrationClient,questId,facts,id,options),{sessionValid,recoverCommitted:entry=>recoverQueuedLegacyReceipt(accountId,hydrationClient,entry,sessionValid)});
+  const legacyRecovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,accountId,(questId,facts,id,options)=>commitLegacyVictoryCommand(hydrationClient,questId,facts,id,options).then(c=>{rememberLegacyAck(localStorage,accountId,c?.receipt);return c}),{sessionValid,recoverCommitted:entry=>recoverQueuedLegacyReceipt(accountId,hydrationClient,entry,sessionValid)});
   if(!sessionValid())return;
   if(legacyRecovered.length)recordCloudDiagnostic('legacy_outbox_replayed',{count:legacyRecovered.length});
   if(recovered.length||legacyRecovered.length){
@@ -1832,8 +1836,7 @@ function setupGameLocaleSetting(){
   if(!localePreference.setMode(select.value))return;
   translate=localePreference.translator().t;
   translateGameCopy();
-  renderBetaFeedbackChoice();
-  renderAuthUserCopy();renderMobileAuthCopy();
+  renderAuthUserCopy();renderMobileAuthCopy();betaFeedback?.refresh();
   LEARNING_INTRO=learningIntro(t);
   updateHintButton();updateVerifyButton();
   if(!document.getElementById("hintCard")?.hidden)renderCurrentHint?.();
@@ -2396,20 +2399,51 @@ const dailyLocale=()=>localePreference?.locale??'fr';
 const dailyDate=day=>formatDailyDate(day,dailyLocale());
 const dailyDuration=ms=>formatRemaining(ms,t);
 function dailyUrl(training=false){const u=new URL(location.origin+location.pathname);u.searchParams.set('daily','1');if(training)u.searchParams.set('training','1');return u.toString()}
+// #1003: one lumen_daily_today read per account and day (Free-first). The memo
+// lasts until the server's closing time, or 6 h while the challenge is closed.
+let dailyTodayMemo=null;
+function discoverDailyToday(owner){
+ const now=Date.now();
+ // An open challenge is the same for every account; a closed answer is re-read
+ // after sign-in because a preview capability may open it for that account.
+ if(dailyTodayMemo&&now<dailyTodayMemo.until&&(dailyTodayMemo.owner===owner||dailyTodayMemo.open||!dailyTodayMemo.settled))return dailyTodayMemo.promise;
+ const promise=dailyClient.discover();
+ const memo={owner,promise,until:now+6*3600e3};dailyTodayMemo=memo;
+ promise.then(today=>{const left=Date.parse(today?.closes_at)-Date.parse(today?.server_now);memo.settled=true;if(today?.enabled&&left>0){memo.until=now+left;memo.open=true}},()=>{if(dailyTodayMemo===memo)dailyTodayMemo=null});
+ return promise;
+}
+// Local-only player state for the header chip: no extra RPC. The official run
+// itself stays server-owned; this only avoids inviting a finished player again.
+const DAILY_DONE_KEY='lumenDailyDoneV1';
+function dailyChipState(day,owner){
+ try{const done=JSON.parse(localStorage.getItem(DAILY_DONE_KEY)||'null');if(done?.day===day&&done?.owner===(owner||'guest'))return 'done'}catch{}
+ const pending=readPendingDaily();if(pending?.day===day)return 'done';
+ return 'open';
+}
+function rememberDailyDone(day){try{if(day)localStorage.setItem(DAILY_DONE_KEY,JSON.stringify({day,owner:lumenUser?.id||'guest'}))}catch{}}
+function renderDailyChip(today,owner){
+ const chip=document.getElementById('dailyChip');if(!chip)return;
+ const enabled=!!today?.enabled&&!socialChallenge;chip.hidden=!enabled;if(!enabled)return;
+ const state=dailyChipState(today.day,owner),label=document.getElementById('dailyChipState');
+ chip.dataset.state=state;
+ if(label)label.textContent=state==='done'?'✓':'';
+ const label2=t(state==='done'?'daily.chipDoneLabel':'daily.chipOpenLabel',{date:dailyDate(today.day)});chip.setAttribute('aria-label',label2);chip.title=label2;
+ chip.onclick=()=>{trackDaily('chip_opened');location.href=dailyUrl()};
+}
 async function refreshDailyEntry(){
- const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek');
+ const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek'),chip=document.getElementById('dailyChip');
  const request=++dailyEntryRequest,owner=lumenUser?.id;
- if(!entry||socialChallenge)return;
+ if(!entry||socialChallenge){if(chip)chip.hidden=true;return}
  const current=()=>request===dailyEntryRequest&&owner===lumenUser?.id&&!socialChallenge;
- const previewAllowed=!!owner&&(hasInternalCapability('daily_preview')||hasInternalCapability('analytics_cockpit'));
  entry.onclick=()=>{location.href=dailyUrl()};
  try{
-  const today=await dailyClient.discover(previewAllowed);
+  const today=await discoverDailyToday(owner);
   if(!current())return;
   entry.hidden=!today?.enabled;
   if(today?.enabled)document.getElementById('dailyEntryState').textContent=t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
   if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}
- }catch{if(current()){entry.hidden=true;if(week)week.hidden=true}}
+  renderDailyChip(today,owner);
+ }catch{if(current()){entry.hidden=true;if(week)week.hidden=true;if(chip)chip.hidden=true}}
 }
 function renderDailyBanner(){
  const banner=document.getElementById('dailyBanner');if(!banner||!socialChallenge?.daily)return;
@@ -2423,6 +2457,7 @@ function showDailyBoardTab(board,scope,track=true){
  document.getElementById('dailyBoardPanel').innerHTML=renderDailyBoard(board?.[scope],{scope,formatDuration,t});
 }
 function showDailyResult({run=null,board=null,training=false,pending=false,official=null}={}){
+ if(!training&&(pending||['completed','abandoned'].includes(run?.status)))rememberDailyDone(run?.day||socialChallenge?.day);
  const modal=document.getElementById('dailyResultModal'),note=document.getElementById('dailyResultNote');
  const status=run?.status,score=run?.score??official;
  document.getElementById('dailyResultTitle').textContent=t(training?'daily.trainingComplete':status==='abandoned'?'daily.abandoned':'daily.complete');
@@ -3434,15 +3469,27 @@ function displayedCellState(r,c){
 }
 
 const LUMEN_APP_VERSION=appVersion();
-let feedbackKind="bug";
-function renderBetaFeedbackChoice(){
- document.getElementById('feedbackChoice').textContent=t('betaFeedback.choice',{kind:t('betaFeedback.'+feedbackKind)});
+let betaFeedback=null;
+function openBetaFeedback(options={}){betaFeedback?.open(options)}
+// #960: a « Report this problem » action for blocking errors, prefilled with the error code.
+function reportProblemButton(errorCode,surface='error'){const b=document.createElement('button');b.type='button';b.className='report-problem';b.textContent=t('feedback.reportThis');b.onclick=()=>openBetaFeedback({kind:'bug',surface,errorCode,origin:b});return b}
+// #960: admin report rows (v2 adds status and the allowlisted context) and triage.
+const FEEDBACK_KIND_KEYS={bug:'admin.feedback.kind.bug',question:'admin.feedback.kind.question',idea:'admin.feedback.kind.idea',rule:'admin.feedback.kind.rule',difficulty:'admin.feedback.kind.difficulty',other:'admin.feedback.kind.other'};
+const FEEDBACK_STATUS_KEYS={new:'admin.feedback.status.new',reviewed:'admin.feedback.status.reviewed',fixed:'admin.feedback.status.fixed',closed:'admin.feedback.status.closed'};
+function adminFeedbackRow(x){
+ const c=x.context&&typeof x.context==='object'?x.context:{};
+ const facts=[c.platform,c.browser,c.screen,c.locale,c.quest_ordinal?'Q'+c.quest_ordinal:(x.puzzle_id?'Q'+x.puzzle_id:null),c.surface,c.error_code,c.offline?t('admin.feedback.offline'):null,c.session_id].filter(Boolean).map(adminEsc).join(' · ');
+ const status=x.status&&FEEDBACK_STATUS_KEYS[x.status]?'<select data-feedback-status="'+adminEsc(x.id)+'" aria-label="'+adminEsc(t('admin.feedback.statusLabel',{id:String(x.id)}))+'">'+Object.entries(FEEDBACK_STATUS_KEYS).map(([v,k])=>'<option value="'+v+'"'+(v===x.status?' selected':'')+'>'+adminEsc(t(k))+'</option>').join('')+'</select>':'';
+ return '<div class="admin-feedback"><strong>'+(x.id?'n° '+adminEsc(x.id)+' · ':'')+adminEsc(FEEDBACK_KIND_KEYS[x.kind]?t(FEEDBACK_KIND_KEYS[x.kind]):x.kind)+' · '+adminEsc(x.player_label)+'</strong>'+status+'<p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+(facts?' · '+facts:'')+'</small></div>';
 }
-function openBetaFeedback(){
- const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");if(!modal)return;
- renderBetaFeedbackChoice();
- modal.hidden=false;
- if(status){delete status.dataset.gameText;status.textContent=""}
+function bindAdminFeedbackTriage(root){
+ if(!root||root.dataset.triageBound)return;root.dataset.triageBound='1';
+ root.addEventListener('change',async e=>{
+  const select=e.target.closest('select[data-feedback-status]');if(!select||!lumenSupabase)return;
+  select.disabled=true;
+  const {error}=await lumenSupabase.rpc('lumen_admin_feedback_set_status',{p_id:Number(select.dataset.feedbackStatus),p_status:select.value});
+  select.disabled=false;select.classList.toggle('admin-error',!!error);if(error)select.title=t('admin.feedback.statusError');
+ });
 }
 function adminEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function adminNumber(v){return new Intl.NumberFormat("fr-FR").format(Number(v)||0)}
@@ -3636,7 +3683,7 @@ async function loadAdminCockpit(){
  const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth,questMetrics,engagement,versionHealth,criticalIncidents,healthSnapshot]=await Promise.all([
    lumenSupabase.rpc("lumen_admin_cockpit",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_accounts",{p_limit:250}),
-   lumenSupabase.rpc("lumen_admin_feedback",{p_days:days}),
+   lumenSupabase.rpc("lumen_admin_feedback_v2",{p_days:days}).then(r=>r.error?lumenSupabase.rpc("lumen_admin_feedback",{p_days:days}):r),
    lumenSupabase.rpc("lumen_admin_recent_players",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_sync_health",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days}),
@@ -3690,7 +3737,8 @@ async function loadAdminCockpit(){
  }
  const accountRows=document.getElementById("adminAccounts");
  if(accountRows)accountRows.innerHTML=accounts.error?'<tr><td colspan="6">Comptes indisponibles.</td></tr>':(accounts.data||[]).map(x=>'<tr><td>'+adminEsc(x.email||"—")+'</td><td>'+adminEsc(x.nickname||"—")+'</td><td>'+new Date(x.created_at).toLocaleString("fr-FR")+'</td><td>'+(x.last_sign_in_at?new Date(x.last_sign_in_at).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.last_activity?new Date(x.last_activity).toLocaleString("fr-FR"):"—")+'</td><td>'+(questMetrics.data?.current_players?.['u:'+x.user_id]||"—")+'</td></tr>').join("")||'<tr><td colspan="6">Aucun compte.</td></tr>';
- document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":realFeedbacks.map(x=>'<div class="admin-feedback"><strong>'+adminEsc(x.kind)+' · '+adminEsc(x.player_label)+(x.puzzle_id?" · Q"+x.puzzle_id:"")+'</strong><p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+'</small></div>').join("");
+ document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":realFeedbacks.map(adminFeedbackRow).join("");
+ bindAdminFeedbackTriage(document.getElementById("adminFeedbacks"));
  renderAnalyticsDashboard({overview:document.getElementById('analyticsOverview'),journeys:document.getElementById('analyticsJourneys'),technical:document.getElementById('analyticsTechnical')},
   buildAnalyticsDashboard({product:cockpit.error?null:cockpit.data,quests:questMetrics.error?null:questMetrics.data,health,players,observations:observations.error?null:observations.data,catalogue:adminCanonicalCatalogueTree(),days}),
   {authorized,scope:requestUser,onAction:action=>{
@@ -3739,20 +3787,28 @@ function setupAdminCockpit(){
 setupAdminCockpit();
 
 function setupBetaFeedback(){
- const modal=document.getElementById("feedbackModal"),status=document.getElementById("feedbackStatus");
- document.getElementById("betaFeedbackBtn").onclick=openBetaFeedback;
- document.getElementById("feedbackCancel").onclick=()=>modal.hidden=true;
- modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
- document.querySelector(".beta-kinds").addEventListener("click",e=>{const b=e.target.closest("button[data-kind]");if(!b)return;e.preventDefault();feedbackKind=b.dataset.kind;document.querySelectorAll(".beta-kinds button").forEach(x=>x.classList.toggle("selected",x===b));renderBetaFeedbackChoice()});
- document.querySelector('.beta-kinds button[data-kind="bug"]').classList.add("selected");
- const showStatus=key=>{status.dataset.gameText=key;status.textContent=t(key)};
- document.getElementById("feedbackSend").onclick=async()=>{
-  const btn=document.getElementById("feedbackSend");btn.disabled=true;showStatus("betaFeedback.sending");
-  if(!lumenSupabase){showStatus("betaFeedback.unavailable");btn.disabled=false;return}
-  const {error}=await lumenSupabase.rpc("lumen_send_feedback",{p_anonymous_id:lumenAnonymousId,p_kind:feedbackKind,p_message:document.getElementById("feedbackText").value,p_puzzle_id:activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,p_board_state:{stable_quest_id:activeQuest().id,quest_ordinal:activeQuestOrdinal()},p_elapsed_seconds:activeGameSeconds(),p_hints_used:usedHintThisGame?1:0,p_app_version:LUMEN_APP_VERSION,p_user_agent:navigator.userAgent});
-  if(error){showStatus("betaFeedback.failed");console.warn("LUMEN feedback",error);btn.disabled=false;return}
-  trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,{...analyticsContext(),kind:feedbackKind});showStatus("betaFeedback.sent");document.getElementById("feedbackText").value="";setTimeout(()=>{modal.hidden=true;btn.disabled=false},800);
- };
+ // #960: compact report form (bug, question, suggestion) with a receipt, a kept
+ // draft and idempotent retries. The board is untouched: the modal pauses the clock.
+ const feedbackPlatform=()=>{const p=diagnosticContext().platform;return p==='android-web'&&document.referrer.startsWith('android-app://')?'android-twa':p};
+ betaFeedback=createBetaFeedback({document,storage:localStorage,t,
+  context:({surface,errorCode}={})=>{
+   const q=activeQuest(),pack=q?CONTENT_PACKS.find(item=>item.id===q.packId):null;
+   return buildFeedbackContext({appVersion:LUMEN_APP_VERSION,locale:document.documentElement.lang,platform:feedbackPlatform(),
+    userAgent:navigator.userAgent,screen:innerWidth+'x'+innerHeight,standalone:lumenIsStandalone(),online:navigator.onLine,
+    quest:q?{id:q.id,ordinal:q.ordinal,puzzleId:q.legacyIndex===null?undefined:q.legacyIndex+1,inProgress:!!state&&!celebrated}:null,
+    adventure:pack?adventureDisplayName(pack,t):null,surface,errorCode,sessionId:feedbackSessionId(sessionStorage)});
+  },
+  send:async({kind,message,context,clientRef})=>{
+   if(!lumenSupabase)throw Error('offline');
+   const {data,error}=await lumenSupabase.rpc("lumen_send_feedback_v2",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef});
+   if(error){console.warn("LUMEN feedback",error);throw Error(error.message||'failed')}
+   return data;
+  },
+  onSent:()=>trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,analyticsContext())
+ });
+ document.getElementById("betaFeedbackBtn").onclick=e=>openBetaFeedback({surface:'menu',origin:document.getElementById('mobileAccount')});
+ const fromHelp=document.getElementById("helpReportProblem");
+ if(fromHelp)fromHelp.onclick=()=>{document.getElementById("rulesModal").hidden=true;openBetaFeedback({kind:'bug',surface:'help',origin:document.getElementById('mobileAccount')})};
  document.querySelectorAll(".difficulty-choices button").forEach(b=>b.onclick=()=>{
   // Rating is the final action on the completion card: advance immediately.
   const rating=b.dataset.rating,puzzleId=levelIndex+1;
@@ -3910,7 +3966,7 @@ async function retryPendingLegacyOutboxOnReconnect(){
  canonicalOutboxRetryInFlight=true;
  try{
   const recovered=await replayLegacyVictoryOutbox(legacyVictoryOutbox,ownerId,
-   (id,facts,op,options)=>commitLegacyVictoryCommand(client,id,facts,op,options),
+   (id,facts,op,options)=>commitLegacyVictoryCommand(client,id,facts,op,options).then(c=>{rememberLegacyAck(localStorage,ownerId,c?.receipt);return c}),
    {sessionValid:sameSession,recoverCommitted:entry=>recoverQueuedLegacyReceipt(ownerId,client,entry,sameSession),onIssue:issue=>recordCloudDiagnostic('legacy_outbox_recovery_pending',{reason:issue.kind})});
   if(!sameSession()||!recovered.length)return false;
   if(cloudProfileReady){location.reload();return true}
@@ -4193,6 +4249,15 @@ async function captureLegacyCommandVictory(){
   const prior=(await legacyVictoryOutbox.pending(ownerId)).find(e=>e.operationId===operationId);
   if(!sameContext())return {handled:true};
   const facts=prior?.reward.facts||{seconds:activeGameSeconds(),assistanceUsed:!!attempt.assistanceUsed,mistakeCommitted:!!attempt.mistakeCommitted,qualifying:!!attempt.qualifying,hintUsed:hintUsedInAttempt(),challengeFailed:!!questFailed,qualifiedDay:localCalendarDay(),qualifiedAt:new Date(attempt.startedAt||Date.now()).toISOString(),...capturedTiming()};
+  // #1010: a cold start re-celebrates the restored, already-won board before the
+  // cloud profile is ready. A run the server already acknowledged is shown as
+  // saved instead of being captured, replayed and reloaded again.
+  const acknowledged=!prior&&findLegacyAck(localStorage,ownerId,operationId,quest.id);
+  if(acknowledged){
+   recordCloudDiagnostic('legacy_victory_already_acknowledged',{count:1});
+   pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
+   return {handled:true,saved:true,outcome:acknowledged.outcome,facts:acknowledged.facts,recovered:true};
+  }
   if(!cloudProfileReady||(typeof navigator!=="undefined"&&navigator.onLine===false)){
    // A held replay needs only local durability. A capability read can hang
    // offline and must never delay the sole immutable capture of this run.
@@ -4214,6 +4279,7 @@ async function captureLegacyCommandVictory(){
    catch(error){capabilityFailure=error}
    if(!sameContext())return {handled:true};
    if(restored){
+    rememberLegacyAck(localStorage,ownerId,restored.receipt);
     if(!sameCloudProfile(before,lumenProgress)||!sameCloudProfile(before,restored.profile))throw Error('Restored victory requires reconciliation');
     pendingVictoryView=null;syncPresentation.acknowledged();syncPresentation.celebration(true);
     return {handled:true,saved:true,outcome:restored.receipt.outcome,facts:restored.receipt.request.facts,recovered:true};
@@ -4239,6 +4305,7 @@ async function captureLegacyCommandVictory(){
   legacyCommandInFlight=true;
   victoryStage='command';
   const committed=await commitLegacyVictoryCommand(client,quest.id,intent.reward.facts,intent.operationId,{userId:ownerId,sessionValid:sameContext});
+  rememberLegacyAck(localStorage,ownerId,committed.receipt);
   if(!sameContext())return {handled:true};
   // An asynchronous hint/spend/preference edit must never be lost by installing
   // an older in-memory copy. Keep both the receipt and local evidence for review.
@@ -4273,6 +4340,8 @@ async function captureLegacyCommandVictory(){
     else{retry.remove();await celebrateSuccess()}
    }finally{retry.disabled=false}
   };msg.append(' ',retry);
+  // #960: the player can report a save that could not be confirmed.
+  if(typeof reportProblemButton==='function')msg.append(' ',reportProblemButton(intent?'victory_pending_sync':'victory_local_unconfirmed','victory'));
   recordCloudDiagnostic('legacy_victory_pending',{durable:!!intent,stage:victoryStage,errorCode:classifyCanonicalRecoveryError(error).code});
    if(intent){presentPendingVictory(quest.id,intent.operationId);syncPresentation.failed({durable:true})}else syncPresentation.failed({durable:false});
   if(intent)legacyVictoryRetry=async()=>{if(!sameContext()){legacyVictoryRetry=null;return}const state=await legacyVictoryOutbox.inspect(ownerId);if(state.retryable.some(e=>e.operationId===intent.operationId))await celebrateSuccess()};

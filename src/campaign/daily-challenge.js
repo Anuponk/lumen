@@ -95,7 +95,9 @@ export function createDailyClient(supabase){
  const today=()=>rpc('lumen_daily_today');
  return {
   today,
-  async discover(previewAllowed){return previewAllowed?today():null},
+  // #1003: the server flag (daily_challenge) or the preview capability decides;
+  // callers memoise the answer for the day (see refreshDailyEntry).
+  discover:()=>today(),
   begin:operationId=>rpc('lumen_daily_begin',{p_operation_id:operationId}),
   finish:({day,operationId,status,seconds,hint=0,verify=0,guided=0})=>rpc('lumen_daily_finish',{p_day:day,p_operation_id:operationId,p_status:status,p_seconds:seconds,p_hint:hint,p_verify:verify,p_guided:guided}),
   board:day=>rpc('lumen_daily_board',{p_day:day??null}),

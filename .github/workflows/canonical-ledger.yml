@@ -516,6 +516,19 @@ jobs:
             -f supabase/migrations/20261122130000_private_circles_929.sql \
             -c "alter default privileges in schema public revoke execute on functions from anon,authenticated" \
             -f scripts/fixtures/private-circles-929.sql
+      - name: Verify beta reports v2, validation, idempotency, rate limit and admin access (#960)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          # Same hosted-default grants as #929, so explicit revokes are exercised.
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -c "alter default privileges in schema public grant execute on functions to anon,authenticated" \
+            -f scripts/fixtures/beta-feedback-960-bootstrap.sql \
+            -f supabase/migrations/20261122240000_beta_feedback_v2_960.sql \
+            -f supabase/migrations/20261122240000_beta_feedback_v2_960.sql \
+            -c "alter default privileges in schema public revoke execute on functions from anon,authenticated" \
+            -f scripts/fixtures/beta-feedback-960.sql
       - name: Verify Analytics acquisition & engagement aggregates and their access (#708)
         env:
           PGPASSWORD: isolated-test-only

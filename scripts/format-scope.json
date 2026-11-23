@@ -26,5 +26,8 @@
   "src/ui/support-quick-send.js",
   "scripts/es-journeys-browser-tests.mjs",
   "scripts/my-space-browser-tests.mjs",
-  "src/ui/toggletip.js"
+  "src/ui/toggletip.js",
+  "src/ui/beta-feedback.js",
+  "scripts/beta-feedback-tests.mjs",
+  "scripts/beta-feedback-browser-tests.mjs"
 ]
