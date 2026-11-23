@@ -259,7 +259,7 @@ vérifier l’absence d’événement et le jeu toujours disponible.
 
 Défi du jour (#882, Lot 3 PR C) : aucun nouvel événement. Les vues du défi
 réutilisent `app_opened` avec `surface=daily` et `daily_action`
-(`opened`, `board_viewed`, `week_viewed`), sans `acquisition_channel`.
+(`opened`, `board_viewed`, `week_viewed`, et `chip_opened` pour la pastille d'en-tête #1003), sans `acquisition_channel`.
 Le rapport d'acquisition, qui ne compte que les ouvertures portant un canal,
 les exclut donc. Les tentatives quotidiennes gardent `attempt_mode=challenge`
 et ajoutent `daily_day` et `daily_training`. Détail :
