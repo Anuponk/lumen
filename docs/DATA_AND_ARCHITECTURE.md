@@ -1169,6 +1169,17 @@ missing endpoint or unexpected answer writes nothing and falls back to the full 
 so the outcome is always the full comparison's. A matched digest that the guarded
 CAS refuses is a conflict, never a second write.
 
+Profile read-back by digest (#1000 lot 1, migration
+`20261123070000_profile_digest_read_1000.sql`): `lumen_profile_digest` returns only
+the SHA-256 of the stored profile text (account guard, read-only). The client's
+`confirmVerifiedProfile` returns a copy of a profile it already holds when the
+digests match: the device cache at hydration, its own write after a failed save,
+initialization and reconciliation read-backs. Any mismatch, malformed answer, error,
+missing endpoint, absent profile or missing account guard runs the usual
+`lumen_restore_profile` read, so no unverified profile is ever installed. This
+replaces most ~43 KB full reads by a ~100-byte answer (Supabase Free egress).
+Command read-backs still download the full profile (lot 2).
+
 Cloud profile limits use 1048576 UTF-8 bytes (1 MiB since 15 November 2026,
 migration `20261115120000_profile_size_limit_1mib.sql`; previously 524288) with
 JSONB structural-space and scientific-number expansion reserve, rather than

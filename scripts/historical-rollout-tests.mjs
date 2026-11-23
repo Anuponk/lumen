@@ -85,7 +85,7 @@ test('old server fallback requires exact missing-capability evidence before any 
  for(const code of ['PGRST202','42501','503','unknown']){
   const s=storage(),calls=[];const client={rpc:async name=>{calls.push(name);if(name==='lumen_guest_claim_version')return {error:{code},status:code==='PGRST202'?404:503};return {data:guest}}};
   const work=initializeCloudProfile(client,guest,{userId:'a',guestSource:{storage:s,original:raw}});
-  if(code==='PGRST202'){assert.deepEqual(await work,guest);assert.deepEqual(calls,['lumen_guest_claim_version','lumen_initialize_profile','lumen_restore_profile'])}
+  if(code==='PGRST202'){assert.deepEqual(await work,guest);assert.deepEqual(calls,['lumen_guest_claim_version','lumen_initialize_profile','lumen_profile_digest','lumen_restore_profile'])}
   else{await assert.rejects(work);assert.deepEqual(calls,['lumen_guest_claim_version'])}
  }
  const s=storage(),calls=[];const client={rpc:async name=>{calls.push(name);return name==='lumen_guest_claim_version'?{data:1}:{error:{code:'503'}}}};
@@ -97,7 +97,7 @@ test('a nonactivated cohort uses explicit protocol zero before mutation, unknown
   const s=storage(),calls=[];
   const client={rpc:async name=>{calls.push(name);return {data:name==='lumen_guest_claim_version'?version:guest}}};
   const work=initializeCloudProfile(client,guest,{userId:'a',guestSource:{storage:s,original:raw}});
-  if(version===0){assert.deepEqual(await work,guest);assert.deepEqual(calls,['lumen_guest_claim_version','lumen_initialize_profile','lumen_restore_profile'])}
+  if(version===0){assert.deepEqual(await work,guest);assert.deepEqual(calls,['lumen_guest_claim_version','lumen_initialize_profile','lumen_profile_digest','lumen_restore_profile'])}
   else{await assert.rejects(work);assert.deepEqual(calls,['lumen_guest_claim_version'])}
  }
 });

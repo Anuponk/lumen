@@ -85,6 +85,28 @@ export async function loadVerifiedProfile(supabase,{userId}={}){
   return data==null?null:validateCloudProfile(data);
 }
 
+// #1000 lot 1: the server profile is usually one the client already holds
+// (its own write, its verified cache). Ask for its SHA-256 (~100 bytes) and
+// return the matching candidate; any doubt (no userId, no candidate, digest
+// unavailable, mismatch, unexpected answer) is the usual full verified read.
+// Equal digests mean identical jsonb text, a stricter test than sameCloudProfile.
+const profileDigestReadUnsupported=new WeakSet();
+export async function confirmVerifiedProfile(supabase,{userId,candidates=[]}={}){
+ const known=candidates.filter(c=>c&&typeof c==='object'&&!Array.isArray(c));
+ if(userId&&known.length&&!profileDigestReadUnsupported.has(supabase)){
+  let answer=null;
+  try{answer=await supabase.rpc('lumen_profile_digest',{p_expected_user_id:userId})}catch{}
+  if(answer?.error?.code==='PGRST202'&&answer.status===404)profileDigestReadUnsupported.add(supabase);
+  else if(!answer?.error&&answer?.data?.version===1&&typeof answer.data.sha256==='string'&&/^[0-9a-f]{64}$/.test(answer.data.sha256)){
+   for(const candidate of known){
+    let digest=null;try{digest=await jsonbDigest(candidate)}catch{}
+    if(digest===answer.data.sha256)return validateCloudProfile(structuredClone(candidate));
+   }
+  }
+ }
+ return loadVerifiedProfile(supabase,{userId});
+}
+
 export function restoreIntoEmptyGuestStorage(storage,remote){
   const incoming=validateCloudProfile(remote);
   const key="lumenProgressV1";
@@ -615,7 +637,7 @@ export async function initializeCloudProfile(supabase,localProfile,{userId,guest
   throw failure;
  }
  const saved=validateCloudProfile(data);
- const verified=await loadVerifiedProfile(supabase,{userId});
+ const verified=await confirmVerifiedProfile(supabase,{userId,candidates:[saved]});
  if(!sessionValid())throw Error('Initialisation suspendue : session modifiée');
  if(!sameCloudProfile(saved,verified))throw Error("Profil cloud initial non vérifié");
  return saved;
@@ -851,7 +873,7 @@ export async function reconcileDominantLocalProfile(supabase,storage,remote,{use
    if(error.code==='WALLET_COMMAND_REQUIRED')return {status:'blocked',reason:'wallet_command_required'};
   throw error;
  }
- const verified=await loadVerifiedProfile(supabase,{userId});
+ const verified=await confirmVerifiedProfile(supabase,{userId,candidates:[written]});
  if(!sameCloudProfile(verified,written))throw Error("Reconciliation cloud non verifiee");
  return {status:"reconciled",profile:verified};
 }
@@ -1024,7 +1046,7 @@ export async function reconcileCompatibleCloudProfiles(supabase,storage,remote,{
    if(error.code==='WALLET_COMMAND_REQUIRED')return {status:'blocked',reason:'wallet_command_required'};
   throw error;
  }
- const verified=await loadVerifiedProfile(supabase,{userId});
+ const verified=await confirmVerifiedProfile(supabase,{userId,candidates:[updated]});
  if(!sameCloudProfile(updated,verified))throw Error("Reconciliation cloud non verifiee");
  return {status:"reconciled",profile:verified,playerFavouredBalances:differingBalances};
 }
@@ -1063,7 +1085,7 @@ export async function reconcilePlayerAcquisitions(supabase,storage,remote,{userI
   }
   if(data?.policy!=='positive-acquisitions-v1'||data.userId!==userId)throw Error('Acquisition recovery proof invalid');
   const profile=validateCloudProfile(data.profile);
-  const verified=await loadVerifiedProfile(supabase,{userId});
+  const verified=await confirmVerifiedProfile(supabase,{userId,candidates:[profile]});
   if(!current())return {interrupted:true};
   if(!sameCloudProfile(profile,verified))throw Error('Acquisition recovery readback mismatch');
   // Both copies are durable, the server transaction is re-read, and the owner

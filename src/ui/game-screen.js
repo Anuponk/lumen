@@ -53,7 +53,7 @@ import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation,guestAcquisitionRecoveryEligible} from '../persistence/guest-account.js';
 import {storageReport,archiveRecoveryBackups,maintainRecoveryBackups,measureLocalStorage} from '../persistence/storage-maintenance.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {isNetworkFailure,preserveRecoverySnapshot,CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
+import {isNetworkFailure,preserveRecoverySnapshot,CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,confirmVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -666,7 +666,7 @@ async function flushCloudProfile(){
    recordCloudDiagnostic("flush_failed",{kind:"write",errorCode:String(e?.code||e?.status||"unknown").slice(0,48),profileReady:cloudProfileReady});
    preserveUnsyncedCloudProgress("save-failed");
    try{
-    const remote=await loadVerifiedProfile(savingCloudClient,{userId:savingUserId});
+    const remote=await confirmVerifiedProfile(savingCloudClient,{userId:savingUserId,candidates:[current,cloudProfileBaseline]});
     if(!sameSavingSession())return false;
     if(remote && sameCloudProfile(remote,current)){
      // A matching snapshot does not prove that the secondary progress mirror
@@ -910,7 +910,9 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   const currentOwner=localStorage.getItem(ownerKey);
   if(!currentOwner)preserveGuestBeforeHydration(localStorage,{accountId,currentOwner,sessionValid});
   hydrationStage="cloud_restore";
-  const existing=await loadVerifiedProfile(hydrationClient,{userId:accountId});
+  // #1000: this device's cache is usually the cloud profile; confirm it by digest.
+  let cached=null;if(currentOwner===accountId&&original){try{cached=JSON.parse(original)}catch{}}
+  const existing=await confirmVerifiedProfile(hydrationClient,{userId:accountId,candidates:[cached]});
   if(!sessionValid())return;
   const fresh={solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
   hydrationStage="cloud_initialize";

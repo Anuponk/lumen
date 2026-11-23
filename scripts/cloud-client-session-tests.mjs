@@ -5,7 +5,7 @@ const flush=s.slice(s.indexOf("async function flushCloudProfile(){"),s.indexOf("
 assert.match(flush,/const savingCloudClient=lumenSupabase/);
 assert.match(flush,/lumenSupabase===savingCloudClient&&\!authSessionPending/);
 assert.match(flush,/compareAndSwapCloudProfile\(savingCloudClient,current,cloudProfileBaseline,\{userId:savingUserId\}\)/);
-assert.match(flush,/loadVerifiedProfile\(savingCloudClient,\{userId:savingUserId\}\)/);
+assert.match(flush,/confirmVerifiedProfile\(savingCloudClient,\{userId:savingUserId,candidates:\[current,cloudProfileBaseline\]\}\)/);
 assert.doesNotMatch(flush,/loadVerifiedProfile\(lumenSupabase\)/);
 assert.equal((flush.match(/if\(!sameSavingSession\(\)\)return false/g)||[]).length>=5,true);
 console.log("Cloud write and read-back are bound to one client and stable authentication session");
