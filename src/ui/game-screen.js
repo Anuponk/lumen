@@ -51,9 +51,9 @@ import {canonicalAttemptToResume,nextCanonicalAtLegacyBoundary,preserveAttemptSn
 import {installVerifiedQuestResets} from '../persistence/quest-reset-install.js';
 import {createCloudPersistence} from "../persistence/cloud.js";
 import {guestAccountSeed,preserveGuestBeforeHydration,guestNeedsReconciliation,guestAcquisitionRecoveryEligible} from '../persistence/guest-account.js';
-import {storageReport,archiveRecoveryBackups} from '../persistence/storage-maintenance.js';
+import {storageReport,archiveRecoveryBackups,maintainRecoveryBackups,measureLocalStorage} from '../persistence/storage-maintenance.js';
 import {reconcileDailyIntoCloudProfile} from "../persistence/daily-hydration.js";
-import {isNetworkFailure,preserveRecoverySnapshot,CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
+import {isNetworkFailure,preserveRecoverySnapshot,CLOUD_PROFILE_FIELDS,backupAndVerifyProfile,backupIfUnchanged,archiveCanonicalStartMetadata,loadVerifiedProfile,confirmVerifiedProfile,restoreIntoEmptyGuestStorage,restoreRicherCloudProfile,reconcileCloudAchievementsDurably,achievementRecoveryDiagnostic,reconciliationFailureDiagnostic,hydrationFailureDiagnostic,cloudSafelyCoversLocal,sameCloudProfile,initializeCloudProfile,compareAndSwapCloudProfile,installCloudProfileLocally,reconcileDominantLocalProfile,reconcileCompatibleCloudProfiles,reconcilePlayerAcquisitions} from "../persistence/cloud-profile.js";
 import {LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY} from "../persistence/config.js";
 import {CAT,LEVELS} from "../campaign/catalogue.js";
 import {playableQuest,playableQuestCount} from "../campaign/playable-quests.js";
@@ -71,7 +71,7 @@ import {astronomicalReferenceSvg,astronomicalPrimarySvg} from "./astronomical-re
 import {setSecondaryStarsLabel} from "./quest-secondary-stars.js";
 import {LUMEN_META,CAMPAIGN6_ORDER,CAMPAIGN_SIZE_SCHEDULE,SKY_TARGET,CONSTELLATIONS,CONSTELLATION_GRID_COUNTS,badgeDefs} from "../campaign/data.js";
 import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAttempt,badgeCooldownRemaining,badgeCooldownLabel} from "../campaign/performance.js";
-import {qualifyingStartedAt,recordQualifyingStart,withQualifyingStart,abandonConfirmModel} from "../campaign/qualification-window.js";
+import {qualifyingStartedAt,recordQualifyingStart,withQualifyingStart,abandonConfirmModel,markQualifiedStart} from "../campaign/qualification-window.js";
 import {challengeAttemptClosed,challengeEligibility,challengeResumePlan,challengeSnapshot,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {challengeQuestLabel,resolveChallengeQuest} from "../campaign/canonical-challenges.js";
 import {createFriendsClient,escapeSocialHtml,friendErrorMessage,friendsOnly,renderFriendRows,validNickname} from "../campaign/social-friends.js";
@@ -90,7 +90,7 @@ import {gridCellsAlongSegment} from './drag-grid-path.js';
 import {replayWalletCommand} from '../persistence/coordinated-command-adapters.js';
 import {gameplayDomainState} from '../persistence/gameplay-sync.js';
 import {createOutboxHealthReporter} from "../persistence/outbox-health.js";
-import {createDiagnosticReporter,mapCloudDiagnostic,installDiagnosticListeners} from '../persistence/diagnostic-reporter.js';
+import {createDiagnosticReporter,mapCloudDiagnostic,installDiagnosticListeners,diagnosticErrorKind} from '../persistence/diagnostic-reporter.js';
 import {createSyncPresentation} from "../persistence/sync-presentation.js";
 import {walletCommandsSupported,recoverWalletCacheDurably} from "../persistence/wallet-command.js";
 import {applyLegacyVictory} from "../campaign/legacy-victory.js";
@@ -112,6 +112,7 @@ import {masteryUnlockCandidates,claimMasteryUnlocks} from './mastery-unlock.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from './adventure-offer.js';
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
 import {createLumenDialog} from './lumen-dialog.js';
+import {createSupportQuickSend} from './support-quick-send.js';
 import {playMasteryPrelude} from './mastery-prelude.js';
 import {createMenuPause} from './menu-pause.js';
 import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../persistence/play-billing.js';
@@ -147,6 +148,7 @@ function translateGameCopy(){
  }
 }
 translateGameCopy();
+document.getElementById('accountSwitchHold')?.classList.remove('localizing');
 setSecondaryStarsLabel((lit,count)=>t('sky.secondaryStars',{lit,count}));
 // #748: the presentation page links to /?install=1. Read once and removed from the URL
 // before anything else reads it, so the first-visit welcome still plays.
@@ -320,6 +322,18 @@ function recordGuidedDiagnostic(code,before,after){
  }catch{}
 }
 function navigationProgress(){return pendingNavigationProfile(lumenProgress,pendingNavigationEntries,lumenUser?.id,canonicalQuestList())}
+// #962: bounded device storage health rides on each outbox observation (buckets and a
+// quota/storage category only). A local write failure re-sends the last observation.
+let localStorageError=null,lastOutboxObservation=null;
+function outboxDeviceHealth(){const m=measureLocalStorage(localStorage);return {bytes:m.available?m.bytes:undefined,error:localStorageError}}
+function reportOutboxHealth(observation){lastOutboxObservation=observation;return outboxHealthReporter.report({...observation,device:outboxDeviceHealth()})}
+function noteLocalStorageError(kind){
+ if(kind!=='quota'&&kind!=='storage')return;
+ localStorageError=kind;
+ if(lastOutboxObservation&&lastOutboxObservation.userId===lumenUser?.id&&lastOutboxObservation.client===lumenSupabase&&!qaActive)void reportOutboxHealth(lastOutboxObservation);
+}
+window.addEventListener('error',event=>{try{noteLocalStorageError(diagnosticErrorKind(event.error))}catch{}},true);
+window.addEventListener('unhandledrejection',event=>{try{noteLocalStorageError(diagnosticErrorKind(event.reason))}catch{}});
 const outboxHealthReporter=createOutboxHealthReporter({storage:localStorage,send:async(client,payload)=>{
  const result=await client.rpc('lumen_record_outbox_health',payload);if(result.error)throw Error('Observation unavailable');
 }});
@@ -327,7 +341,7 @@ const syncPresentation=createSyncPresentation({onChange:view=>{
  renderSyncStatus(view);
  // Capture failure can make BOTH outbox stores unreadable. Report that risk
  // independently rather than rely on successful enumeration of pending work.
- if(view.status==='critical'&&lumenUser?.id&&!qaActive)void outboxHealthReporter.report({
+ if(view.status==='critical'&&lumenUser?.id&&!qaActive)void reportOutboxHealth({
   userId:lumenUser.id,client:lumenSupabase,version:document.getElementById('lumenAccountVersion')?.textContent||'unknown',
   state:'critical',pending:[],failures:view.failures
  });
@@ -473,6 +487,7 @@ function confirmedReplayAllowed(quest){return !qaActive&&gameplaySyncState().con
 // Local-only, privacy-safe cloud diagnostics. Never log IDs, emails, tokens or save payloads.
 const cloudDiagKey="lumenCloudDiagnosticsV1";
 function recordCloudDiagnostic(event,details={}){
+ if(event==='local_preservation_failed')try{noteLocalStorageError('storage')}catch{}
  try{const detail=mapCloudDiagnostic(event,details);if(detail){incidentReporter.capture(detail.code,detail);supportSession?.incident(detail.code)}}catch{}
  try{
   const previous=JSON.parse(localStorage.getItem(cloudDiagKey)||"[]");
@@ -653,7 +668,7 @@ async function flushCloudProfile(){
    recordCloudDiagnostic("flush_failed",{kind:"write",errorCode:String(e?.code||e?.status||"unknown").slice(0,48),profileReady:cloudProfileReady});
    preserveUnsyncedCloudProgress("save-failed");
    try{
-    const remote=await loadVerifiedProfile(savingCloudClient,{userId:savingUserId});
+    const remote=await confirmVerifiedProfile(savingCloudClient,{userId:savingUserId,candidates:[current,cloudProfileBaseline]});
     if(!sameSavingSession())return false;
     if(remote && sameCloudProfile(remote,current)){
      // A matching snapshot does not prove that the secondary progress mirror
@@ -875,7 +890,7 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueMicrotask(()=>rankingView.mount());queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery")openPasswordRecovery()},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueMicrotask(()=>rankingView.mount());if(event?.type==="account")queueMicrotask(()=>void refreshDailyEntry());queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery")openPasswordRecovery()},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  const priorAcquisitionRecovery=canonicalRecoveryContext;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
@@ -897,7 +912,9 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   const currentOwner=localStorage.getItem(ownerKey);
   if(!currentOwner)preserveGuestBeforeHydration(localStorage,{accountId,currentOwner,sessionValid});
   hydrationStage="cloud_restore";
-  const existing=await loadVerifiedProfile(hydrationClient,{userId:accountId});
+  // #1000: this device's cache is usually the cloud profile; confirm it by digest.
+  let cached=null;if(currentOwner===accountId&&original){try{cached=JSON.parse(original)}catch{}}
+  const existing=await confirmVerifiedProfile(hydrationClient,{userId:accountId,candidates:[cached]});
   if(!sessionValid())return;
   const fresh={solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
   hydrationStage="cloud_initialize";
@@ -1764,6 +1781,7 @@ function renderAuthUserCopy(node=document.getElementById('authUser')){
  if(node)node.textContent=lumenUser?(lumenNickname||(cloudProfileReady&&!cloudProfileDirty&&!cloudProfileFailure&&!canonicalOutboxNotice?t('sync.synced'):t('sync.pending'))):t('account.localProgress');
 }
 function updateAuthUI(){
+ {const quick=document.getElementById('supportQuickSend');if(quick)quick.hidden=!lumenUser||qaActive}
  const purchaseNotice=document.getElementById('purchaseStatus');
  if(purchaseNotice?.dataset?.purchaseOwner&&purchaseNotice.dataset.purchaseOwner!==lumenUser?.id)showPurchaseStatus('');
 
@@ -2371,7 +2389,7 @@ let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="",pendingC
 // with daily:true): it inherits every campaign/ranking/learning guard of #18.
 // Only the intro, the server submission and the official clock differ.
 const dailyClient=createDailyClient(lumenSupabase),DAILY_PENDING_KEY='lumenDailyPendingV1';
-let dailyBannerTimer=null;
+let dailyBannerTimer=null,dailyEntryRequest=0;
 // Measurement reuses the existing app_opened envelope (no new event name, no
 // new collection): surface=daily + daily_action. Disabled collection stays off.
 function trackDaily(action,extra={}){return trackLumenEvent('app_opened',null,{surface:'daily',daily_action:action,...extra})}
@@ -2380,10 +2398,19 @@ const dailyDate=day=>formatDailyDate(day,dailyLocale());
 const dailyDuration=ms=>formatRemaining(ms,t);
 function dailyUrl(training=false){const u=new URL(location.origin+location.pathname);u.searchParams.set('daily','1');if(training)u.searchParams.set('training','1');return u.toString()}
 async function refreshDailyEntry(){
- const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek');if(!entry||socialChallenge)return;entry.onclick=()=>{location.href=dailyUrl()};
- try{const today=await dailyClient.today();entry.hidden=!today?.enabled;if(today?.enabled)document.getElementById('dailyEntryState').textContent=t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
-  if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}}
- catch{entry.hidden=true;if(week)week.hidden=true}
+ const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek');
+ const request=++dailyEntryRequest,owner=lumenUser?.id;
+ if(!entry||socialChallenge)return;
+ const current=()=>request===dailyEntryRequest&&owner===lumenUser?.id&&!socialChallenge;
+ const previewAllowed=!!owner&&(hasInternalCapability('daily_preview')||hasInternalCapability('analytics_cockpit'));
+ entry.onclick=()=>{location.href=dailyUrl()};
+ try{
+  const today=await dailyClient.discover(previewAllowed);
+  if(!current())return;
+  entry.hidden=!today?.enabled;
+  if(today?.enabled)document.getElementById('dailyEntryState').textContent=t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
+  if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}
+ }catch{if(current()){entry.hidden=true;if(week)week.hidden=true}}
 }
 function renderDailyBanner(){
  const banner=document.getElementById('dailyBanner');if(!banner||!socialChallenge?.daily)return;
@@ -2684,7 +2711,7 @@ async function refreshOfficialRecordLabel(){
 // #851: the private record shown beside the best officially ranked time.
 function personalBestSeconds(quest){try{const best=officialRecordTime(questPerformanceRecord(quest,lumenProgress),quest?.gridRevision??0);return Number.isSafeInteger(best)?best:null}catch{return null}}
 function showRanking(){if(socialChallenge||learningReplayActive()||qaActive||!lumenUser)return;const a=attemptEngine.snapshot();rankingView.show(activeQuest(),attemptOperationId(a),{personalBest:personalBestSeconds(activeQuest())});rankingView.mount()}
-function refreshRankingQueue(){return rankingClient.flush().then(r=>rankingView.refresh(r)).catch(error=>{if(error?.results?.length)return rankingView.refresh(error.results)})}
+function refreshRankingQueue(options){return rankingClient.flush().then(r=>rankingView.refresh(r,options)).catch(error=>{if(error?.results?.length)return rankingView.refresh(error.results,options)})}
 addEventListener('online',()=>{void refreshRankingQueue()});
 document.getElementById('rankingWithdraw').onclick=async()=>{
  const c=rankingContext(),button=document.getElementById('rankingWithdraw');button.disabled=true;
@@ -2692,7 +2719,7 @@ document.getElementById('rankingWithdraw').onclick=async()=>{
  catch{if(rankingContext().owner===c.owner)document.getElementById('rankingAccountStatus').textContent='Retrait non confirmé. Réessaie.'}
  finally{button.disabled=false}
 };
-setInterval(()=>{if(lumenUser&&!qaActive)void refreshRankingQueue()},30000);
+setInterval(()=>{if(lumenUser&&!qaActive)void refreshRankingQueue({background:true})},30000);
 new MutationObserver(()=>rankingView.mount()).observe(document.getElementById('skyReveal'),{attributes:true,attributeFilter:['hidden']});
 function attemptMode(){return socialChallenge?"challenge":replayMode?"replay":"campaign"}
 function activeQuest(){return canonicalActiveQuest??canonicalQuestForLegacy(levelIndex)}
@@ -2754,10 +2781,7 @@ function ensureAttemptStarted(){
  // Promotion only: an already qualifying run is never demoted here.
  if(!a.qualifying&&!socialChallenge&&currentBadgeQualification()){a=attemptEngine.requalify(true);updateBadgeQualificationStatus()}
  if(a.qualifying&&!canonicalActiveQuest){
-  lumenProgress.performances=lumenProgress.performances||{};
-  const old=lumenProgress.performances[levelIndex]||{};
-  lumenProgress.performances[levelIndex]={...old,questIndex:levelIndex,lastQualifiedDay:localCalendarDay(),lastQualifiedAt:new Date().toISOString()};
-  saveLumenProgress();
+  if(markQualifiedStart(lumenProgress,levelIndex,{day:localCalendarDay(),at:new Date().toISOString()}))saveLumenProgress();
  }
  attemptEngine.start();
  const started=attemptEngine.snapshot();
@@ -3877,7 +3901,7 @@ async function refreshCanonicalOutboxNotice(ownerId){
   // An unreadable backend may contain older intents even if the other is empty.
   const view=typeof syncPresentation==='undefined'?{status:'confirmed',failures:0}:syncPresentation.snapshot();
   const platform=/Android/i.test(globalThis.navigator?.userAgent||'')?(matchMedia('(display-mode: standalone)').matches?'android-pwa':'android-web'):/Windows|Mac|Linux/i.test(globalThis.navigator?.userAgent||'')?'desktop':'other';
-  if(typeof outboxHealthReporter!=='undefined'&&!qaActive)void outboxHealthReporter.report({userId:ownerId,client:lumenSupabase,
+  if(typeof outboxHealthReporter!=='undefined'&&!qaActive)void reportOutboxHealth({userId:ownerId,client:lumenSupabase,
    platform,version:document.getElementById('lumenAccountVersion')?.textContent||'unknown',pending:state.pending,
    failures:view.failures,state:view.status==='critical'?'critical':canonicalOutboxNotice==='attention'?'review':state.authRequired?'auth':state.pending.length?'pending':state.complete?'confirmed':'review'});
   updateAuthUI();return (state.retryable??state.pending).length||(state.complete===false?1:0);
@@ -5186,6 +5210,19 @@ async function autoArchiveAccountSwitchCopies(){
  if(result.interrupted)setTimeout(()=>void autoArchiveAccountSwitchCopies(),60000);
 }
 setTimeout(()=>void autoArchiveAccountSwitchCopies(),15000);
+// #962: every backup family once the local copies exceed 1 MiB (same verified archive
+// policy; nothing is purged, pending work is never touched).
+let backupMaintenanceTries=0;
+async function autoMaintainRecoveryBackups(){
+ if(qaActive||backupMaintenanceTries>=3)return;
+ if(authSessionPending){setTimeout(()=>void autoMaintainRecoveryBackups(),30000);return}
+ backupMaintenanceTries++;
+ const user=lumenUser,client=lumenSupabase;
+ const result=await maintainRecoveryBackups(localStorage,{sessionValid:()=>lumenUser===user&&lumenSupabase===client&&!authSessionPending}).catch(()=>({interrupted:true}));
+ if(result.ran)recordCloudDiagnostic('local_backups_maintained',{archived:result.archived,batches:result.batches,failed:!!result.failed,interrupted:!!result.interrupted});
+ if(result.interrupted)setTimeout(()=>void autoMaintainRecoveryBackups(),60000);
+}
+setTimeout(()=>void autoMaintainRecoveryBackups(),20000);
 // #730: Stripe Checkout on the web/PWA only, never in the Play app. TEST phase: only
 // accounts holding the server capability « stripe_test_checkout ». The server reads every
 // payment back from Stripe and records it (#728); a Stripe return URL never grants.
@@ -6092,6 +6129,12 @@ if(supportHost){
  window.addEventListener('storage',event=>{if(event.key==='lumenSupportRevocationsV1')void supportSession.refresh()});
  // Local clock enforces expiry even while the phone stays offline.
  setInterval(()=>{supportSession.changed();const v=supportSession.view();if(v.dossier?.state==='active'&&Date.parse(v.dossier.expires_at)<=Date.now())void supportSession.refresh()},30000);
+}
+// #962: one-tap diagnostic transmission with explicit consent in the Lumen dialog.
+const supportQuickButton=document.getElementById('supportQuickSend');
+if(supportQuickButton){
+ const quick=createSupportQuickSend({session:()=>supportSession,dialog:lumenConfirm,t,button:supportQuickButton,status:document.getElementById('supportQuickStatus')});
+ supportQuickButton.onclick=()=>quick.open();
 }
 const archiveAccountStorage=document.getElementById('archiveAccountStorage');if(archiveAccountStorage)archiveAccountStorage.onclick=compactAccountStorage;
 const exportAccountStorage=document.getElementById('exportAccountStorage');if(exportAccountStorage)exportAccountStorage.onclick=()=>exportLumenRecoveryBundle().catch(()=>{document.getElementById('accountStorageStatus').textContent='Export incomplet : les sauvegardes restent conservées.'});

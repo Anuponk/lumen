@@ -56,7 +56,7 @@ test('verified account restoration applies its own auto choice without restartin
  const attempt={attemptId:'preserved',board:[[1,0],[0,0]]},before=JSON.stringify(attempt);
  const ctx={t:createTranslator().t,QUEST_MILESTONES,questLearningRules,activeQuestOrdinal:()=>3,replayMode:false,scriptedLearningActive:()=>false,
   onboardingPreferences:{auto:()=>ctx.lumenUser?.id==='b'},onboardingPreferenceOwner:null,socialChallenge:null,learningReplayActive:()=>false,
-  verifiedOwner:'a',localStorage:{getItem:key=>key==='lumenCloudOwnerId'?ctx.verifiedOwner:null},sessionStorage:{getItem:()=>null},document:{getElementById:node},
+  verifiedOwner:'a',qaActive:false,localStorage:{getItem:key=>key==='lumenCloudOwnerId'?ctx.verifiedOwner:null},sessionStorage:{getItem:()=>null},document:{getElementById:node},
   activeBonusChallenge:()=>null,lumenProgress:{stars:{}},lumenUser:{id:'a'},cloudProfileReady:false,state:null,puz:null,
   syncPresentationOwner:null,pendingNavigationEntries:[],syncPresentation:{reset(){}},pendingVictoryView:null,
   accountOfferSignInPending:false,lumenNickname:'',cloudProfileDirty:false,cloudProfileFailure:null,canonicalOutboxNotice:null,

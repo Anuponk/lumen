@@ -34,6 +34,7 @@ export default Object.freeze({
   'store.playPaused': "New Google Play purchases are temporarily paused.",
   'store.playLoading': "Loading Google Play prices…",
   'store.playUnavailable': "This purchase is temporarily unavailable through Google Play. Check your connection and try again.",
+  'store.playClientUnavailable': "Google Play is not responding to Lumen. Fully close Lumen and Chrome (from recent apps), then reopen Lumen.",
   'store.paymentSoon': "Payment will be available soon.",
   'store.terms': "Terms of sale",
   'store.createOrSignIn': "Create an account or sign in",

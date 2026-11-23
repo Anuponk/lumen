@@ -1,0 +1,87 @@
+name: Lumen weekly encrypted backup
+# #999: Supabase Free keeps no backup. Weekly logical export of the Lumen
+# schemas and auth.users/auth.identities, restore check in a disposable
+# PostgreSQL 17, then upload of age-encrypted files only (90-day artifacts).
+# Requires the production environment secret LUMEN_BACKUP_DATABASE_URL
+# (session pooler URI) and the repository variable LUMEN_BACKUP_AGE_RECIPIENT
+# (age public key; the private key stays offline with the owner).
+on:
+  schedule:
+    - cron: '17 2 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lumen-backup
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash  # -eo pipefail: tar | age fails if either side fails
+
+jobs:
+  backup:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      deployment: false
+    services:
+      restore:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: isolated-restore-only
+          POSTGRES_DB: lumen_restore
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      WORK: /tmp/lumen-backup
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check configuration
+        env:
+          DB_URL: ${{ secrets.LUMEN_BACKUP_DATABASE_URL }}
+          RECIPIENT: ${{ vars.LUMEN_BACKUP_AGE_RECIPIENT }}
+        run: |
+          [ -n "$DB_URL" ] || { echo "::error::Missing secret LUMEN_BACKUP_DATABASE_URL in the production environment"; exit 1; }
+          [[ "$RECIPIENT" =~ ^age1[0-9a-z]{58}$ ]] || { echo "::error::Missing or invalid variable LUMEN_BACKUP_AGE_RECIPIENT"; exit 1; }
+      - name: Install PostgreSQL 17 client and age
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common age >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Export Lumen data
+        env:
+          DB_URL: ${{ secrets.LUMEN_BACKUP_DATABASE_URL }}
+        run: bash scripts/lumen-backup.sh dump "$DB_URL" "$WORK"
+      - name: Encrypt before any storage
+        env:
+          RECIPIENT: ${{ vars.LUMEN_BACKUP_AGE_RECIPIENT }}
+        run: |
+          stamp=$(date -u +%Y%m%dT%H%MZ)
+          mkdir -p "$WORK/encrypted"
+          tar -C "$WORK" -cf - lumen.dump auth.dump manifest.txt \
+            | age -r "$RECIPIENT" -o "$WORK/encrypted/lumen-backup-$stamp.tar.age"
+          ls -l "$WORK/encrypted" | tail -n +2 | awk '{print $5, $9}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lumen-backup-${{ github.run_id }}
+          path: /tmp/lumen-backup/encrypted/*.age
+          retention-days: 90
+          if-no-files-found: error
+      - name: Restore check in disposable PostgreSQL 17
+        env:
+          PGPASSWORD: isolated-restore-only
+        run: bash scripts/lumen-backup.sh verify "$WORK" "postgresql://postgres@localhost:5432/lumen_restore"
+      - name: Remove plaintext copies
+        if: always()
+        run: rm -rf "$WORK"

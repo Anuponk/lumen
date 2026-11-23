@@ -204,6 +204,15 @@ The eighth check verifies the existing confirmation describes irreversible
 progress loss in Lumen without infrastructure details. No real account deletion,
 server deployment or physical acceptance is claimed.
 
+Admin cockpit indexes (#962): `scripts/fixtures/admin-cockpit-indexes-962.sql` (canonical-ledger CI, #708 step) applies the migration twice. It checks the exact partial-index predicates, that the planner uses both indexes for the `cockpit_events` filters, and that `cockpit_events` keeps returning only human, non-QA events with the same owner attribution.
+Device storage health (#962): `scripts/fixtures/outbox-storage-health-962.sql` (same step) applies the migration twice and checks the 14-argument observation, the unchanged 11-argument call, stale packets, bounds (no free text), identity, the summary count and anonymous alert fields, 7-day expiry, privileges and erasure registration. Client buckets: `cloud-outbox-health-tests.mjs`; admin rendering: `analytics-dashboard-tests.mjs`.
+
+Production isolation (#962): `scripts/cdp-client.mjs::connectBrowser` blocks the production Supabase host (`tjdjlavmusmncuszhsuw.supabase.co`) for every browser suite. Any blocked-URL list a suite sets later keeps this host, so a suite can never reach production by replacing the list.
+
+On 22 November 2026, the production logs showed about 65,000 anonymous reads a day from HeadlessChrome with the referer `http://127.0.0.1:8000/`. They came from GitHub Actions runners and local runs: 32,288 `lumen_daily_today`, 23,873 `lumen_list_quest_challenges_v2` and 9,087 `lumen_get_historical_performance`.
+
+Set `LUMEN_TEST_ALLOW_PRODUCTION=1` only for a deliberate, documented production check; CI never sets it. `production-isolation-tests.mjs` checks the guard.
+
 Browser shutdown: `scripts/cdp-client.mjs::closeBrowser` extends the exact
 Browser.close acknowledgement-timeout policy already used by the sky suite to
 the remaining unguarded core suites. The quality runner still owns process
@@ -454,6 +463,14 @@ read equals both independent reads, never writes, keeps the account guard
 and denies `anon`.
 Admin recent-player tests execute the actual metrics/timeline renderers.
 
+Digest profile read (#1000): `node --test scripts/profile-digest-read-tests.mjs` covers
+`confirmVerifiedProfile`: a matching digest returns a copy of the known profile with
+no download; mismatch, malformed answer, error, missing endpoint (remembered), no
+profile, no userId or no candidate all keep the full verified read. In
+`canonical-ledger`, `scripts/fixtures/profile-digest-read.sql` checks that
+`lumen_profile_digest` hashes the exact `lumen_restore_profile` text and its account
+guard and grants.
+
 Digest profile CAS: `node --test scripts/profile-digest-cas-tests.mjs` covers the
 jsonb text rules, an exact digest (single call, expected profile not uploaded), the
 fallback to the full CAS on mismatch, missing endpoint or unexpected answer, a
@@ -470,6 +487,8 @@ It checks that no profile function keeps the 512 KiB ceiling, that SECURITY DEFI
 and grants are preserved, that a 700 KB profile is accepted and that 1.1 MB is refused
 unchanged; support captures keep their own limit. `local-persistence-contract-tests`
 checks the exact client boundary against `MAX_PROFILE_BYTES`.
+
+Cold account recovery (#971): the account-switch browser fixture delays the game entry point, restores an explicit Spanish preference and checks the first visible title, message and sign-out control. It also covers switching to French and recovery in English through an offline reload and reconnection. It opens beta feedback in all three languages and checks the active category and both actions, including a live language change while the dialog is open.
 
 Account switch (#711): `account-switch-browser-tests.mjs` uses `scripts/fixtures/multi-account-browser.mjs` (per-account profiles, receipts and wallet; any RPC naming another account than the session is refused and recorded). With 800 ms per RPC it plays A → sign out → B → sign out → A: B is never shown A's progress during its load (screen held), B gets its own next quest, A's pending victory stays durable under B and is credited to A only, no call targets another account, and a failed B load stays held until « Réessayer » installs B. After an explicit sign-out, the neutral screen covers the app (also after reload), with the sign-in dialog opening above it and nothing erased locally.
 
@@ -956,6 +975,10 @@ Every change affecting content, progression, shop, sky navigation or saved state
 - Historical fixed quest numbers remain test fixtures only, not current campaign endpoints.
 Tests should assert relationships derived from the content registry rather than a specific future total. Documentation alone is not proof of runtime coverage.
 
+The ranking guard assertions in `scripts/fixtures/official-time.sql` require the
+fixed #962 reason for an absent run, invalid counters, a hint-flag mismatch, a
+versioned assistance mismatch and a changed replay. The same fixture verifies
+one confirmed score, the original receipt and an unchanged player snapshot.
 ## Cloud persistence regression matrix
 
 Critical alert tests run the production migration against disposable PostgreSQL and simulate interrupted transport, replayed observations, one affected account and unauthorized acknowledgements. The public probe test also rejects maintenance HTML with HTTP 200.
@@ -2492,6 +2515,11 @@ retry without a live client. The canonical ledger gate replays both migrations
 and verifies retry leases, account erasure, mixed-provider distinct Adventure
 counting, refunds, and preservation of mastery and admin rights.
 
+For #962, `play-purchase-handler-tests.mjs` proves that an independently
+reconciled unbound order can be restored by RTDN, after Google settlement and
+identity proof. An unresolved owner remains retryable without any ledger
+write. The tests distinguish provider failure from missing ownership and
+verify that redelivery uses the same redacted diagnostic key.
 For #729 RTDN, the handler mocks prove the expected Google identity checks,
 bound registration without a browser session, pending redelivery, and verified
 refunds and duplicates. The SQL fixture covers binding preparation, lookup

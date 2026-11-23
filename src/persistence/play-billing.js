@@ -143,6 +143,10 @@ export function playOwnershipSummary(results,titleOf=()=>'',{focus=null,t=playFr
 }
 
 // Only validated provider prices. Never substitute catalogue prices in the Play app.
+// #962: Chrome answers `clientAppUnavailable` when it cannot reach the app's billing
+// delegation service. Seen in production after a reinstall: Chrome kept a stale link to
+// the app until both were fully closed. Only this public code is read, never raw text.
+export function playProviderReason(error,fallback){return /^clientAppUnavailable$/.test(String(error?.message??''))?'client_app_unavailable':fallback}
 export async function playPrices(service,ids,{onDiagnostic=()=>{},locale='fr-FR'}={}){
  try{
   const details=await service.getDetails(ids);
@@ -162,7 +166,7 @@ export async function playPrices(service,ids,{onDiagnostic=()=>{},locale='fr-FR'
    if(reason)onDiagnostic({reason,productId:id});
   }
   return prices;
- }catch(_){onDiagnostic({reason:'details_request_failed'});return {}}
+ }catch(error){onDiagnostic({reason:playProviderReason(error,'details_request_failed')});return {}}
 }
 
 // Ephemeral price lifecycle: no tokens, user data, purchases or entitlements.
@@ -197,7 +201,7 @@ export function createPlayPriceLoader({win=globalThis,ids,optionalIds=[],playApp
       supportsBinding=Array.isArray(marker)&&marker.length===1
        &&marker[0]?.itemId===PLAY_BINDING_PROBE&&marker[0].title===PLAY_BINDING_PROBE;
       if(!supportsBinding)diagnostic({reason:'binding_probe_unsupported'});
-     }catch{diagnostic({reason:'binding_probe_failed'})}
+     }catch(error){diagnostic({reason:playProviderReason(error,'binding_probe_failed')})}
     }
     if(typeof win.PaymentRequest!=='function')diagnostic({reason:'payment_unsupported'});
     else if(Object.keys(prices).length){

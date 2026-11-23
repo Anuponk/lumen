@@ -40,3 +40,71 @@ console.log('Ranking staging: offline, reload, exact counters, owner changes, be
  assert.deepEqual(queue.entries('owner').map(e=>e.questId),['old'],'Only the exact rejected capture remains durable');
  queue=make();assert.deepEqual(queue.entries('owner').map(e=>e.questId),['old'],'Reload preserves the refused evidence without resurrecting the confirmed score');
 }
+
+// #962: production showed one pre-#777 capture (receipt hintUsed=true, 0 counted hint)
+// refused 250 times a day with ranking_finish_hint_flag_mismatch. A refusal that
+// describes the stored receipt is archived (kept, never deleted) and not replayed;
+// refusals that can change later stay pending.
+{
+ const store=memory(),sent=[];
+ const reasons={'stale-reset-0':'ranking_finish_hint_flag_mismatch','early-reset-0':'ranking_finish_seconds_out_of_range'};
+ const connection={async rpc(name,args){
+  if(name==='lumen_ranking_finish'){
+   sent.push(args.p_operation_id);
+   if(reasons[args.p_operation_id])return {error:{code:'22023',message:reasons[args.p_operation_id]}};
+   return {data:{status:'confirmed',questId:'fresh',improved:true}};
+  }
+  return {data:{eligible:true}};
+ }};
+ const queue=createRankingClient({storage:store,getContext:()=>({owner:'owner',client:connection})});
+ for(const id of ['stale','early','fresh'])queue.stage({id}, {...a,attemptId:id});
+ await assert.rejects(()=>queue.flush(),'a refusal that may change later still reports the queue as incomplete');
+ assert.deepEqual(queue.entries('owner').map(e=>e.questId),['early'],'only the transient refusal stays pending');
+ assert(store.getItem('lumenRankingObsoleteV1:owner:stale-reset-0'),'the permanently refused capture is archived, not deleted');
+ sent.length=0;await assert.rejects(()=>queue.flush());
+ assert.deepEqual(sent,['early-reset-0'],'an archived capture is never replayed');
+ const single=createRankingClient({storage:memory(),getContext:()=>({owner:'owner',client:connection})});
+ single.stage({id:'stale'}, {...a,attemptId:'stale'});
+ assert.deepEqual((await single.flush()).map(r=>[r.status,r.reason]),[['refused','ranking_finish_hint_flag_mismatch']]);
+ console.log('Ranking refusals: permanent receipt refusals archived once, time refusals kept pending');
+}
+
+// #962: a non-participating account replayed 133 captures every 30 s (~4.4 finish
+// calls per second, 33,935 in 16 h). membership_required archives the capture once.
+{
+ const store=memory();let finishes=0;
+ const connection={async rpc(name){
+  if(name==='lumen_ranking_finish'){finishes++;return {data:{status:'membership_required'}}}
+  return {data:{eligible:true}};
+ }};
+ const queue=createRankingClient({storage:store,getContext:()=>({owner:'owner',client:connection})});
+ for(const id of ['m1','m2','m3'])queue.stage({id}, {...a,attemptId:id});
+ const results=await queue.flush();
+ assert.deepEqual(results.map(r=>[r.status,r.reason]),[['membership_required','membership_required'],['membership_required','membership_required'],['membership_required','membership_required']]);
+ assert.deepEqual(queue.entries('owner'),[],'nothing left to resend');
+ assert(store.getItem('lumenRankingObsoleteV1:owner:m1-reset-0'),'archived, never deleted');
+ for(let i=0;i<5;i++)await queue.flush();
+ assert.equal(finishes,3,'later periodic flushes send nothing');
+ console.log('Ranking membership: non-participating captures archived once, no periodic replay');
+}
+
+// #962: on the fixed build, one device still resent the refused capture every refresh:
+// the archive copy could not be written (localStorage full). The refusal is remembered
+// for the page lifetime; the capture stays durable and nothing is deleted.
+{
+ const base=memory(),full={...base,get length(){return base.length},key:base.key,getItem:base.getItem,removeItem:base.removeItem,
+  setItem(k,v){if(k.startsWith('lumenRankingObsoleteV1:'))throw Object.assign(Error('quota'),{name:'QuotaExceededError'});return base.setItem(k,v)}};
+ let finishes=0,begins=0;
+ const connection={async rpc(name){
+  if(name==='lumen_ranking_finish'){finishes++;return {error:{code:'22023',message:'ranking_finish_hint_flag_mismatch'}}}
+  begins++;return {data:{eligible:true}};
+ }};
+ const queue=createRankingClient({storage:full,getContext:()=>({owner:'owner',client:connection})});
+ queue.stage({id:'stale'}, {...a,attemptId:'stale'});
+ assert.deepEqual((await queue.flush()).map(r=>[r.status,r.reason]),[['refused','ranking_finish_hint_flag_mismatch']]);
+ for(let i=0;i<5;i++)assert.deepEqual((await queue.flush()).map(r=>r.status),['refused']);
+ assert.equal(finishes,1,'a refusal is sent once per page even when archiving fails');
+ assert.equal(begins,1,'no begin either');
+ assert.equal(queue.entries('owner').length,1,'the capture is kept, never deleted');
+ console.log('Ranking refusals: storage-full archive failure does not replay the refusal');
+}

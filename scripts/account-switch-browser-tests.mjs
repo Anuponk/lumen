@@ -21,7 +21,9 @@ const appServer = http.createServer((req, res) => {
   }
   const mime = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.html': 'text/html', '.css': 'text/css', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
   res.writeHead(200, { 'Content-Type': mime[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
-  fs.createReadStream(file).pipe(res);
+  const stream = () => fs.createReadStream(file).pipe(res);
+  if (pathname === '/src/main.js' && req.headers.referer?.includes('coldLocale=1')) setTimeout(stream, 1500);
+  else stream();
 });
 const all = canonicalQuestList();
 function profileUpTo(ordinal, { xp, shards }) {
@@ -76,11 +78,21 @@ try {
   await send('Page.addScriptToEvaluateOnNewDocument', { source: multiAccountFixture({ a: A, b: B }, 'a') + `
 if (!sessionStorage.getItem('coldAccountTest')) {
   sessionStorage.setItem('coldAccountTest','1');
+  localStorage.setItem('lumen.locale','es');
   localStorage.removeItem('lumenCloudOwnerId');
   localStorage.removeItem('lumenProgressV1');
   localStorage.setItem('sb-tjdjlavmusmncuszhsuw-auth-token', JSON.stringify(window.__server.session));
   window.__rpcDelay=800;
 }
+window.__coldLocale = null;
+const localeObserver = new MutationObserver(() => {
+  const title = document.getElementById('accountSwitchHoldTitle');
+  if (window.lumenDiagnostics || !title || title.closest('[hidden]') || getComputedStyle(title).visibility !== 'visible') return;
+  window.__coldLocale = [document.documentElement.lang, title.textContent, document.getElementById('accountSwitchHoldText').textContent, document.getElementById('accountSwitchHoldSignout').textContent];
+  localeObserver.disconnect();
+});
+localeObserver.observe(document,{attributes:true,childList:true,subtree:true});
+document.addEventListener('DOMContentLoaded',()=>localeObserver.disconnect(),{once:true});
 window.__bootHold = new Promise(resolve => {
   const observer = new MutationObserver(() => {
    const marker=document.querySelector('#accountSwitchHold + script');
@@ -91,9 +103,17 @@ window.__bootHold = new Promise(resolve => {
   observer.observe(document,{childList:true,subtree:true});
   document.addEventListener('DOMContentLoaded',()=>{resolve(!document.getElementById('accountSwitchHold').hidden);observer.disconnect()},{once:true});
 });` });
-  await navigateAndWait({ send, evaluate }, 'Page.navigate', { url: 'http://127.0.0.1:' + appServer.address().port + '/' });
+  await navigateAndWait({ send, evaluate }, 'Page.navigate', { url: 'http://127.0.0.1:' + appServer.address().port + '/?coldLocale=1' });
   assert.equal(await evaluate('window.__bootHold',true),true,'A stored session without a local profile gets the neutral screen at startup');
-  await until(`!!window.lumenDiagnostics&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')`, 'A hydrated');
+  assert.deepEqual(await evaluate('window.__coldLocale'), ['es', 'Cargando tu cielo\u2026', 'Recuperando tu progreso.', 'Cerrar sesi\u00f3n'], '#971: the first visible hold is in the saved language, before the game loads');
+  await until("!!window.lumenDiagnostics&&document.getElementById('accountSwitchHold').hidden", 'A hydrated in Spanish');
+  const feedback = "[document.getElementById('feedbackTitle').textContent,document.getElementById('feedbackChoice').textContent,document.getElementById('feedbackCancel').textContent,document.getElementById('feedbackSend').textContent]";
+  await evaluate("document.getElementById('betaFeedbackBtn').click(); document.querySelector('#feedbackModal [data-kind=rule] span').click()");
+  assert.deepEqual(await evaluate(feedback),['Comentarios de la beta','Tipo seleccionado: Regla / pista','Cancelar','Enviar']);
+  await evaluate("{const select=document.getElementById('gameLocaleMode'); select.value='fr'; select.dispatchEvent(new Event('change'));}");
+  await until("document.documentElement.lang==='fr'&&localStorage.getItem('lumen.locale')==='fr'", 'language switches live and is persisted');
+  assert.deepEqual(await evaluate(feedback),['Retour b\u00eata','Type s\u00e9lectionn\u00e9 : R\u00e8gle / indice','Annuler','Envoyer']);
+  await evaluate("document.getElementById('feedbackCancel').click(); history.replaceState(null,'','/')");
   await acknowledgeLearningMilestones(evaluate);
   timeline.push({ step: 'A', local: await evaluate(local), server: await evaluate(server) });
   assert.deepEqual(timeline.at(-1).local, summary(A), 'A sees its own progress');
@@ -192,12 +212,17 @@ Object.defineProperty(navigator,'onLine',{get:()=>!window.__offline});
   await navigateAndWait({send,evaluate},'Page.reload');
   assert.equal(await evaluate("document.getElementById('accountSwitchHold').hidden"),true,'A verified offline cache opens for its own account');
   assert.deepEqual(await evaluate(local),summary(B),'Offline uses B’s known profile');
-  await evaluate("window.__server.session={user:{id:'a'}};window.__saveServer();localStorage.setItem('sb-tjdjlavmusmncuszhsuw-auth-token',JSON.stringify(window.__server.session))");
+  await evaluate("window.__server.session={user:{id:'a'}};window.__saveServer();localStorage.setItem('lumen.locale','en');localStorage.setItem('sb-tjdjlavmusmncuszhsuw-auth-token',JSON.stringify(window.__server.session))");
   await navigateAndWait({send,evaluate},'Page.reload');
-  assert.equal(await evaluate("document.getElementById('accountSwitchHoldTitle').textContent"),'Tu es hors ligne','A different stored session must not display B’s offline cache');
+  assert.deepEqual(await evaluate("[document.documentElement.lang,document.getElementById('accountSwitchHoldTitle').textContent,document.getElementById('accountSwitchHoldSignout').textContent]"),['en','You\u2019re offline','Sign out'],'A different stored session stays covered and uses English offline');
   assert.deepEqual(await evaluate(local),summary(B),'The previous cache is preserved while unavailable');
   await evaluate("window.__offline=false;window.dispatchEvent(new Event('online'))");
   await until("localStorage.getItem('lumenCloudOwnerId')==='a'&&document.getElementById('accountSwitchHold').hidden",'A restores automatically after reconnect',250);
+  assert.equal(await evaluate("document.documentElement.lang"),'en','Reconnecting preserves the saved language');
+  await evaluate("document.getElementById('betaFeedbackBtn').click()");
+  assert.deepEqual(await evaluate(feedback),['Beta feedback','Selected type: Bug','Cancel','Send']);
+  await evaluate("document.getElementById('feedbackCancel').click()");
+  await evaluate("{const select=document.getElementById('gameLocaleMode'); select.value='fr'; select.dispatchEvent(new Event('change'));}");
   await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:offline.identifier});
   await signOut();
   await signIn('b');

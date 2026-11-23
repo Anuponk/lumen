@@ -31,6 +31,7 @@ function fixture({signedIn,daily}){
    onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
    rpc:async(name,args={})=>{
     window.__socialCalls.push(name);
+    if(name==='lumen_get_internal_capabilities')return {data:${signedIn}&&${daily}?['daily_preview']:[]};
     if(name==='lumen_daily_today')return {data:${daily}?{enabled:true,day:'2026-11-23',quest_id:'base-q012',grid_revision:0,closes_at:closes,server_now:new Date().toISOString()}:{enabled:false,day:'2026-11-23',server_now:new Date().toISOString()}};
     if(name==='lumen_ranking_account')return {data:{nicknameRequired:false,withdrawn:false,participating:false}};
     if(name==='lumen_restore_profile')return {data:${JSON.stringify(profile)}};
@@ -137,6 +138,7 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
   await until(evaluate,`document.getElementById('socialBadge').textContent==='4'&&!document.getElementById('socialBadge').hidden`,'global badge '+width);
   assert.equal(await evaluate(`document.getElementById('friendsBadge').textContent+'/'+document.getElementById('challengeUnreadBadge').textContent`),'2/1','#35 counters unchanged');
   assert.equal(await evaluate(`document.getElementById('openSocial').getAttribute('aria-label')`),'Espace social, 4 nouveautés');
+  await until(evaluate,"!document.getElementById('socialDaily').hidden",'authorized daily preview '+width);
   assert.deepEqual(await evaluate(visibleItems),['Défi du jour','Mes défis','Classements','Mes amis','Mes cercles','Notifications','Inviter des amis'],'Seven sections in the agreed order (#929)');
   assert.match(await evaluate(`document.getElementById('socialDailyState').textContent`),/fin dans/,'Daily state mirrors « Mes quêtes »');
   assert.equal(await evaluate(`document.getElementById('socialGuestNote').hidden`),true);

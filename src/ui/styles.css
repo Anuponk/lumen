@@ -358,6 +358,7 @@ button{background:#121a29;color:#dcecff;border:1px solid #2b3b55;border-radius:1
 /* #711: account switch hold; the previous account's progress is never shown. */
 .account-switch-hold{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:16px;background:#060d18}
 .account-switch-hold[hidden]{display:none}
+.account-switch-hold.localizing .account-switch-hold-card{visibility:hidden}
 .account-switch-hold-card{max-width:360px;text-align:center;color:#d8ecf7;display:flex;flex-direction:column;gap:10px;align-items:center}
 .account-switch-hold-card h2{margin:0;font-size:20px}
 .account-switch-hold-card p{margin:0;color:#9fc4d8;line-height:1.4}
@@ -1789,3 +1790,5 @@ html body .game-core .actions>#new.action-reset:hover,html body .game-core .acti
 .admin-feedback select{margin:4px 0;font:inherit}
 .admin-feedback select.admin-error{outline:2px solid #ff8a7a}
 .beta-modal .primary{background:linear-gradient(180deg,#9be8f4,#4fb9d3);color:#05202b;border-color:transparent;font-weight:800}
+/* #962: one-tap diagnostic transmission status. */
+.support-quick-status{margin:4px 12px 8px;font-size:13px;line-height:1.35;overflow-wrap:anywhere}

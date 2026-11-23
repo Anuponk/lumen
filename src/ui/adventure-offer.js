@@ -106,6 +106,9 @@ export function updateAdventureOfferMastery(section,model,{onClaim=()=>{},onCont
  }
 }
 
+// #962: the generic "check your connection" misleads when Chrome lost the app's billing
+// service; only closing and reopening the app fixes it.
+export function playUnavailableKey(errors=[]){return (errors||[]).some(e=>e?.reason==='client_app_unavailable')?'store.playClientUnavailable':'store.playUnavailable'}
 export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false,locale="fr",t=french}={}){
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'adventure-offer'});
@@ -190,7 +193,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   const unavailable=!model.purchasesAvailable||!model.unitPriceKnown||(model.showSky&&!model.skyPriceKnown);
   const message=el('p',{className:'adventure-offer-soon'},playCheckoutPaused?t('store.playPaused'):
    model.priceStatus==='loading'?t('store.playLoading'):
-   unavailable?t('store.playUnavailable'):'');
+   unavailable?t(playUnavailableKey(model.priceErrors)):'');
   message.setAttribute('role','status');message.setAttribute('aria-live','polite');
   message.dataset.playPriceReason=(model.priceErrors||[]).map(e=>e.reason).join(',');
   if(message.textContent)root.append(message);

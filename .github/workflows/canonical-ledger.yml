@@ -226,6 +226,13 @@ jobs:
             -f scripts/fixtures/technical-retention.sql \
             -f scripts/fixtures/technical-retention-readonly.sql
           LUMEN_SQL_TEST_DB=lumen_privacy_test python3 scripts/technical-retention-concurrency.py
+      - name: Verify that only exact duplicate analytics indexes are dropped (#995)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_privacy_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/analytics-duplicate-indexes.sql
 
       - name: Verify current schema erasure, export and support isolation
         env:
@@ -273,6 +280,8 @@ jobs:
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
             -f supabase/migrations/20261111133853_official_attempt_time.sql \
             -f supabase/migrations/20261111133853_official_attempt_time.sql \
+            -f supabase/migrations/20261123000000_ranking_finish_reason_962.sql \
+            -f supabase/migrations/20261123000000_ranking_finish_reason_962.sql \
             -f scripts/fixtures/official-time.sql
           python3 scripts/official-time-concurrency.py
       - name: Verify the 1 MiB profile ceiling and preserved function definitions
@@ -287,7 +296,7 @@ jobs:
           LUMEN_SQL_FIXTURE: '1'
         run: |
           node scripts/jsonb-digest-fixtures.mjs > /tmp/lumen-jsonb-digest.sql
-          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1             -f /tmp/lumen-jsonb-digest.sql             -f supabase/migrations/20261115140000_profile_digest_cas.sql             -f scripts/fixtures/profile-digest-cas.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1             -f /tmp/lumen-jsonb-digest.sql             -f supabase/migrations/20261115140000_profile_digest_cas.sql             -f scripts/fixtures/profile-digest-cas.sql             -f supabase/migrations/20261123070000_profile_digest_read_1000.sql             -f scripts/fixtures/profile-digest-read.sql
       - name: Verify bounded hydration stage diagnostics
         env:
           PGPASSWORD: isolated-test-only
@@ -313,6 +322,10 @@ jobs:
           LUMEN_SQL_FIXTURE: '1'
         run: |
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/reliable-analytics.sql
+          # #962: admin cockpit indexes (exact cockpit_events predicates, unchanged results).
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/admin-cockpit-indexes-962.sql
+          # #962: bounded device storage health in outbox_health (overload, summary, bounds, privileges).
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/outbox-storage-health-962.sql
       - name: Verify purchases, the 5 EUR cap, refunds and mastery unlocks (#728)
         env:
           PGPASSWORD: isolated-test-only
@@ -399,6 +412,12 @@ jobs:
             -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
             -f supabase/migrations/20261119092413_play_acknowledgement_833.sql \
             -f scripts/fixtures/play-acknowledgement.sql \
+            -f supabase/migrations/20261123060000_play_ack_cron_guard_995.sql \
+            -f supabase/migrations/20261123060000_play_ack_cron_guard_995.sql \
+            -f scripts/fixtures/play-ack-cron-guard.sql \
+            -f supabase/migrations/20261123061000_cron_run_details_retention_995.sql \
+            -f supabase/migrations/20261123061000_cron_run_details_retention_995.sql \
+            -f scripts/fixtures/cron-run-details-retention.sql \
             -f supabase/migrations/20261119092419_distinct_adventures_728.sql \
             -f supabase/migrations/20261119092419_distinct_adventures_728.sql \
             -f scripts/fixtures/distinct-adventures.sql

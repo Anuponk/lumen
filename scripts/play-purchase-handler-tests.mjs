@@ -16,7 +16,7 @@ function fixture({user={id:'verified-player'},product={product_id:'real-adventur
  purchase={purchaseState:0,acknowledgementState:0,purchaseTimeMillis:'1763200000000',regionCode:'FR',orderId:'GPA.1'},googleStatus=200,bound=true,
  order={orderId:'GPA.1',purchaseToken:'play-token-1',state:'PROCESSED',lineItems:[{productId:'real_adventure_02',total:{currencyCode:'EUR',units:'1',nanos:190000000}}]},orderStatus=200,
  recordError=null,ackOk=true,ackJobs=[],voided=[[]],known={},bindings={},claims={},env={},secretsMissing=false,eligible=true}={}){
- let handler;const calls=[];
+ let handler;const calls=[], logs=[];
  const createClient=(_url,key)=>key==='synthetic-public'
   ?{auth:{getUser:async token=>{calls.push({kind:'auth',token});return {data:{user},error:user?null:{message:'invalid'}}}}}
   :{rpc:async(name,args)=>{calls.push({kind:'rpc',name,args});
@@ -57,10 +57,10 @@ function fixture({user={id:'verified-player'},product={product_id:'real-adventur
    if(token!=='provider-token')throw Error('invalid signature');
    calls.push({kind:'oidc',options});
    return {payload:{email:'play-push@synthetic.iam.gserviceaccount.com',email_verified:true,...claims}};
-  },createClient,fetch,console:{error(){},warn(){},info(){}},Deno:{serve:fn=>{handler=fn},env:{get:k=>values[k]}}});
+  },createClient,fetch,console:{error(){},warn(...args){logs.push(args.join(' '))},log(...args){logs.push(args.join(' '))},info(){}},Deno:{serve:fn=>{handler=fn},env:{get:k=>values[k]}}});
  const request=({body={mode:'verify',productId:'real_adventure_02',purchaseToken:'play-token-1'},token='player-token',origin='https://lumen.nopuna.fr',method='POST',headers={},path='/play'}={})=>
   handler(new Request('https://synthetic.invalid'+path,{method,headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{}),...(origin?{origin}:{}),...headers},...(method==='POST'?{body:JSON.stringify(body)}:{})}));
- return {calls,request};
+ return {calls,request,logs};
 }
 const receiptRpc='lumen_record_play_purchase_with_ack';
 const records=(calls,name=receiptRpc)=>JSON.parse(JSON.stringify(calls.filter(c=>c.kind==='rpc'&&c.name===name).map(c=>c.args))); // vm realm
@@ -90,13 +90,34 @@ test('an authenticated Play notification verifies and records a bound purchase w
  assert.equal((await push(wrongEmail)).status,403);
  assert.deepEqual(records(wrongEmail.calls),[]);
 });
+test('RTDN recovers an independently reconciled unbound order only after verifying settlement',async()=>{
+ const opts={env:{...rtdnConfig,LUMEN_PLAY_RECOVERY_ORDERS:JSON.stringify({'GPA.1':'verified-player'})},bound:false};
+ const f=fixture(opts);
+ assert.equal((await push(f)).status,204);
+ assert.equal(records(f.calls)[0]?.p_user_id,'verified-player');
+ assert.equal(records(f.calls)[0]?.p_settled_amount,'1.190000000');
+ assert(f.calls.findIndex(c=>c.url?.includes('/orders/'))<f.calls.findIndex(c=>c.name===receiptRpc));
+ assert(f.calls.findIndex(c=>c.name===receiptRpc)<f.calls.findIndex(c=>c.url?.endsWith(':acknowledge')));
+
+ const mismatch=fixture({...opts,order:{orderId:'GPA.1',purchaseToken:'other',state:'PROCESSED',
+  lineItems:[{productId:'real_adventure_02',total:{currencyCode:'EUR',units:'1'}}]}});
+ assert.equal((await push(mismatch)).status,503);
+ assert.deepEqual(records(mismatch.calls),[]);
+ assert(!mismatch.calls.some(c=>c.url?.endsWith(':acknowledge')));
+});
 test('unowned Play purchases never create rights; temporary Google errors leave RTDN retryable',async()=>{
  const denied=fixture({env:rtdnConfig,bound:false});
- assert.equal((await push(denied)).status,204);
+ assert.equal((await push(denied)).status,503,'a verified order without a linked account must remain retryable');
  assert.deepEqual(records(denied.calls),[]);
  const failed=fixture({env:rtdnConfig,googleStatus:500});
  assert.equal((await push(failed)).status,503);
  assert.deepEqual(records(failed.calls),[]);
+ const log=JSON.parse(failed.logs[0]);
+ assert.deepEqual(log,{event:'lumen_play_rtdn_deferred',reason:'google_unavailable',messageKey:sha('lumen-rtdn:42')});
+ assert(!failed.logs[0].includes('play-token-1'));
+ const again=await push(failed);
+ assert.equal(again.status,503);
+ assert.equal(failed.logs[0],failed.logs[1],'retries of the same Pub/Sub delivery share a safe key');
 });
 test('RTDN refunds reread the current order and never acknowledge a stale or mismatched notification',async()=>{
  const original={user_id:'verified-player',product_id:'real-adventure-02',amount_cents:100,currency:'EUR',status:'paid'};
@@ -117,6 +138,23 @@ test('RTDN refunds reread the current order and never acknowledge a stale or mis
  assert.deepEqual(records(replay.calls,'lumen_record_purchase'),[]);
  const unmatched=fixture({env:rtdnConfig});
  assert.equal((await push(unmatched,notification)).status,503,'a refund can be delivered before the receipt');
+ assert.deepEqual(JSON.parse(unmatched.logs[0]),{event:'lumen_play_rtdn_deferred',reason:'refund_receipt_pending',messageKey:sha('lumen-rtdn:42')});
+ // #962: production redelivered one such refund every ~8 min since 21/11. When Google
+ // confirms this exact order is refunded or cancelled, nothing was or will be granted.
+ for(const state of ['REFUNDED','CANCELED']){
+  const closed=fixture({env:rtdnConfig,order:{...order,state}});
+  assert.equal((await push(closed,notification)).status,204,state+' refund without receipt is closed');
+  assert.deepEqual(JSON.parse(closed.logs.at(-1)),{event:'lumen_play_rtdn_closed',reason:'refund_without_receipt',messageKey:sha('lumen-rtdn:42')});
+  assert(!closed.logs.join(' ').includes('play-token-1')&&!closed.logs.join(' ').includes('GPA.1'),'no token or order id in logs');
+  assert.deepEqual(records(closed.calls),[]);assert.deepEqual(records(closed.calls,'lumen_record_purchase'),[]);
+  assert(!closed.calls.some(c=>c.url?.endsWith(':acknowledge')||c.url?.includes('/tokens/')),'no purchase check, record or acknowledgement');
+ }
+ for(const [label,opts] of [['pending order',{order:{...order,state:'PENDING'}}],['other order',{order:{...order,orderId:'GPA.2'}}],
+  ['other token',{order:{...order,purchaseToken:'other'}}],['order unavailable',{order,orderStatus:404}],['Google error',{order,orderStatus:500}]]){
+  const kept=fixture({env:rtdnConfig,...opts});
+  assert.equal((await push(kept,notification)).status,503,label+' stays redeliverable');
+  assert.deepEqual(records(kept.calls,'lumen_record_purchase'),[]);
+ }
  const mismatch=fixture({env:rtdnConfig,known,order:{...order,purchaseToken:'other'}});
  assert.equal((await push(mismatch,notification)).status,503);
  assert.deepEqual(records(mismatch.calls,'lumen_record_purchase'),[]);

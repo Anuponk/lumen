@@ -2,7 +2,7 @@ import {createTranslator} from '../src/ui/i18n.js';
 import {adventureDisplayName} from '../src/ui/adventure-copy.js';
 // #729: client Play Billing module with synthetic Digital Goods and Payment Request.
 import assert from 'node:assert/strict';
-import {PLAY_CHECKOUT_AVAILABLE,PLAY_TEST_CAPABILITY,playCheckoutOpen,createForegroundRecovery,PLAY_BINDING_PROBE,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../src/persistence/play-billing.js';
+import {playProviderReason,PLAY_CHECKOUT_AVAILABLE,PLAY_TEST_CAPABILITY,playCheckoutOpen,createForegroundRecovery,PLAY_BINDING_PROBE,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,playPrices,toPlayProductId,PLAY_BILLING_METHOD,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../src/persistence/play-billing.js';
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from '../src/ui/adventure-offer.js';
@@ -638,3 +638,18 @@ assert.equal(vm.runInContext('playBoundCheckoutAvailable()',recovery),false,'Rev
  assert.match(normalized,/playCheckoutPaused:offer\.pricesRequired&&!playCheckoutOpen\(\{released:PLAY_CHECKOUT_AVAILABLE,capabilities:lumenCapabilities\}\)/);
 }
 console.log('play-billing-tests #833: licence-test capability gate and foreground recovery OK');
+
+// #962: production device after a reinstall: every getDetails failed with Chrome's
+// OperationError `clientAppUnavailable`. It gets its own reason; other text stays hidden.
+{
+ const failure=()=>Object.assign(new Error('clientAppUnavailable'),{name:'OperationError'});
+ const seen=[];await playPrices({getDetails:async()=>{throw failure()}},['real_adventure_02'],{onDiagnostic:e=>seen.push(e)});
+ assert.deepEqual(seen,[{reason:'client_app_unavailable'}]);
+ assert.equal(playProviderReason(Error('clientAppUnavailable: secret'),'details_request_failed'),'details_request_failed','only the exact public code is recognised');
+ assert.equal(playProviderReason(null,'binding_probe_failed'),'binding_probe_failed');
+ const loader=createPlayPriceLoader({win:{getDigitalGoodsService:async()=>({getDetails:async()=>{throw failure()}}),PaymentRequest:function(){}},ids:['real-adventure-02'],probeBinding:true,timeoutMs:1000});
+ await loader.load();
+ assert.deepEqual(loader.snapshot().errors.map(e=>e.reason),['client_app_unavailable','client_app_unavailable']);
+ assert.equal(loader.snapshot().status,'error');
+ console.log('Play billing: clientAppUnavailable reported as client_app_unavailable');
+}

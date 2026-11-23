@@ -45,6 +45,9 @@ export async function acknowledgeLearningMilestones(evaluate){
  })()`);
 }
 
+// #962: the production Supabase host, blocked for every browser test unless a run
+// explicitly opts in (LUMEN_TEST_ALLOW_PRODUCTION=1, never set in CI).
+export const PRODUCTION_SUPABASE_BLOCK=process.env.LUMEN_TEST_ALLOW_PRODUCTION==='1'?null:'*://tjdjlavmusmncuszhsuw.supabase.co/*';
 export async function connectBrowser(){
  const endpoint=process.env.LUMEN_CDP_URL||'http://127.0.0.1:9222';
  let page=null;
@@ -67,5 +70,13 @@ export async function connectBrowser(){
  };
  function send(method,params={}){return new Promise((resolve,reject)=>{const key=++id;const timeout=setTimeout(()=>{pending.delete(key);reject(Error("CDP timeout after 15s: "+method))},15000);pending.set(key,message=>{clearTimeout(timeout);message.error?reject(Error(JSON.stringify(message.error))):resolve(message.result)});ws.send(JSON.stringify({id:key,method,params}))})}
  async function evaluate(expression,awaitPromise=false){const result=await send('Runtime.evaluate',{expression,awaitPromise,returnByValue:true});if(result.exceptionDetails)throw Error(result.exceptionDetails.exception?.description||JSON.stringify(result.exceptionDetails));return result.result.value}
+ // #962: browser tests never reach the production Supabase project (they sent ~65k
+ // anonymous reads a day to it). Every blocked-URL list a suite sets keeps this host.
+ if(PRODUCTION_SUPABASE_BLOCK){
+  const raw=send;
+  send=(method,params={})=>raw(method,method==='Network.setBlockedURLs'?{...params,urls:[...new Set([...(params.urls||[]),PRODUCTION_SUPABASE_BLOCK])]}:params);
+  await send('Network.enable');
+  await send('Network.setBlockedURLs',{urls:[]});
+ }
  return {send,evaluate,errors};
 }

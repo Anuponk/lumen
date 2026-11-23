@@ -1,0 +1,70 @@
+name: Lumen backup script
+# #999: proves export, restore check and its failure modes on synthetic data.
+# Never touches production and uses no secret.
+on:
+  pull_request:
+    paths:
+      - scripts/lumen-backup.sh
+      - scripts/fixtures/backup-source.sql
+      - .github/workflows/lumen-backup.yml
+      - .github/workflows/lumen-backup-script.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash  # -eo pipefail: a failing command is never hidden by tee
+
+jobs:
+  backup-script:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: isolated-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      PGPASSWORD: isolated-test-only
+      BASE: postgresql://postgres@localhost:5432
+      WORK: /tmp/lumen-backup-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Synthetic source and empty restore targets
+        run: |
+          for db in source restore_ok restore_short; do psql "$BASE/postgres" -X -q -c "create database $db"; done
+          psql "$BASE/source" -X -q -v ON_ERROR_STOP=1 -f scripts/fixtures/backup-source.sql
+      - name: Export, restore and compare
+        run: |
+          bash scripts/lumen-backup.sh dump "$BASE/source" "$WORK" | tee "$WORK.log"
+          bash scripts/lumen-backup.sh verify "$WORK" "$BASE/restore_ok" 2>&1 | tee -a "$WORK.log"
+          test "$(psql "$BASE/restore_ok" -X -A -t -c 'select count(*) from auth.users')" = 5
+          test "$(psql "$BASE/restore_ok" -X -A -t -c 'select count(*) from lumen_commands.purchases')" = 2
+          test "$(psql "$BASE/restore_ok" -X -A -t -c 'select count(*) from lumen.analytics_events')" = 0
+          test "$(psql "$BASE/restore_ok" -X -A -t -c "select count(*) from pg_trigger where tgname = 'diagnostic_clear'")" = 1
+          test "$(psql "$BASE/restore_ok" -X -A -t -c 'select count(*) from lumen_private.auth_mail_limits')" = 1
+          test "$(psql "$BASE/restore_ok" -X -A -t -c "select relrowsecurity from pg_class where oid = 'lumen.profile_snapshots'::regclass")" = t
+      - name: A short or missing table fails the check
+        run: |
+          echo 'lumen.ghost|1' >> "$WORK/manifest.txt"
+          if bash scripts/lumen-backup.sh verify "$WORK" "$BASE/restore_short" 2>&1 | tee -a "$WORK.log"; then
+            echo "::error::verify accepted a missing table"; exit 1
+          fi
+      - name: Logs carry no personal data
+        run: |
+          ! grep -q "example.invalid" "$WORK.log"

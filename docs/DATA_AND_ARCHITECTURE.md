@@ -17,6 +17,15 @@ writes nothing and needs no cloud merge, restore or consent change. Contract:
 [PRODUCT_ANALYTICS](PRODUCT_ANALYTICS.md#mesure-dacquisition-708).
 Lot D adds `lumen_admin_version_health(p_days)` (`20261121170000_admin_version_health_708.sql`),
 the same kind of read-only admin aggregate over `lumen_sync_health` and `outbox_health`, per app version.
+#962: the client sends `outbox_health` the build as `X.Y.Z+N sha` (`outboxHealthVersion`), the only
+format `record_outbox_health` accepts; the visible label "Version … · sha" was stored as `unknown`.
+#962 storage health (`20261123020000_outbox_storage_health_962.sql`): each outbox observation also
+carries the local storage size rounded up to 256 KB, its share of the ~10 MB origin limit
+rounded to 5 %, and `quota`/`storage` for the last local write failure (runtime error name or
+`local_preservation_failed`). A 14-argument overload keeps the 11-argument call for older
+clients; `outbox_health_summary` adds `storage_pressure_players` (≥ 80 %, ≥ 6 MB or an error
+within 7 days) and storage fields on alerts. No key, content, message or stack; same
+legitimate-interest tier, retention and erasure as `outbox_health` (privacy policy updated).
 
 ## Current architecture
 
@@ -139,6 +148,15 @@ Rollback must retain the epoch/guards; reinstalling an old save would undo the
 requested reset. Existing privacy export/erasure includes this already inventoried
 user-owned authority table and its private originals.
 
+## Admin cockpit indexes (#962)
+
+On 22 November 2026, `lumen_admin_cockpit`, `lumen_admin_quest_metrics` and `lumen_admin_recent_players` took 9.7 s, 7.9 s and 7.3 s when measured one at a time in production. Together they exceeded the 8 s `authenticated` statement timeout, which returned HTTP 500 and SQLSTATE 57014.
+
+- **Cause:** all three read `lumen_commands.cockpit_events`. Because of its `SET search_path`, that function cannot be inlined, so it runs a generic plan. The plan scans the 163,742 analytics events sequentially and decodes `properties` on each one, only to keep 5,287 human, non-QA rows. It also reads every account-linked row in full to find anonymous owners.
+- **Fix:** `20261123010000_admin_cockpit_indexes_962.sql` adds two indexes that match those exact predicates: `analytics_events_human_occurred_idx`, partial on human, non-QA events, and `analytics_events_user_anonymous_idx`, covering owners. It also makes the `owners` CTE of `cockpit_events` `MATERIALIZED`. Results, permissions and timeouts are unchanged.
+- **Production lesson:** the indexes alone made the RPCs slower (9.0 to 9.5 s). The planner underestimates the human rows and re-aggregated the inlined `owners` once per event (5,287 loops, 3.7 M heap fetches). Computed once, the full history needs 26,809 buffers instead of 2.2 M.
+- **CI check:** `scripts/fixtures/admin-cockpit-indexes-962.sql` checks the predicates, that the planner can use both indexes, and that `cockpit_events` returns the same attribution.
+
 ## Prepared technical retention (#316)
 
 `20261022192259_lumen_technical_retention.sql` adds operator-only bounded
@@ -201,12 +219,14 @@ Full runbook and owner steps: [STRIPE_730](STRIPE_730.md).
   - `readiness` mode (`x-lumen-cron` secret, #833): read-only pre-activation probe. It mints a Google token, calls `purchases.products.get` and `orders.get` with synthetic identifiers (400/404 = reachable, 401/403 = missing permission), lists one voided purchase, reads the ledger RPC and reports whether RTDN is configured. It records, acknowledges and returns no purchase data, token or secret. Licence-test purchases skip `orders.get`, so this probe is the only check of that permission before a real sale.
   - Client gate (#833): the Play checkout opens when `PLAY_CHECKOUT_AVAILABLE` is true, or for an account holding the server capability `play_test_checkout` (`lumen.internal_capabilities`, read through `lumen_get_internal_capabilities`). This lets a licence tester run the end-to-end acceptance while public sales stay closed. It grants nothing; every token follows the same verification. Signed-in Play apps also recheck purchases on return to the foreground (throttled to once a minute), in addition to hydration, `online` and after a purchase.
   - Migration `20261119092413_play_acknowledgement_833.sql` records the verified purchase, purchase entitlement and acknowledgement task atomically. The service-only worker leases due tasks, confirms the state with Google, and retries with a capped delay. The private queue retains its temporary token only until acknowledgement, cancellation, erasure or expiry. See the [operations and test checklist](../android/PLAY.md#récupération-et-déploiement-google-play-823).
+  - Free-first (#995): the pg_cron job `lumen-play-acknowledge` runs every 2 minutes. Its command calls the worker only when `lumen_commands.play_acknowledgement_due()` finds a token whose lease has expired or that is older than 4 days (claim or prune work), per `20261123060000_play_ack_cron_guard_995.sql`. The inline acknowledgement at purchase time is unchanged. `20261123061000_cron_run_details_retention_995.sql` keeps 7 days of `cron.job_run_details`, plus the latest run of every job. See [Free-first observability](OBSERVABILITY_946.md#sobriété-supabase-free-first-995).
   - Whole-sky upgrades (#865): Play SKUs `real_sky_upgrade_1..4` ↔ ledger `real-sky-upgrade-1..4` (`kind='sky_upgrade'`, tier = confirmed unit purchases). `verify` calls the service-only `lumen_sky_upgrade_eligible` before recording a new upgrade token; an outdated tier answers 409 `offer_not_eligible` without recording or acknowledging. Upgrades never feed the historical € credit. The Android wrapper (`PaymentActivity`) accepts the same SKU list. See [SHOP_865](SHOP_865.md).
   - Already-owned items (#864): Google Play owns a non-consumable per **Google account**, not per Lumen account. Before opening the Play sheet, and again after a sheet that failed or was cancelled, the client reads `listPurchases()` for that SKU (`findOwnedPlayPurchase`). A held token is sent to `verify` for the signed-in Lumen account only; no sheet opens. `paid` rereads entitlements; `owned_elsewhere` asks the player to sign in to the original Lumen account; `account_unverified` (purchase without account binding, e.g. before 19/11/2026 10:41 UTC) points to support; `not_paid` explains a cancellation. A token already **refunded** in the ledger answers `not_paid` for every account, even when another account held it (#878), never `owned_elsewhere`. A manual restore that finds several such purchases shows one sentence per state, naming the items, with the open offer's adventure first (`playOwnershipSummary`, #878). Nothing is ever transferred between Lumen accounts.
 - **Secrets** (Edge Function secrets only): `LUMEN_PLAY_SERVICE_ACCOUNT`, `LUMEN_PLAY_PACKAGE`, `LUMEN_PLAY_CRON_SECRET`, optional `LUMEN_PLAY_RECOVERY_ORDERS`. The recovery map contains independently verified order-to-Auth-UUID associations. It cannot grant an entitlement without the server verifying the Google purchase. See [Android release and recovery](../android/PLAY.md#récupération-et-déploiement-google-play-823).
 - **Migration** `20261115220000_play_purchase_gateway_729.sql`: `public.lumen_store_price`, `lumen_record_purchase` and `lumen_purchase_by_ref`, executable by `service_role` only. Migration `20261118212000_play_regional_receipts_729.sql` adds the Play-only gateway and nullable settled amount and currency on the private ledger and accounting archive. Apply the migration before deploying the Edge Function. Old rows keep their original values.
 - Notices (#863/#885): Digital Goods inventory alone cannot establish a purchase for the signed-in Lumen account. Automatic checks display a game notice only when verification confirms payment for that account and the entitlement read-back cannot verify access. Empty inventory, stale or revoked items, unbound or foreign purchases, pending provider replies and temporary failures stay quiet in the background. Distinct failure states are recorded locally as `play_restore_check` when the result changes, without account IDs, SKUs or tokens. A temporary verifier failure does not clear an existing notice for a confirmed payment. Automatic Play notices can neither replace nor clear a separate checkout notice. The explicit shop restore reports empty inventory, confirmed access, or the relevant actionable result in FR/EN. A clean success clears itself after about 3 s.
 - **Client** (`persistence/play-billing.js`): after verified hydration, on reconnect or via the secondary « Restaurer mes achats » action in the Play offer footer (#863), Digital Goods lists existing purchases without opening payment. Unresolved payments or entitlement reads retry with bounded delays scoped to that account and client. Paid or revoked receipts trigger a read of server entitlements and a refresh of Mon ciel. Digital Goods enumerates Play purchases independently of the signed-in Lumen account. The server verifies ownership against the Auth UUID. An unverified or foreign receipt alone produces no automatic notice, and a manual check explains that no purchase could be associated with the current account. Stripe retains its automatic web restore.
+- Unreachable delegation (#962): when Chrome cannot reach the app's `BillingDelegationService` (`OperationError: clientAppUnavailable`, seen after a Play reinstall), prices and the binding probe report `client_app_unavailable`; checkout stays blocked and the offer asks the player to fully close Lumen and Chrome, then reopen Lumen.
 - **Play checkout release switch (#833):** checkout requires the release switch, the exact capability response from the installed Android wrapper, a validated price for the product, positive Payment Request readiness and a current account binding registered before opening the sheet. Price, binding probe and Payment Request diagnostics run during the pause, independently of purchase restoration. The vendored Billing adapter forwards the binding for supported single purchases. Follow the [server and installed-wrapper acceptance checklist](../android/PLAY.md#recette-du-wrapper-101-2-et-réactivation-833-pr-837) for rollout and functional acceptance.
 
 ## Purchases, store seed and mastery unlocks — #728
@@ -256,6 +276,9 @@ an older dossier rather than the latest one for its owner. The prepared
 only, preserving ownership, locks, audit, revocation and retention; it requires
 separate production authorization. No game writer, save format or ChatGPT
 retrieval channel is added. See SUPPORT_574 for the transport and acceptance limits.
+#962: Mon espace adds « Transmettre mon diagnostic » (`ui/support-quick-send.js`): the Lumen
+dialog asks explicit consent, then the same session activates the dossier and sends one
+manual capture; the reference appears only after the server receipt.
 No game writer, save mutation or reconciliation change; originals remain local.
 The migration/control are prepared and disabled pending explicit production
 authorization. A volatile one-hour queue deliberately does not survive page
@@ -277,6 +300,9 @@ for installation order, actual SQL evidence and outstanding physical gates.
 outbox state, fifteen-minute alert and capability; add a private companion
 detail stream, not another backlog/repair engine. `diagnostic-reporter.js` maps
 fixed cloud/outbox/runtime codes and #533 blocked/Undo/released transitions.
+#962: runtime exceptions and rejections carry `kind` `quota`/`storage`/`network` from the
+standard error name (or exact browser network messages) only; messages, stacks and
+URLs never leave the device. Before this, a full device storage stayed `unknown`.
 `lumen_record_diagnostics` derives Auth identity and checks the expected account;
 the same `lumen_admin_sync_health` response adds a bounded diagnostic sample,
 without profile/account joins. Public RPC wrappers are invokers; privileged
@@ -346,6 +372,13 @@ originals that were previously omitted from its local prefix selection.
 once the session has settled), the game runs the same archival for the
 `AccountSwitch` and `AccountSwitchAttempt` families only, without any player
 action or message. A changed session interrupts it; it retries at most twice.
+**All families above 1 MiB (#962).** Twenty seconds after launch, when the local
+recovery copies exceed 1 MiB, `maintainRecoveryBackups` runs the same archival for
+**every** family, in up to eight 50-copy batches, stopping on any interruption or
+unverified archive. Production, 22 November 2026: one account held 172 copies
+(8.4 MB of the ~10 MB origin limit), saves failed with `LOCAL_WRITE_FAILED` and only
+the manual « Libérer l’espace » button could recover. The run is logged locally as
+`local_backups_maintained`; pending outboxes and the current profile are never touched.
 In every family, retention now keeps the two most recent **distinct** copies:
 an identical copy (same content, another timestamp) is archived once under the
 `localStorage:<key>` of its most recent twin, with the same read-back rule, so
@@ -519,6 +552,14 @@ The [performance monitoring contract](OBSERVABILITY_946.md#détection-des-régre
 
 The [admin activity mail contract](OBSERVABILITY_946.md#notifications-dactivité-950) describes the read-only projection of Auth and commerce events and its separate delivery queue.
 
+### Ranking finish diagnostics (#962)
+
+`lumen_commands.ranking_finish` keeps SQLSTATE `22023` for its existing
+invalid-input and evidence gates. Fixed reason messages identify the guard
+without exposing arguments, player IDs or scores. A missing victory receipt
+still returns `pending`. Only the existing receipt-backed admission path can
+publish a score. Timing, assistance, idempotence and revision checks are
+unchanged. Use the new reason distribution to investigate client behavior.
 ### Google Play review navigation (#796)
 
 `lumen_commands.play_review_access_events` is private. A database operator
@@ -675,6 +716,22 @@ show an old board while that view's capture remains pending. Version-1 attempts
 derive `hintUsed` from their own persisted hint counter, never a previous grid's
 UI flag; old unversioned attempts retain their historical fallback. Existing
 inconsistent receipts are preserved, not repaired or requalified by the client.
+
+Permanent ranking refusals (#962) apply when `lumen_ranking_finish` returns a #977 reason that describes the stored receipt itself:
+- `invalid_counts`, `retry_counts_mismatch`;
+- `quest_mismatch`, `facts_missing`, `started_at_mismatch`;
+- `hint_flag_mismatch`, `assistance_flag_mismatch`;
+- `invalid_official_timing`, `official_counts_mismatch`.
+
+Such a capture is moved to `lumenRankingObsoleteV1:` (kept, never deleted) and is no longer replayed at every sync. The view treats it like `ineligible`.
+
+`seconds_out_of_range`, `run_missing` and network errors stay pending as before. Server validation is unchanged.
+
+Production evidence (22 November 2026): one capture from 15 November, recorded before #777, carried `hintUsed=true` while its official timing counted zero hints. Its account was refused 250 times a day with `hint_flag_mismatch`.
+
+Captures for a non-participating account (#962) are archived when `lumen_ranking_finish` answers `membership_required`, as withdrawal already does. Before this, they stayed pending and were resent at every 30-second queue refresh. On 22 November 2026 one such account replayed 133 captures, about 4.4 finish calls a second, 33,935 calls in 16 hours.
+
+Both terminal answers are also remembered for the page lifetime (#962). On 22 November 2026 a device on the fixed build still resent its refused capture at every refresh although the client logic was verified with the real supabase-js error; the archive write most likely failed on that device (e.g. storage full). The refusal is now sent at most once per page load; the capture stays pending in storage and is never deleted.
 
 `lumen.profiles` owns the canonical unique nickname and durable ranking opposition;
 `ranking_members` owns public participation. Automatic participation is server-gated
@@ -1127,6 +1184,17 @@ equality of the full CAS. Any mismatch (real conflict or serialization differenc
 missing endpoint or unexpected answer writes nothing and falls back to the full CAS,
 so the outcome is always the full comparison's. A matched digest that the guarded
 CAS refuses is a conflict, never a second write.
+
+Profile read-back by digest (#1000 lot 1, migration
+`20261123070000_profile_digest_read_1000.sql`): `lumen_profile_digest` returns only
+the SHA-256 of the stored profile text (account guard, read-only). The client's
+`confirmVerifiedProfile` returns a copy of a profile it already holds when the
+digests match: the device cache at hydration, its own write after a failed save,
+initialization and reconciliation read-backs. Any mismatch, malformed answer, error,
+missing endpoint, absent profile or missing account guard runs the usual
+`lumen_restore_profile` read, so no unverified profile is ever installed. This
+replaces most ~43 KB full reads by a ~100-byte answer (Supabase Free egress).
+Command read-backs still download the full profile (lot 2).
 
 Cloud profile limits use 1048576 UTF-8 bytes (1 MiB since 15 November 2026,
 migration `20261115120000_profile_size_limit_1mib.sql`; previously 524288) with

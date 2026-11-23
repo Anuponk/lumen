@@ -164,3 +164,24 @@ export async function archiveRecoveryBackups(storage,{indexedDB=globalThis.index
  }catch{result.failed=true}
  return result;
 }
+
+// #962: production account with 172 recovery copies (8.4 MB of a ~10 MB origin limit):
+// only account-switch copies were archived automatically, the rest waited for the
+// manual « Libérer l'espace » button. Saves then failed (LOCAL_WRITE_FAILED). Above the
+// threshold, every family is archived with the same verified policy (IndexedDB copy
+// read back before removal, two newest copies per family kept), in bounded batches.
+export const AUTO_ARCHIVE_THRESHOLD_BYTES=1024*1024;
+export async function maintainRecoveryBackups(storage,{indexedDB=globalThis.indexedDB,sessionValid=()=>true,thresholdBytes=AUTO_ARCHIVE_THRESHOLD_BYTES,maxBatches=8}={}){
+ const before=measureLocalStorage(storage);
+ const result={ran:false,archived:0,bytes:0,batches:0,failed:false,interrupted:false,before:before.available?before.categories.backups.bytes:null};
+ if(!before.available||before.categories.backups.bytes<thresholdBytes)return result;
+ result.ran=true;
+ while(result.batches<maxBatches){
+  const batch=await archiveRecoveryBackups(storage,{indexedDB,sessionValid});
+  result.batches++;result.archived+=batch.archived;result.bytes+=batch.bytes;
+  if(batch.interrupted){result.interrupted=true;break}
+  if(batch.failed){result.failed=true;break}
+  if(!batch.archived)break;
+ }
+ return result;
+}

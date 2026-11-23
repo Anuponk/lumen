@@ -44,6 +44,8 @@ Ranking/manual marking #638/#647: `ranking-tests.mjs`, `ranking-client-tests.mjs
 `manual-marking-tests.mjs`, `ranking-browser-tests.mjs`, disposable SQL
 `fixtures/ranking.sql` and PostgreSQL `ranking-concurrency.py`. Full gate includes
 the new Node/browser suites; SQL concurrency runs in canonical-ledger CI.
+Free-first #995: `quest-review-tests.mjs` proves the 30 s ranking wake reads the
+board only when a capture settled or the podium is not ready; reconnects still re-read it.
 
 Support: `support-tests.mjs` covers full catalogue copies, source preservation,
 metadata headroom, oversized optional checkpoints, compact-versus-jsonb/exponent
@@ -76,6 +78,14 @@ erasure races and adds real support lock ordering. See `docs/TESTING.md`.
 
 Technical retention: `scripts/fixtures/technical-retention*.sql` and
 `scripts/technical-retention-concurrency.py` in disposable PostgreSQL 17 CI.
+Free-first #995 (canonical-ledger CI): `play-ack-cron-guard.sql` (due/not-due
+acknowledgement work, idempotent command rewrite), `cron-run-details-retention.sql`
+(7 days, latest run per job and running rows kept, bounded batches) and
+`analytics-duplicate-indexes.sql` (only exact twins dropped, rows untouched).
+Backup #999: `lumen-backup-script.yml` runs `scripts/lumen-backup.sh` on
+`fixtures/backup-source.sql` in disposable PostgreSQL 17 (export, restore counts,
+analytics rows excluded, RLS kept, cross-schema `lumen_ops` trigger and `lumen_private` data restored, missing table fails, no personal data in logs).
+The weekly production run is `lumen-backup.yml`; see [BACKUP_RESTORE_999](../BACKUP_RESTORE_999.md).
 See `docs/TESTING.md` for preview, dates, held/open data, rollback, role denial,
 concurrent reenabling and DDL checks; no production purge is tested.
 
@@ -405,7 +415,7 @@ Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the 
 | Campaign resume beyond numeric catalogue | `campaign-resume-tests.mjs`, `campaign-resume-browser-tests.mjs` | Authenticated mobile Grand Chien → Dauphin, canonical startup/reload/attempt identity and account-switch backup, using synthetic data and RPCs |
 | Campaign cards / finale / prior badges | `campaign-presentation-tests.mjs`, `catalogue-access-tests.mjs`; browser `campaign-resume-browser-tests.mjs`, `canonical-replay-browser-tests.mjs`, `late-game-browser-tests.mjs` | Canonical counts/full illumination, historical Antlia access versus new-player order, actual finale and nonempty completion, previously earned Rapidité; no reward or player-data migration |
 | Catalogue compatibility / acquired access | `catalogue-access-tests.mjs`, `catalogue-compatibility-tests.mjs`; `fixtures/catalogue-origin.sql` | Failing A/B reproduction, additive waves, local sequences, stable identities, all current new-player frontiers/reloads, UI start guard and immutable cloud cohort. SQL runs in disposable PostgreSQL only; real affected-device validation remains required |
-| Divergence / profile reconciliation (`src/persistence/cloud-profile.js`) | `cloud-profile-transitions-tests.mjs`, `cloud-reconciliation-matrix-tests.mjs`, `cloud-bidirectional-reconcile-tests.mjs`, `cloud-safe-reconciliation-tests.mjs`, `performance-qualification-merge-tests.mjs`, `performance-conflict-details-tests.mjs`, `cloud-balance-reconciliation-tests.mjs` | Simulated storage/RPC, conflict, CAS and read-back assertions; qualification regression does not grant rewards |
+| Divergence / profile reconciliation (`src/persistence/cloud-profile.js`) | `cloud-profile-transitions-tests.mjs`, `cloud-reconciliation-matrix-tests.mjs`, `cloud-bidirectional-reconcile-tests.mjs`, `cloud-safe-reconciliation-tests.mjs`, `performance-qualification-merge-tests.mjs`, `performance-conflict-details-tests.mjs`, `cloud-balance-reconciliation-tests.mjs`, `profile-digest-read-tests.mjs` (#1000 digest-confirmed read-back) | Simulated storage/RPC, conflict, CAS and read-back assertions; qualification regression does not grant rewards |
 | Hydration / guest recovery (`src/ui/game-screen.js`, persistence modules) | `first-login-cloud-restore-tests.mjs`, `cloud-hydration-stage-tests.mjs`, `partial-hydration-status-tests.mjs`, `cloud-achievements-local-recovery-tests.mjs`, `cloud-unsynced-recovery-tests.mjs`, `cloud-local-quota-tests.mjs`, `guest-transfer-tests.mjs` | Mix of executable helpers, VM-extracted UI functions and source contracts; not a real cache-loss/device test |
 | Canonical ledger / badges (`src/persistence/canonical-progress.js`, outbox, UI) | `canonical-ledger-client-tests.mjs`, `canonical-ledger-contract-tests.mjs`, `canonical-ambiguous-ack-tests.mjs`, `canonical-outbox-tests.mjs`, `canonical-outbox-multi-device-tests.mjs` | Requested badges versus solved-only reply; ambiguous acknowledgement, account isolation and durable retry. Client RPC simulations are separate from real SQL fixtures |
 | Server command identities | `canonical-command-client-tests.mjs`; `fixtures/canonical-command-receipts.sql`, `canonical-command-concurrency.py` in the SQL workflow; `account-session-browser-tests.mjs` | Exact receipt + current profile, lost reply, capability compatibility, session guards, atomic rollback and real concurrent SQL calls. Browser RPCs remain simulated; no production migration proof |
@@ -416,7 +426,7 @@ Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the 
 | Auth / sessions (`src/persistence/cloud.js`, UI) | `account-email-login-tests.mjs`, `account-session-modes-tests.mjs`, `cloud-client-session-tests.mjs`, `cloud-session-guard-tests.mjs`, `oauth-return.test.mjs`, `persistence-tests.mjs` | Google/password/guest/recovery contracts, startup/event ordering and session guards; isolated simulations/source assertions |
 | Auth mail (`src/auth/`, dedicated mail functions) | `auth-mail-otp-tests.mjs`, `auth-email-brand-routing-tests.mjs`, `auth-email-delivery-plan-tests.mjs`, `auth-email-hook-integration-tests.mjs`, `auth-email-ledger-contract-tests.mjs` | Historical filename `auth-mail-otp-tests.mjs` now includes rejection of retired OTP/magic-link login; recovery/confirmation and routing remain relevant |
 | Daily challenge (#882) | `daily-challenge-tests.mjs`, `daily-view-tests.mjs`, `daily-week-tests.mjs`, `daily-challenge-browser.mjs` (via canonical replay browser suite), `daily-schedule.mjs --check`, SQL `fixtures/daily-challenge-882.sql`, `daily-concurrency.py`, `fixtures/daily-rollback-882.sql` (canonical-ledger CI) | Paris day/DST, pinned grid, one official attempt, both rankings from one row, frozen weekly ranks, English/French presentation and share, erasure |
-| Abandon and qualification window (#908) | `abandon-attempt-908-tests.mjs`, `abandon-attempt-browser-tests.mjs`, `attempt-engine-tests.mjs` | Full gate |
+| Abandon and qualification window (#908) | `abandon-attempt-908-tests.mjs`, `abandon-attempt-browser-tests.mjs`, `attempt-engine-tests.mjs` | Full gate; #998: a qualifying start stamps only an existing performance record (never a new `{questIndex}` entry the legacy guard refuses) |
 | In-game confirmations (#921) | `lumen-dialog-tests.mjs`, `lumen-dialog-browser-tests.mjs`, `quest-review-tests.mjs`, `abandon-attempt-browser-tests.mjs` | Full gate |
 | Mastery celebration (#886) | `mastery-prelude-tests.mjs`, `adventure-mastery-browser-tests.mjs`, `admin-preview-browser-tests.mjs`, `celestial-ux-tests.mjs` | Full gate |
 | Menu pause (#925) | `menu-pause-tests.mjs`, `menu-pause-browser-tests.mjs`, `abandon-attempt-browser-tests.mjs`, `attempt-engine-tests.mjs` | Full gate |
