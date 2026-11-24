@@ -130,7 +130,7 @@ try {
     await until(`!!document.querySelector('[data-offer="unit"]')`);
     const offer=await evaluate(`(()=>{const e=document.querySelector('.adventure-offer');return {text:e.textContent,unit:e.querySelector('[data-offer-count="unit"]').textContent,sky:e.querySelector('[data-offer-count="sky"]').textContent,prices:[...e.querySelectorAll('.adventure-offer-price')].map(x=>x.textContent),overflow:e.scrollWidth>e.clientWidth+1}})()`);
     assert.match(offer.unit,/\+ \d+ nouvelles quêtes/);assert.match(offer.sky,/\+ \d+ nouvelles grilles/);
-    assert.deepEqual(offer.prices,['1 €','5 €']);assert.match(offer.text,/Le savais-tu/);assert.equal(offer.overflow,false);
+    assert.deepEqual(offer.prices,['5 €','1 €'],'whole-sky first, with prices preserved for both offers');assert.match(offer.text,/Le savais-tu/);assert.equal(offer.overflow,false);
     if(process.env.LUMEN_UX_CAPTURE_DIR){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.LUMEN_UX_CAPTURE_DIR+'/store-'+width+'.png',Buffer.from(shot.data,'base64'))}
     await evaluate(`(async()=>{const {adventureOfferModel,mountAdventureOffer}=await import('/src/ui/adventure-offer.js');const {CONTENT_PACKS,contentMapModel}=await import('/src/campaign/content.js');const {canonicalQuestList}=await import('/src/campaign/canonical-quests.js');const packs=contentMapModel([],{progress:lumenDiagnostics.snapshot().progress}).skies.flatMap(s=>s.packs);const pack=packs.find(p=>p.accessible===false);const model=adventureOfferModel({pack,packs,quests:canonicalQuestList(),progress:lumenDiagnostics.snapshot().progress,signedIn:true,purchasesAvailable:true});window.__offerCalls=[];mountAdventureOffer(document.getElementById('adventureNoticeOffer'),model,{onBuy:(id)=>window.__offerCalls.push(id)});document.querySelector('[data-offer="unit"]').click()})()`,true);
     assert.equal(await evaluate(`window.__offerCalls.length`),0,'Consent gate preserved on the real offer DOM');
@@ -170,7 +170,7 @@ try {
     await until(`typeof window.__playResolve==='function'&&window.__playLoader.snapshot().status==='loading'`);
     await evaluate(`window.__playResolve();window.__playLoader.load()`,true);
     assert.equal(await evaluate(`document.querySelector('[data-offer="unit"]').disabled`),false);
-    assert.match(await evaluate(`document.querySelector('.adventure-offer-price').textContent`),/1,00\s€/);
+    assert.match(await evaluate(`document.querySelector('.adventure-offer-card--unit .adventure-offer-price').textContent`),/1,00\s€/);
     assert.equal(await evaluate(`window.__playShows`),0);
     assert.equal(await evaluate(`(()=>{const e=document.querySelector('.adventure-offer');return e.scrollWidth>e.clientWidth+1})()`),false);
     await evaluate(`document.getElementById('adventureNoticeClose').click()`);
