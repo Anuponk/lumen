@@ -4641,9 +4641,14 @@ board.addEventListener("pointerdown",e=>{
  const startState=state[Number(cell.dataset.row)][Number(cell.dataset.col)];
  dragCross={id:e.pointerId,startX:e.clientX,startY:e.clientY,lastX:e.clientX,lastY:e.clientY,dragging:false,changed:false,visited:new Set(),snapshot:state.map(x=>x.slice()),lesson,mode:!lesson&&startState!==0?'erase':'mark'};
 },{passive:false});
+function dragCellAt(x,y){const b=board.getBoundingClientRect();if(!b.width||!b.height)return null;return [Math.floor((y-b.top)/b.height*n),Math.floor((x-b.left)/b.width*n)]}
+function dragLeftStartCell(e){const from=dragCellAt(dragCross.startX,dragCross.startY),to=dragCellAt(e.clientX,e.clientY);return !from||!to||from[0]!==to[0]||from[1]!==to[1]}
 function moveDragCross(e){
  if(!dragCross||dragCross.id!==e.pointerId)return;
- if(!dragCross.dragging&&Math.hypot(e.clientX-dragCross.startX,e.clientY-dragCross.startY)>8){
+ // #994: a finger rolling a few pixels inside its own cell is still a tap (native
+ // click: cross -> Guardian -> empty). Android's tap slop exceeds 8 px, so a drag
+ // starts only once the pointer has also left the starting cell. No timer.
+ if(!dragCross.dragging&&Math.hypot(e.clientX-dragCross.startX,e.clientY-dragCross.startY)>8&&dragLeftStartCell(e)){
    dragCross.dragging=true;dragCrossSuppressClick=true;
    try{board.setPointerCapture?.(e.pointerId)}catch{}
  }
