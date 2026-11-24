@@ -19,9 +19,11 @@ const board=(me)=>({day:DAY,final:false,closes_at:'2026-11-23T23:00:00Z',my_run:
  general:{participants:12,top:[{nickname:'Ana',score:95,rank:1,mine:false},{nickname:'Bo',score:95,rank:1,mine:false},{nickname:'Cy',score:120,rank:3,mine:false}],me:me?.status==='completed'?{rank:5,score:me.score}:null},
  friends:{participants:1,top:me?.status==='completed'?[{nickname:'Moi',score:me.score,rank:1,mine:true}]:[],me:me?.status==='completed'?{rank:1,score:me.score}:null}});
 
-function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr'}){
+function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr',handoff=false}){
  return `
   localStorage.clear();
+  sessionStorage.clear();
+  ${handoff?`sessionStorage.setItem('lumenDailyHandoffV1',String(Date.now()));sessionStorage.setItem('lumenDailyTodayV1',JSON.stringify({receivedAt:Date.now(),today:{enabled:true,day:${JSON.stringify(DAY)},quest_id:${JSON.stringify(quest.id)},grid_revision:${quest.gridRevision},closes_at:new Date(Date.now()+5*3600000).toISOString(),server_now:new Date().toISOString()}}));`:''}
   localStorage.setItem('lumen.locale',${JSON.stringify(locale)});
   localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(profile))});
   for(const k of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');
@@ -124,6 +126,16 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await evaluate("document.getElementById('dailyChip').click()");
  await until(evaluate,`new URL(location.href).searchParams.get('daily')==='1'&&!!window.lumenDiagnostics`,'chip opens the daily');
  results.push({kind:'header-chip'});
+ // #1015: a tap that just read the open challenge hands it to the daily page:
+ // no sequential lumen_daily_today before the board; otherwise exactly one read.
+ for(const handoff of [true,false]){
+  await open({send,evaluate},url,{signedIn:true,enabled:true,handoff});
+  await until(evaluate,`!document.getElementById('dailyIntro').hidden`,'intro '+handoff);await sleep(400);
+  const today=(await calls(evaluate,'lumen_daily_today')).length,boards=(await calls(evaluate,'lumen_daily_board')).length;
+  assert.deepEqual({today,boards},{today:handoff?0:1,boards:1},'daily context reads with handoff='+handoff);
+  assert.equal(await evaluate(`sessionStorage.getItem('lumenDailyHandoffV1')`),null,'the hand-off is consumed once');
+ }
+ results.push({kind:'context-reuse'});
 
  // Disabled: no entry in « Mes quêtes », ?daily=1 falls back to the campaign.
  await open({send,evaluate},url,{signedIn:false,enabled:false});

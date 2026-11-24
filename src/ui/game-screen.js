@@ -2427,8 +2427,33 @@ function discoverDailyToday(owner){
  if(dailyTodayMemo&&now<dailyTodayMemo.until&&(dailyTodayMemo.owner===owner||dailyTodayMemo.open||!dailyTodayMemo.settled))return dailyTodayMemo.promise;
  const promise=dailyClient.discover();
  const memo={owner,promise,until:now+6*3600e3};dailyTodayMemo=memo;
- promise.then(today=>{const left=Date.parse(today?.closes_at)-Date.parse(today?.server_now);memo.settled=true;if(today?.enabled&&left>0){memo.until=now+left;memo.open=true}},()=>{if(dailyTodayMemo===memo)dailyTodayMemo=null});
+ promise.then(today=>{const left=Date.parse(today?.closes_at)-Date.parse(today?.server_now);memo.settled=true;if(today?.enabled&&left>0){memo.until=now+left;memo.open=true;rememberDailyToday(today)}},()=>{if(dailyTodayMemo===memo)dailyTodayMemo=null});
  return promise;
+}
+// #1015: entering the daily reloads the page. An OPEN challenge is the same for
+// every account until its server closing time, so the answer just read in Mon
+// ciel / Social is reused for this tab (sessionStorage) instead of a sequential
+// lumen_daily_today before the board. The server stays the judge: begin/finish
+// check the day, and a closed, expired or missing entry falls back to the RPC.
+// Only an explicit hand-off (a tap on the chip / Mon ciel / Social entry less than
+// 30 s ago, consumed once) may reuse it; any other load reads the server.
+const DAILY_TODAY_KEY='lumenDailyTodayV1',DAILY_HANDOFF_KEY='lumenDailyHandoffV1',DAILY_TODAY_MARGIN_MS=60000,DAILY_HANDOFF_MS=30000;
+function handOffDaily(training=false){try{sessionStorage.setItem(DAILY_HANDOFF_KEY,String(Date.now()))}catch{}location.href=dailyUrl(training)}
+function rememberDailyToday(today){try{sessionStorage.setItem(DAILY_TODAY_KEY,JSON.stringify({today,receivedAt:Date.now()}))}catch{}}
+function cachedDailyToday(){
+ try{
+  const handoff=Date.now()-Number(sessionStorage.getItem(DAILY_HANDOFF_KEY));sessionStorage.removeItem(DAILY_HANDOFF_KEY);
+  if(!(handoff>=0&&handoff<DAILY_HANDOFF_MS))return null;
+  const cached=JSON.parse(sessionStorage.getItem(DAILY_TODAY_KEY)||'null'),today=cached?.today,age=Date.now()-Number(cached?.receivedAt);
+  if(!today?.enabled||!today.quest_id||!today.day||!(age>=0))return null;
+  const serverNow=Date.parse(today.server_now)+age;
+  if(!(Date.parse(today.closes_at)-serverNow>DAILY_TODAY_MARGIN_MS))return null;
+  return {...today,server_now:new Date(serverNow).toISOString()};
+ }catch{return null}
+}
+function seedDailyToday(today){
+ const left=Date.parse(today?.closes_at)-Date.parse(today?.server_now);
+ if(today?.enabled&&left>0)dailyTodayMemo={owner:lumenUser?.id,promise:Promise.resolve(today),until:Date.now()+left,open:true,settled:true};
 }
 // Local-only player state for the header chip: no extra RPC. The official run
 // itself stays server-owned; this only avoids inviting a finished player again.
@@ -2446,14 +2471,14 @@ function renderDailyChip(today,owner){
  chip.dataset.state=state;
  if(label)label.textContent=state==='done'?'✓':'';
  const label2=t(state==='done'?'daily.chipDoneLabel':'daily.chipOpenLabel',{date:dailyDate(today.day)});chip.setAttribute('aria-label',label2);chip.title=label2;
- chip.onclick=()=>{trackDaily('chip_opened');location.href=dailyUrl()};
+ chip.onclick=()=>{trackDaily('chip_opened');handOffDaily()};
 }
 async function refreshDailyEntry(){
  const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek'),chip=document.getElementById('dailyChip');
  const request=++dailyEntryRequest,owner=lumenUser?.id;
  if(!entry||socialChallenge){if(chip)chip.hidden=true;return}
  const current=()=>request===dailyEntryRequest&&owner===lumenUser?.id&&!socialChallenge;
- entry.onclick=()=>{location.href=dailyUrl()};
+ entry.onclick=()=>handOffDaily();
  try{
   const today=await discoverDailyToday(owner);
   if(!current())return;
@@ -2491,7 +2516,7 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  document.getElementById('dailyNext').textContent=Number.isFinite(closes)?t('daily.nextChallenge',{duration:dailyDuration(closes-Date.now())}):'';
  document.getElementById('dailyRetrySubmit').hidden=!pending;
  document.getElementById('dailyTrainAgain').hidden=pending||(!training&&!['completed','abandoned'].includes(status));
- document.getElementById('dailyTrainAgain').onclick=()=>{location.href=dailyUrl(true)};
+ document.getElementById('dailyTrainAgain').onclick=()=>handOffDaily(true);
  // #1013: the end of the Défi du jour leads to Mon ciel (the same daily for
  // everyone: no daily-specific share), never to a campaign grid.
  document.getElementById('dailyContinue').onclick=()=>{location.href=location.pathname+'?sky=1'};
@@ -2544,7 +2569,10 @@ async function finishDaily(status){
 }
 async function bootstrapDailyChallenge(){
  const params=new URL(location.href).searchParams;if(!params.has('daily'))return false;
- let today=null;try{today=await dailyClient.today()}catch{today=null}
+ let today=cachedDailyToday();
+ if(!today){try{today=await dailyClient.today();if(today?.enabled)rememberDailyToday(today)}catch{today=null}}
+ // The same answer feeds the header chip / Mon ciel entry: no second read.
+ if(today)seedDailyToday(today);
  if(!today?.enabled||!today.quest_id){showRewardToast(dailyErrorMessage('daily_unavailable',t));return false}
  let quest;try{quest=dailyQuest({questId:today.quest_id,gridRevision:today.grid_revision})}catch{showRewardToast(dailyErrorMessage('daily_unavailable',t));return false}
  socialChallenge={daily:true,training:true,challenge_id:'daily-'+today.day+'-training',day:today.day,grid_revision:today.grid_revision,closes_at:today.closes_at,clockSkewMs:Date.now()-Date.parse(today.server_now)};
@@ -2575,7 +2603,7 @@ async function bootstrapDailyChallenge(){
     // The server day decides. An intro left open across midnight Paris must
     // not play yesterday's grid against today's official attempt: reload on
     // the server day (the attempt then resumes at its server elapsed time).
-    if(res.day&&res.day!==today.day){status.textContent=t("board.dailyRollover");location.replace(dailyUrl());return}
+    if(res.day&&res.day!==today.day){try{sessionStorage.removeItem(DAILY_TODAY_KEY)}catch{}status.textContent=t("board.dailyRollover");location.replace(dailyUrl());return}
     if(res.status!=='started'){intro.hidden=true;showDailyResult({run:res,board:await dailyClient.board(today.day).catch(()=>null)});resolve(true);return}
     Object.assign(socialChallenge,{training:false,challenge_id:'daily-'+today.day,operation_id:res.operation_id,started_at:res.started_at});
     const local=attemptEngine.peek(),hasLocal=local?.mode==='challenge'&&local.challengeId===socialChallenge.challenge_id;

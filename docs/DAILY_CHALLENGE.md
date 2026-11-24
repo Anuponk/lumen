@@ -38,6 +38,19 @@ permanent) ; seul un petit point cyan signale un défi encore à jouer. Son
 officiel ou d'un envoi en attente) : il n'ajoute aucun appel et ne change aucune
 règle, l'écran du défi restant seul juge de la tentative unique. #898 : « Mes quêtes » dans Mon ciel et le menu Social (qui en reprend le texte) affichent le même état « déjà joué, voir le classement ». Un lien
 explicite et une tentative déjà en attente gardent leurs chemins existants.
+
+#1015 (performance) : entrer dans le défi recharge la page. Un défi **ouvert** est
+identique pour tous les comptes jusqu'à `closes_at` ; la réponse que la pastille,
+« Mes quêtes » ou Social viennent de lire est donc transmise à la page du défi
+(`sessionStorage` `lumenDailyTodayV1`), uniquement par un **relais explicite**
+(`lumenDailyHandoffV1`, posé par le clic, valable 30 s, consommé une fois).
+L'écran du défi lit alors directement le classement, sans `lumen_daily_today`
+séquentiel, et le même mémo alimente la pastille (plus de seconde lecture).
+Tout autre chargement, un défi fermé ou proche de sa clôture (marge 60 s) relit
+le serveur ; un changement de jour serveur au `begin` invalide le cache. Mesure
+locale (RPC simulés à 250 ms, 390 px, 9 passages) : part réseau de l'entrée p50
+526 → 265 ms, appels `lumen_daily_today` 2 → 0. Le reste du délai ressenti est le
+redémarrage complet de la page (entrée et sortie), à traiter séparément.
 ## 2. Modèle de données (migration additive `20261122090000_daily_challenge_882.sql`)
 
 | Objet | Rôle | Propriétaire / effacement |
