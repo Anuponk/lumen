@@ -28,6 +28,7 @@ export default Object.freeze({
   'daily.close': "Close",
   'daily.shareWeek': "Share my week",
   'daily.entryDate': "{date} · ends in {duration}",
+  'daily.entryDone': "{date} · played, see the ranking",
   'daily.endsIn': "Ends in {duration}",
   'daily.trainingBanner': "Unranked practice",
   'daily.officialBanner': "1 official attempt · ends in {duration}",

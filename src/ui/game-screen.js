@@ -2449,7 +2449,11 @@ async function refreshDailyEntry(){
   const today=await discoverDailyToday(owner);
   if(!current())return;
   entry.hidden=!today?.enabled;
-  if(today?.enabled)document.getElementById('dailyEntryState').textContent=t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
+  // #898/#1003: the same « already played » state in the header chip, Mon ciel and
+  // Social (which mirrors this text); no extra read, the daily screen stays the judge.
+  if(today?.enabled)document.getElementById('dailyEntryState').textContent=dailyChipState(today.day,owner)==='done'
+   ?t('daily.entryDone',{date:dailyDate(today.day)})
+   :t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
   if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}
   renderDailyChip(today,owner);
  }catch{if(current()){entry.hidden=true;if(week)week.hidden=true;if(chip)chip.hidden=true}}

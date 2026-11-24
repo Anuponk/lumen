@@ -34,7 +34,7 @@ Mon ciel et le menu Social. La pastille `#dailyChip` occupe la ligne d'en-tête
 existante (aucune ligne ajoutée, grille inchangée, trophée seul sous 430 px). Son
 état « fait » est local (`lumenDailyDoneV1`, écrit à l'affichage du résultat
 officiel ou d'un envoi en attente) : il n'ajoute aucun appel et ne change aucune
-règle, l'écran du défi restant seul juge de la tentative unique. Un lien
+règle, l'écran du défi restant seul juge de la tentative unique. #898 : « Mes quêtes » dans Mon ciel et le menu Social (qui en reprend le texte) affichent le même état « déjà joué, voir le classement ». Un lien
 explicite et une tentative déjà en attente gardent leurs chemins existants.
 ## 2. Modèle de données (migration additive `20261122090000_daily_challenge_882.sql`)
 
