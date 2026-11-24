@@ -113,6 +113,35 @@ try {
     assert.equal(v.kind, 'bug');
     assert.match(v.context, /Version/);
     assert.match(v.context, /quête \d+/, 'quest context is shown to the player');
+    // #959: one help entry. Mon espace has no separate diagnostic button; the full
+    // account copy is a report option for signed-in players, with its consent text.
+    assert.equal(
+      await evaluate(`document.getElementById('supportQuickSend')`),
+      null,
+      'single help entry',
+    );
+    const fullCopy = await evaluate(
+      `(()=>{const row=document.getElementById('feedbackFullCopyRow');return {shown:!!row&&!row.hidden,checked:!!document.getElementById('feedbackFullCopy')?.checked}})()`,
+    );
+    assert.equal(fullCopy.shown, signedIn, 'full copy offered to signed-in players only');
+    if (signedIn) {
+      if (!fullCopy.checked) await evaluate(`document.getElementById('feedbackFullCopy').click()`);
+      assert.equal(
+        await evaluate(`document.getElementById('feedbackFullCopyNote').hidden`),
+        false,
+        'consent text shown when ticked',
+      );
+      assert.match(
+        await evaluate(`document.getElementById('feedbackFullCopyNote').textContent`),
+        /support habilité/,
+      );
+      await evaluate(`document.getElementById('feedbackFullCopy').click()`);
+      assert.equal(
+        await evaluate(`document.getElementById('feedbackFullCopyNote').hidden`),
+        true,
+        'consent text hidden when unticked',
+      );
+    }
     assert.equal(
       await evaluate(`document.activeElement.id`),
       'feedbackText',

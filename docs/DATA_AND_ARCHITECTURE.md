@@ -280,6 +280,11 @@ retrieval channel is added. See SUPPORT_574 for the transport and acceptance lim
 #962: Mon espace adds « Transmettre mon diagnostic » (`ui/support-quick-send.js`): the Lumen
 dialog asks explicit consent, then the same session activates the dossier and sends one
 manual capture; the reference appears only after the server receipt.
+#959 (24/11): a single help entry. The button left Mon espace; « Signaler un problème »
+offers « Joindre une copie complète de mon compte » to signed-in, non-QA players (ticked
+by default when sync needs attention). Ticking shows the same consent text
+(`support.quickCopy`) and is the explicit consent; the copy is sent through the same
+session only after the report is confirmed, its status shown on the receipt screen.
 No game writer, save mutation or reconciliation change; originals remain local.
 The migration/control are prepared and disabled pending explicit production
 authorization. A volatile one-hour queue deliberately does not survive page

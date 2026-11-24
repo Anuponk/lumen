@@ -143,6 +143,7 @@ export function createBetaFeedback({
   send,
   context,
   journal = () => [],
+  fullCopy = null,
   onSent = () => {},
   onOpen = () => {},
   onClose = () => {},
@@ -217,6 +218,19 @@ export function createBetaFeedback({
       : document.getElementById('mobileAccount')
     )?.focus?.();
   }
+  // #959: the single help entry. A signed-in player may attach the full account
+  // copy (former « Transmettre mon diagnostic »); its consent text is shown when
+  // ticked and it is sent only after the report, through the assistance session.
+  function renderFullCopy() {
+    const row = $('feedbackFullCopyRow'),
+      box = $('feedbackFullCopy'),
+      note = $('feedbackFullCopyNote');
+    if (!row || !box) return;
+    const available = !!fullCopy?.available();
+    row.hidden = !available;
+    if (!available) box.checked = false;
+    if (note) note.hidden = !box.checked;
+  }
   function open({ kind, surface, errorCode, origin } = {}) {
     opener = origin || document.activeElement;
     extra = { surface, errorCode };
@@ -226,6 +240,14 @@ export function createBetaFeedback({
     text.value = draft.message;
     renderKind();
     renderContext();
+    const box = $('feedbackFullCopy');
+    if (box) box.checked = !!fullCopy?.available() && !!fullCopy?.suggested();
+    renderFullCopy();
+    const fullStatus = $('feedbackFullCopyStatus');
+    if (fullStatus) {
+      fullStatus.textContent = '';
+      fullStatus.hidden = true;
+    }
     setStatus(draft.message.trim() ? 'feedback.draftRestored' : '');
     button.disabled = false;
     modal.hidden = false;
@@ -233,6 +255,7 @@ export function createBetaFeedback({
     text.focus();
   }
   form.addEventListener('change', (event) => {
+    if (event.target.id === 'feedbackFullCopy') return renderFullCopy();
     if (event.target.name !== 'feedbackKind') return;
     draft.kind = event.target.value;
     renderKind();
@@ -246,7 +269,8 @@ export function createBetaFeedback({
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (sending) return;
-    const message = text.value.trim();
+    const message = text.value.trim(),
+      withFullCopy = !!$('feedbackFullCopy')?.checked && !!fullCopy?.available();
     if (message.length < 3) {
       setStatus('feedback.error.messageRequired');
       text.focus();
@@ -276,6 +300,8 @@ export function createBetaFeedback({
         $('feedbackDoneClose')?.focus();
       }
       onSent(receipt);
+      // The report is already confirmed; the full copy reports its own status.
+      if (withFullCopy) void fullCopy.send();
     } catch (error) {
       // The draft (and its reference) stays: a retry never creates a duplicate.
       setStatus(ERROR_KEYS[classifyFeedbackError(error, document.defaultView?.navigator?.onLine)]);

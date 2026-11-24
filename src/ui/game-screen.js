@@ -1786,7 +1786,7 @@ function renderAuthUserCopy(node=document.getElementById('authUser')){
  if(node)node.textContent=lumenUser?(lumenNickname||(cloudProfileReady&&!cloudProfileDirty&&!cloudProfileFailure&&!canonicalOutboxNotice?t('sync.synced'):t('sync.pending'))):t('account.localProgress');
 }
 function updateAuthUI(){
- {const quick=document.getElementById('supportQuickSend');if(quick)quick.hidden=!lumenUser||qaActive}
+
  const purchaseNotice=document.getElementById('purchaseStatus');
  if(purchaseNotice?.dataset?.purchaseOwner&&purchaseNotice.dataset.purchaseOwner!==lumenUser?.id)showPurchaseStatus('');
 
@@ -3825,6 +3825,9 @@ function setupBetaFeedback(){
  betaFeedback=createBetaFeedback({document,storage:localStorage,t,
   context:feedbackContext,
   journal:()=>buildFeedbackJournal(localStorage),
+  fullCopy:{available:()=>!!lumenUser&&!!lumenSupabase&&!qaActive&&!!supportSession,
+   suggested:()=>!!cloudProfileFailure||canonicalOutboxNotice==='attention'||!cloudProfileReady,
+   send:()=>supportQuickSend.run()},
   send:sendFeedback,
   onSent:()=>trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,analyticsContext())
  });
@@ -6206,12 +6209,9 @@ if(supportHost){
  // Local clock enforces expiry even while the phone stays offline.
  setInterval(()=>{supportSession.changed();const v=supportSession.view();if(v.dossier?.state==='active'&&Date.parse(v.dossier.expires_at)<=Date.now())void supportSession.refresh()},30000);
 }
-// #962: one-tap diagnostic transmission with explicit consent in the Lumen dialog.
-const supportQuickButton=document.getElementById('supportQuickSend');
-if(supportQuickButton){
- const quick=createSupportQuickSend({session:()=>supportSession,dialog:lumenConfirm,t,button:supportQuickButton,status:document.getElementById('supportQuickStatus')});
- supportQuickButton.onclick=()=>quick.open();
-}
+// #962/#959: the full account copy is now an option of « Signaler un problème »
+// (one help entry). Ticking it is the explicit consent; its text is shown first.
+const supportQuickSend=createSupportQuickSend({session:()=>supportSession,dialog:lumenConfirm,t,button:null,status:document.getElementById('feedbackFullCopyStatus')});
 const archiveAccountStorage=document.getElementById('archiveAccountStorage');if(archiveAccountStorage)archiveAccountStorage.onclick=compactAccountStorage;
 const exportAccountStorage=document.getElementById('exportAccountStorage');if(exportAccountStorage)exportAccountStorage.onclick=()=>exportLumenRecoveryBundle().catch(()=>{document.getElementById('accountStorageStatus').textContent='Export incomplet : les sauvegardes restent conservées.'});
 if(exportAccountStorage){

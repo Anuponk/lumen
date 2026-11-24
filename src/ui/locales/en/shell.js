@@ -144,6 +144,7 @@ export default Object.freeze({
   'feedback.ctx.session': "Session",
   'feedback.ctx.journal': "Sync journal",
   'feedback.ctx.journalCount': "{count} technical events",
+  'feedback.fullCopy': "Attach a full copy of my account",
   'feedback.send': "Send",
   'feedback.sending': "Sending…",
   'feedback.draftRestored': "Draft restored.",

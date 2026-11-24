@@ -145,6 +145,7 @@ export default Object.freeze({
   'feedback.ctx.session': "Sesión",
   'feedback.ctx.journal': "Registro de sincronización",
   'feedback.ctx.journalCount': "{count} eventos técnicos",
+  'feedback.fullCopy': "Adjuntar una copia completa de mi cuenta",
   'feedback.send': "Enviar",
   'feedback.sending': "Enviando…",
   'feedback.draftRestored': "Borrador recuperado.",
