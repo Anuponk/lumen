@@ -106,6 +106,32 @@ class CriticalMonitorTest(unittest.TestCase):
             )
         ])
 
+    def test_samples_are_wall_clock_milliseconds_shared_by_schedulers(self):
+        from datetime import datetime, timezone
+        from lumen_critical_monitor import performance_due, sample_now
+        at = datetime(2026, 11, 24, 12, 3, tzinfo=timezone.utc)
+        self.assertEqual(sample_now(at), 1795521780000)
+        # Always above any GitHub run id used before #947 (≈ 4.5e10): no observation lost.
+        self.assertGreater(sample_now(at), 10 ** 12)
+        self.assertGreater(sample_now(datetime(2026, 11, 24, 12, 8, tzinfo=timezone.utc)), sample_now(at))
+        on = {"LUMEN_PERFORMANCE_MONITOR_ENABLED": "1"}
+        self.assertTrue(performance_due(on, at))
+        self.assertTrue(performance_due({**on, "LUMEN_PERFORMANCE_HOURLY": "1"}, at))
+        self.assertFalse(performance_due({**on, "LUMEN_PERFORMANCE_HOURLY": "1"},
+                                         datetime(2026, 11, 24, 12, 8, tzinfo=timezone.utc)))
+        self.assertFalse(performance_due({"LUMEN_PERFORMANCE_HOURLY": "1"}, at))
+
+    def test_host_cron_runs_the_observer_before_mail_and_never_blocks_it(self):
+        from pathlib import Path
+        script = Path(__file__).with_name("o2switch-activity-mail.sh").read_text()
+        observe = script.index("lumen_critical_monitor.py")
+        self.assertLess(observe, script.index('exec python3 -B "$script_dir/lumen_activity_mail.py"'))
+        self.assertIn('LUMEN_CRITICAL_MONITOR_ENABLED:-1}" == "1"', script)
+        self.assertIn("LUMEN_PERFORMANCE_HOURLY=1", script)
+        self.assertIn("|| printf", script[observe:])
+        workflow = Path(__file__).parents[1].joinpath(".github/workflows/lumen-external-monitor.yml").read_text()
+        self.assertNotIn("LUMEN_PROBE_SAMPLE", workflow)
+
     def test_tick_reuses_queue_and_holds_ambiguous_transport_outcome(self):
         calls = []
         event = {"id": "event", "lease": "fixture-lease", "kind": "incident_resolved",
