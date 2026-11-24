@@ -988,7 +988,9 @@ one confirmed score, the original receipt and an unchanged player snapshot.
 
 `daily-push-ui-tests.mjs` verifies explicit browser permission, the separate
 device registration, account change, dismissal, disabled rollout, expiry and
-the fixed deep link using synthetic browser APIs. The Daily Challenge journey
+the fixed deep link using synthetic browser APIs. `daily-push-dispatch-tests.mjs`
+covers job authorization, provider eligibility, expiry, failure and dispatch
+deduplication without contacting providers. The Daily Challenge journey
 continues to exercise the ordinary experience while the rollout is unavailable.
 See [the delivery checklist](DAILY_PUSH_1032.md#étapes-de-livraison) for physical
 device acceptance and publication requirements.

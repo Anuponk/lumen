@@ -71,12 +71,35 @@ courant de la même origine. Lors d’un changement de compte, le client tente
 de couper la réception locale et de retirer l’inscription de cet appareil.
 Le worker de la page principale conserve le traitement historique.
 
+## Envoi du rappel et mise en service
+
+La fonction Edge `lumen-daily-push-dispatch` utilise le transport Web Push
+épinglé et un secret Bearer propre au job. Configurer hors Git
+`LUMEN_DAILY_PUSH_JOB_TOKEN`, `LUMEN_DAILY_PUSH_VAPID_SUBJECT`,
+`LUMEN_DAILY_PUSH_VAPID_PUBLIC_KEY` et `LUMEN_DAILY_PUSH_VAPID_PRIVATE_KEY`.
+La paire VAPID est dédiée à la nouvelle inscription. La clé publique
+du drapeau et celle utilisée par l’envoi doivent concorder.
+Le mode `--no-verify-jwt` laisse la fonction authentifier le job avec son
+secret distinct de la clé Supabase de service. Conserver les deux secrets
+côté serveur.
+
+Le job appelle la fonction en POST sans paramètre toutes les cinq minutes
+lorsqu’il est déployé. Une exécution traite jusqu’à 20 réservations, quatre
+en parallèle. L’autorisation SQL est requise juste avant le fournisseur.
+Une réponse ambiguë ne déclenche aucun nouvel envoi. Un 404 ou un 410 permet
+le retrait exact d’un abonnement périmé. Le POST avec `?action=cleanup` est
+réservé au même job pour l’entretien périodique. Les réponses exposent des
+comptages agrégés, sans identifiant, endpoint ni secret.
+
+La migration, la fonction et le job doivent passer par un environnement
+isolé et une recette réelle avant l’activation. La PR n’installe aucun job.
+
 ## Étapes de livraison
 
 1. Recetter le réglage Compte et son inscription volontaire. L’abonnement
    historique garde son choix d’origine. Le nouveau rappel reste désactivé
    pendant le développement du traitement d’envoi.
-2. Préparer l’envoi dans [#1034](https://github.com/Anuponk/lumen/issues/1034). Une requête groupée doit exclure les
+2. Terminer le raccordement et la recette d’envoi dans [#1034](https://github.com/Anuponk/lumen/issues/1034). Une requête groupée doit exclure les
    comptes dont le défi est déjà terminé via `daily_runs` et revérifier le
    drapeau, le choix et l’appareil avant l’envoi. Réserver une clé unique par
    appareil et jour de Paris. Limiter les tentatives, purger les abonnements
