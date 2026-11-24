@@ -19,6 +19,13 @@ function restorable(e,now){
   (e.version==='unknown'||/^\d{1,3}\.\d{1,3}\.\d{1,3}\+\d{1,9}$/.test(e.version))&&
   Number.isFinite(Date.parse(e.at))&&Date.parse(e.at)>now-86400000&&Date.parse(e.at)<=now+300000;
 }
+export function saveFailureKind(errorCode){
+ const code=String(errorCode??'');
+ if(!code||/^unknown$/i.test(code))return null;
+ if(code==='CLOUD_NETWORK')return 'network';
+ if(code==='42501'||/^PGRST30[123]$/.test(code)||/AUTH|SESSION/.test(code))return 'auth';
+ return 'conflict';
+}
 export function mapCloudDiagnostic(event,details={}){
  if(event==='canonical_victory_failed'||event==='legacy_victory_pending'){
   const failure=classifyCanonicalRecoveryError({code:details.errorCode});
@@ -33,7 +40,10 @@ export function mapCloudDiagnostic(event,details={}){
   outbox_preservation_failed:'outbox_capture_failed'}[event];
  if(!code&&!(event==='hydration_reconciliation'&&details.result==='blocked'))return null;
  const reason=pick(kinds,details.kind,pick(kinds,details.reason,'unknown'));
- const kind=/quota/.test(String(details.reason||''))?'quota':/storage|backup|install/.test(String(details.reason||''))?'storage':/conflict|balance|ledger/.test(String(details.reason||''))?'conflict':reason;
+// #1010: a failed save carries a reliable error code: no answer (CLOUD_NETWORK),
+ // a session refusal or a server refusal. Keep that distinction instead of 'unknown'.
+ const writeKind=event==='flush_failed'?saveFailureKind(details.errorCode):null;
+ const kind=/quota/.test(String(details.reason||''))?'quota':/storage|backup|install/.test(String(details.reason||''))?'storage':/conflict|balance|ledger/.test(String(details.reason||''))?'conflict':writeKind||reason;
  return {code:code||'hydration_blocked',stage:pick(stages,details.stage,event.startsWith('flush_')?'sync_write':event.includes('outbox')?'outbox_retry':'reconciliation'),kind};
 }
 export function createDiagnosticReporter({storage,context,send,uuid=()=>crypto.randomUUID(),now=Date.now,
