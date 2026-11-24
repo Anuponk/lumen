@@ -107,12 +107,30 @@ export function createSkyNavigation({renderLockedOffer=null,t=createTranslator()
  const unlocked=(entry,pack)=>!!entry.accessible&&getCanonicalQuests(entry.id).some(q=>getCanonicalAvailable(q)||getCanonicalSolved(q));
  function state(pack){const quests=getCanonicalPackQuests(pack.id);return !pack.accessible?(pack.accessStatus==='loading'?'sky.accessLoading':pack.accessStatus==='error'?'sky.accessError':'sky.locked'):celestialMastered(getAdventureMastery(pack))?'sky.mastered':quests.length>0&&quests.every(getCanonicalSolved)?'sky.completed':pack.id===current?.active?.id?'sky.active':'sky.discovery'}
  let current=skySelection(getModel(),selection,getQuest());
- function setView(next){view=next;tabs.hidden=next==='detail';pages.hidden=next==='detail'||current.pages<=1;detail.hidden=next!=='detail'}
+ const questGrid=element('puzzleGrid');
+ const emptyQuests=document.createElement('p');
+ emptyQuests.className='badge-filter-empty';
+ emptyQuests.hidden=true;
+ emptyQuests.setAttribute('role','status');
+ questGrid.after(emptyQuests);
+ function refreshQuestBadgeFilter(){
+  const cards=[...questGrid.querySelectorAll('.puzzle-card')];
+  questGrid.classList.toggle('is-badge-filtered',badgeFilter);
+  for(const card of cards)card.hidden=badgeFilter&&card.dataset.badgesComplete==='true';
+  emptyQuests.hidden=!badgeFilter||!cards.length||cards.some(card=>!card.hidden);
+  emptyQuests.textContent=emptyQuests.hidden?'':t('sky.badgeFilterQuestsEmpty');
+ }
+ function setView(next){view=next;tabs.hidden=next==='detail';pages.hidden=next==='detail'||current.pages<=1;detail.hidden=next!=='detail';if(next==='detail')refreshQuestBadgeFilter()}
  function showLocked(pack,origin){noticeOrigin=origin||document.activeElement;element('adventureNext').hidden=true;element('adventureNoticeClose').textContent=t('sky.understood');element('adventureNoticeTitle').textContent=adventureDisplayName(pack,t)||t('sky.adventure');const offer=element('adventureNoticeOffer');offer.replaceChildren();offer.hidden=true;
  // #731: a catalogue Adventure shows its offer (paid and free paths); other locks keep their reason.
  const offered=!pack.lockReason&&!pack.lockReasonKey&&!!pack.id&&typeof renderLockedOffer==='function'&&renderLockedOffer(offer,pack,{close:closeNotice})===true;
  offer.hidden=!offered;element('adventureNoticeCopy').hidden=offered;
- element('adventureNoticeCopy').textContent=pack.lockReasonKey?t(pack.lockReasonKey):pack.lockReason?(pack.accessStatus==='loading'?t('sky.accessLoadingCopy'):pack.accessStatus==='error'?t('sky.accessErrorCopy'):pack.lockReason):t('sky.lockedCopy');notice.hidden=false;element('adventureNoticeClose').focus()}
+ if(offered){const closeButton=element('adventureNoticeClose');closeButton.textContent=t('store.continueFree')}
+ element('adventureNoticeCopy').textContent=pack.lockReasonKey?t(pack.lockReasonKey):pack.lockReason?(pack.accessStatus==='loading'?t('sky.accessLoadingCopy'):pack.accessStatus==='error'?t('sky.accessErrorCopy'):pack.lockReason):t('sky.lockedCopy');
+ notice.hidden=false;
+ if(offered){const title=element('adventureNoticeTitle');title.tabIndex=-1;title.focus()}
+ else element('adventureNoticeClose').focus()
+ }
  function showCompletion(pack){const quests=getCanonicalPackQuests(pack.id);if(quests.length===0||!quests.every(getCanonicalSolved))return;const badges=getBadgeCounts(pack);const sky=getModel().skies.find(s=>s.id===pack.skyId),entry=sky?.packs.find(p=>p.id===pack.id);if(!entry)return;const next=sky.packs[sky.packs.indexOf(entry)+1];element('adventureNoticeTitle').textContent=t('sky.completedTitle');element('adventureNoticeCopy').textContent=t('sky.completion',{name:adventureDisplayName(entry,t),constellations:entry.constellations.length,stars:entry.constellations.reduce((sum,c)=>sum+(getShape(c)?.count||0),0),autonomy:badges.autonomy||0,speed:badges.speed||0,noError:badges.noError||0,mastery:badges.mastery||0});element('adventureNoticeClose').textContent=t('sky.back');const button=element('adventureNext');button.hidden=!next;button.onclick=()=>{closeNotice();if(!next.accessible){showLocked(next,button);return}selection={skyId:sky.id,packId:next.id,page:0};selectedConstellation=null;view='overview';render()};noticeOrigin=document.activeElement;notice.hidden=false;(next?button:element('adventureNoticeClose')).focus()}
  function closeNotice(){notice.hidden=true;const origin=noticeOrigin?.isConnected&&!noticeOrigin.hidden&&noticeOrigin.getClientRects().length?noticeOrigin:element('adventureRail').querySelector('.selected');origin?.focus?.()}
  function render(){
@@ -175,7 +193,18 @@ export function createSkyNavigation({renderLockedOffer=null,t=createTranslator()
   return true;
  }
  element('constellationPrevious').onclick=()=>turn(-1);element('constellationNext').onclick=()=>turn(1);element('constellationBack').onclick=()=>setView('overview');element('adventureNoticeClose').onclick=closeNotice;
- notice.onclick=e=>{if(e.target===notice)closeNotice()};notice.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();closeNotice()}if(e.key==='Tab'){const buttons=[element('adventureNext'),element('adventureNoticeClose')].filter(b=>!b.hidden);const index=buttons.indexOf(document.activeElement);e.preventDefault();buttons[(index+(e.shiftKey?-1:1)+buttons.length)%buttons.length].focus()}});
+ notice.onclick=e=>{if(e.target===notice)closeNotice()};
+ notice.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.stopPropagation();closeNotice();return}
+  if(e.key!=='Tab')return;
+  const controls=[...notice.querySelectorAll('button,a[href],input')].filter(control=>!control.disabled&&control.getClientRects().length);
+  if(!controls.length)return;
+  const index=controls.indexOf(document.activeElement);
+  if((e.shiftKey&&index<=0)||(!e.shiftKey&&index===controls.length-1)){
+   e.preventDefault();
+   (e.shiftKey?controls.at(-1):controls[0]).focus();
+  }
+ });
  let pointer=null,swiped=false;tabs.style.touchAction='pan-y';tabs.addEventListener('pointerdown',e=>{swiped=false;pointer={x:e.clientX,y:e.clientY,id:e.pointerId}});tabs.addEventListener('pointerup',e=>{if(!pointer||e.pointerId!==pointer.id)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.5){swiped=true;const delta=dx<0?1:-1;const target=swipeAdventureTarget(current,delta);if(target?.locked){showLocked(target.pack,tabs);return}if(target?.changedAdventure){selection={skyId:current.sky.id,packId:target.pack.id,page:target.page};selectedConstellation=null;view='overview';render();element('adventureRail').querySelector('.selected')?.scrollIntoView({block:'nearest',inline:'center'})}else if(target)turn(delta)}});tabs.addEventListener('pointercancel',()=>pointer=null);tabs.addEventListener('click',e=>{if(swiped){e.preventDefault();e.stopImmediatePropagation();swiped=false}},true);
  tabs.addEventListener('keydown',()=>swiped=false);
  let detailPointer=null,detailSwiped=false;detail.style.touchAction='pan-y';
@@ -197,5 +226,5 @@ export function createSkyNavigation({renderLockedOffer=null,t=createTranslator()
   if(e.target.closest('button,input,select,textarea'))return;
   if(e.key==='ArrowRight'||e.key==='ArrowLeft'){if(turnDetail(e.key==='ArrowRight'?1:-1))e.preventDefault()}
  });
- return {render,setView,showLocked,showCompletion,createFactButton,displayName,selectedConstellation:()=>selectedConstellation,open({detail:showDetail=false,questIndex=null,constellationId=null}={}){const index=Number.isInteger(questIndex)?questIndex:getQuest();const model=getModel();const target=skyQuestTarget(model,index,constellationId);selection=target?{skyId:target.sky.id,packId:target.pack.id}:{};current=skySelection(model,selection,index);const entry=(target?.pack.id===current.adventure?.id?target.entry:null)||current.adventure?.constellations.find(c=>c.id===constellationId)||current.adventure?.constellations.find(c=>c.questIndices?.includes(index)||index>=c.questStart&&index<c.questStart+c.questCount)||current.adventure?.constellations[0];if(entry){selection.page=Math.floor(current.adventure.constellations.indexOf(entry)/CONSTELLATIONS_PER_PAGE);selectedConstellation=entry;onConstellation(entry)}view=showDetail?'detail':'overview';notice.hidden=true;render();element('adventureRail').querySelector('.selected')?.scrollIntoView({block:'nearest',inline:'center'})},snapshot:()=>({view,selection:{...selection},activeAdventure:current.active?.id,viewedAdventure:current.adventure?.id,page:current.page,pages:current.pages})};
+ return {render,setView,refreshQuestBadgeFilter,showLocked,showCompletion,createFactButton,displayName,selectedConstellation:()=>selectedConstellation,open({detail:showDetail=false,questIndex=null,constellationId=null}={}){const index=Number.isInteger(questIndex)?questIndex:getQuest();const model=getModel();const target=skyQuestTarget(model,index,constellationId);selection=target?{skyId:target.sky.id,packId:target.pack.id}:{};current=skySelection(model,selection,index);const entry=(target?.pack.id===current.adventure?.id?target.entry:null)||current.adventure?.constellations.find(c=>c.id===constellationId)||current.adventure?.constellations.find(c=>c.questIndices?.includes(index)||index>=c.questStart&&index<c.questStart+c.questCount)||current.adventure?.constellations[0];if(entry){selection.page=Math.floor(current.adventure.constellations.indexOf(entry)/CONSTELLATIONS_PER_PAGE);selectedConstellation=entry;onConstellation(entry)}view=showDetail?'detail':'overview';notice.hidden=true;render();element('adventureRail').querySelector('.selected')?.scrollIntoView({block:'nearest',inline:'center'})},snapshot:()=>({view,selection:{...selection},activeAdventure:current.active?.id,viewedAdventure:current.adventure?.id,page:current.page,pages:current.pages})};
 }

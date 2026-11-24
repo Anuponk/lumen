@@ -929,7 +929,20 @@ Après une déconnexion explicite, un écran neutre « Tu es déconnecté » («
 
 Outil de test admin (#705) : le cockpit admin (« Outils de test ») propose « Aperçu : aventure pleinement maîtrisée ». Il ouvre la vraie célébration de maîtrise pour l’aventure de la quête en cours, sans défi proposé et sans rien écrire (progression, badges, tentative, sauvegarde). Il est refusé pendant une victoire ou une victoire en attente. Comme une vraie victoire finale, l’aperçu remplit lui-même le bloc de performance : meilleur temps enregistré de la quête en cours (ou « Pas encore de temps officiel… » en texte réduit), badges enregistrés et vrai classement de cette quête (podium compris), sans jamais reprendre l’état d’un écran précédent. Avec le podium, l’écran de maîtrise tient sans défilement en 360×640, 390×844 et 412×915 : sous 700 px de hauteur, podium compact (118 px), titre « Ta performance et ton classement » réservé aux lecteurs d’écran et panorama limité à 23 % de la hauteur.
 
-## Offre d'une aventure verrouillée (#731)
+## Offre d'une aventure verrouillée (#731, #1029)
+
+Le panneau présente « Tout le ciel » au-dessus de l’achat unitaire quand
+cette offre est disponible. Les quêtes, constellations et aventures
+supplémentaires sont calculées à partir des grilles livrées et des droits
+déjà acquis. Le prix affiché vient du catalogue Stripe ou de l’offre
+Google Play applicable. « Continuer gratuitement » ferme le panneau et
+ramène à Mon ciel. La voie de maîtrise, les CGV et la restauration Play
+restent accessibles.
+
+La progression d’achat utilise les achats confirmés existants. Le taux de
+conversion depuis la consultation de l’offre n’est pas mesurable avec les
+données actuelles, faute de mesure des consultations. La refonte ne
+déclenche aucune collecte supplémentaire.
 
 Dans la TWA Play, les prix viennent exclusivement de Google : « Chargement du
 prix… » pendant la requête, puis montant et devise localisés. Une erreur ou un
@@ -939,12 +952,12 @@ valide reste désactivé, y compris après le paiement d'une autre carte. Aucune
 redirection Stripe en cas d'échec Play. Voir le diagnostic dans `android/PLAY.md`.
 
 Toucher une aventure verrouillée (cadenas) dans Mon ciel ouvre la même fenêtre qu'avant, qui présente désormais l'offre au lieu de « déverrouillage annoncé plus tard » :
-- « Débloquer cette aventure · 1 € » et « Tout le vrai ciel · 5 € », avec « Tes achats à l'unité comptent : tu ne paieras jamais plus de 5 € au total ». Les boutons d'achat restent désactivés, avec la mention « Paiement bientôt disponible », jusqu'au branchement d'un fournisseur (#729, #730).
+- Les boutons d’achat restent désactivés si le fournisseur, le prix ou le contenu applicable est indisponible. Pour un compte qui possède déjà une partie du ciel, le serveur détermine l’offre qui reste disponible (#865).
 - Le chemin gratuit : « Gratuit : maîtrise « X » à 100 % (il te reste N quêtes et M badges) ». Ces chiffres viennent du catalogue et de `celestialScope`. Quand la maîtrise est atteinte, un bouton « Débloquer gratuitement » demande au serveur de vérifier (#728). Un invité est invité à se connecter.
 - « Sans pub, financé par les joueurs ✨ », avec « Pourquoi ? » qui déplie le texte du petit studio indépendant. La formulation exprime une intention, jamais une promesse d'absence de profit (#732).
 - Un verrou de constellation garde sa raison (quêtes précédentes) ; les sessions QA ne proposent jamais de créer un compte.
 - **Accord exprès avant de payer (#732)** : là où un achat peut démarrer (joueur connecté, paiement disponible), une case **jamais pré-cochée** « Je demande l’accès immédiat à mon achat et je renonce à mon droit de rétractation de 14 jours. » précède les boutons. Sans elle, toucher un bouton d’achat n’ouvre pas le paiement : un message invite à cocher la case et le focus y est placé. Un lien « Conditions générales de vente » (`/cgv.html`) reste visible sous l’offre dans tous les cas.
-- **Pas de bouton « Restaurer mes achats »** (décision du propriétaire, 17/11/2026, #730 ; remplace le bouton livré par #731). Un achat est un droit du compte : il réapparaît seul sur tout appareil connecté. Après chaque hydratation vérifiée, Lumen revérifie sans rien afficher les achats Google Play (dans l'application Play) et les paiements Stripe non encore réglés (sur le Web) ; les droits ne sont rechargés qu'après une confirmation du serveur.
+- **Restauration** : lors d’une hydratation vérifiée, Lumen revérifie les achats Google Play ou paiements Stripe en attente selon le canal. Les joueurs connectés dans l’application Play peuvent aussi demander une vérification depuis « Restaurer mes achats ». Les droits sont rechargés après confirmation du serveur.
 - **Remerciement après achat (#730)** : une fois l'achat confirmé par le serveur et les droits rechargés (jamais sur la seule URL de retour Stripe), une fenêtre « Merci pour ton soutien ✨ » nomme l'aventure débloquée (ou « Tout le vrai ciel »), rappelle que l'achat est lié au compte et retrouvé sur tous les appareils connectés, et explique en une phrase que les achats aident à financer l'hébergement et les prochaines aventures (une intention, jamais une promesse). Boutons « Explorer l'aventure » (ou « Explorer mon ciel ») et « Plus tard » ; Échap ou un toucher hors de la carte ferment la fenêtre.
 - **Entrée indépendante (#783)** : « Explorer l'aventure » ouvre le détail de sa première constellation. Une aventure possédée commence immédiatement ; ses propres quêtes restent séquentielles. Pendant le chargement des droits, Mon ciel indique « Vérification des droits… » ; une erreur indique des droits indisponibles, sans proposer un nouvel achat. L'apprentissage initial et les jalons existants restent inchangés.
 

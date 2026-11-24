@@ -1,4 +1,5 @@
 export default Object.freeze({
+  'sky.badgeFilterQuestsEmpty': "You have earned all badges in this constellation.",
   'sky.adventures': "Adventures",
   'sky.previousConstellations': "Previous constellations",
   'sky.nextConstellations': "Next constellations",

@@ -239,9 +239,11 @@ request, no table. Each constellation card keeps its « Badges n % »; under the
 Adventure summary a line shows « Badges earned/possible · % » for the selected
 Adventure, and its tooltip/accessible name gives **accessible Adventures** and the
 **whole catalogue** (880 quests × 4) as two separate, labelled figures. The
-« À compléter » toggle keeps only the constellations still missing a badge; the
-constellation detail already shows earned/greyed badges per quest and replays a
-completed quest on tap. Only acknowledged badges are counted: a pending
+« À compléter » toggle filters both the constellation cards and the quests in
+the selected constellation. Its state follows navigation between the two views.
+The detail keeps catalogue numbering and the usual review and replay actions,
+including cooldown and access checks. It shows an empty message when all the
+badges in the selected constellation are earned. Only acknowledged badges are counted: a pending
 navigation view is never serialized as a badge (cloud contract), so a victory
 still waiting for its server receipt is not counted yet.
 
