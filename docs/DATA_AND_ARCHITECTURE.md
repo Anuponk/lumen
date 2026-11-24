@@ -1202,6 +1202,17 @@ missing endpoint, absent profile or missing account guard runs the usual
 replaces most ~43 KB full reads by a ~100-byte answer (Supabase Free egress).
 Command read-backs still download the full profile (lot 2).
 
+Profile read-back by delta (#1000 lot 2, migration
+`20261124090000_profile_delta_read_1000.sql`): Supabase Free bills outgoing traffic
+only, so after a legacy victory command the client uploads its pre-command copy
+(`cloudProfileBaseline`) to `lumen_profile_delta` and downloads only the changed
+top-level or second-level entries plus the SHA-256 of the stored profile text
+(`lumen_commands.profile_delta`, private). `loadVerifiedProfileFromBase` applies the
+delta to a copy and installs it only if its `jsonbDigest` equals the server digest;
+a wrong digest, malformed delta, error, missing endpoint or missing base runs the
+usual full read. The canonical quest command still returns the full profile from
+its combined receipt read (`lumen_get_quest_command_verified`).
+
 Cloud profile limits use 1048576 UTF-8 bytes (1 MiB since 15 November 2026,
 migration `20261115120000_profile_size_limit_1mib.sql`; previously 524288) with
 JSONB structural-space and scientific-number expansion reserve, rather than
@@ -1620,7 +1631,9 @@ Canonical clients cannot replay/acknowledge them. Exact same-account receipt and
 current completion, requested badges and attempt counter precede acknowledgement.
 Duplicates retain the initial outcome and return current state. Startup replays
 before installation; background replay avoids active legacy attempts, while a
-pending current win retries frozen evidence. Concurrent local edits prevent UI
+pending current win retries frozen evidence. #1010: the replay scheduler is also
+woken after every settled save while a victory is outstanding, so a pending win
+leaves at the first quiet moment instead of only after a reload. Concurrent local edits prevent UI
 installation. New victories still require verified hydration and preflush of
 unrelated changes; removing that gameplay gate remains a later phase.
 
