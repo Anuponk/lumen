@@ -35,7 +35,7 @@ function fixture(signedIn, locale) {
   window.supabase={createClient:()=>({auth:{getSession:async()=>(${signedIn}?{data:{session:{user:{id:${JSON.stringify(OWNER)}}}}}:{data:{session:null}}),
    getUser:async()=>({data:{user:${signedIn ? `{id:${JSON.stringify(OWNER)}}` : 'null'}}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
    rpc:async(name,args)=>{
-    if(name==='lumen_send_feedback_v3'||name==='lumen_send_feedback_v2'){window.__feedbackCalls.push(args);if(name==='lumen_send_feedback_v3'&&args.p_journal!==null&&!Array.isArray(args.p_journal))throw Error('journal must be an array or null');
+    if(name==='lumen_send_feedback_v4'||name==='lumen_send_feedback_v3'||name==='lumen_send_feedback_v2'){window.__feedbackCalls.push(args);if(name!=='lumen_send_feedback_v2'&&args.p_journal!==null&&!Array.isArray(args.p_journal))throw Error('journal must be an array or null');
      if(window.__feedbackMode==='network')return {error:{message:'TypeError: Failed to fetch'}};
      if(window.__feedbackMode==='rate')return {error:{message:'rate_limited'}};
      return {data:{id:4242,status:'received',duplicate:window.__feedbackCalls.filter(c=>c.p_client_ref===args.p_client_ref).length>1}}}
@@ -120,12 +120,25 @@ try {
       null,
       'single help entry',
     );
-    const fullCopy = await evaluate(
-      `(()=>{const row=document.getElementById('feedbackFullCopyRow');return {shown:!!row&&!row.hidden,checked:!!document.getElementById('feedbackFullCopy')?.checked}})()`,
-    );
-    assert.equal(fullCopy.shown, signedIn, 'full copy offered to signed-in players only');
+    // #959/#960: a bug needs the explicit, unticked « données nécessaires au diagnostic »;
+    // the complete account copy is a second option, signed-in only, never pre-ticked.
+    const boxes = () =>
+      evaluate(
+        `(()=>{const d=document.getElementById('feedbackDiagnosticRow'),f=document.getElementById('feedbackFullCopyRow');return {diagnostic:!d.hidden,diagnosticChecked:document.getElementById('feedbackDiagnostic').checked,full:!f.hidden,fullChecked:document.getElementById('feedbackFullCopy').checked,guest:!document.getElementById('feedbackGuestNote').hidden}})()`,
+      );
+    assert.deepEqual(await boxes(), {
+      diagnostic: true,
+      diagnosticChecked: false,
+      full: false,
+      fullChecked: false,
+      guest: !signedIn,
+    });
+    await evaluate(`document.getElementById('feedbackDiagnostic').click()`);
+    let b = await boxes();
+    assert.equal(b.full, signedIn, 'full copy offered to signed-in players only');
+    assert.equal(b.fullChecked, false, 'full copy never pre-ticked');
     if (signedIn) {
-      if (!fullCopy.checked) await evaluate(`document.getElementById('feedbackFullCopy').click()`);
+      await evaluate(`document.getElementById('feedbackFullCopy').click()`);
       assert.equal(
         await evaluate(`document.getElementById('feedbackFullCopyNote').hidden`),
         false,
@@ -142,6 +155,18 @@ try {
         'consent text hidden when unticked',
       );
     }
+    await evaluate(`document.getElementById('feedbackDiagnostic').click()`);
+    // A bug without the diagnostic is refused locally, nothing is sent.
+    await type('La grille se fige');
+    await submit();
+    assert.equal((await view()).state, 'diagnosticRequired');
+    assert.equal(
+      await evaluate(`window.__feedbackCalls.length`),
+      0,
+      'nothing sent without consent',
+    );
+    await type('');
+    await evaluate(`document.getElementById('feedbackText').focus()`);
     assert.equal(
       await evaluate(`document.activeElement.id`),
       'feedbackText',
@@ -183,7 +208,12 @@ try {
     await evaluate(`window.__feedbackMode='network'`);
     await submit();
     v = await view();
-    assert.deepEqual([v.form, v.state, v.text], [true, 'offline', 'Comment marche la Maîtrise ?']);
+    // #960: offline, the report is kept and queued, never announced as received.
+    assert.deepEqual(
+      [v.form, v.done, v.state, v.text],
+      [true, false, 'queued', 'Comment marche la Maîtrise ?'],
+    );
+    assert.match(await evaluate(`localStorage.getItem('lumenFeedbackDraftV1')`), /"queued":true/);
     assert.equal(await evaluate(`document.getElementById('feedbackSend').disabled`), false);
     await evaluate(`window.__feedbackMode='rate'`);
     await submit();
@@ -202,6 +232,13 @@ try {
     );
     const last = calls.at(-1);
     assert.equal(last.p_kind, 'question');
+    assert.equal(last.p_snapshot, null, 'questions carry no snapshot');
+    assert.equal(last.p_journal, null, 'questions carry no journal');
+    assert.equal(
+      await evaluate(`document.getElementById('myReportsBtn').hidden`),
+      false,
+      '« Mes signalements » appears once a report is sent',
+    );
     assert.equal(last.p_message, 'Comment marche la Maîtrise ?');
     assert.equal(last.p_context.surface, 'menu');
     assert.equal(last.p_context.in_quest, true);
@@ -235,8 +272,16 @@ try {
     );
     assert.equal(await evaluate(`document.getElementById('rulesModal').hidden`), true);
     await type('La grille ne réagit plus');
+    await evaluate(`document.getElementById('feedbackDiagnostic').click()`);
     await submit();
-    assert.equal((await evaluate(`window.__feedbackCalls`)).at(-1).p_context.surface, 'help');
+    const bug = (await evaluate(`window.__feedbackCalls`)).at(-1);
+    assert.equal(bug.p_context.surface, 'help');
+    // The moment of the report: the board, the paused attempt and the sync state.
+    assert.match(bug.p_snapshot?.board || '', /^[0-9]+(\/[0-9]+)+$/, 'current board joined');
+    assert.match(bug.p_snapshot.board, /2/, 'the placed guardian is in the board');
+    assert.equal(bug.p_snapshot.attempt?.state, 'PAUSED');
+    assert.equal(typeof bug.p_snapshot.sync, 'object');
+    assert.doesNotMatch(JSON.stringify(bug.p_snapshot), /@|token|password|Mozilla/i);
     // Escape closes and focus returns.
     await evaluate(
       `document.getElementById('feedbackDoneClose').click();document.getElementById('mobileAccount').click();document.getElementById('betaFeedbackBtn').click()`,

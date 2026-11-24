@@ -92,7 +92,9 @@ import {rememberVerifiedOfflineOwner,clearVerifiedOfflineOwner,isVerifiedOffline
 import {gridCellsAlongSegment} from './drag-grid-path.js';
 import {replayWalletCommand} from '../persistence/coordinated-command-adapters.js';
 import {gameplayDomainState} from '../persistence/gameplay-sync.js';
-import {createOutboxHealthReporter} from "../persistence/outbox-health.js";
+import {createOutboxHealthReporter,LOCAL_STORAGE_LIMIT_BYTES} from "../persistence/outbox-health.js";
+import {buildReportSnapshot} from './report-snapshot.js';
+import {createMyReports} from './my-reports.js';
 import {createDiagnosticReporter,mapCloudDiagnostic,installDiagnosticListeners,diagnosticErrorKind} from '../persistence/diagnostic-reporter.js';
 import {createSyncPresentation} from "../persistence/sync-presentation.js";
 import {walletCommandsSupported,recoverWalletCacheDurably} from "../persistence/wallet-command.js";
@@ -1961,7 +1963,7 @@ function setupDailyInfo(){
 function setupMobileAuth(){
  const menu=document.getElementById("mobileAuthPopover"),account=document.getElementById("mobileAccount"),action=document.getElementById("mobileAuthAction");
  if(!menu||!account||!action)return;
- account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden;account.setAttribute("aria-expanded",String(!menu.hidden));if(!menu.hidden)dailyPushSettings?.accountOpened()};
+ account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden;account.setAttribute("aria-expanded",String(!menu.hidden));if(!menu.hidden){dailyPushSettings?.accountOpened();void myReports?.check()}};
  menu.onclick=(e)=>{if(e.target.closest("[data-closes-menu]")){menu.hidden=true;account.setAttribute("aria-expanded","false")}e.stopPropagation()};
  // #959: Escape closes Mon espace (after any open tip) and returns focus to its button.
  menu.addEventListener("keydown",e=>{if(e.key!=="Escape"||menu.hidden)return;menu.hidden=true;account.setAttribute("aria-expanded","false");account.focus()});
@@ -3700,7 +3702,7 @@ function resumeGameClock(){attemptEngine.resume();clock()}
 // #925: top menus and in-game dialogs reuse this same pause while they are open.
 // Mon ciel is a navigation destination, not a menu: its behaviour is unchanged.
 const menuPause=createMenuPause({document,
- ids:['socialHub','friendsModal','friendPickerModal','myChallengesModal','circlesModal','mobileAuthPopover','dailyInfoPopover','rulesModal','feedbackModal','lumenShareDialog','lumenConfirm','abandonConfirm'],
+ ids:['socialHub','friendsModal','friendPickerModal','myChallengesModal','circlesModal','mobileAuthPopover','dailyInfoPopover','rulesModal','feedbackModal','myReportsModal','lumenShareDialog','lumenConfirm','abandonConfirm'],
  running:()=>attemptEngine.snapshot()?.state===ATTEMPT_STATES.RUNNING,
  paused:()=>attemptEngine.snapshot()?.state===ATTEMPT_STATES.PAUSED,
  attemptId:()=>attemptEngine.snapshot()?.attemptId??null,
@@ -3721,7 +3723,7 @@ function displayedCellState(r,c){
 }
 
 const LUMEN_APP_VERSION=appVersion();
-let betaFeedback=null;
+let betaFeedback=null,myReports=null;
 function openBetaFeedback(options={}){betaFeedback?.open(options)}
 // #960: a « Report this problem » action for blocking errors, prefilled with the error code.
 function reportProblemButton(errorCode,surface='error'){const b=document.createElement('button');b.type='button';b.className='report-problem';b.textContent=t('feedback.reportThis');b.onclick=()=>openBetaFeedback({kind:'bug',surface,errorCode,origin:b});return b}
@@ -4055,12 +4057,15 @@ function setupBetaFeedback(){
    return buildFeedbackContext({appVersion:LUMEN_APP_VERSION,locale:document.documentElement.lang,platform:feedbackPlatform(),
     userAgent:navigator.userAgent,screen:innerWidth+'x'+innerHeight,standalone:lumenIsStandalone(),online:navigator.onLine,
     quest:q?{id:q.id,ordinal:q.ordinal,puzzleId:q.legacyIndex===null?undefined:q.legacyIndex+1,inProgress:!!state&&!celebrated}:null,
-    adventure:pack?adventureDisplayName(pack,t):null,surface,errorCode,sessionId:feedbackSessionId(sessionStorage)});
+    adventure:pack?adventureDisplayName(pack,t):null,surface,errorCode,sessionId:feedbackSessionId(sessionStorage),androidVersion:LUMEN_NATIVE_VERSION});
  };
  // #1010: the report carries the sync journal (v3); an older server keeps v2.
- const sendFeedback=async({kind,message,context,clientRef,journal})=>{
+ const sendFeedback=async({kind,message,context,clientRef,journal,snapshot=null,support=null})=>{
   if(!lumenSupabase)throw Error('offline');
-  let {data,error,status}=await lumenSupabase.rpc("lumen_send_feedback_v3",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef,p_journal:journal?.length?journal:null});
+  // #960: v4 also keeps the snapshot of the moment and the support references (bugs).
+  let {data,error,status}=await lumenSupabase.rpc("lumen_send_feedback_v4",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef,p_journal:journal?.length?journal:null,
+   p_snapshot:snapshot||null,p_support_case_id:support?.caseId||null,p_support_capture_id:support?.captureId||null});
+  if(error?.code==='PGRST202'&&status===404)({data,error,status}=await lumenSupabase.rpc("lumen_send_feedback_v3",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef,p_journal:journal?.length?journal:null}));
   if(error?.code==='PGRST202'&&status===404)({data,error}=await lumenSupabase.rpc("lumen_send_feedback_v2",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef}));
   if(error){console.warn("LUMEN feedback",error);throw Error(error.message||'failed')}
   return data;
@@ -4071,15 +4076,46 @@ function setupBetaFeedback(){
  autoIncidentReporter=createAutoIncidentReporter({storage:localStorage,
   enabled:()=>!!lumenUser&&!!lumenSupabase&&!qaActive&&diagnosticEnabled&&diagnosticOwner===lumenUser?.id,
   send:({code,count,journal})=>sendFeedback({kind:'bug',message:'[auto] '+code+' x'+count,context:feedbackContext({surface:'auto',errorCode:code}),clientRef:newClientRef(),journal})});
+ // #960: the state at the moment of the report, from memory and local storage only.
+ const openSurface=()=>['rulesModal','socialHub','friendsModal','myChallengesModal','circlesModal','dailyInfoPopover','mobileAuthPopover','lumenShareDialog','myReportsModal']
+  .find(id=>{const node=document.getElementById(id);return node&&!node.hidden})||null;
+ const reportSnapshot=({surface}={})=>{
+  let outbox=null;
+  try{const summary=typeof lastOutboxDiagnosticFingerprint==='string'?JSON.parse(lastOutboxDiagnosticFingerprint):null;
+   if(summary&&lastOutboxDiagnosticOwner===lumenUser?.id)outbox={state:lastOutboxObservation?.state,canonical:summary.canonical?.pending,legacy:summary.legacy?.pending,wallet:summary.wallet?.pending}}catch{}
+  const q=activeQuest(),pack=q?CONTENT_PACKS.find(item=>item.id===q.packId):null,attempt=attemptEngine.snapshot(),device=outboxDeviceHealth();
+  return buildReportSnapshot({surface,menu:openSurface(),online:navigator.onLine,
+   hydration:{state:!lumenUser?'guest':cloudProfileReady?'ready':cloudProfileFailure?'failed':'pending',error:cloudProfileFailure?.reason},
+   outbox,journal:buildFeedbackJournal(localStorage),
+   storage:{ratio:Number.isFinite(device.bytes)?Math.round(device.bytes/LOCAL_STORAGE_LIMIT_BYTES*100):null,error:device.error},
+   quest:q?{id:q.id,adventure:pack?.id,ordinal:q.ordinal}:null,attempt:q&&attempt?attempt:null,
+   board:q&&Array.isArray(state)?state.map((row,r)=>row.map((_,c)=>displayedCellState(r,c))):null});
+ };
  betaFeedback=createBetaFeedback({document,storage:localStorage,t,
   context:feedbackContext,
   journal:()=>buildFeedbackJournal(localStorage),
+  snapshot:reportSnapshot,
+  guest:()=>!lumenUser,
+  // #959: the complete account copy is never pre-ticked; it can be previewed here.
   fullCopy:{available:()=>!!lumenUser&&!!lumenSupabase&&!qaActive&&!!supportSession,
-   suggested:()=>!!cloudProfileFailure||canonicalOutboxNotice==='attention'||!cloudProfileReady,
-   send:()=>supportQuickSend.run()},
+   prepare:()=>supportQuickSend.prepare(),
+   send:copy=>supportQuickSend.send(copy),
+   preview:()=>lumenUser?captureSupportCopy({storage:localStorage,owner:lumenUser.id,code:'manual',version:appVersion()}):null},
   send:sendFeedback,
-  onSent:()=>trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,analyticsContext())
+  onSent:(receipt,{background}={})=>{
+   trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,analyticsContext());
+   myReports?.noteSent();
+   if(background)showRewardToast(t('feedback.sentLater',{id:String(receipt?.id??'—')}));
+  }
  });
+ // #1020: « Mes signalements » (own reports, answers, one complementary reply).
+ myReports=createMyReports({document,storage:localStorage,t,
+  rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{message:'offline'}}),
+  identity:()=>({userId:qaActive?null:lumenUser?.id||null,anonymousId:lumenAnonymousId,client:qaActive?null:lumenSupabase})});
+ const reportsButton=document.getElementById('myReportsBtn');
+ if(reportsButton)reportsButton.onclick=()=>myReports.open({origin:document.getElementById('mobileAccount')});
+ // One summary per session (count only), so a new answer shows as a discreet dot.
+ setTimeout(()=>{void myReports.check()},8000);
  document.getElementById("betaFeedbackBtn").onclick=e=>openBetaFeedback({surface:'menu',origin:document.getElementById('mobileAccount')});
  const fromHelp=document.getElementById("helpReportProblem");
  if(fromHelp)fromHelp.onclick=()=>{document.getElementById("rulesModal").hidden=true;openBetaFeedback({kind:'bug',surface:'help',origin:document.getElementById('mobileAccount')})};

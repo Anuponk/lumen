@@ -204,6 +204,7 @@ export const nodeSuites=[
  "i18n-es-tests.mjs",
   "beta-feedback-tests.mjs",
   "feedback-journal-tests.mjs",
+  "report-snapshot-tests.mjs",
   "production-isolation-tests.mjs",
  "support-quick-send-tests.mjs",
  "performance-badge-tests.mjs",

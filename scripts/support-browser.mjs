@@ -32,11 +32,14 @@ export async function verifySupport({send,evaluate,url}){
  }
  async function wait(state){for(let i=0;i<80;i++){if(await evaluate(`window.supportFixture.session.view().state===${JSON.stringify(state)}`))return;await new Promise(r=>setTimeout(r,25))}throw Error('Support state not reached: '+state)}
  await click('[data-support-consent]');await click('[data-support-activate]');await wait('ready');
- await click('[data-support-send]');await wait('review');
- assert.equal(await evaluate(`window.supportFixture.calls.filter(c=>c.p_action==='capture').length`),0,'Preview must not transmit anything');
- assert.match(await evaluate(`window.supportFixture.host.querySelector('[data-support-preview]').textContent`),/manual/);
- await click('[data-support-confirm]');await wait('confirmed');
+ // #959: activation alone transmits nothing; a manual copy is sent from the report
+ // form (same session, fixed capture id) and the panel offers no second send action.
+ assert.equal(await evaluate(`window.supportFixture.calls.filter(c=>c.p_action==='capture').length`),0,'Activation must not transmit anything');
+ assert.equal(await evaluate(`window.supportFixture.host.querySelector('[data-support-send]').hidden`),true,'No redundant send action');
+ const fixed='00000000-0000-4000-8000-000000000959';
+ await evaluate(`window.supportFixture.session.send('manual',${JSON.stringify(fixed)})`);await wait('confirmed');
  assert.equal(await evaluate(`window.supportFixture.calls.filter(c=>c.p_action==='capture').length`),1);
+ assert.equal(await evaluate(`window.supportFixture.calls.find(c=>c.p_action==='capture').p_capture_id`),fixed,'The report references this exact capture');
  await click('[data-support-revoke]');await wait('deleted');
  assert.equal(await evaluate(`window.supportFixture.host.querySelector('input').checked`),false);
  await click('[data-support-consent]');
@@ -63,5 +66,5 @@ export async function verifySupport({send,evaluate,url}){
  const layout=await evaluate(`(()=>{document.documentElement.style.fontSize='150%';return {overflow:document.documentElement.scrollWidth>innerWidth,status:window.supportFixture.host.querySelector('[role=status]').textContent}})()`);
  assert.equal(layout.overflow,false);assert.match(layout.status,/désactivée/);
  const ax=await send('Accessibility.getFullAXTree');assert.ok(ax.nodes.some(n=>n.role?.value==='checkbox'));
- return {consent:true,previewConfirmed:true,manualAcknowledged:true,referenceLookup:true,revocationConfirmed:true,accountConsentReset:true,hashVerifiedDownload:true,corruptionRefused:true,staleAdminRefused:true,largeTextNoOverflow:true,accessibilityTree:true};
+ return {consent:true,reportLinkedCapture:true,manualAcknowledged:true,referenceLookup:true,revocationConfirmed:true,accountConsentReset:true,hashVerifiedDownload:true,corruptionRefused:true,staleAdminRefused:true,largeTextNoOverflow:true,accessibilityTree:true};
 }

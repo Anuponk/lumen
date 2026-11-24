@@ -13,6 +13,7 @@ export function createSupportQuickSend({
   schedule = (fn, ms) => setTimeout(fn, ms),
   timeoutMs = 45000,
   pollMs = 400,
+  newId = () => globalThis.crypto.randomUUID(),
 }) {
   let running = false;
   const say = (text) => {
@@ -33,7 +34,18 @@ export function createSupportQuickSend({
     }
     return v;
   }
-  async function run() {
+  // #960: activates the 24 h dossier (explicit consent already given) and fixes the
+  // capture id, so the report can reference the copy before it is sent.
+  async function prepare() {
+    const s = session();
+    if (!s) return null;
+    if (!activeDossier(s.view())) {
+      await s.activate(true);
+      if (!activeDossier(s.view())) return null;
+    }
+    return { caseId: String(s.view().dossier.id), captureId: newId() };
+  }
+  async function run(copy = null) {
     if (running) return;
     running = true;
     if (button) button.disabled = true;
@@ -52,7 +64,7 @@ export function createSupportQuickSend({
         }
       }
       if (s.view().state === 'review') s.discard();
-      await s.send('manual');
+      await s.send('manual', copy?.captureId ?? null);
       const v = await settle();
       if (v.state === 'confirmed')
         say(t('support.quickDone', { reference: String(v.dossier?.id || '') }));
@@ -78,5 +90,5 @@ export function createSupportQuickSend({
       },
     });
   }
-  return { open, run };
+  return { open, run, prepare, send: run };
 }
