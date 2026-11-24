@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { questReviewModel, NO_OFFICIAL_TIME } from '../src/ui/quest-review.js';
-import { createRankingView } from '../src/ui/ranking.js';
+import { createRankingView, RANKING_QUICK_RETRY_MS } from '../src/ui/ranking.js';
 import { createRankingClient } from '../src/persistence/ranking.js';
 import {reviewNeighbour,bindReviewNavigation} from '../src/ui/quest-review-navigation.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
@@ -133,14 +133,17 @@ test('victory podium: failed or pending sync shows a pending state, ineligible i
   v1.show(quest, 'op-1');
   await tick();
   assert.equal(v1.root.dataset.state, 'pending');
-  assert.match(v1.root.children.at(-1).textContent, /synchronisation a échoué/);
+  assert.equal(v1.root.dataset.sync, 'retrying', '#984: a first failure is still syncing');
+  assert.match(v1.root.children.at(-1).textContent, /Synchronisation en cours… Ton résultat est conservé/);
+  assert.doesNotMatch(v1.root.children.at(-1).textContent, /échou|aboutit/);
   assert.deepEqual(calls, [], 'The stale board is not read as this victory result');
   const pending = { flush: async () => [{ status: 'pending' }], board: async () => (calls.push('board'), board), entries: () => [{ operationId: 'op-2' }] };
   const v2 = createRankingView({ client: pending, getContext: () => ({ owner: 'o', client: pending }), format, document: fakeDocument() });
   v2.show(quest, 'op-2');
   await tick();
   assert.equal(v2.root.dataset.state, 'pending');
-  assert.match(v2.root.children.at(-1).textContent, /attend la confirmation/);
+  assert.equal(v2.root.dataset.sync, 'syncing');
+  assert.match(v2.root.children.at(-1).textContent, /Synchronisation en cours/);
   assert.deepEqual(calls, []);
   const refused = { flush: async () => [], board: async () => board, entries: () => [], takeResult: () => ({ status: 'ineligible', questId: quest.id, improved: false }) };
   const v3 = createRankingView({ client: refused, getContext: () => ({ owner: 'o', client: refused }), format, document: fakeDocument() });
@@ -361,4 +364,59 @@ test('#995: the 30 s background wake never re-reads a ready podium without a new
   await view.refresh([], { background: true });
   assert.equal(view.root.dataset.state, 'ready', 'A non-ready podium is retried in the background');
   assert.equal(boardReads, 5);
+});
+
+// #984: transient failures are « syncing », the podium appears by itself once the
+// server confirms, failed only after repeated failures, offline is distinct.
+test('victory podium #984: retrying, automatic refresh, persistent failure, offline', async () => {
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const board = { top: [{ position: 1, place: 1, nickname: 'Moi', score: 18, mine: true }], personal: { position: 1, place: 1, score: 18 }, participating: true };
+  const make = (plan) => {
+    const timers = [], reads = [];
+    let outbox = [{ operationId: 'op' }];
+    const client = {
+      flush: async () => { const next = plan.shift(); if (next === 'fail') throw Error('Ranking unavailable'); outbox = []; return [{ operationId: 'op', status: 'confirmed', questId: quest.id }]; },
+      board: async () => (reads.push('board'), board),
+      entries: () => outbox,
+      takeResult: () => ({ status: 'confirmed', improved: true }),
+    };
+    const view = createRankingView({ client, getContext: () => ({ owner: 'o', client }), format, document: fakeDocument(), setTimer: (fn, ms) => timers.push({ fn, ms }) });
+    return { view, timers, reads };
+  };
+  const line = (v) => v.root.children.at(-1).textContent;
+  // Slow then confirmed: one early retry, then the podium replaces the waiting state.
+  const a = make(['fail', 'ok']);
+  a.view.show(quest, 'op');
+  await tick();
+  assert.equal(a.view.root.dataset.sync, 'retrying');
+  assert.deepEqual(a.reads, [], 'no board (no rank claim) before confirmation');
+  assert.deepEqual(a.timers.map((x) => x.ms), [RANKING_QUICK_RETRY_MS], 'exactly one quick retry, no polling');
+  a.timers[0].fn();
+  await tick(); await tick();
+  assert.equal(a.view.root.dataset.state, 'ready', 'confirmed later: podium refreshed automatically');
+  assert.equal(a.view.root.dataset.sync, undefined);
+  // Still failing: failed only after RANKING_FAILED_AFTER tries (quick retry + 30 s wake).
+  const b = make(['fail', 'fail']);
+  b.view.show(quest, 'op');
+  await tick();
+  b.timers[0].fn();
+  await tick(); await tick();
+  assert.equal(b.view.root.dataset.sync, 'retrying', 'second failure: still syncing');
+  b.view.noteFailure();
+  assert.equal(b.view.root.dataset.sync, 'failed');
+  assert.match(line(b.view), /aboutit pas encore.*conservé.*automatiquement/);
+  assert.equal(b.timers.length, 1, 'never more than one quick retry per victory');
+  // Offline: explicit waiting for the network, not a failure.
+  const online = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'navigator', { value: { onLine: false }, configurable: true });
+  try {
+    const c = make(['fail']);
+    c.view.show(quest, 'op');
+    await tick();
+    assert.equal(c.view.root.dataset.state, 'offline');
+    assert.equal(c.view.root.dataset.sync, 'offline');
+    assert.match(line(c.view), /Hors ligne.*sauvegardée/);
+  } finally {
+    if (online) Object.defineProperty(globalThis, 'navigator', online); else delete globalThis.navigator;
+  }
 });

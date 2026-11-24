@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {createFriendsClient,friendErrorMessage,challengeStatusLabel,validNickname,normalizeNickname,renderFriendRows,renderReceivedChallenges,renderSentChallenges,friendsOnly} from '../src/campaign/social-friends.js';
+import {renderFriendSearchRows,friendSearchReady,friendSearchQuery,FRIEND_SEARCH_PAGES,createFriendsClient,friendErrorMessage,challengeStatusLabel,validNickname,normalizeNickname,renderFriendRows,renderReceivedChallenges,renderSentChallenges,friendsOnly} from '../src/campaign/social-friends.js';
 
 // #35 (EPIC #881 Lot 2): friends and direct challenges client contract.
 const calls=[];
@@ -45,3 +45,25 @@ const sent=renderSentChallenges([{recipient:'Ana',n:12,status:'completed',durati
 assert.match(sent,/Ana<\/span><span class="friend-state">Quête 12 · Terminé · 1:04/);
 assert.match(sent,/Bo<\/span><span class="friend-state">Quête 5 · En attente<\/span>/);
 console.log('social friends client and renderers: ok');
+
+// #972: partial search client, input threshold and compact rows.
+{
+ const sent=[];
+ const finder=createFriendsClient({rpc:async(name,args)=>{sent.push({name,args});return {data:{results:[{nickname:'Bérénice'}],page:1,more:true},error:null}}});
+ assert.deepEqual(await finder.find('  bé   ré ',1),{results:[{nickname:'Bérénice'}],page:1,more:true});
+ assert.deepEqual(sent,[{name:'lumen_friend_find',args:{p_query:'bé ré',p_page:1}}],'one RPC with the trimmed query and page only');
+ const empty=createFriendsClient({rpc:async()=>({data:null,error:null})});
+ assert.deepEqual(await empty.find('abc'),{results:[],page:0,more:false},'a null answer is an empty page');
+ assert.equal(friendSearchReady('ab'),false);assert.equal(friendSearchReady(' a-b '),false,'separators do not count');
+ assert.equal(friendSearchReady('Bé1'),true,'accented letters count');assert.equal(friendSearchQuery('  A   b '),'A b');
+ assert.equal(FRIEND_SEARCH_PAGES,3);
+ const tr=key=>'['+key+']';
+ const html=renderFriendSearchRows([{nickname:'A<b>',state:'none'},{nickname:'Bo',state:'incoming'},{nickname:'Cy',state:'outgoing'},{nickname:'Di',state:'friends'}],tr);
+ assert.match(html,/A&lt;b&gt;.*data-friend-action="add">\[friends\.add\]/s,'escaped nickname with Ajouter');
+ assert.match(html,/data-nickname="Bo".*data-friend-action="accept"/s,'incoming request can be accepted');
+ assert.match(html,/data-nickname="Cy".*\[friends\.state\.outgoing\]/s);assert.match(html,/data-nickname="Di".*\[friends\.state\.friends\]/s);
+ assert.equal((html.match(/data-friend-action/g)||[]).length,2,'no action for pending or existing friends');
+ assert.match(renderFriendSearchRows([],tr),/\[friends\.noResult\]/);
+ for(const code of ['query_too_short','query_too_long','search_rate_limited'])assert.equal(friendErrorMessage(Error(code),tr),'[friends.error.'+code+']');
+ console.log('friend search (#972): ok');
+}

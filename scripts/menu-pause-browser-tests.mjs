@@ -120,6 +120,31 @@ try {
       await until(running);
     }
 
+    // 1b. Android native share sheet (recette 22/11): no Lumen dialog opens and the
+    // page stays visible, yet the clock stops until the sheet settles, then resumes once.
+    await evaluate(
+      `(()=>{window.__shareDone=null;Object.defineProperty(navigator,'share',{configurable:true,value:()=>new Promise(r=>{window.__shareDone=r})})})()`,
+    );
+    await evaluate(`document.getElementById('shareLumen').click()`);
+    await until('!!window.__shareDone', 'native sheet opens');
+    await until(paused, 'native sheet pauses');
+    assert.equal(await evaluate(masked), true, 'native share: grid masked, opaque and inert');
+    assert.equal(await evaluate(`document.getElementById('lumenShareDialog').open`), false);
+    const sheetFrozen = (await attempt()).activeDuration;
+    await sleep(600);
+    assert.equal((await attempt()).activeDuration, sheetFrozen, 'native share: no time counted');
+    await evaluate('window.__shareDone()');
+    await until(running, 'native share resumes');
+    await evaluate(`document.getElementById('attemptPause').click()`);
+    const sheetAfter = (await attempt()).activeDuration;
+    assert(
+      sheetAfter >= sheetFrozen && sheetAfter - sheetFrozen < 500,
+      'native share: resumed exactly once ' + JSON.stringify({ sheetFrozen, sheetAfter }),
+    );
+    await evaluate(`document.getElementById('attemptPause').click()`);
+    await until(running);
+    await evaluate(`delete navigator.share`);
+
     // 2. Chained menus: the grid never shows and the clock never restarts in between.
     await evaluate(`document.getElementById('tutorialHelp').click()`);
     await until(paused);

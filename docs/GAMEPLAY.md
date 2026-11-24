@@ -102,7 +102,8 @@ short click. Exclusions remain manual throughout play. A hold
 fires once and consumes its release click; short taps retain empty → excluded →
 Guardian → empty. Mouse/keyboard click behavior remains unchanged.
 
-Movement over 8 px transfers to the existing exclusion drag and cancels the hold.
+Movement over 8 px cancels the hold; the exclusion drag itself starts once the
+pointer also leaves the starting cell (#994), otherwise the release is a tap.
 Multitouch, pointer cancellation, blur/background and a detached/replaced cell
 cancel it. Permissions are checked again at activation: no action while paused,
 loading, victorious, guided/verification-blocked or inside constrained learning.
@@ -189,6 +190,9 @@ The sender's time and badges stay hidden before the recipient finishes, so the r
 
 Un glissé depuis une case vide pose des marques. Depuis un rond rouge ou un
 Gardien, le glissé efface uniquement les ronds rouges traversés. Retouche un
-Gardien pour le retirer. Le seuil de 8 px sépare le toucher du glissé. La capture
+Gardien pour le retirer. Un glissé commence au-delà de 8 px **et** hors de la case
+de départ (#994) : un doigt qui roule de quelques pixels dans sa case reste un
+toucher (rond → Gardien → vide), comme sur Android où la tolérance d'un toucher
+dépasse 8 px. La capture
 du pointeur traite les cases traversées même lorsque les déplacements sont
 groupés. Les contraintes pédagogiques s’appliquent et Annuler restaure le geste.

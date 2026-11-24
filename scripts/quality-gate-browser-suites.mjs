@@ -229,6 +229,11 @@ export const browserSuites=[
     "script": "beta-feedback-browser-tests.mjs",
     "output": "ci-beta-feedback.json",
     "port": 9275
+  },
+  {
+    "script": "tap-jitter-browser-tests.mjs",
+    "output": "ci-tap-jitter.json",
+    "port": 9276
   }
 ];
 

@@ -230,6 +230,21 @@ A quest has a **15-minute qualification cooldown** based on `lastQualifiedAt`; r
 
 Existing performance data must be migrated conservatively; never infer newly earned badges from an incompatible legacy record.
 
+### Badge completion in Mon ciel (#985)
+
+Owner decision 24/11/2026: **4 badges per quest** (Autonomie, Rapidité, Sans
+erreur, Maîtrise; eligibility from `performanceEligibility`, never a hardcoded
+total), counted with `celestialScope` from the progress already loaded — no
+request, no table. Each constellation card keeps its « Badges n % »; under the
+Adventure summary a line shows « Badges earned/possible · % » for the selected
+Adventure, and its tooltip/accessible name gives **accessible Adventures** and the
+**whole catalogue** (880 quests × 4) as two separate, labelled figures. The
+« À compléter » toggle keeps only the constellations still missing a badge; the
+constellation detail already shows earned/greyed badges per quest and replays a
+completed quest on tap. Only acknowledged badges are counted: a pending
+navigation view is never serialized as a badge (cloud contract), so a victory
+still waiting for its server receipt is not counted yet.
+
 ## Progress integrity
 
 When localStorage cannot fit a recovery backup, verified cloud achievements can

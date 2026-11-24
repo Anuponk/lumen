@@ -19,7 +19,7 @@ import {reviewNeighbour,bindReviewNavigation} from './quest-review-navigation.js
 import {attemptTiming,officialResult} from '../campaign/official-time.js';
 import {RANKING_PENALTIES,rankedTime} from '../campaign/ranking.js';
 import {addDays,createDailyClient,dailyQuest} from '../campaign/daily-challenge.js';
-import {dailyErrorMessage,formatDailyDate,formatRemaining,formatRank,renderDailyBoard,renderDailyWeek,formatWeekRange,weekShareText} from './daily-view.js';
+import {dailyErrorMessage,formatDailyDate,formatRemaining,renderDailyBoard,renderDailyWeek,formatWeekRange} from './daily-view.js';
 import {summarizeWeek,weekMonday,weekNavigation} from '../campaign/daily-week.js';
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
 import {createRankingClient} from '../persistence/ranking.js';
@@ -74,7 +74,7 @@ import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAt
 import {qualifyingStartedAt,recordQualifyingStart,withQualifyingStart,abandonConfirmModel,markQualifiedStart} from "../campaign/qualification-window.js";
 import {challengeAttemptClosed,challengeEligibility,challengeResumePlan,challengeSnapshot,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {challengeQuestLabel,resolveChallengeQuest} from "../campaign/canonical-challenges.js";
-import {createFriendsClient,escapeSocialHtml,friendErrorMessage,friendsOnly,renderFriendRows,validNickname} from "../campaign/social-friends.js";
+import {createFriendsClient,escapeSocialHtml,friendErrorMessage,friendsOnly,renderFriendRows,renderFriendSearchRows,friendSearchQuery,friendSearchReady,FRIEND_SEARCH_PAGES} from '../campaign/social-friends.js';
 import {canonicalDisplayForLegacy,canonicalScopeProgress,canonicalCampaignComplete,canonicalQuestMilestone,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestById,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
 import {loadCommittedCanonicalAttempt} from '../persistence/canonical-command.js';
@@ -2038,7 +2038,7 @@ async function maybeOfferInstall(){
 }
 
 async function installLumen(){const box=document.getElementById("installOptin"),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);if(ios&&!lumenInstallPrompt){box.hidden=true;localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()));return}if(!lumenInstallPrompt){box.hidden=true;return}const p=lumenInstallPrompt;lumenInstallPrompt=null;await p.prompt();const choice=await p.userChoice;trackLumenEvent("pwa_install_choice",null,{outcome:choice.outcome,qa:qaActive});box.hidden=true;if(choice.outcome==="dismissed")localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()))}
-const lumenShare=createShareDialog(document,navigator,t,{locale:()=>localePreference?.locale??'fr'});
+const lumenShare=createShareDialog(document,navigator,t,{locale:()=>localePreference?.locale??'fr',hold:()=>menuPause.hold()});
 function shareLumen(origin){void trackInviteClick();void lumenShare.invite(origin)}
 // Bound once for every mode (guest, signed in, QA); the social entry reuses it.
 for(const id of ["shareLumen","mapShareLumen","inviteLumenFriends"]){const button=document.getElementById(id);if(!button)continue;if(id!=="inviteLumenFriends")button.onclick=()=>shareLumen(button);
@@ -2427,8 +2427,33 @@ function discoverDailyToday(owner){
  if(dailyTodayMemo&&now<dailyTodayMemo.until&&(dailyTodayMemo.owner===owner||dailyTodayMemo.open||!dailyTodayMemo.settled))return dailyTodayMemo.promise;
  const promise=dailyClient.discover();
  const memo={owner,promise,until:now+6*3600e3};dailyTodayMemo=memo;
- promise.then(today=>{const left=Date.parse(today?.closes_at)-Date.parse(today?.server_now);memo.settled=true;if(today?.enabled&&left>0){memo.until=now+left;memo.open=true}},()=>{if(dailyTodayMemo===memo)dailyTodayMemo=null});
+ promise.then(today=>{const left=Date.parse(today?.closes_at)-Date.parse(today?.server_now);memo.settled=true;if(today?.enabled&&left>0){memo.until=now+left;memo.open=true;rememberDailyToday(today)}},()=>{if(dailyTodayMemo===memo)dailyTodayMemo=null});
  return promise;
+}
+// #1015: entering the daily reloads the page. An OPEN challenge is the same for
+// every account until its server closing time, so the answer just read in Mon
+// ciel / Social is reused for this tab (sessionStorage) instead of a sequential
+// lumen_daily_today before the board. The server stays the judge: begin/finish
+// check the day, and a closed, expired or missing entry falls back to the RPC.
+// Only an explicit hand-off (a tap on the chip / Mon ciel / Social entry less than
+// 30 s ago, consumed once) may reuse it; any other load reads the server.
+const DAILY_TODAY_KEY='lumenDailyTodayV1',DAILY_HANDOFF_KEY='lumenDailyHandoffV1',DAILY_TODAY_MARGIN_MS=60000,DAILY_HANDOFF_MS=30000;
+function handOffDaily(training=false){try{sessionStorage.setItem(DAILY_HANDOFF_KEY,String(Date.now()))}catch{}location.href=dailyUrl(training)}
+function rememberDailyToday(today){try{sessionStorage.setItem(DAILY_TODAY_KEY,JSON.stringify({today,receivedAt:Date.now()}))}catch{}}
+function cachedDailyToday(){
+ try{
+  const handoff=Date.now()-Number(sessionStorage.getItem(DAILY_HANDOFF_KEY));sessionStorage.removeItem(DAILY_HANDOFF_KEY);
+  if(!(handoff>=0&&handoff<DAILY_HANDOFF_MS))return null;
+  const cached=JSON.parse(sessionStorage.getItem(DAILY_TODAY_KEY)||'null'),today=cached?.today,age=Date.now()-Number(cached?.receivedAt);
+  if(!today?.enabled||!today.quest_id||!today.day||!(age>=0))return null;
+  const serverNow=Date.parse(today.server_now)+age;
+  if(!(Date.parse(today.closes_at)-serverNow>DAILY_TODAY_MARGIN_MS))return null;
+  return {...today,server_now:new Date(serverNow).toISOString()};
+ }catch{return null}
+}
+function seedDailyToday(today){
+ const left=Date.parse(today?.closes_at)-Date.parse(today?.server_now);
+ if(today?.enabled&&left>0)dailyTodayMemo={owner:lumenUser?.id,promise:Promise.resolve(today),until:Date.now()+left,open:true,settled:true};
 }
 // Local-only player state for the header chip: no extra RPC. The official run
 // itself stays server-owned; this only avoids inviting a finished player again.
@@ -2446,14 +2471,14 @@ function renderDailyChip(today,owner){
  chip.dataset.state=state;
  if(label)label.textContent=state==='done'?'✓':'';
  const label2=t(state==='done'?'daily.chipDoneLabel':'daily.chipOpenLabel',{date:dailyDate(today.day)});chip.setAttribute('aria-label',label2);chip.title=label2;
- chip.onclick=()=>{trackDaily('chip_opened');location.href=dailyUrl()};
+ chip.onclick=()=>{trackDaily('chip_opened');handOffDaily()};
 }
 async function refreshDailyEntry(){
  const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek'),chip=document.getElementById('dailyChip');
  const request=++dailyEntryRequest,owner=lumenUser?.id;
  if(!entry||socialChallenge){if(chip)chip.hidden=true;return}
  const current=()=>request===dailyEntryRequest&&owner===lumenUser?.id&&!socialChallenge;
- entry.onclick=()=>{location.href=dailyUrl()};
+ entry.onclick=()=>handOffDaily();
  try{
   const today=await discoverDailyToday(owner);
   if(!current())return;
@@ -2490,11 +2515,11 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  const closes=Date.parse(board?.closes_at||socialChallenge?.closes_at||'');
  document.getElementById('dailyNext').textContent=Number.isFinite(closes)?t('daily.nextChallenge',{duration:dailyDuration(closes-Date.now())}):'';
  document.getElementById('dailyRetrySubmit').hidden=!pending;
- const share=document.getElementById('dailyShare');share.hidden=training||status!=='completed';
- share.onclick=()=>{const g=board?.general?.me;lumenShare.text({title:t('daily.shareTitle'),text:[t('daily.shareTime',{date:dailyDate(socialChallenge.day),time:formatDuration(score)}),g?.rank?t('daily.rankOutOf',{rank:formatRank(g.rank,t),total:board.general.participants}):null,t('daily.shareInvite')].filter(Boolean).join('\n'),url:lumenShare.discoveryUrl()},share)};
  document.getElementById('dailyTrainAgain').hidden=pending||(!training&&!['completed','abandoned'].includes(status));
- document.getElementById('dailyTrainAgain').onclick=()=>{location.href=dailyUrl(true)};
- document.getElementById('dailyContinue').onclick=()=>{location.href=location.pathname};
+ document.getElementById('dailyTrainAgain').onclick=()=>handOffDaily(true);
+ // #1013: the end of the Défi du jour leads to Mon ciel (the same daily for
+ // everyone: no daily-specific share), never to a campaign grid.
+ document.getElementById('dailyContinue').onclick=()=>{location.href=location.pathname+'?sky=1'};
  document.getElementById('dailyRetrySubmit').onclick=()=>retryPendingDaily(true);
  const weekButton=document.getElementById('dailyWeekFromResult');weekButton.hidden=training||pending||!lumenUser;weekButton.onclick=()=>openDailyWeek(socialChallenge?.day||board?.day,'result');
  if(board)trackDaily('board_viewed',{daily_day:board.day||socialChallenge?.day||null,board_scope:'general',board_final:!!board.final});
@@ -2502,23 +2527,45 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
 }
 // « Ta semaine dans les étoiles »: own days only, past weeks navigable.
 let dailyWeekRequest=0;
+// #1015 history: one board read per explicit tap on a day; a final (frozen)
+// board never changes, so it is kept for the session and never re-read.
+const dailyFinalBoards=new Map();let dailyDayRequest=0;
+function closeDailyDay(){
+ const box=document.getElementById('dailyWeekBoard');if(box)box.hidden=true;
+ document.getElementById('dailyWeekModal')?.classList.remove('showing-day');
+ for(const b of document.querySelectorAll('#dailyWeekBody [data-daily-day]'))b.setAttribute('aria-pressed','false');
+}
+async function openDailyDay(day,button){
+ if(button?.getAttribute('aria-pressed')==='true'){closeDailyDay();return}
+ closeDailyDay();button?.setAttribute('aria-pressed','true');
+ const request=++dailyDayRequest,box=document.getElementById('dailyWeekBoard'),panel=document.getElementById('dailyWeekBoardPanel'),status=document.getElementById('dailyWeekStatus');
+ document.getElementById('dailyWeekBoardTitle').textContent=t('daily.dayBoardTitle',{date:dailyDate(day)});
+ document.getElementById('dailyWeekModal').classList.add('showing-day');box.hidden=false;panel.innerHTML='';status.textContent=t('daily.load');
+ try{
+  const board=dailyFinalBoards.get(day)||await dailyClient.board(day);if(request!==dailyDayRequest)return;
+  if(board?.final)dailyFinalBoards.set(day,board);
+  status.textContent='';
+  const show=scope=>{for(const [id,tab] of [['dailyWeekTabGeneral','general'],['dailyWeekTabFriends','friends']])document.getElementById(id).setAttribute('aria-selected',String(tab===scope));panel.innerHTML=renderDailyBoard(board?.[scope],{scope,formatDuration,t})+(board?.final?'':'<p class="daily-week-state">'+escapeSocialHtml(t('daily.provisional'))+'</p>')};
+  document.getElementById('dailyWeekTabGeneral').onclick=()=>show('general');document.getElementById('dailyWeekTabFriends').onclick=()=>show('friends');
+  show('general');
+ }catch(e){if(request!==dailyDayRequest)return;box.hidden=true;status.textContent=dailyErrorMessage(e,t)}
+}
 async function openDailyWeek(today,source='result'){
  const modal=document.getElementById('dailyWeekModal');if(!modal||!today)return;
- const current=weekMonday(today),close=document.getElementById('dailyWeekClose'),share=document.getElementById('dailyWeekShare');
+ const current=weekMonday(today),close=document.getElementById('dailyWeekClose');
  const opener=document.activeElement;
- close.onclick=()=>{modal.hidden=true;opener?.focus?.({preventScroll:true})};
+ close.onclick=()=>{closeDailyDay();modal.hidden=true;opener?.focus?.({preventScroll:true})};
+ document.getElementById('dailyWeekBody').onclick=event=>{const b=event.target.closest('[data-daily-day]');if(b)void openDailyDay(b.dataset.dailyDay,b)};
  const load=async monday=>{
   const request=++dailyWeekRequest,status=document.getElementById('dailyWeekStatus'),body=document.getElementById('dailyWeekBody');
   const nav=weekNavigation(monday,today),prev=document.getElementById('dailyWeekPrev'),next=document.getElementById('dailyWeekNext');
   prev.disabled=!nav.previous;next.disabled=!nav.next;prev.onclick=()=>nav.previous&&load(nav.previous);next.onclick=()=>nav.next&&load(nav.next);
   document.getElementById('dailyWeekRange').textContent=formatWeekRange(monday,addDays(monday,6),{t,locale:dailyLocale()});
-  status.textContent=t('daily.load');share.hidden=true;
+  closeDailyDay();status.textContent=t('daily.load');
   try{
    const week=await dailyClient.week(monday);if(request!==dailyWeekRequest)return;
    const summary=summarizeWeek(week);
    body.innerHTML=renderDailyWeek(summary,{formatDuration,t,locale:dailyLocale()});status.textContent='';
-   share.hidden=!summary.participations;
-   share.onclick=()=>lumenShare.text({title:t('daily.weekShareTitle'),text:weekShareText(summary,{t}),url:lumenShare.discoveryUrl()},share);
    trackDaily('week_viewed',{week_monday:monday,week_offset:Math.round((Date.parse(monday)-Date.parse(current))/604800000),week_participations:summary.participations,week_frozen:summary.frozen,source});
   }catch(e){if(request!==dailyWeekRequest)return;body.innerHTML='';status.textContent=dailyErrorMessage(e,t)}
  };
@@ -2546,7 +2593,10 @@ async function finishDaily(status){
 }
 async function bootstrapDailyChallenge(){
  const params=new URL(location.href).searchParams;if(!params.has('daily'))return false;
- let today=null;try{today=await dailyClient.today()}catch{today=null}
+ let today=cachedDailyToday();
+ if(!today){try{today=await dailyClient.today();if(today?.enabled)rememberDailyToday(today)}catch{today=null}}
+ // The same answer feeds the header chip / Mon ciel entry: no second read.
+ if(today)seedDailyToday(today);
  if(!today?.enabled||!today.quest_id){showRewardToast(dailyErrorMessage('daily_unavailable',t));return false}
  let quest;try{quest=dailyQuest({questId:today.quest_id,gridRevision:today.grid_revision})}catch{showRewardToast(dailyErrorMessage('daily_unavailable',t));return false}
  socialChallenge={daily:true,training:true,challenge_id:'daily-'+today.day+'-training',day:today.day,grid_revision:today.grid_revision,closes_at:today.closes_at,clockSkewMs:Date.now()-Date.parse(today.server_now)};
@@ -2577,7 +2627,7 @@ async function bootstrapDailyChallenge(){
     // The server day decides. An intro left open across midnight Paris must
     // not play yesterday's grid against today's official attempt: reload on
     // the server day (the attempt then resumes at its server elapsed time).
-    if(res.day&&res.day!==today.day){status.textContent=t("board.dailyRollover");location.replace(dailyUrl());return}
+    if(res.day&&res.day!==today.day){try{sessionStorage.removeItem(DAILY_TODAY_KEY)}catch{}status.textContent=t("board.dailyRollover");location.replace(dailyUrl());return}
     if(res.status!=='started'){intro.hidden=true;showDailyResult({run:res,board:await dailyClient.board(today.day).catch(()=>null)});resolve(true);return}
     Object.assign(socialChallenge,{training:false,challenge_id:'daily-'+today.day,operation_id:res.operation_id,started_at:res.started_at});
     const local=attemptEngine.peek(),hasLocal=local?.mode==='challenge'&&local.challengeId===socialChallenge.challenge_id;
@@ -2621,7 +2671,33 @@ function renderFriendDuels(){
  document.getElementById("friendChallengesReceived").innerHTML=renderFriendReceived(lastFriendInbox.received,duelContext({details:receivedDuels}));
  document.getElementById("friendChallengesSent").innerHTML=renderFriendSent(lastFriendInbox.sent,duelContext({listRows:myChallengeRows}));
 }
-function openFriends(){document.getElementById("friendStatus").textContent="";document.getElementById("friendsModal").hidden=false;void refreshFriends()}
+// #972: explicit, bounded partial search. One RPC per submitted query and page;
+// an identical query is served from this modal's memory, and nothing is sent
+// below 3 letters/digits or while the same search is in flight.
+let friendSearch=null,friendSearchCache=new Map(),friendSearchFlight=null;
+function renderFriendSearch(){
+ const box=document.getElementById("friendSearchResults"),more=document.getElementById("friendSearchMore");
+ box.hidden=!friendSearch;more.hidden=!friendSearch?.more;
+ if(friendSearch)box.innerHTML=renderFriendSearchRows(friendSearch.rows,t);
+}
+function patchFriendSearch(nickname,state){
+ if(!friendSearch)return;const key=String(nickname).toLowerCase();
+ for(const row of friendSearch.rows)if(String(row.nickname).toLowerCase()===key)row.state=state;
+ friendSearchCache.clear();renderFriendSearch();
+}
+async function runFriendSearch(raw,page){
+ const status=document.getElementById("friendStatus"),query=friendSearchQuery(raw);
+ if(!friendSearchReady(query)){status.textContent=t('friends.error.query_too_short');return}
+ const key=query.toLowerCase()+'#'+page;if(friendSearchFlight===key)return;
+ const cached=friendSearchCache.get(key);
+ const apply=data=>{const rows=page>0&&friendSearch?.query===query?[...friendSearch.rows,...data.results]:data.results;friendSearch={query,page,rows,more:data.more&&page<FRIEND_SEARCH_PAGES-1};status.textContent="";renderFriendSearch()};
+ if(cached){apply(cached);return}
+ friendSearchFlight=key;status.textContent=t('friends.searching');
+ try{const data=await friendsClient.find(query,page);friendSearchCache.set(key,data);if(friendSearchFlight===key)apply(data)}
+ catch(e){status.textContent=friendErrorMessage(e,t)}
+ finally{if(friendSearchFlight===key)friendSearchFlight=null}
+}
+function openFriends(){friendSearch=null;friendSearchCache=new Map();renderFriendSearch();document.getElementById("friendStatus").textContent="";document.getElementById("friendsModal").hidden=false;void refreshFriends()}
 async function openFriendPicker(challengeId){
  const modal=document.getElementById("friendPickerModal"),list=document.getElementById("friendPickerList"),status=document.getElementById("friendPickerStatus");
  status.textContent="";list.innerHTML="";modal.hidden=false;modal.dataset.challengeId=challengeId;
@@ -2636,11 +2712,9 @@ function setupFriends(){
  document.getElementById("friendsClose").onclick=()=>document.getElementById("friendsModal").hidden=true;
  document.getElementById("friendsOpenMyChallenges").onclick=()=>{document.getElementById("friendsModal").hidden=true;openMyChallenges()};
  document.getElementById("friendAddForm").onsubmit=async event=>{
-  event.preventDefault();const input=document.getElementById("friendNicknameInput"),status=document.getElementById("friendStatus"),nickname=input.value;
-  if(!validNickname(nickname)){status.textContent="Entre le pseudonyme exact (3 à 20 caractères).";return}
-  try{const state=await friendsClient.request(nickname);status.textContent=state==='friends'?"Vous êtes maintenant amis.":"Demande envoyée.";input.value="";void refreshFriends()}
-  catch(e){status.textContent=friendErrorMessage(e,t)}
+  event.preventDefault();void runFriendSearch(document.getElementById("friendNicknameInput").value,0);
  };
+ document.getElementById("friendSearchMore").onclick=()=>{if(friendSearch?.more)void runFriendSearch(friendSearch.query,friendSearch.page+1)};
  document.getElementById("friendsModal").addEventListener("click",async event=>{
   const friendAction=event.target.closest("[data-friend-action]"),challengeAction=event.target.closest("[data-challenge-action]");
   if(friendAction){
@@ -2648,7 +2722,10 @@ function setupFriends(){
    // #921: in-game confirmation; nothing is removed unless the player confirms.
    if(action==='remove'){lumenConfirm().open({title:t('social.removeFriendTitle',{name:nickname}),copy:t('social.removeFriendCopy',{name:nickname}),cancel:t('social.removeFriendKeep'),confirm:t('social.removeFriendYes'),tone:'danger',returnFocus:friendAction,
     onConfirm:async()=>{try{await friendsClient.remove(nickname);status.textContent="";void refreshFriends()}catch(e){status.textContent=friendErrorMessage(e,t)}}});return}
-   try{if(action==='accept')await friendsClient.respond(nickname,true);else if(action==='decline')await friendsClient.respond(nickname,false);else await friendsClient.remove(nickname);status.textContent="";void refreshFriends()}
+   try{
+    if(action==='add'){const state=await friendsClient.request(nickname);patchFriendSearch(nickname,state);status.textContent=t(state==='friends'?'friends.nowFriends':'friends.requestSent');void refreshFriends();return}
+    if(action==='accept'){await friendsClient.respond(nickname,true);patchFriendSearch(nickname,'friends')}else if(action==='decline')await friendsClient.respond(nickname,false);else{await friendsClient.remove(nickname);patchFriendSearch(nickname,'none')}
+    status.textContent="";void refreshFriends()}
    catch(e){status.textContent=friendErrorMessage(e,t)}
   }
   if(challengeAction){const id=challengeAction.closest("[data-challenge-id]")?.dataset.challengeId,data=receivedDuels.get(id);
@@ -2767,7 +2844,8 @@ async function refreshOfficialRecordLabel(){
 // #851: the private record shown beside the best officially ranked time.
 function personalBestSeconds(quest){try{const best=officialRecordTime(questPerformanceRecord(quest,lumenProgress),quest?.gridRevision??0);return Number.isSafeInteger(best)?best:null}catch{return null}}
 function showRanking(){if(socialChallenge||learningReplayActive()||qaActive||!lumenUser)return;const a=attemptEngine.snapshot();rankingView.show(activeQuest(),attemptOperationId(a),{personalBest:personalBestSeconds(activeQuest())});rankingView.mount()}
-function refreshRankingQueue(options){return rankingClient.flush().then(r=>rankingView.refresh(r,options)).catch(error=>{if(error?.results?.length)return rankingView.refresh(error.results,options)})}
+// #984: a failed send still counts for the shown victory (retrying, then failed).
+function refreshRankingQueue(options){return rankingClient.flush().then(r=>rankingView.refresh(r,options)).catch(error=>{if(error?.results?.length)return rankingView.refresh(error.results,options).then(()=>rankingView.noteFailure());rankingView.noteFailure()})}
 addEventListener('online',()=>{void refreshRankingQueue()});
 document.getElementById('rankingWithdraw').onclick=async()=>{
  const c=rankingContext(),button=document.getElementById('rankingWithdraw');button.disabled=true;
@@ -4587,9 +4665,14 @@ board.addEventListener("pointerdown",e=>{
  const startState=state[Number(cell.dataset.row)][Number(cell.dataset.col)];
  dragCross={id:e.pointerId,startX:e.clientX,startY:e.clientY,lastX:e.clientX,lastY:e.clientY,dragging:false,changed:false,visited:new Set(),snapshot:state.map(x=>x.slice()),lesson,mode:!lesson&&startState!==0?'erase':'mark'};
 },{passive:false});
+function dragCellAt(x,y){const b=board.getBoundingClientRect();if(!b.width||!b.height)return null;return [Math.floor((y-b.top)/b.height*n),Math.floor((x-b.left)/b.width*n)]}
+function dragLeftStartCell(e){const from=dragCellAt(dragCross.startX,dragCross.startY),to=dragCellAt(e.clientX,e.clientY);return !from||!to||from[0]!==to[0]||from[1]!==to[1]}
 function moveDragCross(e){
  if(!dragCross||dragCross.id!==e.pointerId)return;
- if(!dragCross.dragging&&Math.hypot(e.clientX-dragCross.startX,e.clientY-dragCross.startY)>8){
+ // #994: a finger rolling a few pixels inside its own cell is still a tap (native
+ // click: cross -> Guardian -> empty). Android's tap slop exceeds 8 px, so a drag
+ // starts only once the pointer has also left the starting cell. No timer.
+ if(!dragCross.dragging&&Math.hypot(e.clientX-dragCross.startX,e.clientY-dragCross.startY)>8&&dragLeftStartCell(e)){
    dragCross.dragging=true;dragCrossSuppressClick=true;
    try{board.setPointerCapture?.(e.pointerId)}catch{}
  }
@@ -6200,6 +6283,9 @@ async function bootGame(){
  }catch{firstWelcome?.cancel()}
  if(!firstWelcome?.active)maybeShowReturnWelcome();
  const focus=new URL(location.href).searchParams.get('myChallenges');if(focus)openMyChallenges(focus);else loadMyChallenges();
+ // #1013: « Mon ciel » at the end of the Défi du jour opens Mon ciel once.
+ const bootUrl=new URL(location.href);
+ if(bootUrl.searchParams.get('sky')==='1'){bootUrl.searchParams.delete('sky');history.replaceState(history.state,'',bootUrl.pathname+bootUrl.search+bootUrl.hash);if(!socialChallenge&&!firstWelcome?.active)openJourneyMap(true)}
 }
 bootGame();
 

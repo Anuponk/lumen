@@ -383,3 +383,18 @@ comme « rattaché à un autre compte » parce que `verify()` testait le
 propriétaire avant l'état `refunded`. Correctif : `playOwnershipSummary` groupe
 par état ; l'Edge répond `not_paid` pour un jeton remboursé d'un autre compte,
 sans écriture ni accusé de réception.
+
+### #994 — Appuis Android lents ou sans effet (24/11/2026)
+
+Symptôme : sur Android, un deuxième appui sur une case paraissait ignoré ou
+effaçait la croix. Cause prouvée par `tap-jitter-browser-tests.mjs` (vrais
+événements tactiles CDP) : tout déplacement > 8 px, même à l'intérieur de la case
+de départ, transformait l'appui en glissé ; le clic natif était supprimé et le
+mode effacement retirait la croix (1 → 0) au lieu de poser le Gardien ; sur un
+Gardien, rien ne se passait. Avec 11 px de roulis sur une case de 53 px, la
+séquence attendue [1, 2, 0] donnait [1, 0, 1]. Correctif : le glissé ne commence
+qu'une fois sorti de la case de départ (aucune temporisation). Latence mesurée
+appui → rendu : 20–45 ms en émulation (pas de délai intrinsèque). Les blocages
+pendant un conflit guidé actif restent voulus (#533) ; validation sur appareil
+Android réel à faire en recette.
+

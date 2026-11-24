@@ -76,6 +76,8 @@ try{
  check(gameScreenSource.includes('visualWindowMs=30000'),'Rapidité countdown opens at 30 seconds');
  check(gameScreenSource.includes('remainingMs<=10000'),'Only the final 10 seconds use the stronger state');
  check(await evaluate('getComputedStyle(document.getElementById("speedCountdownFill")).animationName==="none"'),'Rapidité countdown does not blink or pulse');
+ // #973: the bar is the Rapidité countdown in real seconds, penalties excluded (badge rule unchanged), and says so.
+ check(await evaluate('(()=>{const c=document.getElementById("speedCountdown");return c.querySelector(".speed-countdown-icon").textContent==="⚡"&&/Rapidit.*hors pénalités/.test(c.getAttribute("aria-label"))&&c.title===c.getAttribute("aria-label")})()'),'Rapidité countdown names its real-time rule');
  check(performanceSource.includes('return 60'),'Badge timing threshold is not the global 60-second rule');
 
  const beforeLearning=await evaluate(`JSON.stringify(lumenDiagnostics.snapshot().progress)`);

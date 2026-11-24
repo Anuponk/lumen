@@ -236,3 +236,21 @@ console.log('Promotional picture share passed');
   } finally { globalThis.fetch = realFetch; }
 }
 console.log('Promotional picture type passed');
+// #925: the native invitation sheet opens no Lumen dialog; it holds the menu
+// pause while shown and releases it once, whether shared, cancelled or unavailable.
+for (const [label, share] of [['shared', async () => {}], ['cancelled', async () => { throw {name: 'AbortError'}; }], ['unavailable', undefined]]) {
+  const events = [];
+  let resolveShare;
+  const pending = share && (() => new Promise((resolve, reject) => { resolveShare = () => share().then(resolve, reject); }));
+  const holdDoc = fakeDocument();
+  const holdDialog = createShareDialog(holdDoc, pending ? {share: pending} : {}, en, {
+    locale: () => 'en',
+    hold: () => { events.push('hold'); return () => events.push('release'); },
+  });
+  const shown = holdDialog.invite({getClientRects: () => [1], focus() {}});
+  assert.deepEqual(events, ['hold'], `${label}: the pause is taken before the sheet appears`);
+  resolveShare?.();
+  await shown;
+  assert.deepEqual(events, ['hold', 'release'], `${label}: released exactly once after the sheet`);
+  if (!share) assert.equal(holdDoc.getElementById('lumenShareDialog').open, true, 'unavailable: the fallback dialog keeps the pause itself');
+}

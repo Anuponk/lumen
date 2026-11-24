@@ -31,11 +31,26 @@ journée : jusqu'à `closes_at` quand le défi est ouvert, 6 h sinon, avec une
 seule relecture après connexion tant qu'il est fermé (un compte d'aperçu peut
 l'ouvrir). Une seule lecture alimente la pastille d'en-tête, « Mes quêtes » dans
 Mon ciel et le menu Social. La pastille `#dailyChip` occupe la ligne d'en-tête
-existante (aucune ligne ajoutée, grille inchangée, trophée seul sous 430 px). Son
+existante (aucune ligne ajoutée, grille inchangée, trophée seul sous 430 px). #1013 :
+elle suit la charte monochrome des icônes d'en-tête (pictogramme SVG, sans jaune
+permanent) ; seul un petit point cyan signale un défi encore à jouer. Son
 état « fait » est local (`lumenDailyDoneV1`, écrit à l'affichage du résultat
 officiel ou d'un envoi en attente) : il n'ajoute aucun appel et ne change aucune
 règle, l'écran du défi restant seul juge de la tentative unique. #898 : « Mes quêtes » dans Mon ciel et le menu Social (qui en reprend le texte) affichent le même état « déjà joué, voir le classement ». Un lien
 explicite et une tentative déjà en attente gardent leurs chemins existants.
+
+#1015 (performance) : entrer dans le défi recharge la page. Un défi **ouvert** est
+identique pour tous les comptes jusqu'à `closes_at` ; la réponse que la pastille,
+« Mes quêtes » ou Social viennent de lire est donc transmise à la page du défi
+(`sessionStorage` `lumenDailyTodayV1`), uniquement par un **relais explicite**
+(`lumenDailyHandoffV1`, posé par le clic, valable 30 s, consommé une fois).
+L'écran du défi lit alors directement le classement, sans `lumen_daily_today`
+séquentiel, et le même mémo alimente la pastille (plus de seconde lecture).
+Tout autre chargement, un défi fermé ou proche de sa clôture (marge 60 s) relit
+le serveur ; un changement de jour serveur au `begin` invalide le cache. Mesure
+locale (RPC simulés à 250 ms, 390 px, 9 passages) : part réseau de l'entrée p50
+526 → 265 ms, appels `lumen_daily_today` 2 → 0. Le reste du délai ressenti est le
+redémarrage complet de la page (entrée et sortie), à traiter séparément.
 ## 2. Modèle de données (migration additive `20261122090000_daily_challenge_882.sql`)
 
 | Objet | Rôle | Propriétaire / effacement |
@@ -126,7 +141,7 @@ calendrier dans `daily_puzzles`.
 
 ## 6 bis. Parcours joueur et thème (PR B)
 
-- **Entrée** : « 🏆 Défi du jour » dans « Mes quêtes » (Mon ciel), visible
+- **Entrée** : « Défi du jour » (pictogramme trophée monochrome, #1013) dans « Mes quêtes » (Mon ciel), visible
   seulement si `lumen_daily_today` répond `enabled` ; date et temps restant.
   Le lien `/?daily=1` ouvre le mode (rechargement, comme les liens de défi).
 - **Isolation** : une partie quotidienne est une partie de défi isolée
@@ -144,8 +159,10 @@ calendrier dans `daily_puzzles`.
   tentative officielle pour un compte (la grille ne doit pas être révélée).
 - **Résultat** : temps officiel, onglets « Général / Mes amis » (top 3, égalités,
   ma position, participants réels, états vides), zone de hauteur réservée,
-  « Continuer » action principale, « Partager ma performance » secondaire,
-  « S'entraîner (non classé) », prochain défi annoncé. Déjà joué : résultat
+  « Mon ciel » action principale (ouvre réellement Mon ciel via le paramètre
+  à usage unique `?sky=1`, #1013), « S'entraîner (non classé) », prochain défi
+  annoncé. Pas de partage propre au Défi du jour : le même défi est accessible à
+  tous (#1013) ; le partage global de Lumen et les autres partages restent. Déjà joué : résultat
   figé, jamais de seconde tentative.
 - **Hors ligne** : une tentative classée commence en ligne ; si l'envoi final
   échoue, le résultat est conservé sur l'appareil (`lumenDailyPendingV1`) et
@@ -174,10 +191,15 @@ calendrier dans `daily_puzzles`.
 - **Provisoire / figé** : « Classements provisoires » tant qu'un jour joué
   n'est pas finalisé (fin du jour + 6 h) ; « Semaine terminée : classements
   figés » quand les 7 jours sont finalisés.
+- **Historique (#1015)** : chaque jour ouvert de « Ma semaine » est un bouton ;
+  il affiche à la place des statistiques le classement de ce jour (podium,
+  « Ta position », temps officiel, participants, onglets Général / Mes amis) via
+  `lumen_daily_board(p_day)`, en lecture seule. Une lecture par appui explicite ;
+  un classement figé (`final`) est gardé pour la session et jamais relu. Les
+  récapitulatifs automatiques et le classement hebdomadaire à points attendent
+  la validation du barème.
 - **Navigation** : semaines passées jusqu'à la première semaine du calendrier
   (`DAILY_SCHEDULE_START`), jamais au-delà de la semaine courante.
-- **Partage optionnel** : texte avec ses seuls chiffres (participations,
-  podiums, meilleur rang), sans pseudonyme ni donnée d'un autre joueur.
 - **Mesure** : aucun nouvel événement ni nouvelle collecte. La collecte reste
   soumise à `analyticsAllowed()` (désactivée au lancement familial). Les
   tentatives réutilisent `attempt_started` / `attempt_completed` /
@@ -219,6 +241,6 @@ calendrier dans `daily_puzzles`.
 
 ## Langue et affichage
 
-L’entrée, l’introduction, le bandeau, le résultat, les deux classements, le bilan hebdomadaire et les textes de partage lisent les catalogues FR/EN. Les dates, rangs et pluriels sont formatés dans la langue de l’application. Les pseudonymes et les classements restent ceux renvoyés par le serveur.
+L’entrée, l’introduction, le bandeau, le résultat, les deux classements, le bilan hebdomadaire lisent les catalogues FR/EN. Les dates, rangs et pluriels sont formatés dans la langue de l’application. Les pseudonymes et les classements restent ceux renvoyés par le serveur.
 
 Le jour et la semaine suivent toujours le calendrier de Paris. Le changement de langue pendant la grille actualise le bandeau et conserve la tentative et son chrono. Les aides partagées avec la campagne suivent la couverture du [chantier multilingue](https://github.com/Anuponk/lumen/issues/754).

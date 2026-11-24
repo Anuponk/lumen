@@ -111,7 +111,7 @@ async function fetchPromoImage(path) {
 }
 
 // `locale` returns the language Lumen is displayed in (it can change at runtime).
-export function createShareDialog(document, navigator, t = createTranslator().t, { locale = () => 'fr', loadImage = fetchPromoImage } = {}) {
+export function createShareDialog(document, navigator, t = createTranslator().t, { locale = () => 'fr', loadImage = fetchPromoImage, hold = () => () => {} } = {}) {
   // The picture is fetched ahead of the click (warmPromo) and only attached
   // once ready: awaiting a download inside the click could lose the user
   // activation that navigator.share() requires. Not ready: text + link only.
@@ -198,10 +198,18 @@ export function createShareDialog(document, navigator, t = createTranslator().t,
       const data = inviteShare(t, lang);
       const image = promoImages.get(promoImagePath(lang))?.file ?? null;
       if (!image) void warmPromo(lang);
-      // Text + link always; the picture too when the channel accepts files.
-      const outcome = await tryNativeShare(navigator, { ...data, url: inviteShareUrlFor(lang) }, image);
-      if (outcome === 'unavailable' && origin.getClientRects().length) {
-        open(data, { invitation: true, origin });
+      // #925: the native sheet opens no Lumen dialog, so it takes the central
+      // menu pause itself for as long as it is shown (Android keeps the page
+      // visible underneath). The fallback dialog keeps the pause on its own.
+      const done = hold();
+      try {
+        // Text + link always; the picture too when the channel accepts files.
+        const outcome = await tryNativeShare(navigator, { ...data, url: inviteShareUrlFor(lang) }, image);
+        if (outcome === 'unavailable' && origin.getClientRects().length) {
+          open(data, { invitation: true, origin });
+        }
+      } finally {
+        done();
       }
     },
     result(model, origin) {

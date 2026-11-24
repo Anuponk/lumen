@@ -2133,6 +2133,12 @@ nicknames only, never an email or a user ID. Migration
   anonymizable `sender_user_id`; it is never copied.
 - RPCs (`authenticated` only, SECURITY DEFINER, RLS on, no table grant):
   `lumen_friend_search` (exact case-insensitive nickname, no enumeration),
+  `lumen_friend_find` (#972, migration `20261124100000_friend_find_972.sql`:
+  partial, case- and accent-insensitive search over ready public nicknames;
+  self excluded; ≥ 3 letters/digits, ≤ 20 chars; 8 per page, 3 pages max;
+  60 searches per account per rolling hour in `lumen.social_search_budget`,
+  one row per account, erased with the account; returns nickname + the
+  caller's own relation only; exact > prefix > contains),
   `lumen_friend_request` (idempotent; crossing requests accept; limits: 30
   pending, 10 per day, 30-day wait after a quiet decline), `lumen_friend_respond`,
   `lumen_friend_remove`, `lumen_friend_list`,

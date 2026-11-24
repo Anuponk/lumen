@@ -48,7 +48,7 @@ export default Object.freeze({
   'board.ready': "Toca la cuadrícula para empezar",
   'board.readyCopy': "El cronómetro arrancará con tu primer gesto.",
   'board.difficulty': "Dificultad de la misión",
-  'board.speedRemaining': "Tiempo restante para la insignia Relámpago",
+  'board.speedRemaining': "Rapidez: segundos reales restantes, sin contar las penalizaciones",
   'board.excluded': "Casilla oscurecida",
   'board.placed': "Guardián colocado",
   'board.territory': "Territorio {number}",

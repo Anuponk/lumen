@@ -19,9 +19,11 @@ const board=(me)=>({day:DAY,final:false,closes_at:'2026-11-23T23:00:00Z',my_run:
  general:{participants:12,top:[{nickname:'Ana',score:95,rank:1,mine:false},{nickname:'Bo',score:95,rank:1,mine:false},{nickname:'Cy',score:120,rank:3,mine:false}],me:me?.status==='completed'?{rank:5,score:me.score}:null},
  friends:{participants:1,top:me?.status==='completed'?[{nickname:'Moi',score:me.score,rank:1,mine:true}]:[],me:me?.status==='completed'?{rank:1,score:me.score}:null}});
 
-function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr'}){
+function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr',handoff=false}){
  return `
   localStorage.clear();
+  sessionStorage.clear();
+  ${handoff?`sessionStorage.setItem('lumenDailyHandoffV1',String(Date.now()));sessionStorage.setItem('lumenDailyTodayV1',JSON.stringify({receivedAt:Date.now(),today:{enabled:true,day:${JSON.stringify(DAY)},quest_id:${JSON.stringify(quest.id)},grid_revision:${quest.gridRevision},closes_at:new Date(Date.now()+5*3600000).toISOString(),server_now:new Date().toISOString()}}));`:''}
   localStorage.setItem('lumen.locale',${JSON.stringify(locale)});
   localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(profile))});
   for(const k of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');
@@ -57,12 +59,13 @@ function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginR
     return {data:[]};
    }})};`;
 }
-async function open({send,evaluate},url,options,{width=390,height=844,daily=true,training=false}={}){
+async function open({send,evaluate},url,options,{width=390,height=844,daily=true,training=false,sky=false}={}){
  await send('Emulation.setDeviceMetricsOverride',{width,height,mobile:width<700,deviceScaleFactor:1});
  const {identifier}=await send('Page.addScriptToEvaluateOnNewDocument',{source:fixture(options)});
  const target=new URL(url);target.searchParams.delete('qa');target.searchParams.delete('challenge');
  if(daily)target.searchParams.set('daily','1');else target.searchParams.delete('daily');
  if(training)target.searchParams.set('training','1');else target.searchParams.delete('training');
+ if(sky)target.searchParams.set('sky','1');else target.searchParams.delete('sky');
  await navigateAndWait({send,evaluate},'Page.navigate',{url:String(target)});
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier});
 }
@@ -100,6 +103,8 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
    assert(layout.chipH>=44&&layout.chipW>=44,'44 px touch target '+JSON.stringify(layout));
    assert(layout.oneRow&&layout.noOverlap&&!layout.scrollX,'chip stays in the header row '+width+' '+JSON.stringify(layout));
    assert.equal(await evaluate("document.getElementById('dailyChip').dataset.state"),'open');
+   // #1013: monochrome header-icon charter, no permanent yellow; a cyan dot marks « to play ».
+   assert.deepEqual(await evaluate(`(()=>{const c=getComputedStyle(document.getElementById('dailyChip')),h=getComputedStyle(document.getElementById('openSocial'));return {color:c.color===h.color,border:c.borderTopColor===h.borderTopColor,background:c.backgroundColor===h.backgroundColor,emoji:/🏆/.test(document.getElementById('dailyChip').textContent),svg:!!document.querySelector('#dailyChip svg.daily-icon')}})()`),{color:true,border:true,background:true,emoji:false,svg:true},'daily chip uses the header-icon palette');
    await evaluate("document.getElementById('openSky').click()");await sleep(300);
    assert.equal(await evaluate("document.getElementById('openDaily').hidden"),false,'Mon ciel keeps its entry');
    assert.equal((await calls(evaluate,'lumen_daily_today')).length,1,'chip and Mon ciel share one read');
@@ -121,6 +126,16 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await evaluate("document.getElementById('dailyChip').click()");
  await until(evaluate,`new URL(location.href).searchParams.get('daily')==='1'&&!!window.lumenDiagnostics`,'chip opens the daily');
  results.push({kind:'header-chip'});
+ // #1015: a tap that just read the open challenge hands it to the daily page:
+ // no sequential lumen_daily_today before the board; otherwise exactly one read.
+ for(const handoff of [true,false]){
+  await open({send,evaluate},url,{signedIn:true,enabled:true,handoff});
+  await until(evaluate,`!document.getElementById('dailyIntro').hidden`,'intro '+handoff);await sleep(400);
+  const today=(await calls(evaluate,'lumen_daily_today')).length,boards=(await calls(evaluate,'lumen_daily_board')).length;
+  assert.deepEqual({today,boards},{today:handoff?0:1,boards:1},'daily context reads with handoff='+handoff);
+  assert.equal(await evaluate(`sessionStorage.getItem('lumenDailyHandoffV1')`),null,'the hand-off is consumed once');
+ }
+ results.push({kind:'context-reuse'});
 
  // Disabled: no entry in « Mes quêtes », ?daily=1 falls back to the campaign.
  await open({send,evaluate},url,{signedIn:false,enabled:false});
@@ -210,7 +225,9 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   assert.equal(await evaluate(`document.getElementById('dailyTabFriends').getAttribute('aria-selected')`),'true');
   assert.match(await evaluate(`document.getElementById('dailyBoardPanel').textContent`),locale==='en'?/Moi \(you\).*None of your friends has played today/s:/Moi \(toi\).*Aucun de tes amis n’a encore joué/s,'explicit empty friends state');
   const layout=await evaluate(`(()=>{const c=document.getElementById('dailyContinue').getBoundingClientRect(),card=document.querySelector('#dailyResultModal .social-card');return {inside:c.top>=0&&c.bottom<=innerHeight,primary:document.getElementById('dailyContinue').classList.contains('primary'),cardScroll:card.scrollHeight-card.clientHeight}})()`);
-  assert.equal(layout.inside&&layout.primary,true,'« Continuer » is the visible primary action at '+width+'x'+height);
+  assert.equal(layout.inside&&layout.primary,true,'« Mon ciel » is the visible primary action at '+width+'x'+height);
+  assert.equal(await evaluate(`document.getElementById('dailyContinue').textContent`),locale==='en'?'My Sky':'Mon ciel');
+  assert.equal(await evaluate(`!!document.querySelector('#dailyShare,#dailyWeekShare')`),false,'#1013: no Défi du jour share action');
   if(captureDir&&width!==360)fs.writeFileSync(captureDir+'/daily-compare-result-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
   // « Ta semaine dans les étoiles » from the result (own days only).
   assert.equal(await evaluate(`document.getElementById('dailyWeekFromResult').hidden`),false,'week entry after the official result');
@@ -220,18 +237,24 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   assert.match(await evaluate(`document.getElementById('dailyWeekBody').textContent`),locale==='en'?/Challenges played1\/7.*Best overall rank5th of 12.*Rankings are provisional/s:/Participations1\/7.*Meilleur rang général5e sur 12.*Classements provisoires/s);
   assert.doesNotMatch(await evaluate(`document.getElementById('dailyWeekBody').textContent`),/Ana|Cy/,'no other player in the weekly summary');
   assert.equal(await evaluate(`document.getElementById('dailyWeekPrev').disabled&&document.getElementById('dailyWeekNext').disabled`),true,'first week: no past, no future');
-  assert.equal(await evaluate(`document.getElementById('dailyWeekShare').hidden`),false,'optional share once played');
   assert.equal((await calls(evaluate,'lumen_daily_week'))[0].args.p_day,DAY);
+  // #1015 history: a day opens its board in place of the stats, one read per tap.
+  const boardReads=(await calls(evaluate,'lumen_daily_board')).length;
+  await evaluate(`document.querySelector('#dailyWeekBody [data-daily-day]').click()`);
+  await until(evaluate,`!document.getElementById('dailyWeekBoard').hidden&&document.querySelectorAll('#dailyWeekBoardPanel .daily-board-row').length>0`,'day board');
+  assert.equal((await calls(evaluate,'lumen_daily_board')).length,boardReads+1,'one board read for the tapped day');
+  assert.equal((await calls(evaluate,'lumen_daily_board')).at(-1).args.p_day,DAY);
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#dailyWeekBody .daily-week-stats')).display`),'none','the board replaces the stats');
+  const dayLayout=await evaluate(`(()=>{const c=document.getElementById('dailyWeekClose').getBoundingClientRect();return c.top>=0&&c.bottom<=innerHeight&&document.documentElement.scrollWidth<=innerWidth})()`);
+  assert.equal(dayLayout,true,'day board fits at '+width+'x'+height);
+  if(captureDir&&width!==360)fs.writeFileSync(captureDir+'/daily-history-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
+  await evaluate(`document.querySelector('#dailyWeekBody [data-daily-day]').click()`);
+  assert.equal(await evaluate(`document.getElementById('dailyWeekBoard').hidden`),true,'tapping the day again closes it');
   const weekLayout=await evaluate(`(()=>{const c=document.getElementById('dailyWeekClose').getBoundingClientRect();return c.top>=0&&c.bottom<=innerHeight&&document.documentElement.scrollWidth<=innerWidth})()`);
   assert.equal(weekLayout,true,'week summary fits at '+width+'x'+height);
   if(captureDir&&width!==360)fs.writeFileSync(captureDir+'/daily-week-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
   if(locale==='en'){
    assert.equal(await evaluate(`document.getElementById('dailyWeekPrev').getAttribute('aria-label')`),'Previous week');
-   await evaluate(`document.getElementById('dailyWeekShare').click()`);
-   assert.equal(await evaluate(`document.getElementById('lumenShareTitle').textContent`),'My week in Lumen');
-   assert.match(await evaluate(`document.getElementById('lumenSharePreview').textContent`),/1\/7 Daily Challenges · best rank 5th/);
-   assert.equal(await evaluate(`document.getElementById('lumenShareCopy').textContent`),'Copy result');
-   await evaluate(`document.getElementById('lumenShareDialog').close()`);
   }
   await evaluate(`document.getElementById('dailyWeekClose').click()`);
   assert.equal(await evaluate(`document.getElementById('dailyWeekModal').hidden`),true);
@@ -267,6 +290,15 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await until(evaluate,`!document.getElementById('dailyResultModal').hidden`,'frozen result');
  assert.equal(await evaluate(`document.getElementById('dailyIntro').hidden`),true,'no second official attempt');
  assert.match(await evaluate(`document.getElementById('dailyResultTime').textContent`),/2:30/);
+ // #1013: « Mon ciel » leaves the daily and really lands on Mon ciel, once.
+ await evaluate(`window.__beforeSky=1;document.getElementById('dailyContinue').click()`);
+ await until(evaluate,`window.__beforeSky===undefined&&!!window.lumenDiagnostics`,'« Mon ciel » leaves the daily');
+ assert.equal(new URL(await evaluate('location.href')).searchParams.get('daily'),null,'« Mon ciel » leaves the daily mode');
+ await open({send,evaluate},url,{signedIn:true,enabled:true,done:true},{daily:false,sky:true});
+ await until(evaluate,`!document.getElementById('mapModal').hidden`,'Mon ciel is open');
+ assert.equal(new URL(await evaluate('location.href')).searchParams.has('sky'),false,'the one-shot sky hint is consumed');
+ await open({send,evaluate},url,{signedIn:true,run:{status:'completed',operation_id:'done',score:150,seconds:150}});
+ await until(evaluate,`!document.getElementById('dailyResultModal').hidden`,'frozen result again');
  await evaluate(`document.getElementById('dailyTrainAgain').click()`);
  await until(evaluate,`new URL(location.href).searchParams.get('training')==='1'&&!!window.lumenDiagnostics`,'training link');
  // The click reloads the page; reopen that exact URL with the same server model.

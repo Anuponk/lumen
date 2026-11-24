@@ -22,7 +22,7 @@ export default Object.freeze({
   'social.openSky': "✦ Abrir Mi cielo",
   'social.dailyRankings': "Reto del día · General y Mis amigos",
   'social.dailyRankingsCopy': "Un solo resultado por día, clasificado entre todos los jugadores y entre tus amigos.",
-  'social.openDaily': "🏆 Ver el Reto del día",
+  'social.openDaily': "Ver el Reto del día",
   'social.week': "Mi semana ✦",
   'social.empty': "No hay novedades por ahora.",
   'social.notificationsGuest': "Las notificaciones de tus amigos y de tus retos necesitan una cuenta.",
