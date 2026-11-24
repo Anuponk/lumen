@@ -216,6 +216,8 @@ let cloudProfileReady=false,cloudProfileTimer=null,cloudProfileBusy=false,cloudP
 let cloudHydrationGeneration=0;
 configureCommandSession(()=>({userId:lumenUser?.id,client:lumenSupabase,generation:cloudHydrationGeneration}),{onIssue:issue=>recordCloudDiagnostic('command_cache_storage',{reason:issue.kind})});
 let canonicalOutboxNotice=null;
+// #1010: true while an outbox still holds a retryable victory (set by refreshCanonicalOutboxNotice).
+let outboxRetryWanted=false;
 let legacyVictoryBusy=false,legacyCommandInFlight=false,legacyVictoryRetry=null;
 let pendingVictoryView=null;
 let pendingNavigationEntries=[],syncPresentationOwner=null;
@@ -697,6 +699,10 @@ async function flushCloudProfile(){
   }finally{
    cloudProfileBusy=false;
    if(cloudProfileDirty){cloudProfileDirty=false;scheduleCloudProfile()}
+   // #1010: the replay scheduler stops when it is woken while a save is busy or
+   // dirty (nearly always during play), leaving a pending victory until reload.
+   // A settled save is the moment it can run again.
+   else try{if(outboxRetryWanted)canonicalRecovery.schedule()}catch{}
    try{syncMobileAuthUI()}catch{}
   }
  })();
@@ -3972,7 +3978,7 @@ async function refreshCanonicalOutboxNotice(ownerId){
   if(typeof outboxHealthReporter!=='undefined'&&!qaActive)void reportOutboxHealth({userId:ownerId,client:lumenSupabase,
    platform,version:document.getElementById('lumenAccountVersion')?.textContent||'unknown',pending:state.pending,
    failures:view.failures,state:view.status==='critical'?'critical':canonicalOutboxNotice==='attention'?'review':state.authRequired?'auth':state.pending.length?'pending':state.complete?'confirmed':'review'});
-  updateAuthUI();return (state.retryable??state.pending).length||(state.complete===false?1:0);
+  updateAuthUI();const outstanding=(state.retryable??state.pending).length||(state.complete===false?1:0);outboxRetryWanted=outstanding>0;return outstanding;
  }catch(error){
   // #711: an account/session change during inspection is transient, not a
   // storage failure; the next refresh after hydration reads the right owner.
