@@ -107,7 +107,9 @@ LUMEN_ACTIVITY_BREVO_KEY_FILE="$HOME/nopuna-private/brevo-key"
 LUMEN_ACTIVITY_SENDER='bonjour@nopuna.fr'
 LUMEN_ACTIVITY_RECIPIENT='activite@example.invalid'
 LUMEN_DAILY_SUMMARY_RECIPIENT='bilan@example.invalid'
-LUMEN_ACTIVITY_KINDS='signup,purchase,refund,revocation,purchase_missing_access,purchase_access_restored,incident_open,incident_resolved,performance_regression,daily_summary'
+# #950 (24/11) : les inscriptions individuelles sont désactivées par défaut ; le bilan quotidien les compte
+# directement depuis auth.users. Ajouter `signup` en tête pour les réactiver, indépendamment des autres catégories.
+LUMEN_ACTIVITY_KINDS='purchase,refund,revocation,purchase_missing_access,purchase_access_restored,incident_open,incident_resolved,performance_regression,daily_summary'
 LUMEN_ACTIVITY_BATCH=5
 LUMEN_ACTIVITY_DAILY_LIMIT=120
 ```
