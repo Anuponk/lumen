@@ -1855,6 +1855,7 @@ function setupGameLocaleSetting(){
  select.addEventListener("change",()=>{
   if(!localePreference.setMode(select.value))return;
   translate=localePreference.translator().t;
+  dailyPushSettings?.refreshDevice();
   translateGameCopy();
   renderAuthUserCopy();renderMobileAuthCopy();betaFeedback?.refresh();
   LEARNING_INTRO=learningIntro(t);
@@ -6481,6 +6482,8 @@ dailyPushSettings=setupDailyPushSettings({document,t,client:createDailyPushClien
  win:window,getOwner:()=>qaActive?null:lumenUser?.id,locale:dailyLocale,
  rpc:(name,args)=>lumenSupabase?.rpc(name,args)||Promise.resolve({error:true}),
 })});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)dailyPushSettings.refreshDevice()});
+window.addEventListener('online',()=>dailyPushSettings.refreshDevice());
 const pushEnable=document.getElementById("pushEnable"),pushLater=document.getElementById("pushLater");
 if(pushEnable)pushEnable.onclick=enableLumenPush;
 if(pushLater)pushLater.onclick=dismissPushLater;

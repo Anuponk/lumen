@@ -3,12 +3,15 @@ const WORKER_PATH='/src/ui/daily-push-worker.js';
 const DEVICE_KEY='lumenDailyPushDeviceV1';
 const DISMISS_KEY='lumenDailyPushDismissedV1';
 const UNAVAILABLE_RETRY_MS=5*60_000;
+const DEVICE_RENEWAL_MS=30*24*60*60_000;
+const DEVICE_RETRY_MS=60*60_000;
 
-export function createDailyPushClient({win,storage=win.localStorage,getOwner,rpc,locale}){
+export function createDailyPushClient({win,storage=win.localStorage,getOwner,rpc,locale,
+ timeZone=()=>Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC',now=Date.now}){
  const workers=win.navigator.serviceWorker,scope=new URL(SCOPE_PATH,win.location.origin).href;
  const supported=!!(workers&&win.PushManager&&win.Notification&&win.crypto?.randomUUID);
  const permission=()=>supported?win.Notification.permission:'unsupported';
- let discovery=null;
+ let discovery=null,lastDeviceRefresh=null;
  const readDevice=()=>{
   try{return JSON.parse(storage.getItem(DEVICE_KEY))}catch{return null}
  };
@@ -58,15 +61,15 @@ export function createDailyPushClient({win,storage=win.localStorage,getOwner,rpc
   async read(){
    const owner=getOwner(),device=readDevice();
    if(!owner)return null;
-   if(discovery?.owner===owner&&Date.now()<discovery.until)return discovery.promise;
+   if(discovery?.owner===owner&&now()<discovery.until)return discovery.promise;
    const memo={owner,until:Infinity,promise:null};
    memo.promise=request(owner,'read',device?.owner===owner?{p_device_id:device.id}:{})
     .then(state=>{
-     memo.until=state.available||state.dailyEnabled?0:Date.now()+UNAVAILABLE_RETRY_MS;
+     memo.until=state.available||state.dailyEnabled?0:now()+UNAVAILABLE_RETRY_MS;
      return state;
     },()=>{
      // The frontend can be published before the additive database migration.
-     memo.until=Date.now()+UNAVAILABLE_RETRY_MS;
+     memo.until=now()+UNAVAILABLE_RETRY_MS;
      return null;
     });
    discovery=memo;
@@ -95,21 +98,43 @@ export function createDailyPushClient({win,storage=win.localStorage,getOwner,rpc
    }
    const subscription=await registration.pushManager.getSubscription()||
     await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+   const timezone=timeZone(),language=locale();
    try{
     const result=await request(owner,'enable',{
      p_device_id:device.id,p_expected_revision:state.revision,p_confirm_daily:true,
-     p_timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC',
-     p_locale:locale(),p_subscription:subscription.toJSON()
+     p_timezone:timezone,p_locale:language,p_subscription:subscription.toJSON()
     });
     if(!result.dailyEnabled||!result.deviceRegistered)throw new Error('daily_push_not_enabled');
+    if(owner!==getOwner())throw new Error('daily_push_account_changed');
     await setLocalDelivery(registration,true);
-    if(owner===getOwner())return true;
+    if(owner===getOwner()){
+     storage.setItem(DEVICE_KEY,JSON.stringify({...device,timezone,language,refreshedAt:now()}));
+     return true;
+    }
     await stopLocalDelivery();
     return false;
    }catch(error){
     await stopLocalDelivery().catch(()=>{});
     throw error;
    }
+  },
+  async refreshDevice(){
+   const owner=getOwner(),device=readDevice(),timestamp=now();
+   if(!owner||device?.owner!==owner||permission()!=='granted')return;
+   const timezone=timeZone(),language=locale();
+   if(device.timezone===timezone&&device.language===language&&timestamp-device.refreshedAt<DEVICE_RENEWAL_MS)return;
+   const key=[owner,device.id,timezone,language].join('/');
+   if(lastDeviceRefresh?.key===key&&timestamp-lastDeviceRefresh.at<DEVICE_RETRY_MS)return;
+   lastDeviceRefresh={key,at:timestamp};
+   const registration=await existingRegistration();
+   if(!await registration?.pushManager.getSubscription()||owner!==getOwner())return;
+   const state=await this.read();
+   if(!state?.available||!state.dailyEnabled||!state.deviceRegistered)return;
+   await request(owner,'refresh',{
+    p_device_id:device.id,p_expected_revision:state.revision,p_timezone:timezone,p_locale:language
+   });
+   if(owner===getOwner()&&readDevice()?.id===device.id)
+    storage.setItem(DEVICE_KEY,JSON.stringify({...device,timezone,language,refreshedAt:timestamp}));
   },
   async disable(state){
    const owner=getOwner(),device=readDevice();
@@ -177,6 +202,7 @@ export function setupDailyPushSettings({client,document,t}){
  later.onclick=()=>{client.dismiss();offer.hidden=true};
  return {
   accountOpened(){void refresh()},
+  refreshDevice(){void client.refreshDevice().catch(()=>{})},
   async presentResult(eligible){
    offer.hidden=true;offerStatus.textContent='';
    if(!eligible||client.permission()==='unsupported'||client.permission()==='denied'||client.dismissed())return;

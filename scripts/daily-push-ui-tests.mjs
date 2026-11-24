@@ -7,7 +7,7 @@ import {createDailyPushClient,setupDailyPushSettings} from '../src/ui/daily-push
 const scope='https://lumen.example/src/ui/notifications/';
 const key=Buffer.alloc(65,4).toString('base64url');
 function fixture({permission='granted',available=true}={}){
- const data=new Map(),calls=[],local=[],owner={id:'account-a'};
+ const data=new Map(),calls=[],local=[],owner={id:'account-a'},clock={zone:'Europe/Paris',now:Date.now()};
  let registered=false,sub=null,promptCount=0,permissionState=permission;
  const registration={scope,active:{state:'activated',postMessage(message,[port]){local.push(message.enabled);port.postMessage(true);port.close()}},
   pushManager:{getSubscription:async()=>sub,subscribe:async options=>{
@@ -25,7 +25,7 @@ function fixture({permission='granted',available=true}={}){
   location:{origin:'https://lumen.example'},atob,MessageChannel,setTimeout,clearTimeout,
  };
  let enabled=false,revision=0,deviceRegistered=false;
- const client=createDailyPushClient({win,getOwner:()=>owner.id,locale:()=> 'fr',
+ const client=createDailyPushClient({win,getOwner:()=>owner.id,locale:()=> 'fr',timeZone:()=>clock.zone,now:()=>clock.now,
   storage:{getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)},
   rpc:async(name,args)=>{
    assert.equal(name,'lumen_daily_push_v1');assert.equal(args.p_expected_user_id,owner.id);
@@ -35,7 +35,7 @@ function fixture({permission='granted',available=true}={}){
    return {data:{version:1,available,dailyEnabled:enabled,revision,reminderHour:18,deviceRegistered,vapidPublicKey:available?key:null}};
   }
  });
- return {client,local,calls,owner,promptCount:()=>promptCount};
+ return {client,local,calls,owner,clock,promptCount:()=>promptCount};
 }
 
 test('settings read no subscription or browser permission until an explicit enable',async()=>{
@@ -77,6 +77,28 @@ test('a different signed-in account stops the prior device transport',async()=>{
  assert.deepEqual(f.local,[true,false]);
  assert.equal(await f.client.enable(state),false);
  assert(!f.calls.some(x=>x.p_expected_user_id==='account-b'));
+});
+
+test('travel refreshes the same device without re-enrolling it or requesting permission',async()=>{
+ const f=fixture();
+ await f.client.enable(await f.client.read());
+ const enrollment=f.calls.at(-1);
+ await f.client.refreshDevice();
+ assert.equal(f.calls.at(-1),enrollment,'unchanged devices do not make an extra call');
+ f.clock.zone='America/Chicago';
+ await f.client.refreshDevice();
+ const update=f.calls.at(-1);
+ assert.equal(update.p_action,'refresh');
+ assert.equal(update.p_device_id,enrollment.p_device_id);
+ assert.equal(update.p_timezone,'America/Chicago');
+ assert.equal(update.p_expected_revision,1);
+ assert(!Object.hasOwn(update,'p_confirm_daily')&&!Object.hasOwn(update,'p_subscription'));
+ assert.equal(f.promptCount(),1);
+ await f.client.refreshDevice();assert.equal(f.calls.at(-1),update);
+ f.clock.now+=31*24*60*60_000;
+ await f.client.refreshDevice();
+ assert.notEqual(f.calls.at(-1),update,'an active older registration is renewed');
+ assert.equal(f.calls.at(-1).p_action,'refresh');
 });
 
 test('result invitation is contextual, deferrable and silent by default',async()=>{
