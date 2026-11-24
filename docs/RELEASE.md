@@ -51,6 +51,14 @@ does not wait for its five-minute CI-poll cooldown.
 ## Version discipline
 There are multiple notions of version: Git commit SHA, branch head, UI/application version string and deployed Vercel commit. Always identify which one is being discussed. The deployed commit SHA is authoritative for answering “what code is in production?”
 
+While Lumen is visible and online, the client checks the public
+`/build-info.json` at startup, on foreground return and reconnection, and
+every five minutes. A different deployed version or commit triggers one
+reload when the player is outside a running or paused attempt, an active
+dialog, or an authentication or victory flow. The metadata check also detects
+releases that ship the same service worker. Existing documents gain this
+behavior after they load a version containing it.
+
 ## Vercel
 The repository is connected to Vercel and deploys **only `main`**, as confirmed by the owner on 2026-10-04. Feature branches and pull requests do not produce Vercel previews; an ignored deployment on those branches is expected. Validate development changes locally and in GitHub CI. Deployment follows merging the reviewed change to `main`, then verify the deployment for that exact merge commit.
 

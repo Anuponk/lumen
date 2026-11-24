@@ -18,7 +18,7 @@ import {questReviewModel} from './quest-review.js';
 import {reviewNeighbour,bindReviewNavigation} from './quest-review-navigation.js';
 import {attemptTiming,officialResult} from '../campaign/official-time.js';
 import {RANKING_PENALTIES,rankedTime} from '../campaign/ranking.js';
-import {addDays,createDailyClient,dailyQuest} from '../campaign/daily-challenge.js';
+import {addDays,createDailyClient,dailyBounds,dailyQuest} from '../campaign/daily-challenge.js';
 import {dailyErrorMessage,formatDailyDate,formatRemaining,renderDailyBoard,renderDailyWeek,formatWeekRange} from './daily-view.js';
 import {summarizeWeek,weekMonday,weekNavigation} from '../campaign/daily-week.js';
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
@@ -2409,7 +2409,7 @@ let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="",pendingC
 // with daily:true): it inherits every campaign/ranking/learning guard of #18.
 // Only the intro, the server submission and the official clock differ.
 const dailyClient=createDailyClient(lumenSupabase),DAILY_PENDING_KEY='lumenDailyPendingV1';
-let dailyBannerTimer=null,dailyEntryRequest=0;
+let dailyBannerTimer=null,dailyEntryRequest=0,dailyEntryTimer=null;
 // Measurement reuses the existing app_opened envelope (no new event name, no
 // new collection): surface=daily + daily_action. Disabled collection stays off.
 function trackDaily(action,extra={}){return trackLumenEvent('app_opened',null,{surface:'daily',daily_action:action,...extra})}
@@ -2427,7 +2427,14 @@ function discoverDailyToday(owner){
  if(dailyTodayMemo&&now<dailyTodayMemo.until&&(dailyTodayMemo.owner===owner||dailyTodayMemo.open||!dailyTodayMemo.settled))return dailyTodayMemo.promise;
  const promise=dailyClient.discover();
  const memo={owner,promise,until:now+6*3600e3};dailyTodayMemo=memo;
- promise.then(today=>{const left=Date.parse(today?.closes_at)-Date.parse(today?.server_now);memo.settled=true;if(today?.enabled&&left>0){memo.until=now+left;memo.open=true;rememberDailyToday(today)}},()=>{if(dailyTodayMemo===memo)dailyTodayMemo=null});
+ promise.then(today=>{
+  memo.settled=true;
+  const serverNow=Date.parse(today?.server_now);
+  const closesAt=today?.closes_at??(today?.day?dailyBounds(today.day).closesAt:null);
+  const left=Date.parse(closesAt)-serverNow;
+  if(Number.isFinite(left))memo.until=now+(left<=0?60_000:today.enabled?left:Math.min(left,6*3600e3));
+  if(today?.enabled&&left>0){memo.open=true;rememberDailyToday(today)}
+ },()=>{if(dailyTodayMemo===memo)dailyTodayMemo=null});
  return promise;
 }
 // #1015: entering the daily reloads the page. An OPEN challenge is the same for
@@ -2528,7 +2535,14 @@ function renderDailyChip(today,owner){
  const label2=t(state==='done'?'daily.chipDoneLabel':'daily.chipOpenLabel',{date:dailyDate(today.day)});chip.setAttribute('aria-label',label2);chip.title=label2;
  chip.onclick=()=>{trackDaily('chip_opened');handOffDaily()};
 }
+function refreshDailyDiscoveryIfVisible(){
+ if(document.visibilityState==='visible'&&navigator.onLine!==false)void refreshDailyEntry();
+}
+document.addEventListener('visibilitychange',refreshDailyDiscoveryIfVisible);
+window.addEventListener('pageshow',event=>{if(event.persisted)refreshDailyDiscoveryIfVisible()});
+window.addEventListener('online',refreshDailyDiscoveryIfVisible);
 async function refreshDailyEntry(){
+ clearTimeout(dailyEntryTimer);dailyEntryTimer=null;
  const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek'),chip=document.getElementById('dailyChip');
  const request=++dailyEntryRequest,owner=lumenUser?.id;
  if(!entry||socialChallenge){if(chip)chip.hidden=true;return}
@@ -2546,6 +2560,12 @@ async function refreshDailyEntry(){
   if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}
   renderDailyChip(today,owner);
  }catch{if(current()){entry.hidden=true;if(week)week.hidden=true;if(chip)chip.hidden=true}}
+ finally{
+  if(current()){
+   const expiry=dailyTodayMemo?.until??Date.now()+60_000;
+   dailyEntryTimer=setTimeout(refreshDailyDiscoveryIfVisible,Math.max(1_000,expiry-Date.now()));
+  }
+ }
 }
 function renderDailyBanner(){
  const banner=document.getElementById('dailyBanner');if(!banner||!socialChallenge?.daily)return;
@@ -6520,7 +6540,15 @@ function reloadWhenSafe(){
 window.addEventListener('online',()=>{if(!networkUnavailable)return;clearTimeout(networkProbeTimer);networkProbeTimer=null;scheduleNetworkProbe(1000)});
 void initializeAccountSession();
 
-setupAppUpdates({window,document,navigator,location,caches:window.caches,console,appVersion});
+function canReloadForAppUpdate(){
+ if(authSessionPending||accountSwitchPending()||passwordRecoveryPending()||
+    cloudProfileBusy||cloudProfileTimer!==null||canonicalVictoryInFlight||legacyVictoryBusy||
+    pendingVictoryView||stripeReturnInFlight||socialChallenge)return false;
+ if(liveAbandonableAttempt())return false;
+ return !Array.from(document.querySelectorAll('[role="dialog"]:not([hidden]), #successOverlay.show'))
+  .some(dialog=>dialog.getClientRects().length>0);
+}
+setupAppUpdates({window,document,navigator,location,caches:window.caches,console,appVersion,canReload:canReloadForAppUpdate});
 
 // Preserve the public browser testing entry points.
 wireLumenErasureControls();

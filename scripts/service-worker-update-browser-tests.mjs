@@ -8,6 +8,7 @@ const oldWorker=execFileSync('git',['show','df340a64930254c6697b0f066d35873df0de
 const worker=fs.readFileSync(new URL('../sw.js',import.meta.url),'utf8');
 const activeCache=worker.match(/const CACHE="([^"]+)"/)?.[1];
 assert(activeCache?.startsWith('lumen-assets-'),'Worker cache name missing');
+const updates=fs.readFileSync(new URL('../src/ui/app-updates.js',import.meta.url),'utf8');
 const {send,evaluate}=await connectBrowser();
 let revision=1,upgrade=false,offline=false;const requests=[];
 const server=http.createServer((req,res)=>{
@@ -16,19 +17,29 @@ const server=http.createServer((req,res)=>{
  if(path==='/sw.js'){
   res.writeHead(200,{'Content-Type':'text/javascript','Cache-Control':'no-store'});res.end(upgrade?worker:oldWorker);return;
  }
+ if(path==='/build-info.json'){
+  if(offline){req.socket.destroy();return}
+  if(!upgrade){res.writeHead(404);res.end();return}
+  res.writeHead(200,{'Content-Type':'application/json'});
+  res.end(JSON.stringify({version:'1.11.1+'+revision,sha:String(revision).repeat(40)}));return;
+ }
+ if(path==='/src/ui/app-updates.js'){
+  if(offline){req.socket.destroy();return}
+  res.writeHead(200,{'Content-Type':'text/javascript'});res.end(updates);return;
+ }
  if(path==='/src/main.js'||path==='/src/persistence/cloud-profile.js'){
   if(offline){req.socket.destroy();return}
   res.writeHead(200,{'Content-Type':'text/javascript','Cache-Control':'public,max-age=3600'});
-  res.end(path==='/src/main.js'?"import '/src/persistence/cloud-profile.js';":`window.codeRevision=${revision};`);return;
+  res.end(path==='/src/main.js'?`import '/src/persistence/cloud-profile.js';
+   import { setupAppUpdates } from '/src/ui/app-updates.js';
+   setupAppUpdates({window, document, navigator, location, caches, console,
+    appVersion:()=>document.querySelector('meta').content, canReload:()=>!window.busy});
+  `:`window.codeRevision=${revision};`);return;
  }
  if(path==='/'){
   if(offline){req.socket.destroy();return}
   res.writeHead(200,{'Content-Type':'text/html','Cache-Control':'no-store'});
-  res.end(`<meta name="lumen-build" content="${revision}"><script type="module" src="/src/main.js"></script><script>
-   const controlled=!!navigator.serviceWorker.controller;
-   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(controlled)location.reload()});
-   navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'});
-  </script>`);return;
+  res.end(`<meta name="lumen-build" content="1.11.1+${revision} &#183; ${String(revision).repeat(7)}"><script type="module" src="/src/main.js"></script>`);return;
  }
  res.writeHead(200,{'Content-Type':'application/json'});res.end('{}');
 });
@@ -52,20 +63,30 @@ try{
  })()`,true);
  // The old shipped worker can serve a fresh document with stale module imports.
  revision=2;await send('Page.navigate',{url:origin+'/?phase=2'});
- await until(`document.querySelector('meta')?.content==='2'&&!!window.codeRevision`);
+ await until(`document.querySelector('meta')?.content.startsWith('1.11.1+2 ')&&!!window.codeRevision`);
  assert.equal(await evaluate('window.codeRevision'),1,'Reproduce the old worker/HTTP-cache mismatch');
  // Upgrade an already controlled tab, rather than merely testing a fresh install.
  upgrade=true;await evaluate('(async()=>{const r=await navigator.serviceWorker.ready;await r.update()})()',true);
  await until('window.codeRevision===2');
  await until(`(async()=>{const c=await caches.open('${activeCache}');return !!(await c.match('/src/persistence/cloud-profile.js'))})()`);
  assert(requests.some(r=>r.path==='/src/persistence/cloud-profile.js'&&r.revision===2));
- // Subsequent releases need no worker-version bump to refresh transitive imports.
- revision=3;await send('Page.reload');await until(`document.querySelector('meta')?.content==='3'&&window.codeRevision===3`);
+ // A release with an identical worker is discovered on a foreground return.
+ // The same tab upgrades as soon as the app allows it, without manual reload.
+ const beforeUpdate=await evaluate('performance.timeOrigin');
+ await evaluate('window.busy=true');
+ revision=3;
+ await evaluate("document.dispatchEvent(new Event('visibilitychange'))");
+ await until("document.querySelector('meta')?.content.startsWith('1.11.1+2 ')&&window.codeRevision===2");
+ for(let i=0;i<100&&!requests.some(r=>r.path==='/build-info.json'&&r.revision===3);i++)await sleep(50);
+ assert(requests.some(r=>r.path==='/build-info.json'&&r.revision===3),'version checked in the retained tab');
+ assert.equal(await evaluate('performance.timeOrigin'),beforeUpdate,'busy app stays on the existing page');
+ await evaluate('window.busy=false');
+ await until(`performance.timeOrigin!==${beforeUpdate}&&document.querySelector('meta')?.content.startsWith('1.11.1+3 ')&&window.codeRevision===3`);
  await until(`(async()=>{const c=await caches.open('${activeCache}');const r=await c.match('/src/persistence/cloud-profile.js');return r&&(await r.text()).includes('=3')})()`);
  // Warm the public query-free document too, then remove ALL network access to
  // the document/modules. A retained intent must survive this cold navigation.
- await send('Page.navigate',{url:origin+'/'});await until(`document.querySelector('meta')?.content==='3'&&window.codeRevision===3`);
- await until(`(async()=>{const c=await caches.open('${activeCache}');const r=await c.match('/');return r&&(await r.text()).includes('content="3"')})()`);
+ await send('Page.navigate',{url:origin+'/'});await until(`document.querySelector('meta')?.content.startsWith('1.11.1+3 ')&&window.codeRevision===3`);
+ await until(`(async()=>{const c=await caches.open('${activeCache}');const r=await c.match('/');return r&&(await r.text()).includes('content="1.11.1+3 ')})()`);
  const epoch=await evaluate('performance.timeOrigin');
  offline=true;await send('Page.reload');await until(`performance.timeOrigin!==${epoch}&&window.codeRevision===3`);
  const after=await evaluate(`(async()=>{
@@ -74,7 +95,7 @@ try{
   return {progress:localStorage.getItem('lumenProgressV1'),attempt:localStorage.getItem('lumenActiveAttemptV1'),intent};
  })()`,true);
  assert.deepEqual(after,{progress,attempt,intent});
- const report={realServiceWorker:true,simulatedApp:true,liveCloudWrites:false,staleImportsReproduced:true,warmUpgrade:true,nextRelease:true,offlineAssets:true,offlineNavigation:true,playerStoragePreserved:true};
+ const report={realServiceWorker:true,simulatedApp:true,liveCloudWrites:false,staleImportsReproduced:true,warmUpgrade:true,backgroundRelease:true,nextRelease:true,offlineAssets:true,offlineNavigation:true,playerStoragePreserved:true};
  if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(report,null,2)+'\n');
  console.log(JSON.stringify(report));
 }catch(error){console.error(JSON.stringify({requests,controller:await evaluate(`navigator.serviceWorker.controller?.scriptURL`)}));throw error}

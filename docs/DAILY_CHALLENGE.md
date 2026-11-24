@@ -186,6 +186,13 @@ calendrier dans `daily_puzzles`.
   est masqué (aucun badge dans ce mode).
 - **Captures** : `docs/validation/daily-compare-{campaign,daily,result}-{390,1440}.png`.
 
+The existing header button, Mon ciel and Social show the same daily status.
+The campaign refreshes discovery after the server's closing time while visible,
+on foreground return, and on reconnection. A valid daily response is shared
+across these triggers. Discovery leaves the current board and attempt in place.
+The golden banner and introduction belong to the challenge screen, which opens
+through its existing entries or a direct link.
+
 ## 6 ter. Bilan de la semaine et mesure (PR C)
 
 - **« Ta semaine dans les étoiles »** : modale ouverte depuis le résultat

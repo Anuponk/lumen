@@ -29,7 +29,7 @@ Capability/owner change → close and clear sensitive hosts → guarded fresh re
 rollback. No new edge to saves, rewards or collection.
 
 Worker updates: `game-screen.js` injects browser APIs and live `appVersion` into
-`app-updates.js` → worker registration / bounded controller reload / public asset
+`app-updates.js` → worker registration / deployed build metadata / deferred reload / public asset
 caches only. No edge to player storage, Auth or cloud writers. Welcome and
 OAuth-return guards remain in the same listener.
 

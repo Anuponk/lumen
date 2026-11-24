@@ -984,6 +984,16 @@ The ranking guard assertions in `scripts/fixtures/official-time.sql` require the
 fixed #962 reason for an absent run, invalid counters, a hint-flag mismatch, a
 versioned assistance mismatch and a changed replay. The same fixture verifies
 one confirmed score, the original receipt and an unchanged player snapshot.
+## Foreground refresh and background releases
+
+`app-updates-tests.mjs` covers first installation, public metadata validation,
+the five-minute check, foreground checks, deferred reload and OAuth protection.
+`service-worker-update-browser-tests.mjs` verifies an identical-worker release
+in a retained Chromium tab, deferral while busy and preservation of local
+progress, the attempt and the pending IndexedDB intent through an offline reload.
+`daily-challenge-browser.mjs` simulates an expired Paris day with the server
+mocked and asserts the header switches from played to available in the same page.
+
 ## Cloud persistence regression matrix
 
 Critical alert tests run the production migration against disposable PostgreSQL and simulate interrupted transport, replayed observations, one affected account and unauthorized acknowledgements. The public probe test also rejects maintenance HTML with HTTP 200.
