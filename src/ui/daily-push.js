@@ -2,11 +2,13 @@ const SCOPE_PATH='/src/ui/notifications/';
 const WORKER_PATH='/src/ui/daily-push-worker.js';
 const DEVICE_KEY='lumenDailyPushDeviceV1';
 const DISMISS_KEY='lumenDailyPushDismissedV1';
+const UNAVAILABLE_RETRY_MS=5*60_000;
 
 export function createDailyPushClient({win,storage=win.localStorage,getOwner,rpc,locale}){
  const workers=win.navigator.serviceWorker,scope=new URL(SCOPE_PATH,win.location.origin).href;
  const supported=!!(workers&&win.PushManager&&win.Notification&&win.crypto?.randomUUID);
  const permission=()=>supported?win.Notification.permission:'unsupported';
+ let discovery=null;
  const readDevice=()=>{
   try{return JSON.parse(storage.getItem(DEVICE_KEY))}catch{return null}
  };
@@ -55,7 +57,20 @@ export function createDailyPushClient({win,storage=win.localStorage,getOwner,rpc
   supported,permission,
   async read(){
    const owner=getOwner(),device=readDevice();
-   return owner?request(owner,'read',device?.owner===owner?{p_device_id:device.id}:{}):null;
+   if(!owner)return null;
+   if(discovery?.owner===owner&&Date.now()<discovery.until)return discovery.promise;
+   const memo={owner,until:Infinity,promise:null};
+   memo.promise=request(owner,'read',device?.owner===owner?{p_device_id:device.id}:{})
+    .then(state=>{
+     memo.until=state.available||state.dailyEnabled?0:Date.now()+UNAVAILABLE_RETRY_MS;
+     return state;
+    },()=>{
+     // The frontend can be published before the additive database migration.
+     memo.until=Date.now()+UNAVAILABLE_RETRY_MS;
+     return null;
+    });
+   discovery=memo;
+   return memo.promise;
   },
   async enable(state){
    const owner=getOwner();

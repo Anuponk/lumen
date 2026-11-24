@@ -60,6 +60,8 @@ test('no permission prompt for an unavailable feature and no enrollment after de
  const off=fixture({available:false});
  assert.equal(await off.client.enable(await off.client.read()),false);
  assert.equal(off.promptCount(),0);
+ await off.client.read();
+ assert.equal(off.calls.length,1,'a closed deployment is not probed at every account tap');
  const denied=fixture({permission:'denied'});
  assert.equal(await denied.client.enable(await denied.client.read()),false);
  assert.deepEqual(denied.calls.map(x=>x.p_action),['read']);
