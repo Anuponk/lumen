@@ -802,6 +802,13 @@ Le podium apparaît dès la fin de l’animation des badges (#794). Le toucher
 et le clavier peuvent accélérer cette transition. Les animations du ciel
 continuent dans le même écran. La lecture du classement peut commencer en
 parallèle. Si elle est encore en cours, l’emplacement indique son chargement.
+#984 : tant que la capture de la victoire attend le serveur, le même emplacement
+dit « Synchronisation en cours… Ton résultat est conservé » (`data-sync` =
+`syncing` ou `retrying`), sans rang. Hors ligne : attente du réseau (`offline`).
+« La synchronisation n’aboutit pas encore… » (`failed`) n’apparaît qu’après trois
+échecs consécutifs (une relance rapide à 5 s puis le réveil existant de 30 s,
+aucun nouveau polling). Le podium remplace l’attente dès la confirmation, sans
+réouvrir l’écran.
 Le rang personnel, le motif de non-classement et l’explication du défi suivent
 le podium dans le flux. La hauteur s’adapte aux textes longs et au zoom.
 Podium à trois marches 2–1–3 de hauteurs décroissantes 1 > 2 > 3 ; seule la

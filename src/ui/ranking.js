@@ -14,11 +14,17 @@ export function rankingVerdict(reason,excluded,t=fr){
  if(excluded||reason==='unknown')return t('ranking.verdictExcluded');
  return null;
 }
-export function createRankingView({client,getContext,format,document=globalThis.document,onUpdate=()=>{},t=fr}={}){
+// #984: a victory capture stays durable in the ranking outbox until the server
+// answers. A transient failure is « still syncing », never a definitive failure:
+// failed is shown only after RANKING_FAILED_AFTER consecutive failures for this
+// view's capture; one early retry (RANKING_QUICK_RETRY_MS) shortens a blip, the
+// existing 30 s wake and the online event do the rest (no new polling).
+export const RANKING_FAILED_AFTER=3,RANKING_QUICK_RETRY_MS=5000;
+export function createRankingView({client,getContext,format,document=globalThis.document,onUpdate=()=>{},t=fr,setTimer=(fn,ms)=>setTimeout(fn,ms)}={}){
  const root=document.createElement('section');root.className='ranking';root.hidden=true;root.setAttribute('aria-label',t('ranking.board'));
- let generation=0,quest=null,owner=null,connection=null,operation=null,improvedForView=false,excludedForView=false,reasonForView=null,personalBest=null,animated=false,review=false;
+ let generation=0,quest=null,owner=null,connection=null,operation=null,improvedForView=false,excludedForView=false,reasonForView=null,personalBest=null,animated=false,review=false,failures=0;
  const reduced=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
- function clear(){generation++;root.hidden=true;root.replaceChildren();delete root.dataset.state;quest=null;improvedForView=false;excludedForView=false;reasonForView=null;personalBest=null;animated=false;review=false}
+ function clear(){generation++;root.hidden=true;root.replaceChildren();delete root.dataset.state;delete root.dataset.sync;failures=0;quest=null;improvedForView=false;excludedForView=false;reasonForView=null;personalBest=null;animated=false;review=false}
  function element(tag,className,text){const e=document.createElement(tag);e.className=className;e.textContent=text;return e}
  function skeleton(){
   const list=element('ol','ranking-podium ranking-podium-skeleton','');list.setAttribute('aria-hidden','true');
@@ -26,14 +32,14 @@ export function createRankingView({client,getContext,format,document=globalThis.
   return list;
  }
  // Pending/offline/error: same podium footprint, neutral message, no rank claim.
- function status(text,state='pending'){
-  root.dataset.state=state;
+ function status(text,state='pending',sync=null){
+  root.dataset.state=state;if(sync)root.dataset.sync=sync;else delete root.dataset.sync;
   const message=element('p','ranking-status',text);message.setAttribute('role','status');
   root.replaceChildren(skeleton(),message);
   onUpdate({state,quest});
  }
  function rows(data){
-  root.dataset.state='ready';root.replaceChildren();
+  root.dataset.state='ready';delete root.dataset.sync;failures=0;root.replaceChildren();
   // Old backends return a window: never infer missing leaders or a total.
   const top=(data.top??data.rows??[]).filter(r=>r.position<=3),mine=data.personal??data.rows?.find(r=>r.mine);
   const list=element('ol','ranking-podium','');list.setAttribute('aria-label',t('ranking.top'));
@@ -74,7 +80,7 @@ export function createRankingView({client,getContext,format,document=globalThis.
   try{
    // Reconnect/timer updates must not replace a still-pending result with an old board.
    if(!review&&operation&&client.entries?.(owner).some(e=>e.operationId===operation)){
-    status(t('ranking.awaitingConfirmation'),'pending');return;
+    status(t('ranking.syncing'),'pending','syncing');return;
    }
    const data=await client.board(q);
    if(token===generation&&quest===q&&getContext().owner===owner&&getContext().client===connection){
@@ -93,7 +99,7 @@ export function createRankingView({client,getContext,format,document=globalThis.
   // Do not silently show an old confirmed podium when this victory failed to sync.
   void client.flush().then(async results=>{
    if(operation&&typeof client.entries==='function'&&client.entries(owner).some(e=>e.operationId===operation)){
-    if(quest===q&&generation===token)status(t('ranking.awaitingConfirmation'),'pending');
+    if(quest===q&&generation===token)status(t('ranking.syncing'),'pending','syncing');
     return;
    }
    await refresh(results);
@@ -101,8 +107,18 @@ export function createRankingView({client,getContext,format,document=globalThis.
    if(quest!==q||generation!==token)return;
    // An unrelated failed capture cannot hide this operation's terminal receipt.
    if(operation&&error?.results?.some(r=>r.operationId===operation&&['confirmed','ineligible','refused','membership_required'].includes(r.status))){void refresh(error.results);return}
-   if(quest===q&&generation===token)status(t('ranking.syncError'),'pending');
+   if(quest===q&&generation===token)noteFailure();
   })}
+ // A capture that could not be sent yet: offline, retrying (transient) or failed
+ // (still failing after RANKING_FAILED_AFTER tries). Never a rank claim.
+ function noteFailure(){
+  if(!quest||review||root.dataset.state==='ready')return;
+  failures++;
+  if(globalThis.navigator?.onLine===false){status(t('ranking.offlineSaved'),'offline','offline');return}
+  if(failures>=RANKING_FAILED_AFTER){status(t('ranking.syncError'),'pending','failed');return}
+  status(t('ranking.syncing'),'pending','retrying');
+  if(failures===1){const token=generation;setTimer(()=>{if(token!==generation||root.dataset.state==='ready')return;void client.flush().then(results=>refresh(results)).catch(error=>{if(token!==generation)return;if(operation&&error?.results?.some(r=>r.operationId===operation&&['confirmed','ineligible','refused','membership_required'].includes(r.status))){void refresh(error.results);return}noteFailure()})},RANKING_QUICK_RETRY_MS)}
+ }
  function mount(){if(owner&&(getContext().owner!==owner||getContext().client!==connection)){clear();return}const slot=document.getElementById('skyRevealPodium'),sky=document.getElementById('skyRevealResults'),normal=document.getElementById('successRecord');const visibleSky=sky&&!sky.hidden&&!document.getElementById('skyReveal')?.hidden;if(visibleSky&&slot)slot.prepend(root);else if(visibleSky)document.getElementById('skyRevealRecord')?.after(root);else normal?.after(root)}
- return {show,refresh,clear,mount,root};
+ return {show,refresh,clear,mount,root,noteFailure};
 }

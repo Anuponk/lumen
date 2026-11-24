@@ -2765,7 +2765,8 @@ async function refreshOfficialRecordLabel(){
 // #851: the private record shown beside the best officially ranked time.
 function personalBestSeconds(quest){try{const best=officialRecordTime(questPerformanceRecord(quest,lumenProgress),quest?.gridRevision??0);return Number.isSafeInteger(best)?best:null}catch{return null}}
 function showRanking(){if(socialChallenge||learningReplayActive()||qaActive||!lumenUser)return;const a=attemptEngine.snapshot();rankingView.show(activeQuest(),attemptOperationId(a),{personalBest:personalBestSeconds(activeQuest())});rankingView.mount()}
-function refreshRankingQueue(options){return rankingClient.flush().then(r=>rankingView.refresh(r,options)).catch(error=>{if(error?.results?.length)return rankingView.refresh(error.results,options)})}
+// #984: a failed send still counts for the shown victory (retrying, then failed).
+function refreshRankingQueue(options){return rankingClient.flush().then(r=>rankingView.refresh(r,options)).catch(error=>{if(error?.results?.length)return rankingView.refresh(error.results,options).then(()=>rankingView.noteFailure());rankingView.noteFailure()})}
 addEventListener('online',()=>{void refreshRankingQueue()});
 document.getElementById('rankingWithdraw').onclick=async()=>{
  const c=rankingContext(),button=document.getElementById('rankingWithdraw');button.disabled=true;
