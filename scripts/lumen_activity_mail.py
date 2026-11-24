@@ -170,9 +170,12 @@ def format_notice(kind, payload):
             if any(type(value) is not int or not 1 <= value <= 60000 for value in [p90, previous]):
                 raise ValueError("invalid duration")
             change = f"P90 : {p90} ms contre {previous} ms"
-        lines = [f"Mesure : {metric}", f"Version : {version} · référence {reference}",
+        confidence = {"high": "élevée", "medium": "moyenne", "low": "faible"}.get(payload.get("confidence"), "non précisée")
+        lines = [f"Mesure : {metric}",
+                 f"Période récente : jusqu'à {version} · période de référence : jusqu'à {reference}",
                  change,
-                 f"Comptes échantillonnés : {samples} contre {prior_samples}"]
+                 f"Comptes échantillonnés : {samples} contre {prior_samples}",
+                 f"Confiance : {confidence}"]
         return subject, "\n".join([*lines, "", COCKPIT_URL + "?section=sync"])
     if kind in ("incident_open", "incident_resolved"):
         label = {"availability": "Disponibilité du jeu", "hydration": "Restauration du compte",

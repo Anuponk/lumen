@@ -7,6 +7,9 @@ on:
       - 'scripts/lumen_activity_mail.py'
       - 'scripts/fixtures/*critical-incidents*.sql'
       - 'supabase/migrations/*critical_incidents_947.sql'
+      - 'supabase/migrations/*monitor_settings_947_948.sql'
+      - 'scripts/fixtures/monitor-settings-947-948.sql'
+      - 'scripts/o2switch-activity-mail.sh'
       - '.github/workflows/critical-incidents.yml'
   workflow_dispatch:
 

@@ -40,7 +40,13 @@ class ActivityMailTest(unittest.TestCase):
             **common, "metric": "load", "p90": 1800, "reference_p90": 900,
         })
         self.assertIn("1800 ms contre 900 ms", content)
+        self.assertIn("Confiance : non précisée", content)
         self.assertNotIn("private", content)
+        _, content = format_notice("performance_regression", {
+            **common, "metric": "load", "p90": 1800, "reference_p90": 900, "confidence": "medium",
+        })
+        self.assertIn("Confiance : moyenne", content)
+        self.assertIn("Période récente : jusqu'à 1.11.1+743", content)
         _, content = format_notice("performance_regression", {
             **common, "metric": "hydration_error_rate", "rate": 2500, "reference_rate": 0,
         })
