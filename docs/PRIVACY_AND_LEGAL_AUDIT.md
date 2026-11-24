@@ -140,7 +140,10 @@ un canal de demande, pas une politique complète ni une preuve d'effacement.
 
 Amis et défis directs (#35, préparé le 21/11/2026) : facultatif, réservé aux
 comptes, identité publique limitée au pseudonyme unique choisi (jamais l'email ni
-un identifiant). Recherche par pseudonyme exact uniquement (pas d'annuaire), refus
+un identifiant). Recherche par pseudonyme exact ; depuis #972, aussi par fragment
+(au moins 3 caractères, 24 pseudonymes au plus par recherche, 60 recherches par
+heure et par compte, pseudonymes publics uniquement, pas d'email ni d'identifiant ;
+le compteur horaire est effacé avec le compte), refus
 silencieux avec délai de 30 jours, plafonds de demandes et d'envois. Les relations
 et invitations sont effacées avec le compte (politique d'effacement Lumen et
 cascade `auth.users`) ; l'export d'accès les inclut sous la revue « tiers »

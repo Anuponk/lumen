@@ -497,7 +497,10 @@ Copy: `duel.*` (FR/EN). Captures: `docs/validation/duel-*.png` (before:
 
 « Amis et défis » (#35, row « Mes amis » of the panel) stays an optional screen,
 never on the game screen and never inside a grid. Guests see why friends need an account and
-keep playing link challenges. Friends are added by exact nickname; « Envoyer à un
+keep playing link challenges. Friends are found by full or partial nickname
+(#972: « Rechercher » or Enter, 3 letters/digits minimum, case and accents
+ignored, 8 compact rows with Ajouter / Accepter / Demande envoyée / Ami, « Voir
+plus » up to 24 results; one request per submitted search, never while typing); « Envoyer à un
 ami » appears in the challenge share dialog and on each « Mes défis » row. Statuses
 read « En attente / Commencé / Terminé / Abandonné ». The four intents stay
 distinct: Partager (show an achievement), Défier (play this grid), Inviter

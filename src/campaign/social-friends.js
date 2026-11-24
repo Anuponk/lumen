@@ -23,7 +23,9 @@ const ERROR_KEYS=Object.freeze({
  request_cooldown:'friends.error.request_cooldown',too_many_pending:'friends.error.too_many_pending',
  rate_limited:'friends.error.rate_limited',no_pending_request:'friends.error.no_pending_request',
  not_related:'friends.error.not_related',not_friends:'friends.error.not_friends',
- not_challenge_owner:'friends.error.not_challenge_owner'
+ not_challenge_owner:'friends.error.not_challenge_owner',
+ query_too_short:'friends.error.query_too_short',query_too_long:'friends.error.query_too_long',
+ search_rate_limited:'friends.error.search_rate_limited'
 });
 export function friendErrorMessage(error,t=null){
  const code=String(error?.message||error||'');
@@ -37,6 +39,11 @@ export function challengeStatusLabel(status){return CHALLENGE_STATUS_LABELS[Stri
 export const FRIEND_STATE_LABELS=Object.freeze({friends:'Ami',incoming:'Demande reçue',outgoing:'Demande envoyée'});
 
 export function normalizeNickname(value){return String(value||'').trim().replace(/\s+/g,' ').slice(0,20)}
+// #972: partial search input. The server folds case/accents and owns the rules;
+// the client only avoids sending a request that would be refused anyway.
+export const FRIEND_SEARCH_MIN=3,FRIEND_SEARCH_PAGES=3;
+export function friendSearchQuery(value){return normalizeNickname(value)}
+export function friendSearchReady(value){return friendSearchQuery(value).replace(/[^\p{L}\p{N}]/gu,'').length>=FRIEND_SEARCH_MIN}
 export function validNickname(value){const v=normalizeNickname(value);return v.length>=3&&/^[\p{L}\p{N}][\p{L}\p{N} _.-]*$/u.test(v)}
 
 export function createFriendsClient(supabase){
@@ -48,6 +55,8 @@ export function createFriendsClient(supabase){
  }
  return {
   search:nickname=>rpc('lumen_friend_search',{p_nickname:normalizeNickname(nickname)}),
+  // #972: one explicit, bounded search page (8 nicknames, at most 3 pages).
+  find:async(query,page=0)=>{const data=await rpc('lumen_friend_find',{p_query:friendSearchQuery(query),p_page:page});return {results:Array.isArray(data?.results)?data.results:[],page:Number(data?.page)||0,more:!!data?.more}},
   request:nickname=>rpc('lumen_friend_request',{p_nickname:normalizeNickname(nickname)}),
   respond:(nickname,accept)=>rpc('lumen_friend_respond',{p_nickname:normalizeNickname(nickname),p_accept:!!accept}),
   remove:nickname=>rpc('lumen_friend_remove',{p_nickname:normalizeNickname(nickname)}),
@@ -83,5 +92,16 @@ export function renderReceivedChallenges(list=[],questLabel=()=>'Quête'){
 export function renderSentChallenges(list=[],questLabel=()=>'Quête',formatDuration=s=>s+' s'){
  if(!list.length)return '<p class="social-note">Aucun défi envoyé à un ami.</p>';
  return list.map(row=>'<div class="friend-row"><span class="friend-name">'+escapeSocialHtml(row.recipient||'Joueur')+'</span><span class="friend-state">'+escapeSocialHtml(questLabel(row))+' · '+escapeSocialHtml(challengeStatusLabel(row.status))+(row.status==='completed'&&Number.isFinite(Number(row.duration_seconds))?' · '+escapeSocialHtml(formatDuration(Number(row.duration_seconds))):'')+'</span></div>').join('');
+}
+// #972: compact search results; the action follows the caller's relation.
+const SEARCH_KEYS=Object.freeze({add:'friends.add',accept:'friends.accept',friends:'friends.state.friends',outgoing:'friends.state.outgoing',none:'friends.noResult'});
+export function renderFriendSearchRows(list=[],t){
+ const copy=key=>escapeSocialHtml(t(SEARCH_KEYS[key]));
+ if(!list.length)return '<p class="social-note">'+copy('none')+'</p>';
+ return list.map(row=>{
+  const name=escapeSocialHtml(row.nickname);
+  const action=row.state==='incoming'?button('accept',copy('accept'),'data-friend-action'):row.state==='friends'||row.state==='outgoing'?'<span class="friend-state">'+copy(row.state)+'</span>':button('add',copy('add'),'data-friend-action');
+  return '<div class="friend-row friend-search-row" data-nickname="'+name+'" data-state="'+escapeSocialHtml(row.state||'none')+'"><span class="friend-name">'+name+'</span><span class="friend-actions">'+action+'</span></div>';
+ }).join('');
 }
 export function friendsOnly(list=[]){return list.filter(row=>row.state==='friends')}

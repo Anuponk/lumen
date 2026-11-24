@@ -74,7 +74,7 @@ import {performanceEligibility,speedTargetSeconds,localCalendarDay,performanceAt
 import {qualifyingStartedAt,recordQualifyingStart,withQualifyingStart,abandonConfirmModel,markQualifiedStart} from "../campaign/qualification-window.js";
 import {challengeAttemptClosed,challengeEligibility,challengeResumePlan,challengeSnapshot,createChallengeClient,normalizeChallengeName,validChallengeName} from "../campaign/social-challenge.js";
 import {challengeQuestLabel,resolveChallengeQuest} from "../campaign/canonical-challenges.js";
-import {createFriendsClient,escapeSocialHtml,friendErrorMessage,friendsOnly,renderFriendRows,validNickname} from "../campaign/social-friends.js";
+import {createFriendsClient,escapeSocialHtml,friendErrorMessage,friendsOnly,renderFriendRows,renderFriendSearchRows,friendSearchQuery,friendSearchReady,FRIEND_SEARCH_PAGES} from '../campaign/social-friends.js';
 import {canonicalDisplayForLegacy,canonicalScopeProgress,canonicalCampaignComplete,canonicalQuestMilestone,canonicalQuestList,canonicalAdventureSummary,canonicalQuestByOrdinal,canonicalQuestById,canonicalQuestForLegacy,canonicalNextUnsolved,canonicalCampaignQuestDecision,canonicalInsertedQuestDecision,unlockedAdventureProgress} from "../campaign/canonical-quests.js";
 import {acknowledgeCanonicalVictory,questIsCompleted} from "../persistence/canonical-progress.js";
 import {loadCommittedCanonicalAttempt} from '../persistence/canonical-command.js';
@@ -2619,7 +2619,33 @@ function renderFriendDuels(){
  document.getElementById("friendChallengesReceived").innerHTML=renderFriendReceived(lastFriendInbox.received,duelContext({details:receivedDuels}));
  document.getElementById("friendChallengesSent").innerHTML=renderFriendSent(lastFriendInbox.sent,duelContext({listRows:myChallengeRows}));
 }
-function openFriends(){document.getElementById("friendStatus").textContent="";document.getElementById("friendsModal").hidden=false;void refreshFriends()}
+// #972: explicit, bounded partial search. One RPC per submitted query and page;
+// an identical query is served from this modal's memory, and nothing is sent
+// below 3 letters/digits or while the same search is in flight.
+let friendSearch=null,friendSearchCache=new Map(),friendSearchFlight=null;
+function renderFriendSearch(){
+ const box=document.getElementById("friendSearchResults"),more=document.getElementById("friendSearchMore");
+ box.hidden=!friendSearch;more.hidden=!friendSearch?.more;
+ if(friendSearch)box.innerHTML=renderFriendSearchRows(friendSearch.rows,t);
+}
+function patchFriendSearch(nickname,state){
+ if(!friendSearch)return;const key=String(nickname).toLowerCase();
+ for(const row of friendSearch.rows)if(String(row.nickname).toLowerCase()===key)row.state=state;
+ friendSearchCache.clear();renderFriendSearch();
+}
+async function runFriendSearch(raw,page){
+ const status=document.getElementById("friendStatus"),query=friendSearchQuery(raw);
+ if(!friendSearchReady(query)){status.textContent=t('friends.error.query_too_short');return}
+ const key=query.toLowerCase()+'#'+page;if(friendSearchFlight===key)return;
+ const cached=friendSearchCache.get(key);
+ const apply=data=>{const rows=page>0&&friendSearch?.query===query?[...friendSearch.rows,...data.results]:data.results;friendSearch={query,page,rows,more:data.more&&page<FRIEND_SEARCH_PAGES-1};status.textContent="";renderFriendSearch()};
+ if(cached){apply(cached);return}
+ friendSearchFlight=key;status.textContent=t('friends.searching');
+ try{const data=await friendsClient.find(query,page);friendSearchCache.set(key,data);if(friendSearchFlight===key)apply(data)}
+ catch(e){status.textContent=friendErrorMessage(e,t)}
+ finally{if(friendSearchFlight===key)friendSearchFlight=null}
+}
+function openFriends(){friendSearch=null;friendSearchCache=new Map();renderFriendSearch();document.getElementById("friendStatus").textContent="";document.getElementById("friendsModal").hidden=false;void refreshFriends()}
 async function openFriendPicker(challengeId){
  const modal=document.getElementById("friendPickerModal"),list=document.getElementById("friendPickerList"),status=document.getElementById("friendPickerStatus");
  status.textContent="";list.innerHTML="";modal.hidden=false;modal.dataset.challengeId=challengeId;
@@ -2634,11 +2660,9 @@ function setupFriends(){
  document.getElementById("friendsClose").onclick=()=>document.getElementById("friendsModal").hidden=true;
  document.getElementById("friendsOpenMyChallenges").onclick=()=>{document.getElementById("friendsModal").hidden=true;openMyChallenges()};
  document.getElementById("friendAddForm").onsubmit=async event=>{
-  event.preventDefault();const input=document.getElementById("friendNicknameInput"),status=document.getElementById("friendStatus"),nickname=input.value;
-  if(!validNickname(nickname)){status.textContent="Entre le pseudonyme exact (3 à 20 caractères).";return}
-  try{const state=await friendsClient.request(nickname);status.textContent=state==='friends'?"Vous êtes maintenant amis.":"Demande envoyée.";input.value="";void refreshFriends()}
-  catch(e){status.textContent=friendErrorMessage(e,t)}
+  event.preventDefault();void runFriendSearch(document.getElementById("friendNicknameInput").value,0);
  };
+ document.getElementById("friendSearchMore").onclick=()=>{if(friendSearch?.more)void runFriendSearch(friendSearch.query,friendSearch.page+1)};
  document.getElementById("friendsModal").addEventListener("click",async event=>{
   const friendAction=event.target.closest("[data-friend-action]"),challengeAction=event.target.closest("[data-challenge-action]");
   if(friendAction){
@@ -2646,7 +2670,10 @@ function setupFriends(){
    // #921: in-game confirmation; nothing is removed unless the player confirms.
    if(action==='remove'){lumenConfirm().open({title:t('social.removeFriendTitle',{name:nickname}),copy:t('social.removeFriendCopy',{name:nickname}),cancel:t('social.removeFriendKeep'),confirm:t('social.removeFriendYes'),tone:'danger',returnFocus:friendAction,
     onConfirm:async()=>{try{await friendsClient.remove(nickname);status.textContent="";void refreshFriends()}catch(e){status.textContent=friendErrorMessage(e,t)}}});return}
-   try{if(action==='accept')await friendsClient.respond(nickname,true);else if(action==='decline')await friendsClient.respond(nickname,false);else await friendsClient.remove(nickname);status.textContent="";void refreshFriends()}
+   try{
+    if(action==='add'){const state=await friendsClient.request(nickname);patchFriendSearch(nickname,state);status.textContent=t(state==='friends'?'friends.nowFriends':'friends.requestSent');void refreshFriends();return}
+    if(action==='accept'){await friendsClient.respond(nickname,true);patchFriendSearch(nickname,'friends')}else if(action==='decline')await friendsClient.respond(nickname,false);else{await friendsClient.remove(nickname);patchFriendSearch(nickname,'none')}
+    status.textContent="";void refreshFriends()}
    catch(e){status.textContent=friendErrorMessage(e,t)}
   }
   if(challengeAction){const id=challengeAction.closest("[data-challenge-id]")?.dataset.challengeId,data=receivedDuels.get(id);
