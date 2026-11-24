@@ -1,3 +1,4 @@
+import {createDailyPushClient,setupDailyPushSettings} from './daily-push.js';
 import {setupAppUpdates} from './app-updates.js';
 import {createShareDialog,discoveryUrl,adventureShareMilestone,tryNativeShare,tryCopyShare} from './lumen-share.js';
 import {createCircleClient,setupCircles,readCircleToken} from './circles.js';
@@ -910,7 +911,8 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueMicrotask(()=>rankingView.mount());if(event?.type==="account")queueMicrotask(()=>void refreshDailyEntry());queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery")openPasswordRecovery()},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
+let dailyPushSettings;
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),onAccountChanged:(event)=>{queueMicrotask(()=>rankingView.mount());if(event?.type==="account")queueMicrotask(()=>{void refreshDailyEntry();dailyPushSettings?.ownerChanged()});queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery")openPasswordRecovery()},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  const priorAcquisitionRecovery=canonicalRecoveryContext;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
@@ -2578,7 +2580,7 @@ function showDailyBoardTab(board,scope,track=true){
  for(const [id,tab] of [['dailyTabGeneral','general'],['dailyTabFriends','friends']]){const b=document.getElementById(id);b.setAttribute('aria-selected',String(tab===scope))}
  document.getElementById('dailyBoardPanel').innerHTML=renderDailyBoard(board?.[scope],{scope,formatDuration,t});
 }
-function showDailyResult({run=null,board=null,training=false,pending=false,official=null}={}){
+function showDailyResult({run=null,board=null,training=false,pending=false,official=null,offerReminders=false}={}){
  if(!training&&(pending||['completed','abandoned'].includes(run?.status)))rememberDailyDone(run?.day||socialChallenge?.day);
  const modal=document.getElementById('dailyResultModal'),note=document.getElementById('dailyResultNote');
  const status=run?.status,score=run?.score??official;
@@ -2598,6 +2600,7 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  document.getElementById('dailyRetrySubmit').onclick=()=>retryPendingDaily(true);
  const weekButton=document.getElementById('dailyWeekFromResult');weekButton.hidden=training||pending||!lumenUser;weekButton.onclick=()=>openDailyWeek(socialChallenge?.day||board?.day,'result');
  if(board)trackDaily('board_viewed',{daily_day:board.day||socialChallenge?.day||null,board_scope:'general',board_final:!!board.final});
+ void dailyPushSettings?.presentResult(offerReminders&&status==='completed');
  modal.hidden=false;document.getElementById('dailyContinue').focus({preventScroll:true});
 }
 // « Ta semaine dans les étoiles »: own days only, past weeks navigable.
@@ -2650,7 +2653,7 @@ async function openDailyWeek(today,source='result'){
 function readPendingDaily(){try{return JSON.parse(localStorage.getItem(DAILY_PENDING_KEY)||'null')}catch{return null}}
 async function retryPendingDaily(show=false){
  const pending=readPendingDaily();if(!pending)return;
- try{const run=await dailyClient.finish(pending);localStorage.removeItem(DAILY_PENDING_KEY);if(show){const board=await dailyClient.board(pending.day).catch(()=>null);showDailyResult({run,board})}}
+ try{const run=await dailyClient.finish(pending);localStorage.removeItem(DAILY_PENDING_KEY);if(show){const board=await dailyClient.board(pending.day).catch(()=>null);showDailyResult({run,board,offerReminders:true})}}
  catch(e){if(/run_not_found|operation_mismatch|invalid_/.test(e?.message||''))localStorage.removeItem(DAILY_PENDING_KEY);if(show)showRewardToast(t('daily.submitError'))}
 }
 window.addEventListener('online',()=>{void retryPendingDaily()});
@@ -2659,7 +2662,7 @@ async function finishDaily(status){
  const official=rankedTime(seconds,{hint:uses.hint||0,verify:uses.verify||0,guided:uses.guided||0}).score;
  if(socialChallenge.training){showDailyResult({training:true,official});return}
  const payload={day:socialChallenge.day,operationId:socialChallenge.operation_id,status,seconds,hint:uses.hint||0,verify:uses.verify||0,guided:uses.guided||0};
- try{const run=await dailyClient.finish(payload);localStorage.removeItem(DAILY_PENDING_KEY);const board=await dailyClient.board(socialChallenge.day).catch(()=>null);showDailyResult({run,board})}
+ try{const run=await dailyClient.finish(payload);localStorage.removeItem(DAILY_PENDING_KEY);const board=await dailyClient.board(socialChallenge.day).catch(()=>null);showDailyResult({run,board,offerReminders:true})}
  catch(e){
   if(/invalid_|operation_mismatch|run_not_found/.test(e?.message||'')){showRewardToast(dailyErrorMessage(e,t));showDailyResult({run:null,board:null,official,training:false});return}
   try{localStorage.setItem(DAILY_PENDING_KEY,JSON.stringify(payload))}catch{}
@@ -6474,6 +6477,10 @@ document.getElementById("challengeResultClose")?.addEventListener("click",closeD
 document.getElementById("challengeResultCopy")?.addEventListener("click",event=>void copyDuelLink(event.currentTarget.dataset.copyLink));
 document.getElementById("challengeResultModal")?.addEventListener("keydown",event=>{if(event.key==="Escape"&&!document.getElementById("challengeResultClose").hidden){event.stopPropagation();closeDuelCard()}});
 const challengeHome=document.getElementById("challengeResultHome"),challengeReshare=document.getElementById("challengeResultReshare");if(challengeHome)challengeHome.onclick=()=>{location.href=location.pathname};if(challengeReshare)challengeReshare.onclick=()=>{document.getElementById("challengeResultModal").hidden=true;createSocialChallengeFromSuccess()};
+dailyPushSettings=setupDailyPushSettings({document,t,client:createDailyPushClient({
+ win:window,getOwner:()=>qaActive?null:lumenUser?.id,locale:dailyLocale,
+ rpc:(name,args)=>lumenSupabase?.rpc(name,args)||Promise.resolve({error:true}),
+})});
 const pushEnable=document.getElementById("pushEnable"),pushLater=document.getElementById("pushLater");
 if(pushEnable)pushEnable.onclick=enableLumenPush;
 if(pushLater)pushLater.onclick=dismissPushLater;

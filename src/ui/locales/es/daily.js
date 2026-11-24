@@ -1,5 +1,17 @@
 // #945 Español · Reto del día y semana.
 export default Object.freeze({
+  'daily.pushSettings': "Notificaciones",
+  'daily.pushSchedule': "Un recordatorio del desafío del día a las 18:00 en la zona horaria de este dispositivo.",
+  'daily.pushEnable': "Activar en este dispositivo",
+  'daily.pushDisable': "Desactivar los recordatorios",
+  'daily.pushLater': "Más tarde",
+  'daily.pushUnsupported': "Este dispositivo no admite estos recordatorios.",
+  'daily.pushDenied': "Las notificaciones están bloqueadas en los ajustes de este dispositivo.",
+  'daily.pushOn': "Los recordatorios están activados en este dispositivo.",
+  'daily.pushOtherDevice': "Los recordatorios están activados en la cuenta. Este dispositivo no los recibe.",
+  'daily.pushOff': "Los recordatorios están desactivados.",
+  'daily.pushUnavailable': "Los recordatorios no están disponibles en este momento.",
+  'daily.pushError': "No se pudieron cambiar los recordatorios. Inténtalo de nuevo.",
   'daily.title': "Reto del día",
   'daily.chip': "Reto del día",
   'daily.chipOpenLabel': "Reto del día del {date}: jugar",
