@@ -170,7 +170,11 @@ Hypothèses mesurées le 22/11 de 19 h à 22 h UTC : environ 25 requêtes API pa
 
 Seuil de décision Pro : une projection qui atteint 85 % d'un quota bloquant avant la fin du cycle, sans levier sûr restant.
 
-### Hors logs : capacité SQL, egress et sauvegardes (#999)
+#### Sondage en arrière-plan (#999, 24/11/2026)
+
+Page Usage du cycle 25/10 → 25/11 : l'ingestion de logs (0,915 / 1 Go, 92 %) est le premier plafond, bien avant l'egress (23 %). Sur 24 h, les premières sources de requêtes API étaient le statut d'assistance (`lumen_support`, 592) puis le social (`lumen_list_quest_challenges_v2`, `lumen_challenge_inbox`, `lumen_friend_list`, ~1 100). Supabase émet `SIGNED_IN` à chaque retour de focus, et chaque événement relisait l'assistance et la préférence de diagnostic. Le statut d'assistance et la préférence de diagnostic ne sont désormais relus qu'au changement de compte, à la reconnexion, à l'ouverture du diagnostic, sinon au plus toutes les 15 min. Le social, au retour sur l'appli, est relu au plus toutes les 3 min par compte ; l'ouverture du menu Social relit toujours immédiatement.
+
+## Hors logs : capacité SQL, egress et sauvegardes (#999)
 
 Audit en lecture seule du 23/11/2026 sur le même projet. `pg_stat_statements` est cumulé depuis le 01/08/2026. Toutes les mesures sont agrégées, sans contenu de profil ni identifiant de joueur.
 

@@ -285,8 +285,17 @@ async function requestDiagnosticPreference(client,enabled){
   return result.data;
  }finally{clearTimeout(timer)}
 }
+// #999: Supabase emits SIGNED_IN on every focus/session check (about once a
+// minute in production) and each event re-read the assistance status and the
+// diagnostic preference: the top source of API logs. Re-read them on an
+// account change, a forced refresh (reconnection) or at most every 15 minutes.
+const DIAGNOSTIC_REFRESH_MS=15*60e3;let lastDiagnosticRefresh={owner:undefined,at:0};
 function queueDiagnosticPreferenceRefresh(force=false){
- try{supportSession?.changed();setTimeout(()=>{void supportSession?.refresh()},0)}catch{}
+ try{supportSession?.changed()}catch{}
+ const owner=lumenUser?.id||null,now=Date.now();
+ if(!force&&owner===lastDiagnosticRefresh.owner&&now-lastDiagnosticRefresh.at<DIAGNOSTIC_REFRESH_MS)return;
+ lastDiagnosticRefresh={owner,at:now};
+ try{setTimeout(()=>{void supportSession?.refresh()},0)}catch{}
  setTimeout(()=>{void refreshDiagnosticPreference(force)},0)
 }
 async function refreshDiagnosticPreference(force=false){
@@ -548,7 +557,7 @@ function cloudDiagnosticReport(){
  catch(_){return "Diagnostics indisponibles"}
 }
 function showAccountCloudDiagnostic(){
- try{renderDiagnosticPreference();queueDiagnosticPreferenceRefresh()}catch{}
+ try{renderDiagnosticPreference();queueDiagnosticPreferenceRefresh(true)}catch{}
  syncMobileAuthUI();
  const panel=document.getElementById("accountSyncDiagnosticPanel"),text=document.getElementById("accountSyncDiagnosticText"),copy=document.getElementById("copyAccountSyncDiagnostic");
  if(!panel||!text)return;
@@ -3467,7 +3476,11 @@ const menuPause=createMenuPause({document,
  attemptId:()=>attemptEngine.snapshot()?.attemptId??null,
  pause:pauseGameClock,resume:resumeGameClock});
 // Backgrounding pauses; returning never silently resumes, even when a menu closes later.
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){pauseGameClock();menuPause.release()}else loadMyChallenges()});
+// #999: returning to the app re-reads challenges and friends at most every
+// 3 minutes per account (opening Social always reads them immediately).
+const SOCIAL_FOCUS_REFRESH_MS=3*60e3;let lastSocialFocusRefresh={owner:undefined,at:0};
+function refreshSocialOnFocus(){const owner=lumenUser?.id||null,now=Date.now();if(owner===lastSocialFocusRefresh.owner&&now-lastSocialFocusRefresh.at<SOCIAL_FOCUS_REFRESH_MS)return;lastSocialFocusRefresh={owner,at:now};loadMyChallenges()}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){pauseGameClock();menuPause.release()}else refreshSocialOnFocus()});
 window.addEventListener("pagehide",()=>{pauseGameClock();menuPause.release()});
 
 function displayedCellState(r,c){
