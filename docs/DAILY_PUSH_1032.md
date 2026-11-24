@@ -56,11 +56,27 @@ la clé publique si la fonctionnalité est disponible.
   le service reste indisponible même si le drapeau est activé. Les anciennes
   permissions ou lignes d’abonnement n’accordent aucun nouveau consentement.
 
+## Réglage et réception dans Lumen
+
+Le menu de compte affiche le réglage quand l’inscription est disponible ou
+qu’un compte a déjà donné son accord. La première proposition suit un résultat
+officiel confirmé. « Plus tard » masque les propositions suivantes sur cet
+appareil, sans fermer l’accès volontaire au réglage. La permission système
+n’est demandée qu’au clic d’activation. Le réglage distingue le choix du
+compte de la permission et de la souscription de l’appareil.
+
+Le worker sous `/src/ui/notifications/` garde sa propre inscription.
+Le rappel expiré est ignoré ou fermé au clic. La destination est le défi
+courant de la même origine. Lors d’un changement de compte, le client tente
+de couper la réception locale et de retirer l’inscription de cet appareil.
+Le worker de la page principale conserve le traitement historique.
+
 ## Étapes de livraison
 
-1. Préparer le réglage Compte et son inscription volontaire. Conserver
-   l’abonnement historique sans le rattacher au nouveau consentement.
-2. Préparer l’envoi dans un lot distinct. Une requête groupée doit exclure les
+1. Recetter le réglage Compte et son inscription volontaire. L’abonnement
+   historique garde son choix d’origine. Le nouveau rappel reste désactivé
+   pendant le développement du traitement d’envoi.
+2. Préparer l’envoi dans [#1034](https://github.com/Anuponk/lumen/issues/1034). Une requête groupée doit exclure les
    comptes dont le défi est déjà terminé via `daily_runs` et revérifier le
    drapeau, le choix et l’appareil avant l’envoi. Réserver une clé unique par
    appareil et jour de Paris. Limiter les tentatives, purger les abonnements
@@ -73,8 +89,8 @@ la clé publique si la fonctionnalité est disponible.
    plus 8 928 invocations sur 31 jours, avant les appels interactifs et les
    autres services de l’organisation. Vérifier la consommation réelle avant
    d’activer un job. [Quotas des Edge Functions Supabase](https://supabase.com/docs/guides/platform/manage-your-usage/edge-function-invocations)
-4. Traiter les catégories sociales et de résultats en V2. Réutiliser la collecte
-   d’événements autorisée de #708 pour la mesure agrégée V3.
+4. Traiter les catégories sociales et de résultats dans [#1035](https://github.com/Anuponk/lumen/issues/1035). Réutiliser la collecte
+   d’événements autorisée de #708 pour la mesure agrégée dans [#1036](https://github.com/Anuponk/lumen/issues/1036).
 
 La migration et le code sont des opérations séparées du passage en production.
 Le lot de livraison nécessite des secrets fournis hors Git et le feu vert actif

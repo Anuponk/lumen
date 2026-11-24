@@ -984,6 +984,15 @@ The ranking guard assertions in `scripts/fixtures/official-time.sql` require the
 fixed #962 reason for an absent run, invalid counters, a hint-flag mismatch, a
 versioned assistance mismatch and a changed replay. The same fixture verifies
 one confirmed score, the original receipt and an unchanged player snapshot.
+## Daily Challenge notification enrollment (#1032)
+
+`daily-push-ui-tests.mjs` verifies explicit browser permission, the separate
+device registration, account change, dismissal, disabled rollout, expiry and
+the fixed deep link using synthetic browser APIs. The Daily Challenge journey
+continues to exercise the ordinary experience while the rollout is unavailable.
+See [the delivery checklist](DAILY_PUSH_1032.md#étapes-de-livraison) for physical
+device acceptance and publication requirements.
+
 ## Foreground refresh and background releases
 
 `app-updates-tests.mjs` covers first installation, public metadata validation,

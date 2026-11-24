@@ -127,6 +127,7 @@ export function setupDailyPushSettings({client,document,t}){
  let state=null,requestId=0,working=false;
  function render(){
   const permission=client.permission();
+  settings.hidden=!state?.available&&!state?.dailyEnabled;
   const currentDevice=state?.deviceRegistered&&permission==='granted';
   enable.hidden=!state?.available||permission==='unsupported'||permission==='denied'||!!(state?.dailyEnabled&&currentDevice);
   disable.hidden=!state?.dailyEnabled;
@@ -160,6 +161,7 @@ export function setupDailyPushSettings({client,document,t}){
  offerEnable.onclick=()=>change('enable',true);
  later.onclick=()=>{client.dismiss();offer.hidden=true};
  return {
+  accountOpened(){void refresh()},
   async presentResult(eligible){
    offer.hidden=true;offerStatus.textContent='';
    if(!eligible||client.permission()==='unsupported'||client.permission()==='denied'||client.dismissed())return;

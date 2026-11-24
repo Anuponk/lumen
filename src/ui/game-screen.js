@@ -1906,7 +1906,7 @@ function setupDailyInfo(){
 function setupMobileAuth(){
  const menu=document.getElementById("mobileAuthPopover"),account=document.getElementById("mobileAccount"),action=document.getElementById("mobileAuthAction");
  if(!menu||!account||!action)return;
- account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden;account.setAttribute("aria-expanded",String(!menu.hidden))};
+ account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden;account.setAttribute("aria-expanded",String(!menu.hidden));if(!menu.hidden)dailyPushSettings?.accountOpened()};
  menu.onclick=(e)=>{if(e.target.closest("[data-closes-menu]")){menu.hidden=true;account.setAttribute("aria-expanded","false")}e.stopPropagation()};
  // #959: Escape closes Mon espace (after any open tip) and returns focus to its button.
  menu.addEventListener("keydown",e=>{if(e.key!=="Escape"||menu.hidden)return;menu.hidden=true;account.setAttribute("aria-expanded","false");account.focus()});
