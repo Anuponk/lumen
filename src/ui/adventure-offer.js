@@ -50,13 +50,16 @@ export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,a
  const newlyAvailable=p=>p.accessible!==true&&p.access!=='included';
  const unitCount=ready?delivered.filter(q=>q.packId===pack.id&&newlyAvailable(ordered.find(p=>p.id===q.packId)||pack)).length:null;
  const skyIds=new Set(ordered.filter(p=>p.skyId==='real-sky'&&newlyAvailable(p)).map(p=>p.id));
- const skyCount=ready?delivered.filter(q=>skyIds.has(q.packId)).length:null;
+ const skyQuests=ready?delivered.filter(q=>skyIds.has(q.packId)):null;
+ const skyCount=skyQuests?.length??null;
+ const skyConstellationCount=skyQuests?new Set(skyQuests.map(q=>q.constellationId).filter(Boolean)).size:null;
+ const skyAdventureCount=skyQuests?new Set(skyQuests.map(q=>q.packId)).size:null;
  const missingPrice=priceStatus==='loading'?t('store.priceLoading'):t('store.priceUnavailable');
  const sky=mainSkyOffer(skyProgress,{boughtSingle});
  const skyProduct=sky.product||SKY_PRODUCT_ID,skyUpgrade=SKY_UPGRADE_PRODUCT_IDS.includes(sky.product);
  // Web price: the server catalogue price of this exact offer (what Stripe will charge).
  const webSkyPrice=sky.known?(sky.priceCents?formatEuros(sky.priceCents):null):formatEuros(SKY_PRICE_CENTS);
- return {id:pack.id,title:adventureDisplayName(pack,t)||t('sky.adventure'),unitCount,skyCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:pricesRequired?!!prices[skyProduct]:!!webSkyPrice,unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[skyProduct]||(pricesRequired?missingPrice:webSkyPrice||t('store.priceUnavailable')),
+ return {id:pack.id,title:adventureDisplayName(pack,t)||t('sky.adventure'),unitCount,skyCount,skyConstellationCount,skyAdventureCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:pricesRequired?!!prices[skyProduct]:!!webSkyPrice,unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[skyProduct]||(pricesRequired?missingPrice:webSkyPrice||t('store.priceUnavailable')),
   unitProduct:pack.id,skyProduct,showSky:!!sky.product,skyUpgrade,skyPurchased:sky.purchased,
   signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery};
 }
@@ -112,6 +115,7 @@ export function playUnavailableKey(errors=[]){return (errors||[]).some(e=>e?.rea
 export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false,locale="fr",t=french}={}){
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'adventure-offer'});
+ root.append(el('p',{className:'adventure-offer-intro'},t('store.exploreMore')));
  const status=el('p',{className:'adventure-offer-status',hidden:true});status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.dataset.offerStatus='';
  const buttons=[];let retryButton=null,restoreButton=null,statusTimer=null;
  const setStatus=(text,{transient=false}={})=>{
@@ -146,20 +150,32 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   waiverLabel.append(waiver,document.createTextNode(' '+WAIVER_TEXT));root.append(waiverLabel,waiverError);
  }
  const offerCard=(kind,title,price,count,product,note=null)=>{
-  const card=el('section',{className:'adventure-offer-card'});
+  const card=el('section',{className:['adventure-offer-card','adventure-offer-card--'+kind].join(' ')});
   const heading=el('h3',{},title),amount=el('strong',{className:'adventure-offer-price'},price);
   const detail=el('p',{},count===null?t('store.checkContent'):count===0?t('store.noContent'):t(kind==='unit'?'store.newQuests':'store.newPuzzles',{count}));
   detail.dataset.offerCount=kind;
-  const button=buy(kind,title+' · '+price,product);
-  button.setAttribute('aria-label',title+' · '+price);
+  const actionLabel=t(kind==='unit'?'store.unlockAdventure':'store.unlockSky')+' · '+price;
+  const button=buy(kind,actionLabel,product);
+  button.setAttribute('aria-label',actionLabel);
   button.textContent=kind==='unit'?t('store.choose'):t('store.unlockAll');
   // Also retain the disabled state through the provider's busy callback.
   const allowed=kind==='unit'?unitAvailable:skyAvailable;
   if(!allowed){buttons.splice(buttons.indexOf(button),1);button.disabled=true}
-  card.append(heading,amount,detail,...(note?[note]:[]),button);return card;
+  const copy=el('div',{className:'adventure-offer-card-copy'});
+  const action=el('div',{className:'adventure-offer-card-action'});
+  copy.append(heading,detail);
+  if(kind==='sky'&&count>0){
+   const extras=[];
+   if(model.skyAdventureCount)extras.push(t('store.adventureCount',{count:model.skyAdventureCount}));
+   if(model.skyConstellationCount)extras.push(t('store.constellationCount',{count:model.skyConstellationCount}));
+   if(extras.length)copy.append(el('p',{className:'adventure-offer-extent'},extras.join(' \u00b7 ')));
+  }
+  if(note)copy.append(note);
+  action.append(amount,button);
+  card.append(copy,action);
+  return card;
  };
  const offers=el('div',{className:'adventure-offer-cards'});
- offers.append(offerCard('unit',t('store.unlockAdventure'),model.unitPrice,model.unitCount,model.unitProduct));
  if(model.showSky){
   // #865: one personalised offer only, never the list of tiers.
   let note=null;
@@ -168,10 +184,11 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
    note=el('p',{className:'adventure-offer-upgrade'},t(n>1?'store.adjustedSeveral':'store.adjustedOne',{count:n}));
    note.dataset.offerUpgrade='';
   }
-  offers.append(offerCard('sky',t('store.unlockSky'),model.skyPrice,model.skyCount,model.skyProduct,note));
+  offers.append(offerCard('sky',t('store.wholeSky'),model.skyPrice,model.skyCount,model.skyProduct,note));
  }
+ offers.append(offerCard('unit',t('store.singleAdventure'),model.unitPrice,model.unitCount,model.unitProduct));
  offers.dataset.offerCards='';
- root.append(offers);
+ root.append(offers,el('p',{className:'adventure-offer-terms-summary'},t('store.oneTime')));
  const purchaseProgress=el('p',{className:'adventure-offer-cap',hidden:true});
  purchaseProgress.dataset.offerPurchaseProgress='';
  purchaseProgress.setAttribute('aria-live','polite');
@@ -210,7 +227,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  if(restoreButton)termsLine.append(document.createTextNode(' · '+t('store.restoreHint')+' '),restoreButton);
  root.append(termsLine);
  if(!model.signedIn&&model.accounts){const s=el('button',{type:'button',className:'adventure-offer-signin'},t('store.createOrSignIn'));s.dataset.offer='signin';s.onclick=()=>onSignIn();root.append(s)}
- const support=el('p',{className:'adventure-offer-support'},t('store.support')+' ');
+ const support=el('p',{className:'adventure-offer-support'},t('store.independent')+' ');
  const why=el('button',{type:'button',className:'adventure-offer-why'},t('store.why'));why.dataset.offer='why';why.setAttribute('aria-expanded','false');
  const text=el('p',{className:'adventure-offer-why-text',hidden:true},t('store.whyCopy'));
  why.onclick=()=>{text.hidden=!text.hidden;why.setAttribute('aria-expanded',String(!text.hidden))};

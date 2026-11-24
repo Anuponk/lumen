@@ -1,4 +1,12 @@
 export default Object.freeze({
+  'store.exploreMore': "The sky still has more for you to discover.",
+  'store.wholeSky': "The Whole Sky",
+  'store.singleAdventure': "This Adventure",
+  'store.continueFree': "Continue for free",
+  'store.oneTime': "One-time purchase · No subscription · No ads",
+  'store.independent': "Your purchase supports Lumen's independent development.",
+  'store.adventureCount': {"one": "{count} Adventure", "other": "{count} Adventures"},
+  'store.constellationCount': {"one": "{count} constellation", "other": "{count} constellations"},
   'store.priceLoading': "Loading price…",
   'store.priceUnavailable': "Price unavailable",
   'store.allUnlocked': "The entire main sky is unlocked!",

@@ -1,4 +1,12 @@
 export default Object.freeze({
+  'store.exploreMore': "Le ciel n’a pas fini de te surprendre.",
+  'store.wholeSky': "Tout le ciel",
+  'store.singleAdventure': "Cette aventure",
+  'store.continueFree': "Continuer gratuitement",
+  'store.oneTime': "Achat unique · Sans abonnement · Sans publicité",
+  'store.independent': "Ton achat soutient le développement indépendant de Lumen.",
+  'store.adventureCount': {"one": "{count} aventure", "other": "{count} aventures"},
+  'store.constellationCount': {"one": "{count} constellation", "other": "{count} constellations"},
   'store.priceLoading': "Chargement du prix…",
   'store.priceUnavailable': "Prix indisponible",
   'store.allUnlocked': "Tout le ciel principal est débloqué !",

@@ -106,12 +106,14 @@ const syntheticPacks=[
  {id:'future',order:3,skyId:'real-sky',access:'locked',accessible:false},
  {id:'other-sky',order:4,skyId:'future-sky',access:'locked',accessible:false}
 ];
-const grid=(id,packId)=>({id,packId,ordinal:1,legacyIndex:null,reg:[[0]],sol:[0]});
+const grid=(id,packId)=>({id,packId,constellationId:id==='new-b'?'second-constellation':'shared-constellation',ordinal:1,legacyIndex:null,reg:[[0]],sol:[0]});
 const delivered=[grid('free-q','free'),grid('new-a','paid'),grid('new-b','paid'),grid('old','owned'),{id:'future-q',packId:'future'},grid('elsewhere','other-sky')];
 const options={pack:syntheticPacks[1],packs:syntheticPacks,quests:delivered,progress:{}};
 const saved=structuredClone(options);
 assert.equal(adventureOfferModel(options).unitCount,2);
 assert.equal(adventureOfferModel(options).skyCount,2,'Owned/free/future/other-sky content excluded');
+assert.equal(adventureOfferModel(options).skyConstellationCount,2,'Only distinct newly accessible constellations count');
+assert.equal(adventureOfferModel(options).skyAdventureCount,1,'Only newly accessible Adventures with delivered grids count');
 assert.equal(adventureOfferModel({...options,quests:[...delivered,delivered[1]]}).skyCount,2,'Stable IDs count once');
 const acquired=syntheticPacks.map(p=>({...p,accessible:true}));
 assert.equal(adventureOfferModel({...options,pack:acquired[1],packs:acquired}).unitCount,0);

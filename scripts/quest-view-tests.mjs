@@ -11,7 +11,8 @@ import {attemptAnalyticsProperties} from '../src/analytics/events.js';
 import {createTranslator} from '../src/ui/i18n.js';
 import {constellationDisplayName} from '../src/campaign/constellation-facts.js';
 import {readQuestView} from '../src/campaign/quest-view.js';
-import {performanceAttempt,badgeCooldownRemaining} from '../src/campaign/performance.js';
+import {PERFORMANCE_BADGES,performanceAttempt,badgeCooldownRemaining} from '../src/campaign/performance.js';
+import {celestialScope} from '../src/ui/celestial-progress.js';
 import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
 import {discoveryUrl,resultShareData} from '../src/ui/lumen-share.js';
 
@@ -53,22 +54,24 @@ test('live sky badge refresh follows stable card IDs after insertion, reorder an
  const legacy=quests.find(q=>q.constellationId===inserted.constellationId&&q.legacyIndex!==null);
  const cards=[inserted,legacy].map(q=>{const card={dataset:{questId:q.id},innerHTML:'initial',paused:false};card.classList={toggle:(_,on)=>{card.paused=on}};return card});
  cards.push({dataset:{questId:'removed-content'},innerHTML:'untouched'});
- let refresh,stopped=false;
- const ctx={...canonical,CONTENT_CONSTELLATIONS,readQuestView,questPerformanceRecord,badgeCooldownRemaining,questCooldownRemaining:q=>badgeCooldownRemaining(questPerformanceRecord(q,ctx.lumenProgress)),lumenProgress:{},
+ let refresh,stopped=false,filterRefreshes=0;
+ const ctx={...canonical,CONTENT_CONSTELLATIONS,readQuestView,questPerformanceRecord,badgeCooldownRemaining,celestialScope,questCooldownRemaining:q=>badgeCooldownRemaining(questPerformanceRecord(q,ctx.lumenProgress)),lumenProgress:{},
   badgeCooldownRefreshTimer:null,setInterval:fn=>(refresh=fn,1),clearInterval:()=>{stopped=true},
   document:{getElementById:()=>({hidden:false}),querySelectorAll:()=>cards},
-  skyNavigation:{selectedConstellation:()=>({canonicalOnly:false})},mapConstellation:0,
+  skyNavigation:{selectedConstellation:()=>({canonicalOnly:false}),refreshQuestBadgeFilter:()=>filterRefreshes++},mapConstellation:0,
   mapConstellationRange:()=>({quests:[legacy.legacyIndex]}),
   performanceBadges:i=>'numeric:'+i,canonicalPerformanceBadges:id=>'stable:'+id};
- vm.createContext(ctx);vm.runInContext(functionSource(source,'startBadgeCooldownRefresh'),ctx);
+ vm.createContext(ctx);vm.runInContext(functionSource(source,'updateQuestBadgeCompletion')+'\n'+functionSource(source,'startBadgeCooldownRefresh'),ctx);
  ctx.startBadgeCooldownRefresh();
  refresh();assert(cards.every(c=>c.innerHTML==='initial'||c.innerHTML==='untouched'),'Unsolved cards keep their existing availability UI');
  const stamp=new Date(Date.now()+300000).toISOString();
- ctx.lumenProgress={solved:{[legacy.legacyIndex]:1},performances:{[legacy.legacyIndex]:{lastQualifiedAt:stamp}},canonicalQuestState:{[inserted.id]:{solved:true,runPerformance:{lastQualifiedAt:stamp}}}};
+ ctx.lumenProgress={solved:{[legacy.legacyIndex]:1},performances:{[legacy.legacyIndex]:{lastQualifiedAt:stamp}},canonicalQuestState:{[inserted.id]:{solved:true,runPerformance:{lastQualifiedAt:stamp},badges:Object.fromEntries(PERFORMANCE_BADGES.map(key=>[key,true]))}}};
  const before=JSON.stringify(ctx.lumenProgress);refresh();
  assert.equal(cards[0].innerHTML,'stable:'+inserted.id,'Inserted card must never borrow the numeric card at its offset');
  assert.equal(cards[1].innerHTML,'numeric:'+legacy.legacyIndex);
  assert(cards[0].paused&&cards[1].paused,'Both saved formats expose the same cooldown state');
+ assert.equal(cards[0].dataset.badgesComplete,'true');assert.equal(cards[1].dataset.badgesComplete,'false');
+ assert.equal(filterRefreshes,2,'the open filter updates from the live awarded badges');
  assert.equal(cards[2].innerHTML,'untouched');
  cards.reverse();refresh();assert.equal(cards[1].innerHTML,'numeric:'+legacy.legacyIndex);
  ctx.skyNavigation.selectedConstellation=()=>({canonicalOnly:true});

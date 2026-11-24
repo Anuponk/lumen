@@ -1,5 +1,13 @@
 // #945 Español · tienda, desbloqueos y compras (Google Play y web).
 export default Object.freeze({
+  'store.exploreMore': "El cielo aún tiene sorpresas para ti.",
+  'store.wholeSky': "Todo el cielo",
+  'store.singleAdventure': "Esta Aventura",
+  'store.continueFree': "Seguir gratis",
+  'store.oneTime': "Compra única · Sin suscripción · Sin anuncios",
+  'store.independent': "Tu compra apoya el desarrollo independiente de Lumen.",
+  'store.adventureCount': {"one": "{count} aventura", "other": "{count} aventuras"},
+  'store.constellationCount': {"one": "{count} constelación", "other": "{count} constelaciones"},
   'store.priceLoading': "Cargando el precio…",
   'store.priceUnavailable': "Precio no disponible",
   'store.allUnlocked': "¡Todo el cielo principal está desbloqueado!",

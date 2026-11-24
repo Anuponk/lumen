@@ -1,5 +1,6 @@
 // #945 Español · Mi cielo, aventuras y constelaciones.
 export default Object.freeze({
+  'sky.badgeFilterQuestsEmpty': "Ya tienes todas las insignias de esta constelación.",
   'sky.adventures': "Aventuras",
   'sky.previousConstellations': "Constelaciones anteriores",
   'sky.nextConstellations': "Constelaciones siguientes",

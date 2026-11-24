@@ -6141,7 +6141,7 @@ function questPerformanceBadges(quest){
  const eligibility=performanceEligibility(view.ordinal-1,Math.max(canonicalScopeProgress(lumenProgress).completed,view.ordinal));
  const badges=[{cls:"autonomy",key:"autonomy",label:t('results.autonomy')},{cls:"speed",key:"speed",label:t('results.speed')},{cls:"no-error",key:"noError",label:t('results.noError')},{cls:"mastery",key:"mastery",label:t('results.mastery')}];
  const status="";
-  return '<span class="performance-grid" aria-label="Performance">'+badges.map(x=>{const got=!!earned[x.key],label=t(got?'badge.obtained':'badge.missing',{badge:x.label});return '<span class="performance-slot '+x.cls+(got?' earned':'')+'" title="'+label+'" aria-label="'+label+'">'+(got?performanceIcon(x.key):'')+'</span>'}).join("")+'</span>'+status
+  return '<span class="performance-grid" aria-label="Performance">'+badges.map(x=>{const got=!!earned[x.key],label=t(got?'badge.obtained':'badge.missing',{badge:x.label});return '<span class="performance-slot '+x.cls+(got?' earned':'')+'" title="'+label+'" aria-label="'+label+'">'+performanceIcon(x.key)+'</span>'}).join("")+'</span>'+status
 }
 function performanceBadges(i){return questPerformanceBadges(canonicalQuestForLegacy(i))}
 function canonicalPerformanceBadges(questId){
@@ -6168,6 +6168,10 @@ function showReplayCooldown(quest,launch){
  document.addEventListener("keydown",onKey);
  modal.hidden=false;cancel.focus();
 }
+function updateQuestBadgeCompletion(card,quest){
+ const {earned,possible}=celestialScope(lumenProgress,[quest]);
+ card.dataset.badgesComplete=String(earned===possible);
+}
 function renderMap(){
  maybeShowStreakLoss();
  // Refresh the streak from the same live daily state used by its help dialog.
@@ -6193,6 +6197,8 @@ function renderMap(){
     button.type="button";
     button.className="puzzle-card"+(solved?" done":"")+(available&&!solved?" current":"")+(!available&&!solved?" locked":"")+(solved&&questCooldownRemaining(quest)?" badge-on-cooldown":"");
     button.dataset.questId=quest.id;
+    button.dataset.questNumber=quest.ordinal;
+    updateQuestBadgeCompletion(button,quest);
     const lockReason=canonicalQuestLockReason(quest,access);
     // Completion is preserved evidence; a temporary action hold is not a lost win.
     const status=resume?t('map.resumeStatus'):solved?(available?t('map.replayable'):t('map.completedWithReason',{reason:lockReason})):available?t('map.available'):lockReason;
@@ -6220,6 +6226,7 @@ function renderMap(){
    }
   }
  }
+ skyNavigation.refreshQuestBadgeFilter();
  if(mappedConstellation&&verifiedAstronomicalFigure(mappedConstellation)){renderCanonicalSky(mappedConstellation);return}
  if(range.generated){const summary=generatedMapSummary(mapConstellation,lumenProgress.solved);const skyCard=document.getElementById("skyCard");if(skyCard&&summary)skyCard.textContent=t('map.summary',{name:summary.name,done:summary.completed,total:summary.total,stars:generatedAdventureRewards(lumenProgress.solved).stars});}else renderSky(mapConstellation)
 }
@@ -6234,11 +6241,13 @@ function startBadgeCooldownRefresh(){
    const quest=quests.find(q=>q.id===card.dataset.questId);
    if(!quest)return;
    const view=readQuestView(quest,lumenProgress,quests,CONTENT_CONSTELLATIONS);
+   updateQuestBadgeCompletion(card,quest);
    if(!view.solved)return;
    card.classList.toggle('badge-on-cooldown',questCooldownRemaining(quest)>0);
    const html=view.legacyIndex===null?canonicalPerformanceBadges(view.id):performanceBadges(view.legacyIndex);
    if(card.innerHTML!==html)card.innerHTML=html;
   });
+  skyNavigation.refreshQuestBadgeFilter();
  },15000);
 }
 function openJourneyMap(focusSky=false,{detail=false,advanceOnClose=false,learningTour=false,questIndex=null,constellationId=null}={}){void refreshDailyEntry();

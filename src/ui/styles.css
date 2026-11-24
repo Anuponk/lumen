@@ -1466,13 +1466,21 @@ body:has(#erasedAccountNotice:not([hidden])) #scriptedLearn{visibility:hidden!im
 .adventure-offer button{min-height:44px;border-radius:12px;font:inherit;font-weight:700}
 .adventure-offer-buy{background:#1d3b5a;color:#eefaff;border:1px solid #4284bd}
 .adventure-offer-buy:disabled{opacity:.55}
-.adventure-offer-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.adventure-offer-cards{display:grid;gap:8px}
 .adventure-offer [hidden]{display:none}
-.adventure-offer-cards:has(>.adventure-offer-card:only-child){grid-template-columns:1fr}
 .adventure-offer-card{display:flex;flex-direction:column;gap:5px;padding:10px;border:1px solid #4284bd;border-radius:16px;background:radial-gradient(ellipse at top,#25445b,#102336 75%);min-width:0;text-align:center}
 .adventure-offer-card h3{font-size:15px;line-height:1.2;margin:0;color:#f1e1ad}
 .adventure-offer-price{font-size:27px;color:#fff1c4}
 .adventure-offer-card .adventure-offer-buy{margin-top:auto;padding:7px;font-size:12px}
+.adventure-offer-intro{color:#e9effa;font-weight:750}
+.adventure-offer-card--sky{border-color:#b59661;background:radial-gradient(ellipse at 20% 0,#34496a,#202c47 60%,#151f36)}
+.adventure-offer-card-copy,.adventure-offer-card-action{display:grid;gap:3px;min-width:0}
+.adventure-offer-card--sky .adventure-offer-buy:not(:disabled){border-color:#e6bd7b;background:#f0cf91;color:#1f2638;font-weight:850}
+.adventure-offer-card--unit{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;text-align:left}
+.adventure-offer-card--unit .adventure-offer-price{font-size:19px;text-align:center}
+.adventure-offer-card .adventure-offer-buy{min-height:40px}
+.adventure-offer-extent,.adventure-offer-terms-summary{color:#d8e1ed}
+.adventure-offer-terms-summary{text-align:center}
 .adventure-offer-mastery{padding:8px 10px;border:1px solid #716440;border-radius:12px;background:#272a29}
 .adventure-offer-mastery>strong{display:block;margin-bottom:3px;font-size:14px}
 .adventure-offer-mastery p+p,.adventure-offer-mastery>.adventure-offer-claim{margin-top:5px}
@@ -1836,3 +1844,10 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .beta-full-copy[hidden],.beta-full-copy-note[hidden]{display:none}
 /* #985: badge completion line and « À compléter » filter, one compact row under the Adventure summary. */
 .adventure-badges{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 6px;font-size:12px;color:#9fb6cc}.adventure-badges-count{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.badge-filter{flex:0 0 auto;min-height:32px;padding:4px 10px;border-radius:16px;border:1px solid #28415b;background:#101d2e;color:#b9cee1;font:inherit;font-size:12px;font-weight:800}.badge-filter[aria-pressed=true]{border-color:#68e7ff;color:#eafaff}.badge-filter[hidden]{display:none}.constellation-card-slot[hidden]{display:none}.badge-filter-empty{grid-column:1/-1;margin:8px 0;text-align:center;font-size:13px;color:#9fb6cc}
+
+/* The detail shares the Adventure badge filter and keeps catalogue numbering. */
+#puzzleGrid .puzzle-card[hidden],.badge-filter-empty[hidden]{display:none}
+#puzzleGrid .performance-slot:not(.earned)>span{visibility:hidden}
+#puzzleGrid.is-badge-filtered .performance-slot:not(.earned)>span{visibility:visible;opacity:.34}
+#puzzleGrid.is-badge-filtered .puzzle-card:is(.done,.locked)::before{content:attr(data-quest-number);display:block;font-size:10px;line-height:12px;color:#c9dcea}
+#puzzleGrid.is-badge-filtered .puzzle-card.done .performance-grid{height:calc(100% - 12px)}

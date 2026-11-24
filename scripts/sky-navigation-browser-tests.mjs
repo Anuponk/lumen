@@ -5,7 +5,9 @@ import {verifyCelestialUX} from './celestial-ux-browser.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {connectBrowser,closeBrowser,acknowledgeLearningMilestones} from './cdp-client.mjs';
-import {CONTENT_PACKS} from '../src/campaign/content.js';
+import {CONTENT_CONSTELLATIONS,CONTENT_PACKS} from '../src/campaign/content.js';
+import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {PERFORMANCE_BADGES} from '../src/campaign/performance.js';
 import {verifyAstronomicalRendering} from './astronomical-rendering-browser.mjs';
 import {verifySkyIssueRegressions} from './sky-issue-513-514-browser.mjs';
 const {send,evaluate,errors}=await connectBrowser(),sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -46,7 +48,7 @@ try{
  for(const viewport of [{width:360,height:640,mobile:true},{width:390,height:844,mobile:true},{width:1440,height:900,mobile:false}]){
   await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1});
   await send('Emulation.setTouchEmulationEnabled',{enabled:viewport.mobile,maxTouchPoints:1});
-  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenQaProgressV1",JSON.stringify({solved:{0:1,1:1},badges:{historical:1}}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenQaTutorialSeen","1");localStorage.setItem("lumenQaTutorialCompletedV1","1");localStorage.setItem("lumenWelcomeDayV1",new Date().toLocaleDateString("en-CA"));localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
+  const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenQaProgressV1",JSON.stringify({solved:{0:1,1:1},badges:{historical:1},performances:{0:{version:3,badges:{autonomy:true,speed:true,noError:true,mastery:true}}}}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenQaTutorialSeen","1");localStorage.setItem("lumenQaTutorialCompletedV1","1");localStorage.setItem("lumenWelcomeDayV1",new Date().toLocaleDateString("en-CA"));localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
   await send('Page.navigate',{url:url.href});await ready(true);await sleep(1500);await ready();await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});await acknowledgeLearningMilestones(evaluate);
   await click('#openSky');const original=await snapshot(),height=await fit();
   // #985: badge completion is local: adventure line, accessible vs whole catalogue, « À compléter ».
@@ -112,12 +114,71 @@ try{
   assert.match(offer.mastery,/Il te reste \d+ quêtes? et \d+ badges? à acquérir pour la débloquer gratuitement/);
   assert.equal(await evaluate('document.documentElement.scrollTop'),0,'The offer keeps the page stationary');
   assert.equal(offer.signin,false,'QA sessions never offer account creation');assert.equal(offer.whyHidden,true);
+  const offerLayout=await evaluate(`(()=>{
+   const offers=[...document.querySelectorAll('#adventureNoticeOffer .adventure-offer-card')];
+   return {order:offers.map(card=>card.querySelector('button').dataset.offer),
+    scope:offers[0].querySelector('.adventure-offer-extent')?.textContent,
+    terms:document.querySelector('.adventure-offer-terms-summary').textContent,
+    free:document.getElementById('adventureNoticeClose').textContent};
+  })()`);
+  assert.deepEqual(offerLayout.order,['sky','unit'],'The whole sky is the primary offer');
+  assert.match(offerLayout.scope,/\d+ aventures? .* \d+ constellations?/);
+  assert.match(offerLayout.terms,/Achat unique .* Sans abonnement .* Sans publicit\u00e9/);
+  assert.equal(offerLayout.free,'Continuer gratuitement');
+  assert.equal(await evaluate("document.activeElement.id"),'adventureNoticeTitle','initial focus presents the offer from the start');
+  if(process.env.LUMEN_SHOP_CAPTURES){
+   const shot=await send('Page.captureScreenshot',{format:'png'});
+   fs.writeFileSync(path.join(process.env.LUMEN_SHOP_CAPTURES,'shop-'+viewport.width+'.png'),Buffer.from(shot.data,'base64'));
+  }
+  await press('Tab');
+  assert.equal(await evaluate("document.activeElement.dataset.offer"),'terms','keyboard reaches offer links');
   await evaluate(`document.querySelector('#adventureNoticeOffer [data-offer=why]').scrollIntoView({block:'center'})`);await click('#adventureNoticeOffer [data-offer=why]');
   assert.equal(await evaluate(`!document.querySelector('#adventureNoticeOffer .adventure-offer-why-text').hidden&&document.querySelector('#adventureNoticeOffer [data-offer=why]').getAttribute('aria-expanded')==='true'`),true,'Pourquoi reveals the funding text');
   assert.equal(await evaluate(`(()=>{const d=document.querySelector('#adventureNotice>div'),r=d.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&document.documentElement.scrollWidth<=innerWidth})()`),true,'The offer never overflows horizontally');
   await evaluate(`document.getElementById('adventureNoticeClose').scrollIntoView({block:'center'})`);assert.equal(await evaluate('lumenDiagnostics.skySnapshot().viewedAdventure'),CONTENT_PACKS[0].id);await click('#adventureNoticeClose');
   await click('#adventureRail .locked');await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});assert.equal(await evaluate('document.getElementById("adventureNotice").hidden'),true);assert.equal(await evaluate('document.getElementById("mapModal").hidden'),false);assert.equal(await evaluate('document.activeElement.dataset.packId'),CONTENT_PACKS[1].id,'Locked notice restores focus without closing Mon ciel');
   await click('#constellationPrevious');await click('#sectorTabs .constellation-card');assert.equal(await evaluate('lumenDiagnostics.skySnapshot().view'),'detail');
+  const questCards='[...document.querySelectorAll("#puzzleGrid .puzzle-card")]';
+  const detailBeforeFilter=await evaluate(questCards+'.map(card=>({id:card.dataset.questId,hidden:card.hidden,full:card.querySelectorAll(".performance-slot.earned").length===4}))');
+  assert(detailBeforeFilter.some(card=>card.full),'fixture includes a completed quest with all badges');
+  assert(detailBeforeFilter.some(card=>!card.full),'fixture includes quests with missing badges');
+  await click('#badgeFilter');
+  assert.deepEqual(await evaluate(questCards+'.filter(card=>!card.hidden).map(card=>card.dataset.questId)'),
+   detailBeforeFilter.filter(card=>!card.full).map(card=>card.id),'detail shows only quests still missing badges in catalogue order');
+  await click('#constellationBack');
+  assert.equal(await evaluate("document.getElementById('badgeFilter').getAttribute('aria-pressed')"),'true','filter persists back to the overview');
+  await click('#sectorTabs .constellation-card-slot:not([hidden]) .constellation-card');
+  assert.deepEqual(await evaluate(questCards+'.filter(card=>!card.hidden).map(card=>card.dataset.questId)'),
+   detailBeforeFilter.filter(card=>!card.full).map(card=>card.id),'returning to detail reapplies the same filter');
+  await click('#badgeFilter');
+  assert.deepEqual(await evaluate(questCards+'.filter(card=>!card.hidden).map(card=>card.dataset.questId)'),
+   detailBeforeFilter.map(card=>card.id),'toggling off restores every quest');
+  if(viewport.width===360){
+   // Keep a completed constellation open, as when the last badge becomes available.
+   const allBadges=Object.fromEntries(PERFORMANCE_BADGES.map(key=>[key,true]));
+   const completed={solved:{},performances:{},canonicalQuestState:{}};
+   for(const quest of canonicalQuestList().filter(q=>q.constellationId===CONTENT_CONSTELLATIONS[0].id)){
+    if(quest.legacyIndex===null)completed.canonicalQuestState[quest.id]={solved:true,badges:allBadges};
+    else{
+     completed.solved[quest.legacyIndex]=1;
+     completed.performances[quest.legacyIndex]={version:3,badges:allBadges};
+    }
+   }
+   await evaluate(`(()=>{
+    const progress=lumenDiagnostics.snapshot().progress;
+    const completed=${JSON.stringify(completed)};
+    window.__badgeFilterFixture=Object.fromEntries(Object.keys(completed).map(key=>[key,progress[key]]));
+    for(const key of Object.keys(completed))progress[key]={...progress[key],...completed[key]};
+   })()`);
+   await click('#constellationBack');await click('#sectorTabs .constellation-card');
+   await click('#badgeFilter');
+   assert.equal(await evaluate(`document.querySelectorAll('#puzzleGrid .puzzle-card:not([hidden])').length`),0);
+   assert.equal(await evaluate(`document.querySelector('#mapDetail [role=status].badge-filter-empty').hidden`),false);
+   await click('#badgeFilter');
+   assert.equal(await evaluate(`document.querySelector('#mapDetail [role=status].badge-filter-empty').hidden`),true);
+   await evaluate(`Object.assign(lumenDiagnostics.snapshot().progress,window.__badgeFilterFixture)`);
+   await click('#constellationBack');await click('#sectorTabs .constellation-card');
+  }
   const detailButton = '#skyCard .constellation-fact-button';
   await captureFact('mon-ciel-detail', viewport);
   await click(detailButton);

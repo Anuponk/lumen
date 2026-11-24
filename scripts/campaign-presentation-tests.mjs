@@ -54,12 +54,12 @@ function questCardFixture(progress,{signedIn=true,cloudReady=true,entryId,review
   localStorage:{getItem:()=>null},playReviewNavigation:{available:()=>reviewEnabled},hasPlayReviewAttempt,playReviewQuestDecision,hasPackAccess,
   navigationProgress:()=>progress,offlineQuestAccessContext:()=>({offline:false,verifiedSession:false}),document:{createElement:element,createElementNS:element,getElementById:id=>({puzzleGrid:grid,mapModal:modal,skyCard:sky,playReviewStatus:reviewStatus})[id]??null},
   CONTENT_CONSTELLATIONS,CONTENT_PACKS,mapConstellation:0,
-  skyNavigation:{render(){},selectedConstellation:()=>entry,createFactButton:()=>null},
+  skyNavigation:{render(){},refreshQuestBadgeFilter(){},selectedConstellation:()=>entry,createFactButton:()=>null},
   mapConstellationRange:()=>({quests:[]}),maybeShowStreakLoss(){},renderDaily(){},
   performanceBadges:()=>'<span>badge historique</span>',canonicalPerformanceBadges:()=>'<span>badge canonique</span>',
   badgeCooldownRemaining:()=>0,questCooldownRemaining:()=>0,questPerformanceRecord,verifiedAstronomicalFigure:()=>true,questIsCompleted,astronomicalPrimarySvg:()=>''};
  vm.createContext(context);
- const names=['adventureEntitlementsState','constellationMastery','canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','legacyQuestAccess','questIsAccessible','playReviewAttemptId','mapQuestAccess','renderPlayReviewStatus','renderMap','renderCanonicalSky','renderCanonicalJourneyPreview','startCanonicalQuest'];
+ const names=['adventureEntitlementsState','constellationMastery','canonicalQuestAccess','canonicalQuestAvailable','canonicalQuestLockReason','legacyQuestAccess','questIsAccessible','playReviewAttemptId','mapQuestAccess','renderPlayReviewStatus','updateQuestBadgeCompletion','renderMap','renderCanonicalSky','renderCanonicalJourneyPreview','startCanonicalQuest'];
  vm.runInContext(names.map(name=>functionSource(source,name)).join('\n'),context);
  return {context,grid,section,elements,entry,sky};
 }
