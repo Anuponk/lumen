@@ -137,3 +137,24 @@ test('runtime errors are classified by name, never by private text',async()=>{
  const f=await fixture();f.reporter.capture('runtime_exception',{stage:'runtime',kind:'quota'});await f.reporter.flush();
  assert.equal(f.sent[0].p_events[0].kind,'quota','the accepted server category is transmitted');
 });
+
+// #1010: a failed save says whether the server answered (refusal, session) or not (network).
+test('save failures keep the network / session / server-refusal distinction', async () => {
+ const {mapCloudDiagnostic:map,saveFailureKind}=await import('../src/persistence/diagnostic-reporter.js');
+ const kind=code=>map('flush_failed',{kind:'write',errorCode:code}).kind;
+ assert.equal(kind('CLOUD_NETWORK'),'network','no answer is a network failure');
+ assert.equal(kind('LEGACY_COMMAND_REQUIRED'),'conflict','a guard refusal is a server refusal, never network');
+ assert.equal(kind('CLOUD_CAS_CONFLICT'),'conflict');
+ assert.equal(kind('CLOUD_WRITE_REFUSED'),'conflict');
+ assert.equal(kind('42501'),'auth');
+ assert.equal(kind('unknown'),'unknown');assert.equal(kind(undefined),'unknown');
+ assert.equal(saveFailureKind('PGRST301'),'auth');
+ assert.equal(map('flush_failed',{kind:'write',errorCode:'CLOUD_NETWORK'}).code,'sync_write_failed');
+});
+
+// #1010: a pending victory is retried as soon as a save settles, not only after a reload.
+test('a settled save wakes the outbox replay scheduler while a victory is pending', () => {
+ const src = readFileSync(new URL('../src/ui/game-screen.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+ assert.ok(src.includes('   else try{if(outboxRetryWanted)canonicalRecovery.schedule()}catch{}'), 'flush finally wakes the scheduler');
+ assert.ok(src.includes('outboxRetryWanted=outstanding>0;return outstanding;'), 'the notice tracks outstanding victories');
+});

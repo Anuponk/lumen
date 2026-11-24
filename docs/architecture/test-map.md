@@ -261,7 +261,9 @@ capability assertions remain mandatory. It is the tenth quality browser suite,
 using CDP 9235 and `ci-incident-investigation.json`; previous nine suites remain.
 
 Optional diagnostics (#534): `diagnostic-reporter-tests.mjs` covers privacy,
-transport/account races and actual Undo markers under historical fault injection.
+transport/account races and actual Undo markers under historical fault injection,
+plus #1010: save failures keep network / session / server-refusal kinds and a settled
+save wakes the replay of a pending victory.
 PostgreSQL fixture/concurrency checks privileges, quotas, identity, consent and
 retention. The account browser adds offline reload/reconnect and withdrawal
 with native storage and synthetic Auth/RPC. See OBSERVABILITY_534 for limits.

@@ -1631,7 +1631,9 @@ Canonical clients cannot replay/acknowledge them. Exact same-account receipt and
 current completion, requested badges and attempt counter precede acknowledgement.
 Duplicates retain the initial outcome and return current state. Startup replays
 before installation; background replay avoids active legacy attempts, while a
-pending current win retries frozen evidence. Concurrent local edits prevent UI
+pending current win retries frozen evidence. #1010: the replay scheduler is also
+woken after every settled save while a victory is outstanding, so a pending win
+leaves at the first quiet moment instead of only after a reload. Concurrent local edits prevent UI
 installation. New victories still require verified hydration and preflush of
 unrelated changes; removing that gameplay gate remains a later phase.
 
