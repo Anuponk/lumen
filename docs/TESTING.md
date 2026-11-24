@@ -463,6 +463,11 @@ read equals both independent reads, never writes, keeps the account guard
 and denies `anon`.
 Admin recent-player tests execute the actual metrics/timeline renderers.
 
+Delta profile read (#1000 lot 2): `profile-delta-read-tests.mjs` covers applying the
+delta, the digest gate and every fallback; `fixtures/profile-delta-read.sql` checks the
+server delta (additions, removals, type changes, unchanged entries omitted), the
+account guard and grants.
+
 Digest profile read (#1000): `node --test scripts/profile-digest-read-tests.mjs` covers
 `confirmVerifiedProfile`: a matching digest returns a copy of the known profile with
 no download; mismatch, malformed answer, error, missing endpoint (remembered), no

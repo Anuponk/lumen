@@ -1,4 +1,4 @@
-import {loadVerifiedProfile,sameCloudProfile} from './cloud-profile.js';
+import {loadVerifiedProfile,loadVerifiedProfileFromBase,sameCloudProfile} from './cloud-profile.js';
 import {canonicalRecoveryFailure} from './canonical-recovery-errors.js';
 import {canonicalQuestList} from '../campaign/canonical-quests.js';
 import {verifyOfficialProjection} from '../campaign/official-time.js';
@@ -46,7 +46,7 @@ export function assertRecreatedLegacyCapture(userId,entry,committed){
   typeof receipt.outcome?.firstCompletion!=='boolean'||!Number.isSafeInteger(receipt.outcome.attempts)||receipt.outcome.attempts<1||!Number.isFinite(Date.parse(receipt.recordedAt))||!Number.isFinite(Date.parse(entry.createdAt)))fail();
  verifyLegacyProjection(committed.profile,receipt,quest);
 }
-export async function commitLegacyVictoryCommand(client,questId,facts,operationId,{userId,sessionValid=()=>true}={}){
+export async function commitLegacyVictoryCommand(client,questId,facts,operationId,{userId,sessionValid=()=>true,base=null}={}){
  const quest=canonicalQuestList().find(q=>q.id===questId&&q.legacyIndex!==null);
  if(!quest||!userId||typeof operationId!=='string'||!/^[A-Za-z0-9._-]{1,120}$/.test(operationId))throw canonicalRecoveryFailure({code:'22023'});
  const scope=()=>{if(!sessionValid())throw Error('Legacy command session changed')};
@@ -61,7 +61,8 @@ export async function commitLegacyVictoryCommand(client,questId,facts,operationI
  scope();
  if(!receipt)throw failure?canonicalRecoveryFailure(failure,status):Error('Legacy command receipt unconfirmed');
  if(!sameCloudProfile(receipt.request,{version:1,operationId,questId,facts})||typeof receipt.outcome?.firstCompletion!=='boolean'||!Number.isFinite(Date.parse(receipt.recordedAt)))throw canonicalRecoveryFailure({code:'22023'});
- const profile=await loadVerifiedProfile(client,{userId});scope();
+ // #1000 lot 2: the pre-command copy is the base of a digest-verified delta.
+ const profile=base?await loadVerifiedProfileFromBase(client,{userId,base}):await loadVerifiedProfile(client,{userId});scope();
  verifyLegacyProjection(profile,receipt,quest);
  return {profile,receipt,quest};
 }

@@ -107,6 +107,41 @@ export async function confirmVerifiedProfile(supabase,{userId,candidates=[]}={})
  return loadVerifiedProfile(supabase,{userId});
 }
 
+// #1000 lot 2: after a command the server profile is the client's copy plus a
+// few changed entries. Upload the copy (free ingress), download only the delta
+// and the SHA-256 of the stored profile; install it only when the rebuilt
+// profile has exactly that digest. Any doubt is the usual full verified read.
+const profileDeltaUnsupported=new WeakSet();
+export function applyProfileDelta(base,patch){
+ if(!Array.isArray(patch))throw Error('Invalid profile delta');
+ const out=structuredClone(base);
+ for(const step of patch){
+  const path=step?.path;
+  if(!Array.isArray(path)||path.length<1||path.length>2||!path.every(k=>typeof k==='string'&&k.length<=200))throw Error('Invalid profile delta');
+  const [key,sub]=path;
+  if(step.op==='remove'){if(sub===undefined)delete out[key];else if(out[key]&&typeof out[key]==='object'&&!Array.isArray(out[key]))delete out[key][sub]}
+  else if(step.op==='set'&&Object.hasOwn(step,'value')){
+   if(sub===undefined)out[key]=structuredClone(step.value);
+   else{if(!out[key]||typeof out[key]!=='object'||Array.isArray(out[key]))out[key]={};out[key][sub]=structuredClone(step.value)}
+  }else throw Error('Invalid profile delta');
+ }
+ return out;
+}
+export async function loadVerifiedProfileFromBase(supabase,{userId,base}={}){
+ if(userId&&base&&typeof base==='object'&&!Array.isArray(base)&&!profileDeltaUnsupported.has(supabase)){
+  let answer=null;
+  try{answer=await supabase.rpc('lumen_profile_delta',{p_expected_user_id:userId,p_base:base})}catch{}
+  if(answer?.error?.code==='PGRST202'&&answer.status===404)profileDeltaUnsupported.add(supabase);
+  else if(!answer?.error&&answer?.data?.version===1&&typeof answer.data.sha256==='string'&&/^[0-9a-f]{64}$/.test(answer.data.sha256)&&Array.isArray(answer.data.patch)){
+   try{
+    const next=applyProfileDelta(base,answer.data.patch);
+    if(await jsonbDigest(next)===answer.data.sha256)return validateCloudProfile(next);
+   }catch{}
+  }
+ }
+ return loadVerifiedProfile(supabase,{userId});
+}
+
 export function restoreIntoEmptyGuestStorage(storage,remote){
   const incoming=validateCloudProfile(remote);
   const key="lumenProgressV1";

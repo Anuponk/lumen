@@ -112,6 +112,12 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await until(evaluate,"!document.getElementById('dailyChip').hidden",'done chip');
  assert.equal(await evaluate("document.getElementById('dailyChip').dataset.state"),'done');
  assert.match(await evaluate("document.getElementById('dailyChip').getAttribute('aria-label')"),/déjà joué/);
+ // #898: Mon ciel and Social show the same « already played » state (Social mirrors Mon ciel).
+ await evaluate("document.getElementById('openSky').click()");
+ await until(evaluate,"/déjà joué/.test(document.getElementById('dailyEntryState').textContent)",'Mon ciel done state');
+ await evaluate("document.getElementById('closeMap')?.click()");await evaluate("document.getElementById('openSocial').click()");
+ await until(evaluate,"/déjà joué/.test(document.getElementById('socialDailyState')?.textContent||'')",'Social done state');
+ await evaluate("document.querySelector('#socialHub [data-social-close], #socialHubClose')?.click()");
  await evaluate("document.getElementById('dailyChip').click()");
  await until(evaluate,`new URL(location.href).searchParams.get('daily')==='1'&&!!window.lumenDiagnostics`,'chip opens the daily');
  results.push({kind:'header-chip'});

@@ -35,6 +35,7 @@ export const nodeSuites=[
  'profile-digest-cas-tests.mjs',
  'profile-digest-read-tests.mjs',
  'background-refresh-999-tests.mjs',
+ 'profile-delta-read-tests.mjs',
  'nickname-tests.mjs',
  'ranking-client-tests.mjs',
  'manual-marking-tests.mjs',
