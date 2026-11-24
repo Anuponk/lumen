@@ -2038,7 +2038,7 @@ async function maybeOfferInstall(){
 }
 
 async function installLumen(){const box=document.getElementById("installOptin"),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);if(ios&&!lumenInstallPrompt){box.hidden=true;localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()));return}if(!lumenInstallPrompt){box.hidden=true;return}const p=lumenInstallPrompt;lumenInstallPrompt=null;await p.prompt();const choice=await p.userChoice;trackLumenEvent("pwa_install_choice",null,{outcome:choice.outcome,qa:qaActive});box.hidden=true;if(choice.outcome==="dismissed")localStorage.setItem(qaKey("lumenInstallLater"),String(Date.now()))}
-const lumenShare=createShareDialog(document,navigator,t,{locale:()=>localePreference?.locale??'fr'});
+const lumenShare=createShareDialog(document,navigator,t,{locale:()=>localePreference?.locale??'fr',hold:()=>menuPause.hold()});
 function shareLumen(origin){void trackInviteClick();void lumenShare.invite(origin)}
 // Bound once for every mode (guest, signed in, QA); the social entry reuses it.
 for(const id of ["shareLumen","mapShareLumen","inviteLumenFriends"]){const button=document.getElementById(id);if(!button)continue;if(id!=="inviteLumenFriends")button.onclick=()=>shareLumen(button);
