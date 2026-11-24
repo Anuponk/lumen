@@ -56,6 +56,10 @@ assert.match(html,/Classements provisoires/);
 assert.match(renderDailyWeek(past),/Semaine terminée : classements figés/);
 assert.match(renderDailyWeek(empty),/Aucun défi du jour joué cette semaine/);
 assert.equal(formatWeekRange('2026-11-30','2026-12-06'),'Semaine du 30 novembre au 6 décembre');
+// #1015 history: each opened day is a button carrying only its date; future days are not.
+const days=(html.match(/data-daily-day="[^"]+"/g)||[]).length,futures=s.days.filter(d=>d.state==='future').length;
+assert.equal(days,7-futures,'one board button per opened day');
+assert.match(html,/<button type="button" class="daily-week-open" data-daily-day="\d{4}-\d{2}-\d{2}" aria-pressed="false" aria-label="[^"]*Voir le classement du/);
 console.log('daily week summary: ok');
 
 const english = {t:createTranslator({locale:'en'}).t,locale:'en'};

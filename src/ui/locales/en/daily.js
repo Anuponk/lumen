@@ -18,6 +18,8 @@ export default Object.freeze({
   'daily.general': "Overall",
   'daily.friends': "My friends",
   'daily.mySky': "My Sky",
+  'daily.viewDay': "See the leaderboard for {date}",
+  'daily.dayBoardTitle': "Leaderboard for {date}",
   'daily.retry': "Retry submission",
   'daily.practiceAgain': "Practice without a rank",
   'daily.myWeek': "My week",

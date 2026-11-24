@@ -2527,17 +2527,41 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
 }
 // « Ta semaine dans les étoiles »: own days only, past weeks navigable.
 let dailyWeekRequest=0;
+// #1015 history: one board read per explicit tap on a day; a final (frozen)
+// board never changes, so it is kept for the session and never re-read.
+const dailyFinalBoards=new Map();let dailyDayRequest=0;
+function closeDailyDay(){
+ const box=document.getElementById('dailyWeekBoard');if(box)box.hidden=true;
+ document.getElementById('dailyWeekModal')?.classList.remove('showing-day');
+ for(const b of document.querySelectorAll('#dailyWeekBody [data-daily-day]'))b.setAttribute('aria-pressed','false');
+}
+async function openDailyDay(day,button){
+ if(button?.getAttribute('aria-pressed')==='true'){closeDailyDay();return}
+ closeDailyDay();button?.setAttribute('aria-pressed','true');
+ const request=++dailyDayRequest,box=document.getElementById('dailyWeekBoard'),panel=document.getElementById('dailyWeekBoardPanel'),status=document.getElementById('dailyWeekStatus');
+ document.getElementById('dailyWeekBoardTitle').textContent=t('daily.dayBoardTitle',{date:dailyDate(day)});
+ document.getElementById('dailyWeekModal').classList.add('showing-day');box.hidden=false;panel.innerHTML='';status.textContent=t('daily.load');
+ try{
+  const board=dailyFinalBoards.get(day)||await dailyClient.board(day);if(request!==dailyDayRequest)return;
+  if(board?.final)dailyFinalBoards.set(day,board);
+  status.textContent='';
+  const show=scope=>{for(const [id,tab] of [['dailyWeekTabGeneral','general'],['dailyWeekTabFriends','friends']])document.getElementById(id).setAttribute('aria-selected',String(tab===scope));panel.innerHTML=renderDailyBoard(board?.[scope],{scope,formatDuration,t})+(board?.final?'':'<p class="daily-week-state">'+escapeSocialHtml(t('daily.provisional'))+'</p>')};
+  document.getElementById('dailyWeekTabGeneral').onclick=()=>show('general');document.getElementById('dailyWeekTabFriends').onclick=()=>show('friends');
+  show('general');
+ }catch(e){if(request!==dailyDayRequest)return;box.hidden=true;status.textContent=dailyErrorMessage(e,t)}
+}
 async function openDailyWeek(today,source='result'){
  const modal=document.getElementById('dailyWeekModal');if(!modal||!today)return;
  const current=weekMonday(today),close=document.getElementById('dailyWeekClose');
  const opener=document.activeElement;
- close.onclick=()=>{modal.hidden=true;opener?.focus?.({preventScroll:true})};
+ close.onclick=()=>{closeDailyDay();modal.hidden=true;opener?.focus?.({preventScroll:true})};
+ document.getElementById('dailyWeekBody').onclick=event=>{const b=event.target.closest('[data-daily-day]');if(b)void openDailyDay(b.dataset.dailyDay,b)};
  const load=async monday=>{
   const request=++dailyWeekRequest,status=document.getElementById('dailyWeekStatus'),body=document.getElementById('dailyWeekBody');
   const nav=weekNavigation(monday,today),prev=document.getElementById('dailyWeekPrev'),next=document.getElementById('dailyWeekNext');
   prev.disabled=!nav.previous;next.disabled=!nav.next;prev.onclick=()=>nav.previous&&load(nav.previous);next.onclick=()=>nav.next&&load(nav.next);
   document.getElementById('dailyWeekRange').textContent=formatWeekRange(monday,addDays(monday,6),{t,locale:dailyLocale()});
-  status.textContent=t('daily.load');
+  closeDailyDay();status.textContent=t('daily.load');
   try{
    const week=await dailyClient.week(monday);if(request!==dailyWeekRequest)return;
    const summary=summarizeWeek(week);

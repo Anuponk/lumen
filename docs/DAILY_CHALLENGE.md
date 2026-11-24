@@ -191,6 +191,13 @@ calendrier dans `daily_puzzles`.
 - **Provisoire / figé** : « Classements provisoires » tant qu'un jour joué
   n'est pas finalisé (fin du jour + 6 h) ; « Semaine terminée : classements
   figés » quand les 7 jours sont finalisés.
+- **Historique (#1015)** : chaque jour ouvert de « Ma semaine » est un bouton ;
+  il affiche à la place des statistiques le classement de ce jour (podium,
+  « Ta position », temps officiel, participants, onglets Général / Mes amis) via
+  `lumen_daily_board(p_day)`, en lecture seule. Une lecture par appui explicite ;
+  un classement figé (`final`) est gardé pour la session et jamais relu. Les
+  récapitulatifs automatiques et le classement hebdomadaire à points attendent
+  la validation du barème.
 - **Navigation** : semaines passées jusqu'à la première semaine du calendrier
   (`DAILY_SCHEDULE_START`), jamais au-delà de la semaine courante.
 - **Mesure** : aucun nouvel événement ni nouvelle collecte. La collecte reste

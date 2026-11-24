@@ -80,9 +80,14 @@ export function renderDailyWeek(summary, {formatDuration=seconds=>seconds+' s',t
     const provisional = day.state === 'completed' && !day.final;
     const detail = [dayName(day.day),t(DAY_LABELS[day.state]),day.score !== null ? formatDuration(day.score) : null,
       day.generalRank ? t('daily.overallRank',{rank:rank(day.generalRank)}) : null, provisional ? t('daily.provisional') : null].filter(Boolean).join(' · ');
+    const inner = '<span class="daily-week-letter">' + escapeDaily(dateForDay(day.day,locale,{weekday:'narrow'})) +
+      '</span><span class="daily-week-mark" aria-hidden="true">' + mark + '</span><span class="daily-sr">' + escapeDaily(detail) + '</span>';
+    // #1015 history: every opened day (played or not) shows its board on demand.
+    const body = day.state === 'future' ? inner
+      : '<button type="button" class="daily-week-open" data-daily-day="' + escapeDaily(day.day) + '" aria-pressed="false" aria-label="' +
+        escapeDaily(detail + ' · ' + t('daily.viewDay',{date:dayName(day.day)})) + '">' + inner + '</button>';
     return '<li class="daily-week-day ' + escapeDaily(day.state) + (day.podium ? ' podium' : '') + (provisional ? ' provisional' : '') +
-      '" title="' + escapeDaily(detail) + '"><span class="daily-week-letter">' + escapeDaily(dateForDay(day.day,locale,{weekday:'narrow'})) +
-      '</span><span class="daily-week-mark" aria-hidden="true">' + mark + '</span><span class="daily-sr">' + escapeDaily(detail) + '</span></li>';
+      '" title="' + escapeDaily(detail) + '">' + body + '</li>';
   };
   const stat = (key,value) => '<div class="daily-week-stat"><dt>' + escapeDaily(t(key)) + '</dt><dd>' + value + '</dd></div>';
   const bestRank = best => {

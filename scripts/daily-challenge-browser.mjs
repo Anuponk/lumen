@@ -238,6 +238,18 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   assert.doesNotMatch(await evaluate(`document.getElementById('dailyWeekBody').textContent`),/Ana|Cy/,'no other player in the weekly summary');
   assert.equal(await evaluate(`document.getElementById('dailyWeekPrev').disabled&&document.getElementById('dailyWeekNext').disabled`),true,'first week: no past, no future');
   assert.equal((await calls(evaluate,'lumen_daily_week'))[0].args.p_day,DAY);
+  // #1015 history: a day opens its board in place of the stats, one read per tap.
+  const boardReads=(await calls(evaluate,'lumen_daily_board')).length;
+  await evaluate(`document.querySelector('#dailyWeekBody [data-daily-day]').click()`);
+  await until(evaluate,`!document.getElementById('dailyWeekBoard').hidden&&document.querySelectorAll('#dailyWeekBoardPanel .daily-board-row').length>0`,'day board');
+  assert.equal((await calls(evaluate,'lumen_daily_board')).length,boardReads+1,'one board read for the tapped day');
+  assert.equal((await calls(evaluate,'lumen_daily_board')).at(-1).args.p_day,DAY);
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#dailyWeekBody .daily-week-stats')).display`),'none','the board replaces the stats');
+  const dayLayout=await evaluate(`(()=>{const c=document.getElementById('dailyWeekClose').getBoundingClientRect();return c.top>=0&&c.bottom<=innerHeight&&document.documentElement.scrollWidth<=innerWidth})()`);
+  assert.equal(dayLayout,true,'day board fits at '+width+'x'+height);
+  if(captureDir&&width!==360)fs.writeFileSync(captureDir+'/daily-history-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
+  await evaluate(`document.querySelector('#dailyWeekBody [data-daily-day]').click()`);
+  assert.equal(await evaluate(`document.getElementById('dailyWeekBoard').hidden`),true,'tapping the day again closes it');
   const weekLayout=await evaluate(`(()=>{const c=document.getElementById('dailyWeekClose').getBoundingClientRect();return c.top>=0&&c.bottom<=innerHeight&&document.documentElement.scrollWidth<=innerWidth})()`);
   assert.equal(weekLayout,true,'week summary fits at '+width+'x'+height);
   if(captureDir&&width!==360)fs.writeFileSync(captureDir+'/daily-week-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));

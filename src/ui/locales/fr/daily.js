@@ -18,6 +18,8 @@ export default Object.freeze({
   'daily.general': "Général",
   'daily.friends': "Mes amis",
   'daily.mySky': "Mon ciel",
+  'daily.viewDay': "Voir le classement du {date}",
+  'daily.dayBoardTitle': "Classement du {date}",
   'daily.retry': "Réessayer l’envoi",
   'daily.practiceAgain': "S’entraîner (non classé)",
   'daily.myWeek': "Ma semaine",
