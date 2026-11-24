@@ -105,11 +105,3 @@ export function renderDailyWeek(summary, {formatDuration=seconds=>seconds+' s',t
     + (highlights.length ? '<ul class="daily-week-highlights">' + highlights.join('') + '</ul>' : '')
     + '<p class="daily-week-state">' + escapeDaily(t(summary.frozen ? 'daily.weekFrozen' : summary.provisional ? 'daily.weekProvisional' : 'daily.weekCurrent')) + '</p>';
 }
-
-// Shares contain only the player's own result and the first-party link.
-export function weekShareText(summary,{t=french} = {}) {
-  const facts = [t('daily.weekShareHeadline',{count:summary.participations,total:summary.days.length}),
-    summary.podiums ? t('daily.weekSharePodiums',{count:summary.podiums}) : null,
-    summary.bestGeneral ? t('daily.weekShareRank',{rank:formatRank(summary.bestGeneral.rank,t)}) : null];
-  return facts.filter(Boolean).join(' · ') + '\n' + t('daily.shareInvite');
-}

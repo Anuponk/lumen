@@ -19,7 +19,7 @@ import {reviewNeighbour,bindReviewNavigation} from './quest-review-navigation.js
 import {attemptTiming,officialResult} from '../campaign/official-time.js';
 import {RANKING_PENALTIES,rankedTime} from '../campaign/ranking.js';
 import {addDays,createDailyClient,dailyQuest} from '../campaign/daily-challenge.js';
-import {dailyErrorMessage,formatDailyDate,formatRemaining,formatRank,renderDailyBoard,renderDailyWeek,formatWeekRange,weekShareText} from './daily-view.js';
+import {dailyErrorMessage,formatDailyDate,formatRemaining,renderDailyBoard,renderDailyWeek,formatWeekRange} from './daily-view.js';
 import {summarizeWeek,weekMonday,weekNavigation} from '../campaign/daily-week.js';
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
 import {createRankingClient} from '../persistence/ranking.js';
@@ -2490,11 +2490,11 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  const closes=Date.parse(board?.closes_at||socialChallenge?.closes_at||'');
  document.getElementById('dailyNext').textContent=Number.isFinite(closes)?t('daily.nextChallenge',{duration:dailyDuration(closes-Date.now())}):'';
  document.getElementById('dailyRetrySubmit').hidden=!pending;
- const share=document.getElementById('dailyShare');share.hidden=training||status!=='completed';
- share.onclick=()=>{const g=board?.general?.me;lumenShare.text({title:t('daily.shareTitle'),text:[t('daily.shareTime',{date:dailyDate(socialChallenge.day),time:formatDuration(score)}),g?.rank?t('daily.rankOutOf',{rank:formatRank(g.rank,t),total:board.general.participants}):null,t('daily.shareInvite')].filter(Boolean).join('\n'),url:lumenShare.discoveryUrl()},share)};
  document.getElementById('dailyTrainAgain').hidden=pending||(!training&&!['completed','abandoned'].includes(status));
  document.getElementById('dailyTrainAgain').onclick=()=>{location.href=dailyUrl(true)};
- document.getElementById('dailyContinue').onclick=()=>{location.href=location.pathname};
+ // #1013: the end of the Défi du jour leads to Mon ciel (the same daily for
+ // everyone: no daily-specific share), never to a campaign grid.
+ document.getElementById('dailyContinue').onclick=()=>{location.href=location.pathname+'?sky=1'};
  document.getElementById('dailyRetrySubmit').onclick=()=>retryPendingDaily(true);
  const weekButton=document.getElementById('dailyWeekFromResult');weekButton.hidden=training||pending||!lumenUser;weekButton.onclick=()=>openDailyWeek(socialChallenge?.day||board?.day,'result');
  if(board)trackDaily('board_viewed',{daily_day:board.day||socialChallenge?.day||null,board_scope:'general',board_final:!!board.final});
@@ -2504,7 +2504,7 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
 let dailyWeekRequest=0;
 async function openDailyWeek(today,source='result'){
  const modal=document.getElementById('dailyWeekModal');if(!modal||!today)return;
- const current=weekMonday(today),close=document.getElementById('dailyWeekClose'),share=document.getElementById('dailyWeekShare');
+ const current=weekMonday(today),close=document.getElementById('dailyWeekClose');
  const opener=document.activeElement;
  close.onclick=()=>{modal.hidden=true;opener?.focus?.({preventScroll:true})};
  const load=async monday=>{
@@ -2512,13 +2512,11 @@ async function openDailyWeek(today,source='result'){
   const nav=weekNavigation(monday,today),prev=document.getElementById('dailyWeekPrev'),next=document.getElementById('dailyWeekNext');
   prev.disabled=!nav.previous;next.disabled=!nav.next;prev.onclick=()=>nav.previous&&load(nav.previous);next.onclick=()=>nav.next&&load(nav.next);
   document.getElementById('dailyWeekRange').textContent=formatWeekRange(monday,addDays(monday,6),{t,locale:dailyLocale()});
-  status.textContent=t('daily.load');share.hidden=true;
+  status.textContent=t('daily.load');
   try{
    const week=await dailyClient.week(monday);if(request!==dailyWeekRequest)return;
    const summary=summarizeWeek(week);
    body.innerHTML=renderDailyWeek(summary,{formatDuration,t,locale:dailyLocale()});status.textContent='';
-   share.hidden=!summary.participations;
-   share.onclick=()=>lumenShare.text({title:t('daily.weekShareTitle'),text:weekShareText(summary,{t}),url:lumenShare.discoveryUrl()},share);
    trackDaily('week_viewed',{week_monday:monday,week_offset:Math.round((Date.parse(monday)-Date.parse(current))/604800000),week_participations:summary.participations,week_frozen:summary.frozen,source});
   }catch(e){if(request!==dailyWeekRequest)return;body.innerHTML='';status.textContent=dailyErrorMessage(e,t)}
  };
@@ -6200,6 +6198,9 @@ async function bootGame(){
  }catch{firstWelcome?.cancel()}
  if(!firstWelcome?.active)maybeShowReturnWelcome();
  const focus=new URL(location.href).searchParams.get('myChallenges');if(focus)openMyChallenges(focus);else loadMyChallenges();
+ // #1013: « Mon ciel » at the end of the Défi du jour opens Mon ciel once.
+ const bootUrl=new URL(location.href);
+ if(bootUrl.searchParams.get('sky')==='1'){bootUrl.searchParams.delete('sky');history.replaceState(history.state,'',bootUrl.pathname+bootUrl.search+bootUrl.hash);if(!socialChallenge&&!firstWelcome?.active)openJourneyMap(true)}
 }
 bootGame();
 

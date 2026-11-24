@@ -22,7 +22,7 @@ export default Object.freeze({
   'social.openSky': "✦ Open My Sky",
   'social.dailyRankings': "Daily Challenge · Everyone and Friends",
   'social.dailyRankingsCopy': "One performance per day, ranked among all players and among your friends.",
-  'social.openDaily': "🏆 Open the Daily Challenge",
+  'social.openDaily': "Open the Daily Challenge",
   'social.week': "My week ✦",
   'social.empty': "Nothing new for now.",
   'social.notificationsGuest': "Notifications from your friends and challenges need an account.",
