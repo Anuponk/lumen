@@ -16,7 +16,8 @@ export function setupAppUpdates({
     let reloading = false;
     let reloadPending = false;
     let reloadTimer = null;
-    let backgroundCheck = null;
+    let workerCheck = null;
+    let buildCheck = null;
     let previousServiceWorkerController = navigator.serviceWorker.controller;
     const updateStatus = (message) => {
       const node = document.getElementById('appUpdateStatus');
@@ -85,11 +86,15 @@ export function setupAppUpdates({
     const checkInBackground = () => {
       applyPendingUpdate();
       if (reloading || !isForegroundOnline()) return;
-      if (!backgroundCheck)
-        backgroundCheck = Promise.all([checkLumenUpdate(), checkPublishedBuild()]).finally(() => {
-          backgroundCheck = null;
+      if (!workerCheck)
+        workerCheck = checkLumenUpdate().finally(() => {
+          workerCheck = null;
         });
-      return backgroundCheck;
+      if (!buildCheck)
+        buildCheck = checkPublishedBuild().finally(() => {
+          buildCheck = null;
+        });
+      return Promise.all([workerCheck, buildCheck]);
     };
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       // First installation already serves this document's modules.

@@ -209,6 +209,28 @@ assert.equal(changedBuild.location.reloads, 1, 'Apply the downloaded release whe
 await changedBuild.events.interval();
 assert.equal(changedBuild.location.reloads, 1, 'Apply only once');
 
+// A slow worker update must not swallow a new foreground metadata check.
+const release = { version: '1.11.1+790', sha: '1'.repeat(40) };
+const slowWorker = fixture({ controller: {}, build: release });
+let finishWorkerUpdate;
+slowWorker.registration.update = () =>
+  new Promise((resolve) => {
+    finishWorkerUpdate = resolve;
+  });
+const startup = slowWorker.events.load();
+for (let i = 0; i < 8; i++) await Promise.resolve();
+release.version = '1.11.1+791';
+release.sha = '2'.repeat(40);
+const foreground = slowWorker.documentEvents.visibilitychange();
+for (let i = 0; i < 8; i++) await Promise.resolve();
+assert.equal(
+  slowWorker.location.reloads,
+  1,
+  'Foreground checks the release while the worker is still updating',
+);
+finishWorkerUpdate();
+await Promise.all([startup, foreground]);
+
 for (const build of [
   { version: '1.11.1+790', sha: '1'.repeat(40) },
   { version: '1.11.1+791', sha: 'invalid' },

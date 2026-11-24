@@ -72,6 +72,7 @@ try{
  assert(requests.some(r=>r.path==='/src/persistence/cloud-profile.js'&&r.revision===2));
  // A release with an identical worker is discovered on a foreground return.
  // The same tab upgrades as soon as the app allows it, without manual reload.
+ await until("performance.getEntriesByName(location.origin+'/build-info.json').length>0");
  const beforeUpdate=await evaluate('performance.timeOrigin');
  await evaluate('window.busy=true');
  revision=3;
