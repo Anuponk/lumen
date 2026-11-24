@@ -4,8 +4,10 @@
 
 The assistance panel sits three levels deep (Mon espace → Données et diagnostic →
 Diagnostic de synchronisation → Assistance) and needs a checkbox plus three buttons;
-on 22 November 2026 a player with a blocked board had never found it. Mon espace now
-shows « Transmettre mon diagnostic » to signed-in, non-QA players. It opens the Lumen
+on 22 November 2026 a player with a blocked board had never found it. Mon espace then
+showed « Transmettre mon diagnostic » to signed-in, non-QA players; since #959 (24/11) it
+is the « Joindre une copie complète de mon compte » option of « Signaler un problème »
+(one help entry), with the same consent text shown when ticked and the same flow. It opens the Lumen
 dialog stating what is sent (progress, badges, results, balance, incident codes,
 backup copies; no password or email), to whom (authorised Lumen support), for how
 long (24 h activation including incidents, seven days retention) and how to withdraw.

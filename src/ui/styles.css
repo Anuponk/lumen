@@ -1824,3 +1824,9 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 /* #1010: technical journal attached to a report (cockpit, read on demand). */
 .admin-feedback-journal summary{cursor:pointer;font-size:12px;color:#9fb3c8;min-height:32px;display:flex;align-items:center}
 .admin-feedback-journal pre{max-height:240px;overflow:auto;font-size:11px;white-space:pre-wrap;word-break:break-word;background:#08131f;border-radius:8px;padding:8px}
+
+/* #959: single help entry — the full account copy is an option of the report form. */
+.beta-full-copy label{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;color:#dceaf6;cursor:pointer}
+.beta-full-copy input{width:20px;height:20px;flex:0 0 auto}
+.beta-full-copy-note{margin:0 0 4px;font-size:12.5px;line-height:1.4;color:#9fb3c8}
+.beta-full-copy[hidden],.beta-full-copy-note[hidden]{display:none}
