@@ -32,6 +32,7 @@ function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginR
   ${done?`localStorage.setItem('lumenDailyDoneV1',${JSON.stringify(JSON.stringify({day:DAY,owner:OWNER}))});`:''}
   window.__dailyCalls=[];let run=${JSON.stringify(run)};let finishFails=${finishFails};
   const now=()=>new Date().toISOString(),closes=new Date(Date.now()+5*3600000).toISOString();
+  let serverDay;window.__setDailyServerDay=(day,serverNow,closesAt)=>{serverDay={day,server_now:serverNow,closes_at:closesAt}};
   const DAY=${JSON.stringify(DAY)};const boardOf=${board.toString()};
   window.__setFinishFails=v=>{finishFails=v};
   window.supabase={createClient:()=>({auth:{
@@ -42,7 +43,7 @@ function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginR
     window.__allRpc=(window.__allRpc||[]).concat(name);
     if(/^lumen_daily_/.test(name))window.__dailyCalls.push({name,args});
     if(name==='lumen_get_internal_capabilities')return {data:${preview}?['daily_preview']:[]};
-    if(name==='lumen_daily_today')return {data:${enabled}?{enabled:true,day:${JSON.stringify(DAY)},quest_id:${JSON.stringify(quest.id)},grid_revision:${quest.gridRevision},closes_at:closes,server_now:now()}:{enabled:false,day:${JSON.stringify(DAY)},server_now:now()}};
+    if(name==='lumen_daily_today')return {data:${enabled}?{enabled:true,day:${JSON.stringify(DAY)},quest_id:${JSON.stringify(quest.id)},grid_revision:${quest.gridRevision},closes_at:closes,server_now:now(),...serverDay}:{enabled:false,day:${JSON.stringify(DAY)},server_now:DAY+'T12:00:00Z'}};
     if(name==='lumen_daily_week'){const mine=run?.status==='completed';
      return {data:{monday:DAY,days:Array.from({length:7},(_,i)=>i===0?(mine?{day:DAY,state:'completed',final:false,run,general_rank:5,general_total:12,friends_rank:1,friends_total:1}:{day:DAY,state:run?.status||'missed',final:false}):{day:'2026-11-'+(23+i),state:'future'})}}}
     if(name==='lumen_daily_board'){const b=boardOf(run);b.closes_at=closes;return {data:b}}
@@ -123,6 +124,27 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await evaluate("document.getElementById('closeMap')?.click()");await evaluate("document.getElementById('openSocial').click()");
  await until(evaluate,"/déjà joué/.test(document.getElementById('socialDailyState')?.textContent||'')",'Social done state');
  await evaluate("document.querySelector('#socialHub [data-social-close], #socialHubClose')?.click()");
+ // A retained campaign page updates the existing entry on foregrounding.
+ await evaluate(`(()=>{
+  window.__sameDailyPage=performance.timeOrigin;
+  window.__sameDailyBoard=document.getElementById('board');
+  window.__setDailyServerDay('2026-11-24','2026-11-24T22:59:58Z','2026-11-24T23:00:00Z');
+  const realNow=Date.now.bind(Date);
+  Date.now=()=>realNow()+6*3600000;
+  Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});
+  document.dispatchEvent(new Event('visibilitychange'));
+ })()`);
+ await until(evaluate,"document.getElementById('dailyChip').dataset.state==='open'",'next daily on foreground return');
+ assert.equal(await evaluate("window.__sameDailyPage===performance.timeOrigin&&window.__sameDailyBoard===document.getElementById('board')"),true,'same document and board across midnight');
+ assert.equal((await calls(evaluate,'lumen_daily_today')).length,2,'one new daily discovery after expiry');
+ assert.equal(await evaluate("document.getElementById('dailyIntro').hidden&&document.getElementById('dailyBanner').hidden"),true);
+ await evaluate("window.__setDailyServerDay('2026-11-25','2026-11-24T23:00:01Z','2026-11-25T23:00:00Z')");
+ await until(evaluate,"/25 novembre/.test(document.getElementById('dailyChip').title)",'new daily on a continuously visible page');
+ assert.equal((await calls(evaluate,'lumen_daily_today')).length,3,'one read when the visible day closes');
+ results.push({kind:'foreground-and-visible-rollover'});
+ await open({send,evaluate},url,{signedIn:true,enabled:true,done:true},{daily:false});
+ await until(evaluate,"!document.getElementById('dailyChip').hidden",'done chip before handoff');
+
  // #1015 (recette 24/11 : 5-6 s par sens) : the daily opens IN the page, reusing the
  // verified session and profile: no reload, no second hydration, screen shown at once.
  const hydrationCalls=['lumen_register_user','lumen_restore_profile','lumen_get_entitlements','lumen_get_internal_capabilities'];

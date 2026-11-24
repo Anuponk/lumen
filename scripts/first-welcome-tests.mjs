@@ -61,12 +61,12 @@ const welcomeCss=fs.readFileSync(new URL('../src/ui/first-welcome.css',import.me
 assert.match(welcomeCss,/\.first-welcome \.intro-story\{background:#a9eef5/,'Watch story is primary');
 const stopped=createIntroTimeline({now:()=>now,onFrame(){},onFinish(){throw Error('Cancelled timeline completed')}});stopped.start();stopped.stop();now+=INTRO_DURATION;stopped.frame();stopped.resume();stopped.frame();
 // Exercise the real extracted worker listener; no source parsing dependency.
-let reloads=0,controllerChanged;
+let reloads=0,controllerChanged,retryReload;
 const worker={controller:null,addEventListener(name,callback){if(name==='controllerchange')controllerChanged=callback;}};
 const location={search:'',hash:'',reload(){reloads++}};
-setupAppUpdates({navigator:{serviceWorker:worker},window:{addEventListener(){}},document:{getElementById(){return null}},location});
+setupAppUpdates({navigator:{serviceWorker:worker},window:{addEventListener(){},setInterval(){},setTimeout(fn){retryReload=fn},clearTimeout(){}},document:{visibilityState:"visible",addEventListener(){},getElementById(){return null}},location});
 worker.controller={id:'first'};controllerChanged();assert.equal(reloads,0,'Initial acquisition preserves welcome');
 location.search='?code=synthetic';worker.controller={id:'update'};controllerChanged();assert.equal(reloads,0,'OAuth exception retained');
-location.search='';controllerChanged();assert.equal(reloads,1,'Actual upgrade reloads');
+location.search='';retryReload();assert.equal(reloads,1,'Pending upgrade reloads after OAuth');
 controllerChanged();assert.equal(reloads,1,'Upgrade reload once');
 console.log('First welcome: fresh/returning/owned/deep-link/storage guards, exact story, boundaries, background pause and cancellation passed');

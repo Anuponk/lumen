@@ -1,4 +1,7 @@
 // Browser updates own only public asset caches, never player storage or Auth.
+const CHECK_INTERVAL_MS = 5 * 60_000;
+const RELOAD_RETRY_MS = 5_000;
+const BUILD_LABEL = /^\d+\.\d+\.\d+\+\d+ \u00b7 [a-f0-9]{7}$/;
 export function setupAppUpdates({
   window,
   document,
@@ -7,9 +10,14 @@ export function setupAppUpdates({
   caches,
   console,
   appVersion,
+  canReload = () => true,
 }) {
   if ('serviceWorker' in navigator) {
-    let lumenReloadingForSW = false;
+    let reloading = false;
+    let reloadPending = false;
+    let reloadTimer = null;
+    let workerCheck = null;
+    let buildCheck = null;
     let previousServiceWorkerController = navigator.serviceWorker.controller;
     const updateStatus = (message) => {
       const node = document.getElementById('appUpdateStatus');
@@ -35,24 +43,77 @@ export function setupAppUpdates({
         return null;
       }
     };
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // First installation already serves this document's modules. Reload only
-      // when replacing a controller, otherwise a fresh welcome is interrupted.
-      const replacingController = !!previousServiceWorkerController;
-      previousServiceWorkerController = navigator.serviceWorker.controller;
-      if (!replacingController) return;
-      if (lumenReloadingForSW) return;
-      lumenReloadingForSW = true;
+    const isForegroundOnline = () =>
+      document.visibilityState === 'visible' && navigator.onLine !== false;
+    const applyPendingUpdate = () => {
+      window.clearTimeout(reloadTimer);
+      reloadTimer = null;
+      if (!reloadPending || reloading || !isForegroundOnline()) return;
       if (
         new URLSearchParams(location.search).has('code') ||
-        location.hash.includes('access_token=')
+        location.hash.includes('access_token=') ||
+        !canReload()
       ) {
-        lumenReloadingForSW = false;
+        reloadTimer = window.setTimeout(applyPendingUpdate, RELOAD_RETRY_MS);
         return;
       }
+      reloading = true;
       location.reload();
+    };
+    const queueReload = () => {
+      reloadPending = true;
+      applyPendingUpdate();
+    };
+    const checkPublishedBuild = async () => {
+      const loaded = appVersion();
+      if (!BUILD_LABEL.test(loaded)) return;
+      try {
+        // The release SHA also changes for a release whose sw.js is byte-identical.
+        const response = await window.fetch('/build-info.json', {
+          cache: 'no-store',
+          signal: AbortSignal.timeout?.(15_000),
+        });
+        if (!response.ok) return;
+        const { version, sha } = await response.json();
+        if (typeof version !== 'string' || typeof sha !== 'string' || !/^[a-f0-9]{40}$/.test(sha))
+          return;
+        const published = version + ' \u00b7 ' + sha.slice(0, 7);
+        if (BUILD_LABEL.test(published) && published !== loaded) queueReload();
+      } catch {
+        // Offline, interrupted or non-JSON deployment response. Retry on the next check.
+      }
+    };
+    const checkInBackground = () => {
+      applyPendingUpdate();
+      if (reloading || !isForegroundOnline()) return;
+      if (!workerCheck)
+        workerCheck = checkLumenUpdate().finally(() => {
+          workerCheck = null;
+        });
+      if (!buildCheck)
+        buildCheck = checkPublishedBuild().finally(() => {
+          buildCheck = null;
+        });
+      return Promise.all([workerCheck, buildCheck]);
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // First installation already serves this document's modules.
+      const controller = navigator.serviceWorker.controller;
+      const replacingController =
+        previousServiceWorkerController &&
+        controller &&
+        controller !== previousServiceWorkerController;
+      previousServiceWorkerController = controller;
+      if (replacingController) queueReload();
     });
-    window.addEventListener('load', () => checkLumenUpdate());
+    if (document.readyState === 'complete') void checkInBackground();
+    else window.addEventListener('load', checkInBackground);
+    document.addEventListener('visibilitychange', checkInBackground);
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) return checkInBackground();
+    });
+    window.addEventListener('online', checkInBackground);
+    window.setInterval(checkInBackground, CHECK_INTERVAL_MS);
     const forceUpdate = document.getElementById('forceAppUpdate');
     if (forceUpdate)
       forceUpdate.onclick = async () => {

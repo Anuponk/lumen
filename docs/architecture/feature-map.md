@@ -29,7 +29,7 @@ or persisted gameplay state. See PRODUCT_ANALYTICS and TESTING.
 
 Maintenance #59/#60/#62: `package.json` owns locked development commands;
 `scripts/format.mjs` checks reviewed `format-scope.json` with syntax comparison.
-`ui/app-updates.js` owns registration/controller changes and manual asset refresh,
+`ui/app-updates.js` owns release detection, deferred reload and manual asset refresh,
 composed once by `game-screen.js` with the live version getter. Current topology
 heads DATA_AND_ARCHITECTURE; October counts remain historical. See TESTING.
 
