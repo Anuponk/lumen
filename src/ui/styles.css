@@ -1834,3 +1834,5 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .beta-full-copy input{width:20px;height:20px;flex:0 0 auto}
 .beta-full-copy-note{margin:0 0 4px;font-size:12.5px;line-height:1.4;color:#9fb3c8}
 .beta-full-copy[hidden],.beta-full-copy-note[hidden]{display:none}
+/* #985: badge completion line and « À compléter » filter, one compact row under the Adventure summary. */
+.adventure-badges{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 6px;font-size:12px;color:#9fb6cc}.adventure-badges-count{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.badge-filter{flex:0 0 auto;min-height:32px;padding:4px 10px;border-radius:16px;border:1px solid #28415b;background:#101d2e;color:#b9cee1;font:inherit;font-size:12px;font-weight:800}.badge-filter[aria-pressed=true]{border-color:#68e7ff;color:#eafaff}.badge-filter[hidden]{display:none}.constellation-card-slot[hidden]{display:none}.badge-filter-empty{grid-column:1/-1;margin:8px 0;text-align:center;font-size:13px;color:#9fb6cc}

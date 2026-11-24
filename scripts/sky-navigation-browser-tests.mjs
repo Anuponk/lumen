@@ -49,6 +49,15 @@ try{
   const fixture=await send('Page.addScriptToEvaluateOnNewDocument',{source:'localStorage.clear();localStorage.setItem("lumenQaProgressV1",JSON.stringify({solved:{0:1,1:1},badges:{historical:1}}));localStorage.setItem("lumenSound","off");localStorage.setItem("lumenTutorialSeen","1");localStorage.setItem("lumenQaTutorialSeen","1");localStorage.setItem("lumenQaTutorialCompletedV1","1");localStorage.setItem("lumenWelcomeDayV1",new Date().toLocaleDateString("en-CA"));localStorage.setItem("lumenInstallLater",String(Date.now()));localStorage.setItem("lumenPushChoice","later");'});
   await send('Page.navigate',{url:url.href});await ready(true);await sleep(1500);await ready();await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:fixture.identifier});await acknowledgeLearningMilestones(evaluate);
   await click('#openSky');const original=await snapshot(),height=await fit();
+  // #985: badge completion is local: adventure line, accessible vs whole catalogue, « À compléter ».
+  assert.match(await evaluate(`document.getElementById('adventureBadges').textContent`),/^Badges \d+\/400 · \d+ %$/,'4 badges x 100 quests in the first Adventure');
+  assert.match(await evaluate(`document.getElementById('adventureBadges').title`),/Aventures accessibles : \d+\/\d+ badges .*Catalogue complet : \d+\/3\s?520 /,'catalogue figure stays separate');
+  await click('#badgeFilter');
+  assert.equal(await evaluate(`document.getElementById('badgeFilter').getAttribute('aria-pressed')`),'true');
+  assert.equal(await evaluate(`[...document.querySelectorAll('#sectorTabs .constellation-card-slot')].filter(s=>!s.hidden).length`),await evaluate(`document.querySelectorAll('#sectorTabs .constellation-card[data-badges-complete="false"]').length`),'only constellations missing a badge stay visible');
+  assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,'no horizontal scroll with the filter');
+  await click('#badgeFilter');
+  assert.equal(await evaluate(`document.getElementById('badgeFilter').getAttribute('aria-pressed')`),'false');
   await cardTextFits();
   const rewardCounts=await evaluate(`Array.from(document.querySelectorAll('#sectorTabs .constellation-card')).map(card=>({counts:card.getAttribute('aria-label').match(new RegExp('([0-9]+)[/]([0-9]+)')).slice(1).map(Number),primary:card.querySelectorAll('.sky-star').length,total:card.querySelectorAll('.quest-secondary-star').length,earned:card.querySelectorAll('.quest-secondary-star.on').length,crowns:card.querySelectorAll('.quest-reward-orbit').length}))`);
   for(const card of rewardCounts){assert.equal(card.total,Math.max(0,card.counts[1]-card.primary));assert.equal(card.earned,Math.max(0,card.counts[0]-card.primary));assert.equal(card.crowns,0);}
