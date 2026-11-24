@@ -71,6 +71,44 @@ courant de la même origine. Lors d’un changement de compte, le client tente
 de couper la réception locale et de retirer l’inscription de cet appareil.
 Le worker de la page principale conserve le traitement historique.
 
+## Réservation et envoi (#1034)
+
+Quatre RPC sont réservées au rôle serveur. Elles utilisent l’horloge de la base.
+La réserve découvre au plus 50 appareils par appel entre 18 h et 18 h 15
+dans leur fuseau IANA. Elle exige les deux drapeaux de disponibilité, une
+clé publique configurée, une grille publiée pour la date de Paris, le
+consentement en cours et un appareil actif. Une partie terminée dans
+`daily_runs` exclut tous les appareils du compte. Le ticket de réserve dure
+90 secondes au plus et ne contient aucun abonnement.
+
+- `lumen_reserve_daily_push_v1` reçoit `p_limit`. Elle renvoie une liste
+  de tickets contenant chacun `reservationId`. Deux opérateurs concurrents
+  ne peuvent pas réserver deux fois le même appareil ou le même endpoint
+  pour un jour de Paris.
+- `lumen_authorize_daily_push_v1` reçoit `p_reservation_id`. Elle vérifie
+  à nouveau la disponibilité, la partie terminée, la révision du consentement
+  et l’abonnement exact. Au premier passage autorisé, elle renvoie
+  `reservationId`, `challengeDay`, `expiresAt`, `locale`, `vapidPublicKey`
+  et `subscription`. L’expiration correspond à la première limite entre
+  18 h 15 sur l’appareil et minuit à Paris.
+- `lumen_finish_daily_push_v1` reçoit `p_reservation_id` et `p_outcome`.
+  Elle conserve le premier résultat terminal parmi `sent`, `expired`,
+  `rejected` et `ambiguous`. Seuls les retours 404 ou 410 du fournisseur
+  justifient `expired`, qui peut supprimer l’abonnement exact utilisé.
+  Un changement des clés ou de l’appareil entre-temps empêche cette purge.
+- `lumen_cleanup_daily_push_v1` marque les tickets de réserve périmés
+  comme ignorés et les envois autorisés sans résultat comme ambigus.
+  Elle purge les tickets de réservation vieux de plus de sept jours
+  de Paris et les appareils sans renouvellement depuis 90 jours.
+
+L’autorisation ne peut fournir les données d’envoi qu’une fois. Si sa réponse
+est perdue ou si le fournisseur ne donne aucun résultat certain, le
+traitement ne réessaie ni l’autorisation ni l’envoi. Un rappel peut alors
+être manqué, en échange d’une protection contre la double notification.
+Aucune clé privée ni donnée brute d’abonnement ne figure dans les tickets
+de réserve. Le journal de déduplication contient seulement des empreintes et
+des métadonnées de réservation. Les deux suivent l’effacement Lumen.
+
 ## Envoi du rappel et mise en service
 
 La fonction Edge `lumen-daily-push-dispatch` utilise le transport Web Push
@@ -96,15 +134,11 @@ isolé et une recette réelle avant l’activation. La PR n’installe aucun job
 
 ## Étapes de livraison
 
-1. Recetter le réglage Compte et son inscription volontaire. L’abonnement
-   historique garde son choix d’origine. Le nouveau rappel reste désactivé
-   pendant le développement du traitement d’envoi.
-2. Terminer le raccordement et la recette d’envoi dans [#1034](https://github.com/Anuponk/lumen/issues/1034). Une requête groupée doit exclure les
-   comptes dont le défi est déjà terminé via `daily_runs` et revérifier le
-   drapeau, le choix et l’appareil avant l’envoi. Réserver une clé unique par
-   appareil et jour de Paris. Limiter les tentatives, purger les abonnements
-   expirés et ne pas réessayer un résultat ambigu. Le service worker doit laisser
-   expirer un rappel et ouvrir le défi courant avec `/?daily=1`.
+1. Valider le réglage Compte, la permission et l'inscription volontaire en
+   environnement isolé. Le nouveau rappel reste désactivé en production.
+2. Raccorder la fonction et le job sur l'environnement de recette
+   ([#1034](https://github.com/Anuponk/lumen/issues/1034)). Vérifier la clé
+   VAPID, l'autorisation juste avant envoi et le retrait des abonnements expirés.
 3. Faire la recette sur TWA Android, PWA iPhone installée et desktop, avec des
    comptes isolés. Vérifier le geste de consentement, les trois langues, la
    révocation, les deux appareils, minuit Paris, le changement de fuseau et une
@@ -128,3 +162,9 @@ hébergé, la séparation compte/appareil, le drapeau coupé, le consentement
 explicite, la révocation avec révision et le masquage des clés dans l’export.
 Le workflow de régression SQL existant applique deux fois la migration sur un
 PostgreSQL isolé. Il ne contacte aucun service de notification.
+
+`scripts/fixtures/daily-push-dispatch-1034.sql` exécute le contrat de réserve
+et de nettoyage. Les cas couvrent le passage à l’heure d’été en France, le
+changement de jour à Paris pendant 18 h à Chicago, la révocation et la
+complétion entre la réserve et l’autorisation, l’échec ambigu et la purge
+conditionnelle. Aucun fournisseur n’est contacté par ce test.
