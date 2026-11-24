@@ -9,6 +9,9 @@ on:
       - 'scripts/lumen_activity_mail*.py'
       - 'scripts/fixtures/*performance-monitor*.sql'
       - 'supabase/migrations/*performance_monitor_948.sql'
+      - 'supabase/migrations/*monitor_settings_947_948.sql'
+      - 'scripts/fixtures/monitor-settings-947-948.sql'
+      - 'scripts/o2switch-activity-mail.sh'
       - '.github/workflows/performance-monitor.yml'
   workflow_dispatch:
 
@@ -48,5 +51,10 @@ jobs:
             scripts/fixtures/performance-monitor-bootstrap.sql \
             supabase/migrations/20261122220000_performance_monitor_948.sql \
             supabase/migrations/20261122220000_performance_monitor_948.sql \
+            scripts/fixtures/performance-monitor.sql \
+            scripts/fixtures/critical-incidents.sql \
+            supabase/migrations/20261124130000_monitor_settings_947_948.sql \
+            supabase/migrations/20261124130000_monitor_settings_947_948.sql \
+            scripts/fixtures/monitor-settings-947-948.sql \
             scripts/fixtures/performance-monitor.sql |
             docker exec -i --user postgres "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1

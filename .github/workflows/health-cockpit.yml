@@ -8,6 +8,7 @@ on:
       - 'scripts/lumen_activity_mail*.py'
       - 'scripts/fixtures/health-cockpit.sql'
       - 'supabase/migrations/*health_cockpit_949.sql'
+      - 'supabase/migrations/*monitor_settings_947_948.sql'
       - '.github/workflows/health-cockpit.yml'
   workflow_dispatch:
 
@@ -45,5 +46,7 @@ jobs:
             supabase/migrations/20261122220000_performance_monitor_948.sql \
             supabase/migrations/20261122230000_health_cockpit_949.sql \
             supabase/migrations/20261122230000_health_cockpit_949.sql \
+            supabase/migrations/20261124130000_monitor_settings_947_948.sql \
+            supabase/migrations/20261124130000_monitor_settings_947_948.sql \
             scripts/fixtures/health-cockpit.sql |
             docker exec -i --user postgres "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1

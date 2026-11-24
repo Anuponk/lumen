@@ -103,6 +103,20 @@ def tick(rpc, send, config, result, now=None):
     return outcome
 
 
+def sample_now(now=None):
+    # #947: one monotonic stream for every scheduler (o2switch every 5 min, GitHub
+    # as an irregular external backstop): wall-clock milliseconds, never a run id.
+    return int((now or datetime.now(timezone.utc)).timestamp() * 1000)
+
+
+def performance_due(env, now=None):
+    # #948 Free-first: the host cron observes incidents every 5 minutes but compares
+    # performance once an hour (first run of the hour); other schedulers every run.
+    if env.get("LUMEN_PERFORMANCE_MONITOR_ENABLED") != "1":
+        return False
+    return env.get("LUMEN_PERFORMANCE_HOURLY") != "1" or (now or datetime.now(timezone.utc)).minute < 5
+
+
 def main(env):
     result = probe()
     print("Lumen public probe:", result)
@@ -110,9 +124,9 @@ def main(env):
         return int(result != "healthy")
     try:
         config = {
-            "performance": env.get("LUMEN_PERFORMANCE_MONITOR_ENABLED") == "1",
+            "performance": performance_due(env),
             "digest": digest_settings(env, require_recipient=False),
-            "sample": int(env["LUMEN_PROBE_SAMPLE"]),
+            "sample": int(env.get("LUMEN_PROBE_SAMPLE") or sample_now()),
             "stall_minutes": int(env.get("LUMEN_CRITICAL_STALL_MINUTES", "15")),
             "failures": int(env.get("LUMEN_CRITICAL_FAILURES", "3")),
             "recoveries": int(env.get("LUMEN_CRITICAL_RECOVERIES", "2")),

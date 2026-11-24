@@ -16,6 +16,9 @@ const healthKeys = Object.freeze({
   paymentMissing: 'admin.health.paymentMissing',
   regressed: 'admin.health.regressed',
   small: 'admin.health.small',
+  confidence_medium: 'admin.health.confidence_medium',
+  confidence_high: 'admin.health.confidence_high',
+  age: 'admin.health.age',
   recentSignups: 'admin.health.recentSignups',
   signupsCount: 'admin.health.signupsCount',
   email: 'admin.health.email',
@@ -55,7 +58,13 @@ export function filterHealthRows(data, { version = '', severity = '' } = {}) {
   };
 }
 
-export function renderHealthCockpit(host, data, { t }) {
+// #947: freshness of the last observation, in whole minutes (null when unknown).
+export function observationAgeMinutes(value, now = Date.now()) {
+  const at = Date.parse(value || '');
+  return Number.isFinite(at) ? Math.max(0, Math.floor((now - at) / 60000)) : null;
+}
+
+export function renderHealthCockpit(host, data, { t, now = Date.now() } = {}) {
   if (!host) return;
   const doc = host.ownerDocument;
   const language = doc.documentElement.lang || 'fr';
@@ -75,10 +84,14 @@ export function renderHealthCockpit(host, data, { t }) {
     return;
   }
   const availability = data.availability?.state;
-  host.append(make('p', t('admin.health.status', {
+  const status = make('p', t('admin.health.status', {
     status: translate(availabilityStates.includes(availability) ? availability : 'unknown'),
     date: date(data.availability?.sampled_at),
-  })));
+  }));
+  const age = observationAgeMinutes(data.availability?.sampled_at, now);
+  if (age !== null) status.append(' · ' + t(healthKeys.age, { count: formatNumber.format(age) }));
+  status.dataset.freshness = availability === 'stale' ? 'stale' : age === null ? 'unknown' : 'fresh';
+  host.append(status);
 
   const filters = make('div');
   filters.className = 'admin-cockpit-filters';
@@ -133,8 +146,10 @@ export function renderHealthCockpit(host, data, { t }) {
       list('performance', rows.performance.map(row => {
         const current = row.version + ' · ' + row.p90 + ' ms (' + row.samples + ')';
         const prior = row.reference ? row.reference + ' · ' + row.reference_p90 + ' ms (' + row.reference_samples + ')' : '—';
-        const reading = row.regression ? translate('regressed')
-          : Math.min(row.samples, row.reference_samples ?? 0) < 20 ? translate('small') : '';
+        // #948: the server states the confidence (floor configurable without redeploy).
+        const reading = [row.regression ? translate('regressed') : '',
+          row.confidence === 'high' ? translate('confidence_high') : row.confidence === 'medium'
+            ? translate('confidence_medium') : translate('small')].filter(Boolean).join(' · ');
         return [metric(row.metric), [row.platform,row.browser,row.network].join(' / '),
           current + ' ↔ ' + prior, reading].filter(Boolean).join(' · ');
       })),

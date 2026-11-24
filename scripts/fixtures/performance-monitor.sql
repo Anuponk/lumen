@@ -32,7 +32,8 @@ begin
 end $$;
 insert into lumen_commands.performance_samples
  (owner_id,sample_day,recorded_at,version,build,platform,browser,network,metrics)
-select md5(i::text)::uuid,current_date-1,now()-interval '1 day','1.11.1+742',742,'desktop','chromium','4g',
+-- #948 (24/11): periods, not single versions: the reference sits before the recent 3 days.
+select md5(i::text)::uuid,current_date-6,now()-interval '6 days','1.11.1+742',742,'desktop','chromium','4g',
  case when i<=19 then '{"load":900,"grid_input":40,"grid_render":80}' else '{"load":900,"grid_render":80}' end::jsonb
 from generate_series(1,20) i
 union all
@@ -41,6 +42,14 @@ select md5(i::text)::uuid,current_date,now(),'1.11.1+743',743,'desktop','chromiu
 from generate_series(21,40) i
 union all
 select md5('45')::uuid,current_date-15,now()-interval '15 days','1.11.1+744',744,'desktop','chromium','4g','{"load":9000}';
+-- #948 (24/11): the floor became a setting (default 5); this scenario keeps proving
+-- the 19-versus-20 boundary by setting it to 20 when the settings table exists.
+do $$
+begin
+ if to_regclass('lumen_ops.monitor_settings') is not null then
+  execute 'update lumen_ops.monitor_settings set perf_min_accounts=20 where id';
+ end if;
+end $$;
 do $$
 begin
  perform set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',true);
@@ -56,7 +65,7 @@ begin
  if public.lumen_observe_performance()<>1 then raise exception 'expected one alert';end if;
  if public.lumen_observe_performance()<>0 then raise exception 'duplicate alert';end if;
  insert into public.lumen_sync_health(user_id,recorded_at,event,app_version)
- select md5(i::text)::uuid,now(),case when i between 21 and 25 then 'hydration_failed' else 'hydration_ready' end,
+ select md5(i::text)::uuid,case when i<=20 then now()-interval '6 days' else now() end,case when i between 21 and 25 then 'hydration_failed' else 'hydration_ready' end,
   case when i<=20 then '1.11.1+742 · aabbccd' else '1.11.1+743 · 0123456' end from generate_series(1,40) i;
  if public.lumen_observe_performance()<>1 then raise exception 'failure-rate increase not alerted';end if;
  update lumen_commands.diagnostic_preferences set enabled=false where user_id=md5('41')::uuid;

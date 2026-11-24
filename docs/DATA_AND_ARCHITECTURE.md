@@ -556,6 +556,8 @@ The [health cockpit and digest contract](OBSERVABILITY_946.md#cockpit-de-santé-
 
 The [performance monitoring contract](OBSERVABILITY_946.md#détection-des-régressions-948) documents a separate opt-in measurement store, retention, and aggregated administration. It uses no save or purchase write paths.
 
+Monitoring thresholds (#947/#948, migration `20261124130000_monitor_settings_947_948.sql`) live in the single-row table `lumen_ops.monitor_settings` (hydration active window, performance floor, ratio and recent period, CHECK-bounded), readable and partially updatable only through the capability-gated `lumen_admin_monitor_settings()` / `lumen_admin_set_monitor_settings(...)`. It holds no player data and is not part of erasure. Observation keeps reading the same sources; performance is compared by period with a confidence level ([runbook](OBSERVABILITY_946.md#réglages-sans-redéploiement-947948)).
+
 The [admin activity mail contract](OBSERVABILITY_946.md#notifications-dactivité-950) describes the read-only projection of Auth and commerce events and its separate delivery queue.
 
 ### Ranking finish diagnostics (#962)

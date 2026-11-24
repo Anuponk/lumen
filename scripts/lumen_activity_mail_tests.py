@@ -40,7 +40,13 @@ class ActivityMailTest(unittest.TestCase):
             **common, "metric": "load", "p90": 1800, "reference_p90": 900,
         })
         self.assertIn("1800 ms contre 900 ms", content)
+        self.assertIn("Confiance : non précisée", content)
         self.assertNotIn("private", content)
+        _, content = format_notice("performance_regression", {
+            **common, "metric": "load", "p90": 1800, "reference_p90": 900, "confidence": "medium",
+        })
+        self.assertIn("Confiance : moyenne", content)
+        self.assertIn("Période récente : jusqu'à 1.11.1+743", content)
         _, content = format_notice("performance_regression", {
             **common, "metric": "hydration_error_rate", "rate": 2500, "reference_rate": 0,
         })
@@ -89,6 +95,35 @@ class ActivityMailTest(unittest.TestCase):
         self.assertEqual([row["p_lease"] for row in completions], ["lease-0", "lease-1", "lease-2"])
         self.assertEqual(delivered[0]["to"], [{"email": "admin@example.test"}])
         self.assertEqual(len(delivered), 3)
+
+    def test_recommended_kinds_mute_signups_but_keep_purchases_and_digest(self):
+        # #950 (24/11): individual signup mails are off by configuration only; the
+        # daily summary still counts signups from auth.users, purchases stay immediate.
+        from pathlib import Path
+        runbook = Path(__file__).parents[1].joinpath("docs/OBSERVABILITY_946.md").read_text(encoding="utf-8")
+        line = next(l for l in runbook.splitlines() if l.startswith("LUMEN_ACTIVITY_KINDS="))
+        kinds = line.split("=", 1)[1].strip("'")
+        self.assertNotIn("signup", kinds.split(","))
+        self.assertTrue({"purchase", "purchase_missing_access", "daily_summary", "incident_open"} <= set(kinds.split(",")))
+        env = {
+            "LUMEN_ACTIVITY_ENABLED": "1", "LUMEN_ACTIVITY_KINDS": kinds,
+            "LUMEN_ACTIVITY_START": "2026-11-21T00:00:00Z",
+            "LUMEN_ACTIVITY_SUPABASE_URL": "https://fixture.supabase.co",
+            "LUMEN_ACTIVITY_SENDER": "app@example.test",
+            "LUMEN_ACTIVITY_RECIPIENT": "activity@example.test",
+            "LUMEN_DAILY_SUMMARY_RECIPIENT": "digest@example.test",
+        }
+        rpc = Mock(side_effect=lambda name, _: True if name == "lumen_enqueue_health_digest" else [])
+        with patch("lumen_activity_mail.clients", return_value=(rpc, None)),              patch("lumen_activity_mail.datetime", wraps=datetime) as clock:
+            clock.now.return_value = datetime(2026, 11, 22, 7, 15, tzinfo=timezone.utc)
+            self.assertEqual(main(env), 0)
+        claim = next(call.args[1] for call in rpc.call_args_list if call.args[0] == "lumen_claim_activity_mail")
+        self.assertNotIn("signup", claim["p_kinds"])
+        self.assertIn("purchase", claim["p_kinds"])
+        self.assertIn("lumen_enqueue_health_digest", [call.args[0] for call in rpc.call_args_list])
+        # Re-enabling signups is one independent category, accepted as such.
+        self.assertIn("signup", configuration({**env, "LUMEN_ACTIVITY_KINDS": "signup," + kinds,
+                                               "LUMEN_ACTIVITY_SUPABASE_KEY": "k", "LUMEN_ACTIVITY_BREVO_KEY": "b"})["kinds"])
 
     def test_worker_queues_paris_digest_before_draining(self):
         env = {
