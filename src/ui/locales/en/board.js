@@ -47,7 +47,7 @@ export default Object.freeze({
   'board.ready': "Tap the board to begin",
   'board.readyCopy': "The timer starts with your first move.",
   'board.difficulty': "Quest difficulty",
-  'board.speedRemaining': "Time left for the Speed badge",
+  'board.speedRemaining': "Speed: real seconds left, penalties not counted",
   'board.excluded': "Excluded cell",
   'board.placed': "Guardian placed",
   'board.territory': "Territory {number}",

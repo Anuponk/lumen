@@ -47,7 +47,7 @@ export default Object.freeze({
   'board.ready': "Touchez la grille pour commencer",
   'board.readyCopy': "Le chrono démarrera au premier geste.",
   'board.difficulty': "Difficulté de la quête",
-  'board.speedRemaining': "Temps restant pour le badge Éclair",
+  'board.speedRemaining': "Rapidité : secondes réelles restantes, hors pénalités",
   'board.excluded': "Emplacement assombri",
   'board.placed': "Gardien positionné",
   'board.territory': "Territoire {number}",
