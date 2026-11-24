@@ -1908,6 +1908,10 @@ refresh only deletes `lumen-assets-*` caches, never player localStorage/IndexedD
 
 Push support should not be considered complete merely because subscription/server code exists: service-worker receipt/display and end-to-end delivery must be verified.
 
+The [daily push foundation](DAILY_PUSH_1032.md) adds account-level consent and
+separately enrolled devices, gated off by default and independent from the
+legacy transport. It adds no profile, progress, rewards or entitlement writes.
+
 ## Security
 The public Supabase client key in browser code must be treated as public. Security must rely on RLS/RPC authorization, not secrecy of browser credentials. Never add service-role keys or other server secrets to this repository.
 

@@ -551,3 +551,14 @@ jobs:
           LUMEN_SQL_FIXTURE: '1'
         run: |
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/admin-version-health-708.sql
+      - name: Verify daily push consent, isolation and hosted grants (#1032)
+        env:
+          PGPASSWORD: isolated-test-only
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/daily-push-1032-bootstrap.sql \
+            -c "alter default privileges in schema public grant execute on functions to anon,authenticated" \
+            -f supabase/migrations/20261124191048_lumen_push_preferences_1032.sql \
+            -f supabase/migrations/20261124191048_lumen_push_preferences_1032.sql \
+            -c "alter default privileges in schema public revoke execute on functions from anon,authenticated" \
+            -f scripts/fixtures/daily-push-1032.sql
