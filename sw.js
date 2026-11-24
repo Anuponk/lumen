@@ -98,6 +98,12 @@ self.addEventListener("fetch",e=>{
   // Only a public, query-free document is eligible. Auth return URLs and
   // private routes must never enter the shell cache or fall back to it.
   const publicShell=['/','/index.html'].includes(url.pathname)&&url.search==='';
+  // #1015: in-app views (Défi du jour, Mon ciel) only add these public flags.
+  // Offline they reuse the cached query-free shell; they are never cached
+  // themselves, and any other parameter (auth return, invitation…) never is.
+  const APP_VIEW_FLAGS=new Set(['daily','training','sky']);
+  const appView=['/','/index.html'].includes(url.pathname)&&url.search!==''&&!url.hash
+   &&[...url.searchParams.keys()].every(key=>APP_VIEW_FLAGS.has(key))&&[...url.searchParams.values()].every(value=>value==='1');
   e.respondWith((async()=>{
    try{
     const response=await fetch(e.request,{cache:'no-store'});
@@ -108,6 +114,7 @@ self.addEventListener("fetch",e=>{
     return response;
    }catch(error){
     if(publicShell){const cached=await caches.open(CACHE).then(cache=>cache.match(e.request)).catch(()=>undefined);if(cached)return withoutHttpCache(cached)}
+    if(appView){const cached=await caches.open(CACHE).then(cache=>cache.match(new URL('/',self.location.origin).href)).catch(()=>undefined);if(cached)return withoutHttpCache(cached)}
     throw error;
    }
   })());
