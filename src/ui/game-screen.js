@@ -4329,7 +4329,7 @@ async function captureLegacyCommandVictory(){
   if(cloudProfileTimer!==null){clearTimeout(cloudProfileTimer);cloudProfileTimer=null}
   legacyCommandInFlight=true;
   victoryStage='command';
-  const committed=await commitLegacyVictoryCommand(client,quest.id,intent.reward.facts,intent.operationId,{userId:ownerId,sessionValid:sameContext});
+  const committed=await commitLegacyVictoryCommand(client,quest.id,intent.reward.facts,intent.operationId,{userId:ownerId,sessionValid:sameContext,base:cloudProfileBaseline});
   rememberLegacyAck(localStorage,ownerId,committed.receipt);
   if(!sameContext())return {handled:true};
   // An asynchronous hint/spend/preference edit must never be lost by installing
