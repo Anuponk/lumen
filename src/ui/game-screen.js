@@ -2438,7 +2438,62 @@ function discoverDailyToday(owner){
 // Only an explicit hand-off (a tap on the chip / Mon ciel / Social entry less than
 // 30 s ago, consumed once) may reuse it; any other load reads the server.
 const DAILY_TODAY_KEY='lumenDailyTodayV1',DAILY_HANDOFF_KEY='lumenDailyHandoffV1',DAILY_TODAY_MARGIN_MS=60000,DAILY_HANDOFF_MS=30000;
-function handOffDaily(training=false){try{sessionStorage.setItem(DAILY_HANDOFF_KEY,String(Date.now()))}catch{}location.href=dailyUrl(training)}
+function handOffDaily(training=false){
+ try{sessionStorage.setItem(DAILY_HANDOFF_KEY,String(Date.now()))}catch{}
+ // #1015 (recette 24/11 : 5-6 s par sens) : recharger la page relançait toute
+ // l'hydratation cloud (4-5 RPC de 1 à 2,5 s sur mobile). Le défi s'ouvre désormais
+ // dans la page, avec la session et le profil déjà vérifiés. Déjà dans un défi :
+ // le chemin historique (rechargement) est conservé.
+ if(socialChallenge||qaActive||typeof history?.pushState!=='function'){location.href=dailyUrl(training);return}
+ void enterDailyInPage(training);
+}
+let dailyTransition=false;
+async function enterDailyInPage(training=false){
+ if(dailyTransition)return;
+ dailyTransition=true;
+ try{
+  pauseGameClock();menuPause?.release?.();clearInterval(timer);
+  const map=document.getElementById('mapModal');if(map&&!map.hidden){map.hidden=true;map.dataset.advanceOnClose='';const tour=document.getElementById('skyTour');if(tour)tour.hidden=true}
+  history.pushState({lumenDaily:true},'',dailyUrl(training));
+  const entered=await bootstrapDailyChallenge();
+  if(entered&&socialChallenge?.daily){restoreCanonicalCampaignAttempt();init();void refreshDailyEntry();void retryPendingDaily();refreshJourney();return}
+  // Unavailable or left from the intro: back to the campaign as a fresh boot would.
+  if(socialChallenge?.daily)exitDailyMode();else stripDailyUrl();
+  resumeCampaignAfterDaily();
+ }finally{dailyTransition=false}
+}
+function stripDailyUrl(){
+ const url=new URL(location.href);for(const key of ['daily','training','sky'])url.searchParams.delete(key);
+ history.replaceState(null,'',url.pathname+url.search+url.hash);
+}
+// Leaves the daily mode exactly as the page restart used to: no daily state,
+// campaign quest chosen from progress, the stored attempt left to restore().
+function exitDailyMode(){
+ for(const id of ['dailyIntro','dailyResultModal','dailyWeekModal']){const el=document.getElementById(id);if(el)el.hidden=true}
+ clearInterval(dailyBannerTimer);dailyBannerTimer=null;
+ const banner=document.getElementById('dailyBanner');if(banner)banner.hidden=true;
+ document.body.classList.remove('daily-mode');
+ socialChallenge=null;canonicalActiveQuest=null;replayMode=false;challengeResumeElapsedMs=0;
+ levelIndex=currentQuestPosition();
+ stripDailyUrl();
+}
+function resumeCampaignAfterDaily(){
+ restoreCanonicalCampaignAttempt();init();resumeHydratedCampaignSelection();
+ void refreshDailyEntry();refreshJourney();
+}
+function leaveDailyToSky(){
+ if(!socialChallenge?.daily){openJourneyMap(true);return}
+ exitDailyMode();resumeCampaignAfterDaily();openJourneyMap(true);
+}
+// Android/browser back from an in-page daily: leave it like the former page did.
+addEventListener('popstate',()=>{
+ const inDailyUrl=new URL(location.href).searchParams.has('daily');
+ if(inDailyUrl&&!socialChallenge?.daily){location.reload();return}
+ if(inDailyUrl||!socialChallenge?.daily)return;
+ const intro=document.getElementById('dailyIntro');
+ if(intro&&!intro.hidden){document.getElementById('dailyLeave')?.click();return}
+ exitDailyMode();resumeCampaignAfterDaily();
+});
 function rememberDailyToday(today){try{sessionStorage.setItem(DAILY_TODAY_KEY,JSON.stringify({today,receivedAt:Date.now()}))}catch{}}
 function cachedDailyToday(){
  try{
@@ -2519,7 +2574,7 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  document.getElementById('dailyTrainAgain').onclick=()=>handOffDaily(true);
  // #1013: the end of the Défi du jour leads to Mon ciel (the same daily for
  // everyone: no daily-specific share), never to a campaign grid.
- document.getElementById('dailyContinue').onclick=()=>{location.href=location.pathname+'?sky=1'};
+ document.getElementById('dailyContinue').onclick=()=>leaveDailyToSky();
  document.getElementById('dailyRetrySubmit').onclick=()=>retryPendingDaily(true);
  const weekButton=document.getElementById('dailyWeekFromResult');weekButton.hidden=training||pending||!lumenUser;weekButton.onclick=()=>openDailyWeek(socialChallenge?.day||board?.day,'result');
  if(board)trackDaily('board_viewed',{daily_day:board.day||socialChallenge?.day||null,board_scope:'general',board_final:!!board.final});
@@ -2603,13 +2658,17 @@ async function bootstrapDailyChallenge(){
  canonicalActiveQuest=quest;levelIndex=quest.legacyIndex??0;replayMode=false;
  trackDaily('opened',{daily_day:today.day,daily_training:params.has('training')});
  document.body.classList.add('daily-mode');renderDailyBanner();clearInterval(dailyBannerTimer);dailyBannerTimer=setInterval(renderDailyBanner,60000);
- let signedIn=false;try{signedIn=!!(await lumenSupabase?.auth?.getSession?.())?.data?.session?.user}catch{}
+ // #1015: the intro appears immediately with a discreet loading line.
+ {const intro=document.getElementById('dailyIntro'),status=document.getElementById('dailyIntroStatus'),start=document.getElementById('dailyStart');
+  document.getElementById('dailyIntroDate').textContent=dailyDate(today.day);status.textContent=t('daily.load');start.hidden=true;
+  document.getElementById('dailyTraining').hidden=true;document.getElementById('dailyShowResult').hidden=true;intro.hidden=false}
+ let signedIn=!!lumenUser;if(!signedIn){try{signedIn=!!(await lumenSupabase?.auth?.getSession?.())?.data?.session?.user}catch{}}
  let board=null,blocked=null;
  if(signedIn){try{board=await dailyClient.board(today.day)}catch(e){blocked=e}}else blocked='account_required';
  const run=board?.my_run||null,done=['completed','abandoned'].includes(run?.status);
  // Training is offered to guests, players without nickname and after the official attempt only.
- if(params.has('training')&&(blocked||done)){renderDailyBanner();return true}
- if(done){renderDailyBanner();showDailyResult({run,board});return true}
+ if(params.has('training')&&(blocked||done)){document.getElementById('dailyIntro').hidden=true;renderDailyBanner();return true}
+ if(done){document.getElementById('dailyIntro').hidden=true;renderDailyBanner();showDailyResult({run,board});return true}
  const intro=document.getElementById('dailyIntro'),status=document.getElementById('dailyIntroStatus'),start=document.getElementById('dailyStart'),training=document.getElementById('dailyTraining');
  document.getElementById('dailyIntroDate').textContent=dailyDate(today.day);
  document.getElementById('dailyIntroRemaining').textContent=t('daily.endsIn',{duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
@@ -2618,7 +2677,7 @@ async function bootstrapDailyChallenge(){
  training.hidden=!blocked;document.getElementById('dailyShowResult').hidden=true;
  intro.hidden=false;(blocked?training:start).focus({preventScroll:true});
  return await new Promise(resolve=>{
-  document.getElementById('dailyLeave').onclick=()=>{location.href=location.pathname};
+  document.getElementById('dailyLeave').onclick=()=>{exitDailyMode();resolve(false)};
   training.onclick=()=>{intro.hidden=true;renderDailyBanner();resolve(true)};
   start.onclick=async()=>{
    start.disabled=true;

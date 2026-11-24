@@ -123,8 +123,23 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await evaluate("document.getElementById('closeMap')?.click()");await evaluate("document.getElementById('openSocial').click()");
  await until(evaluate,"/déjà joué/.test(document.getElementById('socialDailyState')?.textContent||'')",'Social done state');
  await evaluate("document.querySelector('#socialHub [data-social-close], #socialHubClose')?.click()");
- await evaluate("document.getElementById('dailyChip').click()");
- await until(evaluate,`new URL(location.href).searchParams.get('daily')==='1'&&!!window.lumenDiagnostics`,'chip opens the daily');
+ // #1015 (recette 24/11 : 5-6 s par sens) : the daily opens IN the page, reusing the
+ // verified session and profile: no reload, no second hydration, screen shown at once.
+ const hydrationCalls=['lumen_register_user','lumen_restore_profile','lumen_get_entitlements','lumen_get_internal_capabilities'];
+ const before=(await evaluate('window.__allRpc||[]')).length;
+ await evaluate(`window.__samePage=1;document.getElementById('dailyChip').click()`);
+ await until(evaluate,`new URL(location.href).searchParams.get('daily')==='1'&&!document.getElementById('dailyIntro').hidden&&!document.getElementById('dailyStart').hidden`,'chip opens the daily');
+ assert.equal(await evaluate('window.__samePage'),1,'no page reload');
+ const entryRpc=(await evaluate('window.__allRpc||[]')).slice(before);
+ assert.deepEqual(entryRpc.filter(name=>hydrationCalls.includes(name)),[],'no cloud re-hydration on entry: '+JSON.stringify(entryRpc));
+ assert.deepEqual(entryRpc.filter(name=>/^lumen_daily_/.test(name)),['lumen_daily_board'],'one daily read (the board)');
+ // « Quitter » from the intro leaves in place too: campaign back, daily mode gone, no RPC.
+ const beforeExit=(await evaluate('window.__allRpc||[]')).length;
+ await evaluate(`document.getElementById('dailyLeave').click()`);
+ await until(evaluate,`document.getElementById('dailyIntro').hidden&&!document.body.classList.contains('daily-mode')`,'campaign after leaving the daily');
+ assert.deepEqual(await evaluate(`({same:window.__samePage,daily:new URL(location.href).searchParams.has('daily'),banner:document.getElementById('dailyBanner').hidden,cells:document.querySelectorAll('#board .cell').length>0})`),
+  {same:1,daily:false,banner:true,cells:true},'left the daily in place');
+ assert.deepEqual((await evaluate('window.__allRpc||[]')).slice(beforeExit).filter(name=>hydrationCalls.includes(name)||/^lumen_daily_(today|board)$/.test(name)),[],'no RPC on the way back');
  results.push({kind:'header-chip'});
  // #1015: a tap that just read the open challenge hands it to the daily page:
  // no sequential lumen_daily_today before the board; otherwise exactly one read.
@@ -291,8 +306,10 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  assert.equal(await evaluate(`document.getElementById('dailyIntro').hidden`),true,'no second official attempt');
  assert.match(await evaluate(`document.getElementById('dailyResultTime').textContent`),/2:30/);
  // #1013: « Mon ciel » leaves the daily and really lands on Mon ciel, once.
+ // (#1015) Directly opened daily page: « Mon ciel » leaves it in place as well.
  await evaluate(`window.__beforeSky=1;document.getElementById('dailyContinue').click()`);
- await until(evaluate,`window.__beforeSky===undefined&&!!window.lumenDiagnostics`,'« Mon ciel » leaves the daily');
+ await until(evaluate,`!document.getElementById('mapModal').hidden`,'« Mon ciel » leaves the daily');
+ assert.equal(await evaluate('window.__beforeSky'),1,'no reload');
  assert.equal(new URL(await evaluate('location.href')).searchParams.get('daily'),null,'« Mon ciel » leaves the daily mode');
  await open({send,evaluate},url,{signedIn:true,enabled:true,done:true},{daily:false,sky:true});
  await until(evaluate,`!document.getElementById('mapModal').hidden`,'Mon ciel is open');

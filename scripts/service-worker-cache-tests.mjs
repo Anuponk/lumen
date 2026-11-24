@@ -59,6 +59,20 @@ test('public navigation bypasses HTTP cache and activation only retires old Lume
  assert.deepEqual([...f.stores.keys()],[currentCache,'another-feature']);
 });
 
+// #1015 (recette 24/11, mode avion : ERR_FAILED sur /?daily=1): in-app view flags reuse the shell offline.
+test('offline in-app views (Défi du jour, Mon ciel) reuse the cached shell, never sensitive URLs',async()=>{
+ const f=fixture();await f.fetchAsset('/',{mode:'navigate'});
+ const cachedBefore=f.stores.get(currentCache).size;
+ f.setNetwork(()=>{throw Error('offline')});
+ for(const path of ['/?daily=1','/?daily=1&training=1','/?sky=1','/index.html?daily=1'])
+  assert.equal(await (await f.fetchAsset(path,{mode:'navigate'})).text(),'fresh',path+' served offline');
+ for(const path of ['/?daily=1&code=sensitive','/?daily=2','/?challenge=abc','/?daily=1#access_token=x','/?lumen_confirm=1&sky=1'])
+  await assert.rejects(f.fetchAsset(path,{mode:'navigate'}),/offline/,path+' must not fall back');
+ f.setNetwork(()=>new Response('online-view'));
+ assert.equal(await (await f.fetchAsset('/?daily=1',{mode:'navigate'})).text(),'online-view','online: the network answers');
+ assert.equal(f.stores.get(currentCache).size,cachedBefore,'app view URLs are never cached themselves');
+});
+
 test('a cold offline public navigation restores the shell without caching auth or private URLs',async()=>{
  const f=fixture();await f.fetchAsset('/',{mode:'navigate'});
  f.setNetwork(()=>{throw Error('offline')});

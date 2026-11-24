@@ -39,19 +39,30 @@ officiel ou d'un envoi en attente) : il n'ajoute aucun appel et ne change aucune
 règle, l'écran du défi restant seul juge de la tentative unique. #898 : « Mes quêtes » dans Mon ciel et le menu Social (qui en reprend le texte) affichent le même état « déjà joué, voir le classement ». Un lien
 explicite et une tentative déjà en attente gardent leurs chemins existants.
 
-#1015 (performance) : entrer dans le défi recharge la page. Un défi **ouvert** est
-identique pour tous les comptes jusqu'à `closes_at` ; la réponse que la pastille,
-« Mes quêtes » ou Social viennent de lire est donc transmise à la page du défi
-(`sessionStorage` `lumenDailyTodayV1`), uniquement par un **relais explicite**
-(`lumenDailyHandoffV1`, posé par le clic, valable 30 s, consommé une fois).
-L'écran du défi lit alors directement le classement, sans `lumen_daily_today`
-séquentiel, et le même mémo alimente la pastille (plus de seconde lecture).
-Tout autre chargement, un défi fermé ou proche de sa clôture (marge 60 s) relit
-le serveur ; un changement de jour serveur au `begin` invalide le cache. Mesure
-locale (RPC simulés à 250 ms, 390 px, 9 passages) : part réseau de l'entrée p50
-526 → 265 ms, appels `lumen_daily_today` 2 → 0. Le reste du délai ressenti est le
-redémarrage complet de la page (entrée et sortie), à traiter séparément.
-## 2. Modèle de données (migration additive `20261122090000_daily_challenge_882.sql`)
+#1015 (performance, recette du 24/11 : 5 à 6 s par sens sur Android) : l'entrée et
+la sortie rechargeaient la page, donc relançaient toute l'hydratation cloud (session,
+profil, droits, capacités : 4 à 5 RPC de 1 à 2,5 s chacun sur mobile). Depuis le 24/11,
+la pastille, « Mes quêtes » et Social ouvrent le défi **dans la page** (`pushState`
+`?daily=1`), en réutilisant la session et le profil déjà vérifiés et la réponse
+« défi ouvert » transmise par le relais explicite (`lumenDailyTodayV1` /
+`lumenDailyHandoffV1`, 30 s, consommé une fois). L'écran du défi s'affiche
+immédiatement avec « Chargement… » pendant la seule lecture du classement.
+« Mon ciel » (fin du défi), « Quitter » (intro) et le retour Android en sortent aussi
+sans rechargement : état du défi effacé, quête de campagne rétablie comme au
+démarrage (`restoreCanonicalCampaignAttempt`, `resumeHydratedCampaignSelection`),
+aucun RPC. La tentative du défi partage toujours l'emplacement unique de la tentative
+active, exactement comme avant. Le rechargement reste le chemin de secours (déjà dans
+un défi, changement de jour serveur au `begin`, retour avant vers `?daily=1`).
+Mesure (RPC simulés à 1,5 s, médiane des appareils #948) : entrée 3,5 → 1,5 s,
+sortie 0,55 → 0,006 s, sans le redémarrage de page qui s'y ajoutait sur mobile.
+
+Hors ligne (recette du 24/11, `ERR_FAILED` sur `/?daily=1`) : le service worker
+sert la coque publique en cache pour une navigation vers `/` ne portant **que** les
+indicateurs d'affichage `daily`, `training` ou `sky` (valeur `1`) ; ces adresses ne
+sont jamais mises en cache, et tout autre paramètre (retour d'authentification,
+invitation) ne retombe jamais sur la coque. Les lectures du défi (jour, classement)
+restent des appels serveur : hors ligne, le jeu s'ouvre au lieu d'une page d'erreur
+du navigateur, et le défi affiche son message d'indisponibilité existant.
 
 | Objet | Rôle | Propriétaire / effacement |
 |---|---|---|
