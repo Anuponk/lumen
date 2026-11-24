@@ -116,6 +116,7 @@ import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAd
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
 import {createLumenDialog} from './lumen-dialog.js';
 import {createSupportQuickSend} from './support-quick-send.js';
+import {captureNativeVersion} from '../persistence/native-version.js';
 import {playMasteryPrelude} from './mastery-prelude.js';
 import {createMenuPause} from './menu-pause.js';
 import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../persistence/play-billing.js';
@@ -168,6 +169,8 @@ const lumenInstallRequested=consumeInstallRequest(window);
 // #820: read a native e-mail link verdict before the Auth SDK consumes the URL.
 // A failed link's error parameters are removed; a verified recovery link opens
 // the password editor even if the SDK event arrives late.
+// #848: the Android launcher's native version (fragment), read once and removed from the URL.
+const LUMEN_NATIVE_VERSION=captureNativeVersion({location,history,storage:sessionStorage});
 const bootAuthLink=(()=>{try{
  const result=readNativeAuthLinkResult(location.href);
  if(result?.status==='error')scrubNativeAuthLinkError(window);
@@ -350,7 +353,7 @@ function navigationProgress(){return pendingNavigationProfile(lumenProgress,pend
 // quota/storage category only). A local write failure re-sends the last observation.
 let localStorageError=null,lastOutboxObservation=null;
 function outboxDeviceHealth(){const m=measureLocalStorage(localStorage);return {bytes:m.available?m.bytes:undefined,error:localStorageError}}
-function reportOutboxHealth(observation){lastOutboxObservation=observation;return outboxHealthReporter.report({...observation,device:outboxDeviceHealth()})}
+function reportOutboxHealth(observation){lastOutboxObservation=observation;return outboxHealthReporter.report({...observation,device:outboxDeviceHealth(),nativeVersion:LUMEN_NATIVE_VERSION})}
 function noteLocalStorageError(kind){
  if(kind!=='quota'&&kind!=='storage')return;
  localStorageError=kind;
@@ -359,7 +362,10 @@ function noteLocalStorageError(kind){
 window.addEventListener('error',event=>{try{noteLocalStorageError(diagnosticErrorKind(event.error))}catch{}},true);
 window.addEventListener('unhandledrejection',event=>{try{noteLocalStorageError(diagnosticErrorKind(event.reason))}catch{}});
 const outboxHealthReporter=createOutboxHealthReporter({storage:localStorage,send:async(client,payload)=>{
- const result=await client.rpc('lumen_record_outbox_health',payload);if(result.error)throw Error('Observation unavailable');
+ let result=await client.rpc('lumen_record_outbox_health',payload);
+ // #848: a server without the native-version overload keeps the 14-argument observation.
+ if(result.error?.code==='PGRST202'&&'p_native_version' in payload){const {p_native_version,...rest}=payload;result=await client.rpc('lumen_record_outbox_health',rest)}
+ if(result.error)throw Error('Observation unavailable');
 }});
 const syncPresentation=createSyncPresentation({onChange:view=>{
  renderSyncStatus(view);

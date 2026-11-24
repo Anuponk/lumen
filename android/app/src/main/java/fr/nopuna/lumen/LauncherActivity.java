@@ -80,6 +80,22 @@ public final class LauncherActivity extends com.google.androidbrowserhelper.trus
         }
     }
 
+    // #848: tell the web game which native build launched it (see NativeVersion).
+    @Override
+    @SuppressWarnings("deprecation")
+    protected Uri getLaunchingUrl() {
+        Uri url = super.getLaunchingUrl();
+        if (url == null || !NativeVersion.applies(url.getEncodedFragment())) return url;
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            long code = Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode;
+            String fragment = NativeVersion.fragment(info.versionName, code);
+            return fragment == null ? url : url.buildUpon().encodedFragment(fragment).build();
+        } catch (PackageManager.NameNotFoundException | RuntimeException error) {
+            return url;
+        }
+    }
+
     @Override
     protected boolean shouldLaunchImmediately() {
         Intent intent = getIntent();

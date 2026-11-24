@@ -23,14 +23,16 @@ export function createOutboxHealthReporter({storage,send,newId=()=>crypto.random
  let clientId;
  try{clientId=storage.getItem('lumenSyncClientV1');if(!valid(clientId)){clientId=newId();storage.setItem('lumenSyncClientV1',clientId)}}catch{clientId=newId()}
  const sessionId=newId(),startedAt=now();let sequence=0,last=null;
- return {async report({userId,client,platform='other',version='unknown',state='pending',pending=[],failures=0,device=null}){
+ return {async report({userId,client,platform='other',version='unknown',state='pending',pending=[],failures=0,device=null,nativeVersion=null}){
   if(!userId||!client)return;
   const dates=pending.map(e=>Date.parse(e.createdAt)).filter(Number.isFinite);
   const payload={p_expected_user_id:userId,p_client_id:clientId,p_session_id:sessionId,p_started_at:startedAt,
    p_sequence:++sequence,p_platform:platform,p_state:state,p_pending:Math.min(10000,pending.length),
    p_failures:state==='confirmed'?0:Math.min(10000,Math.max(0,Number.isSafeInteger(failures)?failures:0)),
    p_oldest_at:dates.length?new Date(Math.min(...dates)).toISOString():null,
-   p_version:outboxHealthVersion(version),...(outboxStorageFields(device)||{})};
+   p_version:outboxHealthVersion(version),...(outboxStorageFields(device)||{}),
+   // #848: only a launcher-supplied native version; absent otherwise (older servers unchanged).
+   ...(typeof nativeVersion==='string'&&/^[0-9]{1,3}(\.[0-9]{1,3}){1,3}\+[0-9]{1,9}$/.test(nativeVersion)?{p_native_version:nativeVersion}:{})};
   const signature=JSON.stringify({...payload,p_sequence:0});if(last===signature)return;
   last=signature;
   try{await send(client,payload)}catch{if(last===signature)last=null}

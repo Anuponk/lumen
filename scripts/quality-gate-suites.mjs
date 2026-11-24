@@ -98,6 +98,7 @@ export const nodeSuites=[
  'cloud-sync-presentation-tests.mjs',
  'cloud-victory-notification-tests.mjs',
  'cloud-outbox-health-tests.mjs',
+ 'native-version-tests.mjs',
  'cloud-pending-navigation-tests.mjs',
 
  'board-feedback-tests.mjs',
