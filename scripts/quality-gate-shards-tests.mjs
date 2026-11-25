@@ -8,6 +8,27 @@ import {fileURLToPath} from 'node:url';
 import {browserSuites, selectQualityPlan} from './quality-gate-browser-suites.mjs';
 import {assertQualityResults} from './quality-gate-result.mjs';
 
+import {nodeSuites,selectNodeSuites} from './quality-gate-suites.mjs';
+
+test('PR quality delegates only exact duplicate Node suites to required cloud checks', () => {
+ const readWorkflow=name=>readFileSync(new URL('../.github/workflows/'+name+'.yml',import.meta.url),'utf8');
+ const cloudChecks=['cloud-persistence-contract','cloud-reconciliation-matrix'].map(readWorkflow);
+ const requiredSuites=cloudChecks.flatMap(workflow=>[...workflow.matchAll(/^\s*(?:run:\s*)?node scripts\/([^\s]+\.mjs)\s*$/gm)].map(match=>match[1]));
+ const local=nodeSuites;
+ const pr=selectNodeSuites('full',{LUMEN_PR_CLOUD_CHECKS:'true'});
+ const duplicates=local.filter(suite=>requiredSuites.includes(suite));
+ assert.equal(duplicates.length,10);
+ assert.deepEqual(pr,local.filter(suite=>!duplicates.includes(suite)));
+ assert.deepEqual(selectNodeSuites('full',{}),local);
+ assert.deepEqual(selectNodeSuites('landing',{LUMEN_PR_CLOUD_CHECKS:'true'}),['landing-seo-tests.mjs']);
+ assert.match(readWorkflow('quality'),/^\s+LUMEN_PR_CLOUD_CHECKS: 'true'$/m);
+});
+
+test('presentation-only CI schedules one browser runner and full CI schedules three', () => {
+ const workflow=readFileSync(new URL('../.github/workflows/quality.yml',import.meta.url),'utf8');
+ assert.ok(workflow.includes("${{ fromJSON(needs.prepare.outputs.scope == 'landing' && '[1]' || '[1,2,3]') }}"));
+});
+
 test('three CI shards cover the local browser inventory exactly once', () => {
  const local=selectQualityPlan([],{});
  assert.equal(local.phase,'full');

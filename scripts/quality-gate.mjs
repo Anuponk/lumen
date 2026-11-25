@@ -12,7 +12,7 @@ fs.mkdirSync(validationDir,{recursive:true});
 for(const output of [...browserSuites.map(s=>s.output),'ci-quality-summary.json'])
  fs.rmSync(path.join(validationDir,output),{force:true});
 import {browserSuites,selectQualityPlan} from './quality-gate-browser-suites.mjs';
-import {nodeSuites} from "./quality-gate-suites.mjs";
+import {selectNodeSuites} from "./quality-gate-suites.mjs";
 import {runPool} from "./quality-gate-pool.mjs";
 
 const started=[];
@@ -120,7 +120,7 @@ try{
  if(![1,2].includes(workers))throw Error("LUMEN_BROWSER_WORKERS must be 1 or 2");
  console.log("LUMEN quality gate — Node "+process.version+" — "+process.platform);
  console.log("Scope: "+plan.scope);
- if(plan.phase!=='browser')for(const suite of (plan.scope==='landing'?['landing-seo-tests.mjs']:nodeSuites))await run(process.execPath,[path.join('scripts',suite)],{label:suite});
+ if(plan.phase!=='browser')for(const suite of selectNodeSuites(plan.scope))await run(process.execPath,[path.join('scripts',suite)],{label:suite});
  if(plan.phase!=='node'){
   await startServer();
   await runPool(plan.suites.map(({script,output,port})=>()=>runBrowser(script,output,port)),workers);

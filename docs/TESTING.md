@@ -613,7 +613,7 @@ Four assertions fail before the final session guard, while the unchanged-session
 positive control passes. Two further RED cases cover mirror promise rejection
 after the same account/client switches; the current-session rejection remains
 an explicit failure. No obsolete success/failure may be published for the
-new session. Both suites run in the quality gate and Cloud reconciliation matrix.
+new session. Both suites run in the complete local quality gate and in CI under Cloud reconciliation matrix.
 See [the #536 report](validation/2026-10-23-hydration-536.md); physical Android
 and Rachel's actual reward divergence still require separate non-destructive
 verification. All prior cloud, wallet, canonical and SQL regressions are retained.
@@ -630,7 +630,7 @@ Storage inventory/retention: `node scripts/storage-maintenance-tests.mjs` covers
 fixed-category privacy-safe sizes, unavailable stores, independent browser quota,
 read-only existing IndexedDB inventory, exact archival, keep-two retention,
 idempotence, failed open/write/read/commit, conflicting archives and session,
-owner, live-profile and source races. It is mandatory in quality/reconciliation.
+owner, live-profile and source races. It runs in the full local quality gate and under the required reconciliation check in CI.
 The account browser suite exercises the diagnostic and native archival at
 390/1440 pixels, using actual mobile touch and scroll visibility at 390. The
 quota fixture also archives an old original when real localStorage is full.
@@ -1614,7 +1614,7 @@ CAS/read-back failures, invalid shapes and protected command refusal with an
 unchanged pending intent. It checks detected JS/SQL fields against the shared
 contract and runs guest victory output across the actual catalogue.
 
-This gate runs in both the unified quality gate and Cloud reconciliation matrix.
+This gate runs in the full local quality gate and under Cloud reconciliation matrix in CI.
 Its RPC/storage fixtures and bounded source scanners do not replace real SQL,
 real Auth/account-switch/PWA coverage or production-device confirmation. The
 mock projection guard tests client refusal handling, not PostgreSQL equivalence.
@@ -2627,13 +2627,17 @@ denial. The shop displays no count while the server response is unavailable.
 
 **Mechanics:**
 - `prepare` (`quality.yml`) exposes `scope`, and `LUMEN_QUALITY_SCOPE` reaches `quality-gate.mjs` in both the `node` and `browser` jobs.
-- `selectQualityPlan` (`quality-gate-browser-suites.mjs`) puts the page suite alone on shard 1. It rejects unknown scopes.
+- The browser matrix schedules only shard 1 for `landing`. `selectQualityPlan` (`quality-gate-browser-suites.mjs`) runs the page suite there and rejects unknown scopes.
 - `canonical-ledger.yml` and `cloud-reconciliation-matrix.yml` each have a `scope` job. Their required job is skipped for `landing`; a skipped required job reports success.
 - Pushes to `main` always run everything.
 
 **Tests:**
 - `scripts/ci-scope-tests.mjs` (quality gate): classification, fail-closed CLI and wiring.
 - `quality-gate-shards-tests.mjs`: the landing plan.
+
+For full PRs, ten Node suites run in their required cloud workflows only. The
+complete local quality inventory still includes them. See
+[CI efficiency](CI_EFFICIENCY.md#remove-duplicate-pr-execution-1039).
 
 ## Private repository: authenticated deployment checks (#742)
 
