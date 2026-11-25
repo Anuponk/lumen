@@ -1,5 +1,20 @@
 # CI and Codex efficiency — phase 3
 
+## Remove duplicate PR execution (#1039)
+
+The PR Node quality job delegates ten identical suites to the existing required
+checks for the same revision. `cloud-contract` runs the isolated persistence
+regression, and `reconciliation` runs nine recovery and diagnostic suites.
+The PR declaration check still runs on edits. The four separate backup, matrix,
+guest transfer and OAuth steps in `quality.yml` remain distinct. The local
+quality gate and `test:full` retain the complete Node inventory. The shard
+regression verifies the exact overlap with the dedicated workflows and local
+coverage. SQL and exact-SHA publication gates are unaffected.
+
+For presentation-only PRs, CI schedules one browser job instead of scheduling
+two extra jobs without suites. Full PRs still use three jobs, and docs-only PRs
+skip the runtime jobs as before. Measure runner savings from CI job durations.
+
 ## Browser sharding — November 2026 (#750)
 
 Base: `4316d09e2e542bac9f2cf079772a1eede54ce623`. Successful PR runs
@@ -18,7 +33,7 @@ browser results, or explicit documentation-only classification with both runtime
 jobs skipped. Matrix fail-fast is disabled so independent failures retain reports.
 Workflow identity, the final `quality` context, independent cloud/SQL checks,
 documentation classification and optional learning selection remain unchanged.
-Presentation-page scope (#744): `prepare` also exposes `scope` from the base copy of `scripts/ci-scope.mjs`. For a `landing` PR, the `node` job runs formatting, the release tests and `landing-seo-tests`. Browser shard 1 runs `landing-browser-tests` only, and shards 2 and 3 have no suite. `ledger-sql` and `reconciliation` are skipped. See [TESTING](TESTING.md#ci-scope-presentation-page-only-744).
+Presentation-page scope (#744): `prepare` also exposes `scope` from the base copy of `scripts/ci-scope.mjs`. For a `landing` PR, the `node` job runs formatting, the release tests and `landing-seo-tests`. Only browser shard 1 is scheduled and runs `landing-browser-tests`. `ledger-sql` and `reconciliation` are skipped. See [TESTING](TESTING.md#ci-scope-presentation-page-only-744).
 The old schedule/main-only steps were unreachable under the PR-only trigger and
 are removed; no current validation is removed.
 

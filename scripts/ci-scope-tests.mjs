@@ -48,7 +48,7 @@ for(const step of ['Complete cloud profile backup regression','Cross-device clou
  assert.match(quality,new RegExp('name: '+step+"\\n\\s+if: needs\\.prepare\\.outputs\\.scope != 'landing'"),step);
 assert.match(quality,/name: Validate o2switch release script syntax\n\s+run:/,'Release tests still run for the page');
 assert.match(suites,/"script": "landing-browser-tests\.mjs",\n\s+"output": "ci-landing\.json",\n\s+"port": 9261/);
-assert.match(gate,/plan\.scope==='landing'\?\['landing-seo-tests\.mjs'\]:nodeSuites/);
+assert.match(gate,/selectNodeSuites\(plan\.scope\)/);
 for(const [file,job] of [['.github/workflows/canonical-ledger.yml','ledger-sql'],['.github/workflows/cloud-reconciliation-matrix.yml','reconciliation']]){
  const w=read(file);
  assert.match(w,/git show "\$BASE_SHA:scripts\/ci-scope\.mjs" > \/tmp\/ci-scope\.mjs[^\n]*\n\s+node \/tmp\/ci-scope\.mjs \/tmp\/lumen-changed-paths/,file);

@@ -250,3 +250,22 @@ export const nodeSuites=[
  "engine-equivalence.mjs"
 ];
 
+// Those exact suites have their own required checks on the same PR revision.
+const requiredCloudSuites=new Set([
+ 'cloud-persistence-regression-tests.mjs',
+ 'diagnostic-reporter-tests.mjs',
+ 'storage-maintenance-tests.mjs',
+ 'cloud-achievements-quota-recovery-tests.mjs',
+ 'cloud-hydration-mirror-session-tests.mjs',
+ 'cloud-wallet-quota-recovery-tests.mjs',
+ 'cloud-profile-transitions-tests.mjs',
+ 'cloud-achievements-session-recovery-tests.mjs',
+ 'cloud-unsynced-recovery-tests.mjs',
+ 'cloud-local-quota-tests.mjs'
+]);
+
+export function selectNodeSuites(scope,env=process.env){
+ if(scope==='landing')return ['landing-seo-tests.mjs'];
+ if(env.LUMEN_PR_CLOUD_CHECKS==='true')return nodeSuites.filter(suite=>!requiredCloudSuites.has(suite));
+ return nodeSuites;
+}
