@@ -12,6 +12,8 @@ export const nodeSuites=[
  'hint-catalogue-audit-tests.mjs',
  'sales-terms-tests.mjs',
  'daily-streak-pause-tests.mjs',
+ 'daily-push-ui-tests.mjs',
+ 'daily-push-dispatch-tests.mjs',
  'credits-tests.mjs',
  'adventure-access-tests.mjs',
  'mastery-unlock-tests.mjs',
