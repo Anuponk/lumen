@@ -26,6 +26,9 @@ purges/erasure, shared Auth changes, children or Google Play. Follow the
 
 For o2switch, `Deploy Lumen to o2switch` publishes the exact successful `main`
 revision after all three release gates pass, when `O2SWITCH_DEPLOY_ENABLED=true`.
+The verifier uses the stable GitHub repository ID for API lookups and matches it
+against the PR base, PR head and workflow runs. A rename keeps the same identity.
+A missing or different ID cannot satisfy a release gate.
 The server independently checks the gates and the published HTTP SHA, using
 the existing backup/restore and shared publish lock. An authenticated HTTPS
 receiver at `/lumen-release/` (HMAC-SHA256, five-minute expiry) avoids incoming

@@ -16,22 +16,38 @@ spec = importlib.util.spec_from_file_location("ci_status", ROOT / "scripts/o2swi
 ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
 SHA = "a" * 40
+REPOSITORY_ID = 1401296378
 PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "cgv.html", "supprimer-compte.html", "legal-notice.html", "privacy-policy.html", "terms-of-sale.html", "delete-account.html", "decouvrir.html", "discover.html", "descubrir.html", "comment-jouer.html", "how-to-play.html", "como-jugar.html", "apprendre-constellations.html", "learn-constellations.html", "constellations/index.html", "constellations/en.html", "robots.txt", "sitemap.xml")
 
 
 def runs():
     return [dict(id=i, path=".github/workflows/" + name, status="completed", conclusion="success",
                  head_sha=SHA, head_branch="main", event="push",
-                 head_repository={"full_name": "Anuponk/lumen"}) for i, name in enumerate(sorted(ci.REQUIRED), 1)]
+                 head_repository={"id": REPOSITORY_ID, "full_name": "Anuponk/project-menlu"}) for i, name in enumerate(sorted(ci.REQUIRED), 1)]
 
 
 class Gates(unittest.TestCase):
     def test_all_required(self):
         self.assertEqual(ci.check_runs(runs(), SHA)[0], 0)
 
+    def test_repository_identity_is_independent_of_its_name(self):
+        for name in ("Anuponk/lumen", "Anuponk/project-menlu", "Anuponk/renamed-again", None):
+            rows = runs()
+            for row in rows:
+                row["head_repository"]["full_name"] = name
+            self.assertEqual(ci.check_runs(rows, SHA)[0], 0)
+
+    def test_missing_or_wrong_repository_id_fails_closed(self):
+        for repository in (None, {}, {"full_name": "Anuponk/project-menlu"}, {"id": REPOSITORY_ID + 1}):
+            rows = runs()
+            rows[0]["head_repository"] = repository
+            self.assertEqual(ci.check_runs(rows, SHA)[0], 75)
+
     def test_status_check_authenticates_when_a_token_is_present(self):
         seen = []
         def refuse(request, timeout):
+            self.assertTrue(request.full_url.startswith(
+                f"https://api.github.com/repositories/{REPOSITORY_ID}/commits/"))
             seen.append(request.get_header("Authorization"))
             raise OSError("fixture stop")
         original, ci.urllib.request.urlopen = ci.urllib.request.urlopen, refuse
@@ -73,7 +89,7 @@ class Gates(unittest.TestCase):
 
     def test_reject_wrong_sha_pr_branch_or_fork(self):
         for key, value in (("head_sha", "b" * 40), ("head_branch", "dev"), ("event", "pull_request"),
-                           ("head_repository", {"full_name": "someone/lumen"})):
+                           ("head_repository", {"id": REPOSITORY_ID + 1, "full_name": "Anuponk/project-menlu"})):
             rows = runs()
             rows[0][key] = value
             self.assertNotEqual(ci.check_runs(rows, SHA)[0], 0)
@@ -88,8 +104,10 @@ class Gates(unittest.TestCase):
         base = "c" * 40
         merged = SHA
         pr = {"number": 663, "merged_at": "2026-11-12T20:00:00Z",
-              "merge_commit_sha": merged, "base": {"ref": "main", "sha": base},
-              "head": {"sha": head, "repo": {"full_name": ci.REPOSITORY}}}
+              "merge_commit_sha": merged, "base": {"ref": "main", "sha": base, "repo": {"id": REPOSITORY_ID}},
+              "head": {"sha": head, "repo": {"id": REPOSITORY_ID, "full_name": "Anuponk/project-menlu"}}}
+        trusted_run_repository = {"id": REPOSITORY_ID, "full_name": "Anuponk/renamed-again"}
+        run_repository = trusted_run_repository
         def fetch(path):
             if path.endswith("/commits/" + merged):
                 return {"parents": [{"sha": base}]}
@@ -100,18 +118,27 @@ class Gates(unittest.TestCase):
                     {"id": i, "path": ".github/workflows/" + name,
                      "status": "completed", "conclusion": "success",
                      "head_sha": head, "event": "pull_request",
-                     "head_repository": {"full_name": ci.REPOSITORY}}
+                     "head_repository": run_repository}
                     for i, name in enumerate(sorted(ci.PR_REQUIRED), 1)]}
             raise AssertionError(path)
         self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 0)
+        for run_repository in (None, {"full_name": "Anuponk/project-menlu"}, {"id": REPOSITORY_ID + 1}):
+            self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 75)
+        run_repository = trusted_run_repository
+        for field in ("base", "head"):
+            repo = pr[field]["repo"]
+            for bad_repo in (None, {}, {"id": REPOSITORY_ID + 1}):
+                pr[field]["repo"] = bad_repo
+                self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
+            pr[field]["repo"] = repo
         pr["merge_commit_sha"] = "d" * 40
         self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
 
     def test_verified_regular_merge_reuses_green_pr_checks(self):
         base, head, merged = "c" * 40, "b" * 40, SHA
         pr = {"number": 808, "merged_at": "2026-11-18T20:08:07Z",
-              "merge_commit_sha": merged, "base": {"ref": "main", "sha": base},
-              "head": {"sha": head, "repo": {"full_name": ci.REPOSITORY}}}
+              "merge_commit_sha": merged, "base": {"ref": "main", "sha": base, "repo": {"id": REPOSITORY_ID}},
+              "head": {"sha": head, "repo": {"id": REPOSITORY_ID, "full_name": "Anuponk/project-menlu"}}}
         outcome = {"conclusion": "success"}
         parents = [base, head]
         def fetch(path):
@@ -124,7 +151,7 @@ class Gates(unittest.TestCase):
                     {"id": i, "path": ".github/workflows/" + name,
                      "status": "completed", "conclusion": outcome["conclusion"],
                      "head_sha": head, "event": "pull_request",
-                     "head_repository": {"full_name": ci.REPOSITORY}}
+                     "head_repository": {"id": REPOSITORY_ID, "full_name": "Anuponk/project-menlu"}}
                     for i, name in enumerate(sorted(ci.PR_REQUIRED), 1)]}
             raise AssertionError(path)
         self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 0)
