@@ -5,7 +5,8 @@ import re
 import sys
 import urllib.request
 
-REPOSITORY = "Anuponk/lumen"
+REPOSITORY_ID = 1401296378
+REPOSITORY_API = f"/repositories/{REPOSITORY_ID}"
 REQUIRED = {"cloud-reconciliation-matrix.yml", "canonical-ledger.yml"}
 PR_REQUIRED = {"quality.yml", "cloud-reconciliation-matrix.yml", "canonical-ledger.yml", "cloud-persistence-contract.yml", "docs-consistency.yml"}
 
@@ -15,7 +16,7 @@ def check_runs(runs, sha):
     for run in runs:
         if (run.get("head_sha") != sha or run.get("head_branch") != "main"
                 or run.get("event") not in ("push", "workflow_dispatch", "schedule")
-                or run.get("head_repository", {}).get("full_name") != REPOSITORY):
+                or (run.get("head_repository") or {}).get("id") != REPOSITORY_ID):
             continue
         workflow = run.get("path", "").split("@")[0].rsplit("/", 1)[-1]
         if workflow in REQUIRED:
@@ -33,31 +34,34 @@ def check_runs(runs, sha):
 
 def validated_merged_pr(sha, fetch):
     """Reuse successful PR checks only for a verified squash or regular merge."""
-    commit = fetch(f"/repos/{REPOSITORY}/commits/{sha}")
+    commit = fetch(f"{REPOSITORY_API}/commits/{sha}")
     parents = commit.get("parents", [])
     if len(parents) not in (1, 2):
         return 1, "Expected a squash commit (one parent) or merge commit (two parents)"
-    candidates = fetch(f"/repos/{REPOSITORY}/commits/{sha}/pulls")
+    candidates = fetch(f"{REPOSITORY_API}/commits/{sha}/pulls")
     for pr in candidates:
-        if not pr.get("merged_at") or pr.get("base", {}).get("ref") != "main":
+        pr_base = pr.get("base") or {}
+        if (not pr.get("merged_at") or pr_base.get("ref") != "main"
+                or (pr_base.get("repo") or {}).get("id") != REPOSITORY_ID):
             continue
         if pr.get("merge_commit_sha") != sha:
             continue
-        head = pr["head"].get("sha")
-        base = pr.get("base", {}).get("sha")
-        if not head or pr["head"].get("repo", {}).get("full_name") != REPOSITORY:
+        pr_head = pr.get("head") or {}
+        head = pr_head.get("sha")
+        base = pr_base.get("sha")
+        if not head or (pr_head.get("repo") or {}).get("id") != REPOSITORY_ID:
             continue
         # A regular merge must connect the reviewed base and exact PR head.
         # For a squash merge the only parent must be the reviewed base.
         parent_shas = [parent.get("sha") for parent in parents]
         if not base or parent_shas != ([base] if len(parents) == 1 else [base, head]):
             continue
-        runs = fetch(f"/repos/{REPOSITORY}/actions/runs?head_sha={head}&per_page=100").get("workflow_runs", [])
+        runs = fetch(f"{REPOSITORY_API}/actions/runs?head_sha={head}&per_page=100").get("workflow_runs", [])
         latest = {}
         for run in runs:
             if run.get("head_sha") != head or run.get("event") != "pull_request":
                 continue
-            if run.get("head_repository", {}).get("full_name") != REPOSITORY:
+            if (run.get("head_repository") or {}).get("id") != REPOSITORY_ID:
                 continue
             name = run.get("path", "").split("@")[0].rsplit("/", 1)[-1]
             if name not in PR_REQUIRED:
@@ -94,7 +98,7 @@ def main():
         return pr_code
     runs = []
     for page in range(1, 11):
-        batch = fetch(f"/repos/{REPOSITORY}/actions/runs?head_sha={sha}&per_page=100&page={page}")["workflow_runs"]
+        batch = fetch(f"{REPOSITORY_API}/actions/runs?head_sha={sha}&per_page=100&page={page}")["workflow_runs"]
         runs.extend(batch)
         if len(batch) < 100:
             break

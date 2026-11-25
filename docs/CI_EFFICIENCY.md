@@ -15,6 +15,24 @@ For presentation-only PRs, CI schedules one browser job instead of scheduling
 two extra jobs without suites. Full PRs still use three jobs, and docs-only PRs
 skip the runtime jobs as before. Measure runner savings from CI job durations.
 
+### Thirty-day baseline (#1039)
+
+From 26 October through 24 November 2026 inclusive (Paris time), GitHub returned
+5,571 runs, including 4,284 triggered by PRs, 845 by pushes, 332 by other
+workflows, 88 scheduled and 22 manual. A stratified sample of 598 runs estimates
+10,253 cumulative runner minutes, including about 1,089 minutes already spent on
+564 cancelled runs. The 62 rerun attempts accounted for 427 measured minutes.
+These figures describe work done, not guaranteed savings from cancellation
+or deduplication.
+
+The 256 PRs merged into main and 232 distinct main SHAs with a successful o2switch
+Actions run imply about 40 runner minutes per merged PR and 44 per GitHub-verified
+delivery. Both ratios use the entire CI footprint as numerator. Cron-only
+publications are outside this denominator. Only 18 of the 4,284 PR-triggered runs
+carry a direct PR association in the collected payload, so these ratios do not
+attribute minutes to individual PRs or project work. An attribution audit needs
+head/branch history and exact-SHA matches, with unmatched runs reported separately.
+
 ## Browser sharding — November 2026 (#750)
 
 Base: `4316d09e2e542bac9f2cf079772a1eede54ce623`. Successful PR runs
