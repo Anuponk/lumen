@@ -46,6 +46,21 @@ export function celestialScope(progress, quests) {
       .join('|'),
   };
 }
+export function questHasMissingBadges(progress, quest) {
+  const { earned, possible } = celestialScope(progress, [quest]);
+  return earned < possible;
+}
+
+export function nextIncompleteBadgeQuest(quests, played, progress, available) {
+  return quests.find(
+    (quest) =>
+      quest.packId === played.packId &&
+      quest.ordinal > played.ordinal &&
+      questHasMissingBadges(progress, quest) &&
+      available(quest),
+  );
+}
+
 export function captureCelestialProgress(progress, quest, quests) {
   if (!quest) return null;
   return {

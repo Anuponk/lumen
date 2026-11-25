@@ -152,7 +152,12 @@ async function initLumenCloud(){
  // events can arrive while those requests are still in flight.
  model.lumenSupabase.auth.onAuthStateChange((event,session)=>{
    revision++;
-   const previous=model.lumenUser?.id; model.lumenUser=session?.user||null; onAccountChanged({type:event==="PASSWORD_RECOVERY"?"password_recovery":"account",authEvent:event});
+   const previous=model.lumenUser?.id, next=session?.user||null;
+   model.lumenUser=next;
+   // The local language selector already rendered this choice. Do not refresh
+   // profile, daily or capability data for its own metadata acknowledgement.
+   if(event==="USER_UPDATED"&&next&&previous===next.id&&hooks.isLocaleWriteAck?.(next))return;
+   onAccountChanged({type:event==="PASSWORD_RECOVERY"?"password_recovery":"account",authEvent:event});
    // Wait for confirmation before restoring/reloading the profile. Recovery
    // must have time to open its password editor, even with an existing session.
    if(booting)return;
@@ -248,7 +253,7 @@ async function signIn(redirectTo){
 async function requestLumenAuthMail(type,email,password){
  return fetch(LUMEN_SUPABASE_URL+"/functions/v1/lumen-auth-mail",{
   method:"POST",headers:{"content-type":"application/json","apikey":LUMEN_SUPABASE_KEY},
-  body:JSON.stringify({type,email,...(type==="signup"?{password}:{})})
+  body:JSON.stringify({type,email,locale:hooks.getLocale?.()??"fr",...(type==="signup"?{password}:{})})
  });
 }
 async function requestPasswordRecovery(email){

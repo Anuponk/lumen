@@ -65,7 +65,7 @@ export async function verifyHowToPlay({send,evaluate},baseUrl,language='fr'){
 // #769: « Apprendre les constellations en jouant » renders without script, its image
 // loads, the play button is reachable and nothing overflows.
 export async function verifyLearnConstellations({send,evaluate},baseUrl,language='fr'){
- const page=language==='fr'?'/apprendre-constellations.html':'/learn-constellations.html';
+ const page={fr:'/apprendre-constellations.html',en:'/learn-constellations.html',es:'/aprender-constelaciones.html'}[language];
  const previous=await evaluate('performance.timeOrigin');
  await send('Page.navigate',{url:new URL(page,baseUrl).href});
  for(let i=0;i<100;i++){
@@ -83,15 +83,15 @@ export async function verifyLearnConstellations({send,evaluate},baseUrl,language
    constellations:document.getElementById('first-constellations')?.textContent||''}
  })()`,true);
  assert.equal(r.language,language);assert.equal(r.alternate,language==='fr'?'/learn-constellations.html':'/apprendre-constellations.html');assert.equal(r.alternateFocused,true);
- assert.equal(r.h1,language==='fr'?'Apprendre les constellations en jouant':'Learn the constellations as you play');assert.equal(r.images.length>=1&&r.images.every(Boolean),true,'Sky image loads');
+ assert.equal(r.h1,{fr:'Apprendre les constellations en jouant',en:'Learn the constellations as you play',es:'Aprende las constelaciones jugando'}[language]);assert.equal(r.images.length>=1&&r.images.every(Boolean),true,'Sky image loads');
  assert.equal(r.overflow,false,'No horizontal overflow');assert.equal(r.play,'/');assert.equal(r.reachable,true,'Play button reachable');
- assert.equal(r.scripts,0,'No script');assert.match(r.constellations,language==='fr'?/Cassiopée/:/Cassiopeia/);
- return language==='fr'?{learnConstellations:true}:{englishLearnConstellations:true};
+ assert.equal(r.scripts,0,'No script');assert.match(r.constellations,{fr:/Cassiopée/,en:/Cassiopeia/,es:/Casiopea/}[language]);
+ return {fr:{learnConstellations:true},en:{englishLearnConstellations:true},es:{spanishLearnConstellations:true}}[language];
 }
 
 // #855: verify the exact route, responsive layout and local search.
 export async function verifyConstellationDirectory({send,evaluate},baseUrl,{slowMobile,locale="fr"}={}){
- const english=locale==="en";
+ const english=locale==="en",spanish=locale==="es";
  if(slowMobile){
   await send('Network.enable');
   await send('Network.setCacheDisabled',{cacheDisabled:true});
@@ -101,7 +101,7 @@ export async function verifyConstellationDirectory({send,evaluate},baseUrl,{slow
  }
  try{
   const previous=await evaluate('performance.timeOrigin');
-  await send('Page.navigate',{url:new URL(english?'/constellations/en.html':'/constellations',baseUrl).href});
+  await send('Page.navigate',{url:new URL(locale==='fr'?'/constellations':'/constellations/'+locale+'.html',baseUrl).href});
   let ready=false;
   for(let attempt=0;attempt<150;attempt++){
    try{
@@ -115,20 +115,20 @@ export async function verifyConstellationDirectory({send,evaluate},baseUrl,{slow
   assert.equal(ready,true,'Public directory opens at /constellations');
   const report=await evaluate('('+readConstellationDirectory.toString()+')()');
   assert.equal(report.language,locale);
-  assert.equal(report.title,english?'The 88 constellations of the sky':'Les 88 constellations du ciel');
+  assert.equal(report.title,{fr:'Les 88 constellations du ciel',en:'The 88 constellations of the sky',es:'Las 88 constelaciones del cielo'}[locale]);
   assert.equal(report.count,88);
-  assert.equal(report.initialStatus,'88 constellations');
+  assert.equal(report.initialStatus,spanish?'88 constelaciones':'88 constellations');
   assert.equal(report.overflow,false,'Directory has no horizontal overflow');
   assert.equal(report.playPath,'/','The CTA leads to the game');
   assert.equal(report.playReachable,true,'The play link is reachable');
   assert.equal(report.focused,true,'Search is keyboard-focusable');
-  assert.deepEqual(report.accentSearch,[english?'Cassiopeia':'Cassiopée']);
-  assert.deepEqual(report.spaceSearch,[english?'Ursa Major':'Grande Ourse']);
-  assert.equal(report.singleStatus,'1 constellation');
+  assert.deepEqual(report.accentSearch,[{fr:'Cassiopée',en:'Cassiopeia',es:'Casiopea'}[locale]]);
+  assert.deepEqual(report.spaceSearch,[{fr:'Grande Ourse',en:'Ursa Major',es:'Osa Mayor'}[locale]]);
+  assert.equal(report.singleStatus,spanish?'1 constelación':'1 constellation');
   assert.equal(report.noMatches,0);
-  assert.equal(report.emptyStatus,english?'No constellations found':'Aucune constellation trouvée');
+  assert.equal(report.emptyStatus,{fr:'Aucune constellation trouvée',en:'No constellations found',es:'No se ha encontrado ninguna constelación'}[locale]);
   assert.equal(report.resetCount,88);
-  return english?{englishConstellationDirectory:true,englishDirectoryLoadMs:report.loadMs}:{constellationDirectory:true,slowMobile:!!slowMobile,loadMs:report.loadMs};
+  return spanish?{spanishConstellationDirectory:true}:english?{englishConstellationDirectory:true,englishDirectoryLoadMs:report.loadMs}:{constellationDirectory:true,slowMobile:!!slowMobile,loadMs:report.loadMs};
  }finally{
   if(slowMobile){
    await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
@@ -156,9 +156,8 @@ function readConstellationDirectory(){
  input.focus();
  const focused=document.activeElement===input;
  const language=document.documentElement.lang;
- const english=language==='en';
- const accentSearch=search(english?'CASSIOPEIA':'CASSIOPEE');
- const spaceSearch=search(english?'  ursa major ':'  grande ourse ');
+ const accentSearch=search({fr:'CASSIOPEE',en:'CASSIOPEIA',es:'CASIOPEA'}[language]);
+ const spaceSearch=search({fr:'  grande ourse ',en:'  ursa major ',es:'  osa mayor '}[language]);
  const singleStatus=status.textContent;
  const noMatches=search('sanscorrespondance').length;
  const emptyStatus=status.textContent;

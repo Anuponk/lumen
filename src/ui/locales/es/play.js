@@ -1,5 +1,18 @@
 // #945 Textos de juego sacados del código (retos de misión, regreso, sincronización, victoria, amigos).
 export default Object.freeze({
+  'celebration.constellationCount': {"one": "{count} constelación","other": "{count} constelaciones"},
+  'celebration.nextConstellation': "Siguiente constelación",
+  'celebration.viewSky': "Ver Mi cielo",
+  'celebration.skyMastered': "Todo el cielo dominado",
+  'celebration.adventureMastered': "Una aventura dominada por completo",
+  'celebration.skyComplete': "El cielo vuelve a estar unido",
+  'celebration.adventureComplete': "Aventura completada",
+  'celebration.constellationComplete': "¡{name} vuelve a brillar!",
+  'celebration.skyCopy': "Las estrellas que encontraste en el camino brillan juntas.",
+  'celebration.adventureCopy': "Cada estrella recuperada disipó la oscuridad. Juntas devolvieron la vida a este cielo.",
+  'celebration.constellationCopy': "Una nueva luz ha vuelto a su lugar en el cielo.",
+  'celebration.skyBadges': "Has completado todas las misiones. Aún quedan logros por descubrir.",
+  'celebration.progress': "{completed}/{total} misiones · {stars} estrellas",
   'app.unmute': "Activar los sonidos",
   'challenge.bossTitle': "✹ Reto final · {name}",
   'challenge.bossCopy': "Última misión de la constelación.",

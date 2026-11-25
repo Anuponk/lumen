@@ -11,11 +11,32 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { LUMEN_ORIGIN, stripeKey, sessionIdPattern, stripeRequest, syncStripeSession } from '../_shared/lumen-stripe.ts';
 
-function productLabel(productId, kind) {
-  if (kind === 'sky') return 'Lumen · Tout le vrai ciel';
-  if (kind === 'sky_upgrade') return 'Lumen · Tout le vrai ciel (prix ajusté)';
+const checkoutCopy = {
+  fr: {
+    sky: 'Tout le vrai ciel', upgrade: 'Tout le vrai ciel (prix ajusté)', adventure: 'Aventure',
+    waiver: 'Accès immédiat demandé : tu as renoncé à ton droit de rétractation de 14 jours pour ce contenu numérique.',
+    description: 'contenu numérique, accès immédiat.',
+    footer: date => 'Accès immédiat demandé et renonciation au droit de rétractation de 14 jours acceptée le ' + date + ' (art. L221-28, 13° du Code de la consommation). TVA non applicable, art. 293 B du CGI.',
+  },
+  en: {
+    sky: 'The entire real sky', upgrade: 'The entire real sky (adjusted price)', adventure: 'Adventure',
+    waiver: 'You requested immediate access and waived your 14-day right of withdrawal for this digital content.',
+    description: 'digital content, immediate access.',
+    footer: date => 'Immediate access requested and waiver of the 14-day right of withdrawal accepted on ' + date + ' (Art. L221-28, 13° of the French Consumer Code). VAT does not apply under Art. 293 B of the French General Tax Code.',
+  },
+  es: {
+    sky: 'Todo el cielo real', upgrade: 'Todo el cielo real (precio ajustado)', adventure: 'Aventura',
+    waiver: 'Has solicitado el acceso inmediato y has renunciado a tu derecho de desistimiento de 14 días para este contenido digital.',
+    description: 'contenido digital, acceso inmediato.',
+    footer: date => 'Acceso inmediato solicitado y renuncia al derecho de desistimiento de 14 días aceptada el ' + date + ' (art. L221-28, apartado 13.º, del Código de Consumo francés). IVA no aplicable conforme al art. 293 B del Código General de Impuestos francés.',
+  },
+};
+
+function productLabel(productId, kind, copy) {
+  if (kind === 'sky') return 'Lumen · ' + copy.sky;
+  if (kind === 'sky_upgrade') return 'Lumen · ' + copy.upgrade;
   const n = /^real-adventure-(\d{1,3})$/.exec(productId);
-  return 'Lumen · Aventure ' + (n ? Number(n[1]) : productId);
+  return 'Lumen · ' + copy.adventure + ' ' + (n ? Number(n[1]) : productId);
 }
 
 Deno.serve(async (request) => {
@@ -85,20 +106,23 @@ Deno.serve(async (request) => {
     if (begin.superseded) await stripeRequest(fetch, key, 'POST', '/checkout/sessions/' + encodeURIComponent(begin.superseded) + '/expire').catch(() => null);
 
     const meta = { lumen_user_id: user.id, lumen_product_id: begin.product_id, lumen_reservation: begin.reservation_id };
+    const locale = body?.locale === 'es' || body?.locale === 'en' ? body.locale : 'fr';
+    const copy = checkoutCopy[locale];
+    const label = productLabel(begin.product_id, begin.kind, copy);
     const params = {
-      mode: 'payment', locale: 'fr', client_reference_id: user.id,
+      mode: 'payment', locale, client_reference_id: user.id,
       'line_items[0][quantity]': 1,
       'line_items[0][price_data][currency]': begin.currency.toLowerCase(),
       'line_items[0][price_data][unit_amount]': begin.amount_cents,
-      'line_items[0][price_data][product_data][name]': productLabel(begin.product_id, begin.kind),
+      'line_items[0][price_data][product_data][name]': label,
       success_url: LUMEN_ORIGIN + '/?lumen_checkout=success&session_id={CHECKOUT_SESSION_ID}',
       cancel_url: LUMEN_ORIGIN + '/?lumen_checkout=cancel',
       expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
-      'custom_text[submit][message]': 'Accès immédiat demandé : tu as renoncé à ton droit de rétractation de 14 jours pour ce contenu numérique.',
+      'custom_text[submit][message]': copy.waiver,
       // Durable confirmation (CGV §6, L221-13): Stripe emails this invoice with the waiver.
       'invoice_creation[enabled]': 'true',
-      'invoice_creation[invoice_data][description]': productLabel(begin.product_id, begin.kind) + ' — contenu numérique, accès immédiat.',
-      'invoice_creation[invoice_data][footer]': 'Accès immédiat demandé et renonciation au droit de rétractation de 14 jours acceptée le ' + waiverAt.slice(0, 10) + ' (art. L221-28, 13° du Code de la consommation). TVA non applicable, art. 293 B du CGI. Nopuna — Cédric Valente EI, SIRET 897 865 747 00025.',
+      'invoice_creation[invoice_data][description]': label + ' — ' + copy.description,
+      'invoice_creation[invoice_data][footer]': copy.footer(waiverAt.slice(0, 10)) + ' Nopuna — Cédric Valente EI, SIRET 897 865 747 00025.',
     };
     for (const [k, v] of Object.entries(meta)) { params['metadata[' + k + ']'] = v; params['payment_intent_data[metadata][' + k + ']'] = v; }
     const created = await stripeRequest(fetch, key, 'POST', '/checkout/sessions', params, 'lumen-checkout-' + begin.reservation_id);

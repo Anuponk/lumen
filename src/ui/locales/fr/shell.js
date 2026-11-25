@@ -1,4 +1,11 @@
 export default Object.freeze({
+  'credits.attribution': "Données de constellations Western © équipe Stellarium, CC BY-SA ; coordonnées stellaires Hipparcos II (ESA) via CDS VizieR. Projection et adaptation pour Lumen.",
+  'credits.scope': "Les données de figures dérivées de Stellarium restent sous licence CC BY-SA. Cette licence s’applique à ces données uniquement, pas au jeu Lumen.",
+  'credits.stellarium': "Notice de licence Stellarium Western",
+  'credits.licence': "Licence Creative Commons BY-SA",
+  'credits.catalogue': "Catalogue Hipparcos II (CDS VizieR)",
+  'credits.sources': "Sources et transformations documentées",
+
   'page.title': "LUMEN — Puzzle de lumière",
   'account.syncLoading': "Chargement de ton ciel…",
   'account.syncRestore': "Récupération de ta progression.",

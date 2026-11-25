@@ -52,5 +52,12 @@ async function scenario(settings={}) {
   assert.equal(r.status,200);assert.match(r.calls[2].payload.html,/https:\/\/lumen\.nopuna\.fr\/\?lumen_confirm=/);
   assert.doesNotMatch(r.calls[2].payload.html,/123456/);
   r=await scenario({input:{type:'signup',email:'fake@example.test',password:'a-valid-password'}});assert.equal(r.status,200);assert.equal(r.calls[1].payload.password,'a-valid-password');
+  for(const [locale,lang,button] of [['es','es','Restablecer mi contraseña'],['en','en','Reset my password'],['de','fr','Réinitialiser mon mot de passe']]){
+    r=await scenario({input:{type:'recovery',email:'fake@example.test',locale}});
+    assert.equal(r.status,200);
+    assert.equal(r.calls.length,3);
+    assert(r.calls[2].payload.html.includes('lang="'+lang+'"'));
+    assert(r.calls[2].payload.html.includes(button));
+  }
   console.log('Lumen mail regressions passed: signup/recovery, blocked passwordless login, rate limits, provider failures and brand isolation; all requests mocked.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

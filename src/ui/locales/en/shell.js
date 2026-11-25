@@ -1,4 +1,11 @@
 export default Object.freeze({
+  'credits.attribution': "Western constellation data © the Stellarium team, CC BY-SA. Hipparcos II star coordinates (ESA) via CDS VizieR. Projected and adapted for Lumen.",
+  'credits.scope': "Figures derived from Stellarium remain under CC BY-SA. The licence applies only to those data.",
+  'credits.stellarium': "Stellarium Western licence notice",
+  'credits.licence': "Creative Commons BY-SA licence",
+  'credits.catalogue': "Hipparcos II catalogue (CDS VizieR)",
+  'credits.sources': "Documented sources and adaptations",
+
   'page.title': "LUMEN — A puzzle of light",
   'account.syncLoading': "Loading your sky…",
   'account.syncRestore': "Restoring your progress.",

@@ -12,7 +12,7 @@ function context({completed=true,available=true,legacy=null}={}){
  const progress={solved:{70:1},shards:7,badges:{kept:true}},calls=[];
  const c={recordLabel,questPerformanceRecord,formatDuration:seconds=>String(seconds),activeQuest:()=>quests[0],canonicalQuestList:()=>quests,questIsCompleted:(_p,id)=>id==='old-91'&&completed,
   lumenProgress:progress,canonicalQuestAvailable:()=>available,questIsAccessible:()=>available,
-  socialChallenge:null,learningReplayActive:()=>false,startCanonicalQuest:q=>calls.push(q.id),startReplay:i=>calls.push(i),
+  inBadgeJourney:()=>false,socialChallenge:null,learningReplayActive:()=>false,startCanonicalQuest:q=>calls.push(q.id),startReplay:i=>calls.push(i),
   canonicalActiveQuest:null,levelIndex:70,replayMode:true,loadPuzzle:()=>calls.push('load'),refreshJourney:()=>calls.push('refresh')};
  vm.createContext(c);for(const name of ['completedQuestSuccessor','advanceCompletedQuest'])vm.runInContext(functionSource(source,name),c);
  return {c,quests,progress,calls};

@@ -12,7 +12,7 @@ import {createTranslator} from '../src/ui/i18n.js';
 import {constellationDisplayName} from '../src/campaign/constellation-facts.js';
 import {readQuestView} from '../src/campaign/quest-view.js';
 import {PERFORMANCE_BADGES,performanceAttempt,badgeCooldownRemaining} from '../src/campaign/performance.js';
-import {celestialScope} from '../src/ui/celestial-progress.js';
+import {celestialScope,questHasMissingBadges} from '../src/ui/celestial-progress.js';
 import {questPerformanceRecord} from '../src/campaign/quest-rules.js';
 import {discoveryUrl,resultShareData} from '../src/ui/lumen-share.js';
 
@@ -55,7 +55,7 @@ test('live sky badge refresh follows stable card IDs after insertion, reorder an
  const cards=[inserted,legacy].map(q=>{const card={dataset:{questId:q.id},innerHTML:'initial',paused:false};card.classList={toggle:(_,on)=>{card.paused=on}};return card});
  cards.push({dataset:{questId:'removed-content'},innerHTML:'untouched'});
  let refresh,stopped=false,filterRefreshes=0;
- const ctx={...canonical,CONTENT_CONSTELLATIONS,readQuestView,questPerformanceRecord,badgeCooldownRemaining,celestialScope,questCooldownRemaining:q=>badgeCooldownRemaining(questPerformanceRecord(q,ctx.lumenProgress)),lumenProgress:{},
+ const ctx={...canonical,CONTENT_CONSTELLATIONS,readQuestView,questPerformanceRecord,badgeCooldownRemaining,celestialScope,questHasMissingBadges,questCooldownRemaining:q=>badgeCooldownRemaining(questPerformanceRecord(q,ctx.lumenProgress)),lumenProgress:{},
   badgeCooldownRefreshTimer:null,setInterval:fn=>(refresh=fn,1),clearInterval:()=>{stopped=true},
   document:{getElementById:()=>({hidden:false}),querySelectorAll:()=>cards},
   skyNavigation:{selectedConstellation:()=>({canonicalOnly:false}),refreshQuestBadgeFilter:()=>filterRefreshes++},mapConstellation:0,

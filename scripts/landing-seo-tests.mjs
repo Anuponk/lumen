@@ -205,6 +205,11 @@ assert(read('src/landing/constellations.css').length+read('src/landing/constella
 
 const englishDirectory=read('constellations/en.html').replace(/\r\n/g,'\n');
 assert.equal(englishDirectory,renderConstellations('en'));
+const spanishDirectory=read('constellations/es.html').replace(/\r\n/g,'\n');
+assert.equal(spanishDirectory,renderConstellations('es'));
+assert.equal((spanishDirectory.match(/class="constellation-entry"/g)||[]).length,88);
+assert.match(spanishDirectory,/<html lang="es">/);
+assert(read('aprender-constelaciones.html').includes('href="/constellations/es.html"'));
 assert.match(englishDirectory,/<html lang="en">/);
 assert.match(englishDirectory,/<h1>[^<]*88 constellations[^<]*<\/h1>/i);
 assert.match(englishDirectory,/<link rel="canonical" href="https:\/\/lumen\.nopuna\.fr\/constellations\/en\.html">/);
@@ -223,11 +228,11 @@ assert.match(robots,/^User-agent: \*$/m);assert.match(robots,/^Disallow: \/admin
 assert.doesNotMatch(robots,/Disallow: \/src\//,'Never hide the code and styles Google needs to render the game');
 assert.match(robots,/^Sitemap: https:\/\/lumen\.nopuna\.fr\/sitemap\.xml$/m);
 const locs=[...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);
-assert.deepEqual(locs,['https://lumen.nopuna.fr/','https://lumen.nopuna.fr/decouvrir.html','https://lumen.nopuna.fr/discover.html','https://lumen.nopuna.fr/descubrir.html','https://lumen.nopuna.fr/comment-jouer.html','https://lumen.nopuna.fr/how-to-play.html','https://lumen.nopuna.fr/como-jugar.html','https://lumen.nopuna.fr/apprendre-constellations.html','https://lumen.nopuna.fr/learn-constellations.html','https://lumen.nopuna.fr/constellations/','https://lumen.nopuna.fr/constellations/en.html']);
+assert.deepEqual(locs,['https://lumen.nopuna.fr/','https://lumen.nopuna.fr/decouvrir.html','https://lumen.nopuna.fr/discover.html','https://lumen.nopuna.fr/descubrir.html','https://lumen.nopuna.fr/comment-jouer.html','https://lumen.nopuna.fr/how-to-play.html','https://lumen.nopuna.fr/como-jugar.html','https://lumen.nopuna.fr/apprendre-constellations.html','https://lumen.nopuna.fr/learn-constellations.html','https://lumen.nopuna.fr/constellations/','https://lumen.nopuna.fr/constellations/en.html','https://lumen.nopuna.fr/aprender-constelaciones.html','https://lumen.nopuna.fr/constellations/es.html']);
 for(const l of locs){const path=new URL(l).pathname;assert(fs.existsSync(path.endsWith('/')?path.slice(1)+'index.html':path.slice(1)),'Sitemap URL exists: '+l)}
 
 // Every new public file is published and verified by both release paths.
-for(const file of ['decouvrir.html','discover.html','descubrir.html','comment-jouer.html','how-to-play.html','como-jugar.html','apprendre-constellations.html','learn-constellations.html','constellations/index.html','constellations/en.html','robots.txt','sitemap.xml']){
+for(const file of ['decouvrir.html','discover.html','descubrir.html','comment-jouer.html','how-to-play.html','como-jugar.html','apprendre-constellations.html','learn-constellations.html','constellations/index.html','constellations/en.html','aprender-constelaciones.html','constellations/es.html','robots.txt','sitemap.xml']){
  assert.match(read('scripts/o2switch-cron-publish.sh'),new RegExp('PUBLIC_PAGES=\\([^)]*'+file.replace('.','\\.')),'Cron publisher: '+file);
  assert.match(read('scripts/o2switch-safe-release.sh'),new RegExp('for page in [^;]*'+file.replace('.','\\.')),'Safe release: '+file);
  assert.match(read('scripts/o2switch-deploy-tests.py'),new RegExp('PUBLIC_PAGES = \\([^)]*"'+file.replace('.','\\.')+'"'),'Deploy tests: '+file);

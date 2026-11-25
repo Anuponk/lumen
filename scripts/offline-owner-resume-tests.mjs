@@ -24,11 +24,11 @@ test('a prepared offline cold start does not wait for an expired-token network r
   document:{getElementById:id=>{assert.equal(id,'accountSwitchHold');return hold}},persistenceModel:{},lumenSupabase:{},
   bootProfileHold:true,authSessionPending:true,cloudProfileReady:false,cloudProfileFailure:null,lumenUser:null,
   ACCOUNT_SWITCH_HOLD_KEY:'lumenAccountSwitchHoldV1',
-  initLumenCloud:async()=>{events.push('auth')},updateAuthUI:()=>events.push('ui'),resumeOfflineAfterAuth:async id=>events.push('resume:'+id),
+  initLumenCloud:async()=>{events.push('auth')},updateLocaleAccount:()=>events.push('locale'),updateAuthUI:()=>events.push('ui'),resumeOfflineAfterAuth:async id=>events.push('resume:'+id),
   window:{addEventListener:(event,fn,options)=>{assert.equal(event,'online');assert.equal(options.once,true);reconnect=fn}},recordCloudDiagnostic(){},console};
  vm.createContext(withNetworkContext(ctx));
  for(const name of ['initializeAccountSession','offlineStartupUser','hasLocalProfile','accountSwitchPending'])vm.runInContext(functionSource(source,name),ctx);
- await ctx.initializeAccountSession();assert.deepEqual(events,['ui','resume:alice']);assert.equal(ctx.persistenceModel.lumenUser.id,'alice');
+ await ctx.initializeAccountSession();assert.deepEqual(events,['locale','ui','resume:alice']);assert.equal(ctx.persistenceModel.lumenUser.id,'alice');
  ctx.navigator.onLine=true;await reconnect();assert.equal(events.at(-1),'auth');
  ctx.navigator.onLine=false;
  for(const [label,bytes,unverifiedOwner] of [['missing cache',null,undefined],['another stored session',profile,'true']]){

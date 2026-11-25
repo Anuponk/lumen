@@ -24,9 +24,24 @@ To prepare an additional locale, use the French domain catalogue as a template, 
 
 The service worker follows the static imports to cache the French and English catalogues. The French introduction keeps its existing timing, entry choices and accessibility. Guarded teaching steps begin in the game after the introduction.
 
-The public discovery page is available in French at `/decouvrir.html` and in English at `/discover.html`. Both pages have a language link, reciprocal `hreflang` and localized social previews. French is the discovery fallback. The English discovery page links to the English rules and constellation learning guides at `/how-to-play.html` and `/learn-constellations.html`. Both guides link to their French counterpart and use reciprocal `hreflang`. The game and installation links honor the app’s language preference. The constellation directory and legal links identify their French destinations. The pages use the existing captures from the French edition.
+The public discovery and rules pages, constellation guide and directory, legal
+pages, credits and install manifests have FR, EN and ES editions. The manifests
+share one application ID. The FR, EN and ES catalogues are available offline via
+the existing static import cache.
 
-The public game exposes a language selector in the rules dialog. The player can choose Automatic, Français or English. Automatic selects the first supported browser language and falls back to French. The explicit choice is stored on the device. Switching updates the translated text and accessibility labels without rebuilding the board or restarting the attempt. English covers onboarding, board controls, help, verification feedback, the puzzle leaderboard, personal records and the quest review’s performance copy. The Daily Challenge surfaces also use FR/EN, including both leaderboards, the weekly recap and its share text. My Sky navigation, its guided tour and quest cards, sign-in and password recovery, primary sync notices, purchase offers and purchase confirmation also use FR/EN. The controls and successive explanations of logical hints follow the current language, including row and column coordinates. Guided-check conflict explanations, the accessible Guardian label and the quest 11 autonomy prompt also update when the player changes language. Constellation names and the 88 cultural facts follow the selected language in My Sky. The [public constellation directory](../constellations/index.html) also has an [English edition](../constellations/en.html). Adventure names in My Sky, offers and purchase confirmations and the current quest label and difficulty, and the achievement recap after a quest also follow the selected locale. The badge rules, replay cooldown and reward or pending-save labels in the victory view use the same locale. The legal notice, privacy policy, sales terms and account-deletion request have English pages. Some status messages and notification payloads can still appear in French. The remaining translations, cross-device preference, native Android app language, transactional copy, notifications and Play listing are tracked in #754.
+The language selector in Mon espace changes the language without rebuilding the
+board or restarting the attempt. The choice saved to the Lumen account takes
+priority. With no explicit choice, Android 13+ uses the language selected for
+Lumen, then the first supported system language. Earlier versions pass the
+first supported system locale. Web and installed PWA use the ordered browser
+languages and fall back to French. The Android launcher passes its display hint
+in the URL fragment and preserves existing fragments. Detected languages only
+affect the local display.
+
+The Lumen signup and recovery function localises HTML, text and subjects. The
+Stripe Checkout function localises seller copy and receipts. Runtime activation
+follows the Edge deployment process. Play Console metadata is maintained
+independently of the web release.
 
 ### Header and « Mon espace » (#959)
 

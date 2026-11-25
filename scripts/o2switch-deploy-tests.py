@@ -17,7 +17,7 @@ ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ci)
 SHA = "a" * 40
 REPOSITORY_ID = 1401296378
-PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "cgv.html", "supprimer-compte.html", "legal-notice.html", "privacy-policy.html", "terms-of-sale.html", "delete-account.html", "decouvrir.html", "discover.html", "descubrir.html", "comment-jouer.html", "how-to-play.html", "como-jugar.html", "apprendre-constellations.html", "learn-constellations.html", "constellations/index.html", "constellations/en.html", "robots.txt", "sitemap.xml")
+PUBLIC_PAGES = ("mentions-legales.html", "confidentialite.html", "cgv.html", "supprimer-compte.html", "legal-notice.html", "privacy-policy.html", "terms-of-sale.html", "delete-account.html", "decouvrir.html", "discover.html", "descubrir.html", "comment-jouer.html", "how-to-play.html", "como-jugar.html", "apprendre-constellations.html", "learn-constellations.html", "constellations/index.html", "constellations/en.html", "aviso-legal.html", "politica-privacidad.html", "condiciones-venta.html", "eliminar-cuenta.html", "aprender-constelaciones.html", "constellations/es.html", "manifest-en.webmanifest", "manifest-es.webmanifest", "robots.txt", "sitemap.xml")
 
 
 def runs():

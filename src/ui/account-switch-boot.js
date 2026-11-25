@@ -10,9 +10,9 @@ try{
   // uses the same saved preference as the game shell.
   hold.classList.add('localizing');
   hold.hidden=false;
-  import('./i18n.js').then(({createLocalePreference})=>{
+  import('./i18n.js').then(({browserLocalePreference})=>{
    if(!hold.classList.contains('localizing'))return;
-   const preference=createLocalePreference({storage:localStorage,languages:navigator.languages,language:navigator.language});
+   const preference=browserLocalePreference({storage:localStorage,navigator,location,sessionStorage});
    const {t}=preference.translator();
    document.documentElement.lang=preference.locale;
    for(const node of hold.querySelectorAll('[data-game-text]'))node.textContent=t(node.dataset.gameText);

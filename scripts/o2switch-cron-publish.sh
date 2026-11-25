@@ -9,7 +9,7 @@ LOCK="${HOME}/.lumen-cron-publish.lock"
 MODE="${1:---deploy}"
 REQUESTED_SHA="${2:-}"
 # Closed list: historical revisions may predate these public pages.
-PUBLIC_PAGES=(mentions-legales.html confidentialite.html cgv.html supprimer-compte.html legal-notice.html privacy-policy.html terms-of-sale.html delete-account.html decouvrir.html discover.html descubrir.html comment-jouer.html how-to-play.html como-jugar.html apprendre-constellations.html learn-constellations.html constellations/index.html constellations/en.html robots.txt sitemap.xml)
+PUBLIC_PAGES=(mentions-legales.html confidentialite.html cgv.html supprimer-compte.html legal-notice.html privacy-policy.html terms-of-sale.html delete-account.html decouvrir.html discover.html descubrir.html comment-jouer.html how-to-play.html como-jugar.html apprendre-constellations.html learn-constellations.html constellations/index.html constellations/en.html aviso-legal.html politica-privacidad.html condiciones-venta.html eliminar-cuenta.html aprender-constelaciones.html constellations/es.html manifest-en.webmanifest manifest-es.webmanifest robots.txt sitemap.xml)
 [[ $# -le 2 && ( "$MODE" == "--deploy" || "$MODE" == "--dry-run" ) ]] || { echo "Usage: $0 [--deploy|--dry-run] [SHA]"; exit 2; }
 [[ -z "$REQUESTED_SHA" || "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid requested SHA" >&2; exit 2; }
 for cmd in git python3 flock cp tar mktemp curl cmp install; do command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 1; }; done

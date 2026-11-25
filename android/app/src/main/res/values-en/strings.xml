@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_title">Android update</string>
+    <string name="update_required_title">Android update required</string>
+    <string name="update_recommended">A new Android version of Lumen is available on Google Play. Download it now or keep playing.</string>
+    <string name="update_required">Update Lumen to keep playing on Android. Install the new version from Google Play without uninstalling Lumen.</string>
+    <string name="update_ready">The update is ready. Install it and reopen Lumen.</string>
+    <string name="update_store_advisory">This Android version is outdated and Lumen cannot check for an update. Open its Google Play listing or keep playing for now.</string>
+    <string name="update_store_unavailable">The Lumen listing on Google Play could not be opened.</string>
+    <string name="update_action">Update</string>
+    <string name="update_restart">Install</string>
+    <string name="update_later">Later</string>
+    <string name="update_store">Open Google Play</string>
+    <string name="update_exit">Exit</string>
+</resources>

@@ -115,9 +115,9 @@ test('ranking review mode reads the board only: no flush, neutral copy, no anima
 
 test('wiring: completed tiles open the review; replay keeps the cooldown entry', () => {
   const source = fs.readFileSync('src/ui/game-screen.js', 'utf8');
-  assert.equal(source.split('if(solved){openQuestReview(quest);return}').length - 1, 2, 'Both Mon ciel tile paths open the review');
+  assert.equal((source.match(/if\(solved\)\{openQuestReview\(quest(?:,\{filtered\})?\);return\}/g)||[]).length, 2, 'Both Mon ciel tile paths open the review');
   assert.doesNotMatch(source, /if\(solved\)\{startReplay\(legacy\);return\}/);
-  assert.match(source, /retry\.onclick=\(\)=>\{if\(!reviewQuestAvailable\(quest\)\)return;closeQuestReview\(\);if\(quest\.legacyIndex===null\)startCanonicalQuest\(quest\);else if\(completed\)startReplay\(quest\.legacyIndex\);else startCelestialQuest\(quest\)\}/);
+  assert.match(source, /retry\.onclick=\(\)=>\{if\(!reviewQuestAvailable\(quest\)\)return;closeQuestReview\(\);if\(quest\.legacyIndex===null\)startCanonicalQuest\(quest,\{filtered\}\);else if\(completed\)startReplay\(quest\.legacyIndex,filtered\);else startCelestialQuest\(quest,filtered\)\}/);
   assert.match(source, /if\(summary\.rank&&!victoryFacts\.review\)victoryCelebration\.amplify/);
   const review = source.slice(source.indexOf('function openQuestReview('), source.indexOf('function closeQuestReview('));
   assert.doesNotMatch(review, /victoryCelebration\.start|celestialCelebration\.start|showCelestialVictory|saveProgress|recordVictory|rankingClient\.stage/, 'A review starts no effect and writes nothing');

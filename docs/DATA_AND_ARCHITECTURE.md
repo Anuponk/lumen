@@ -548,6 +548,26 @@ view changes. Acceptance creates no client session and does not authorize
 progression writes. The existing server limiter governs mail requests.
 
 
+## Account language preference (#1021)
+
+The Lumen locale selector keeps guest choices in the existing device key
+`lumen.locale`. Once signed in, a selected mode is cached by account ID and
+synchronised in Supabase Auth user metadata under `lumen_locale`. The metadata
+has a supported mode and a logical timestamp derived from the device clock.
+The automatic mode follows each device independently. An older session value
+cannot replace a newer local pending choice, and an account transition reads
+only the active owner's cache. Existing unsynchronised device choices remain
+the local fallback for accounts without a recorded choice.
+
+Reads use the existing Auth session, with no new RPC, poll, table or migration.
+Explicit changes use one Auth update per saved choice, with consecutive pending
+choices coalesced and failed offline changes retried at a network or Auth event.
+The metadata is user-editable and serves only as presentation data. It conveys no
+authorization and is separate from progress, profile reconciliation and receipts.
+Clock skew can affect conflict ordering if two offline devices edit the same
+preference before reconnecting. The selector remains available to restore the
+desired choice.
+
 ## Cloud persistence contract
 
 The [critical-alert contract](OBSERVABILITY_946.md#alertes-critiques-947) reads existing sync observations and the payment access projection, and records only operational incident summaries.

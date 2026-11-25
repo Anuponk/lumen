@@ -77,7 +77,7 @@ assert.match(gameScreen,/button\.disabled=!available/);
 assert.match(gameScreen,/if\(solved\)\{openQuestReview\(quest\);return\}/);
 // #784: completed legacy quests keep the replay/cooldown entry; an unfinished
 // reviewed quest uses the normal campaign entry, never a fabricated replay.
-assert.match(gameScreen,/if\(quest\.legacyIndex===null\)startCanonicalQuest\(quest\);else if\(completed\)startReplay\(quest\.legacyIndex\);else startCelestialQuest\(quest\)/);
+assert.match(gameScreen,/if\(quest\.legacyIndex===null\)startCanonicalQuest\(quest,\{filtered\}\);else if\(completed\)startReplay\(quest\.legacyIndex,filtered\);else startCelestialQuest\(quest,filtered\)/);
 assert.match(gameScreen,/if\(canonicalActiveQuest\)\{await celebrateCanonicalSuccess\(\);return\}/);
 assert.match(gameScreen,/canonicalQuestAvailable\(quest\)/);
 assert.match(gameScreen,/startCanonicalQuest\(quest\)/);
@@ -104,7 +104,7 @@ assert.match(gameScreen,/const legacy=quest\.legacyIndex,solved=legacy!==null\?!
 assert.match(gameScreen,/function historicalContinuationAllowed\(index\)/);
 assert.match(gameScreen,/function activeQuest\(\)\{return canonicalActiveQuest\?\?canonicalQuestForLegacy\(levelIndex\)\}/);
 assert.match(gameScreen,/const played=activeQuest\(\),targetConstellationId=played\.constellationId/);
-assert.match(gameScreen,/openJourneyMap\(true,\{detail:true,advanceOnClose:true,learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId\}\)/);
+assert.match(gameScreen,/openJourneyMap\(true,\{detail:true,advanceOnClose:!inBadgeJourney\(\),learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId\}\)/);
 const skyNavigationSource=fs.readFileSync(new URL("../src/ui/sky-navigation.js",import.meta.url),"utf8");
 assert.match(skyNavigationSource,/open\(\{detail:showDetail=false,questIndex=null,constellationId=null\}/);
 assert.match(skyNavigationSource,/Number\.isInteger\(questIndex\)\?questIndex:getQuest\(\)/);

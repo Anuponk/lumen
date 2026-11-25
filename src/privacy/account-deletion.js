@@ -1,10 +1,11 @@
 import fr from '../ui/locales/fr/privacy.js';
 import en from '../ui/locales/en/privacy.js';
+import es from '../ui/locales/es/privacy.js';
 
 const contact='valente.cedric@gmail.com';
 
 function deletionCopy(locale){
- return locale==='en'?en:fr;
+ return locale==='es'?es:locale==='en'?en:fr;
 }
 
 export function accountDeletionMailto(accountAddress,locale='fr'){

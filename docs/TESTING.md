@@ -1009,6 +1009,29 @@ progress, the attempt and the pending IndexedDB intent through an offline reload
 `daily-challenge-browser.mjs` simulates an expired Paris day with the server
 mocked and asserts the header switches from played to available in the same page.
 
+## Progression and language acceptance (#985, #1021–#1023)
+
+- `sky-navigation-tests.mjs` and `sky-navigation-browser-tests.mjs` cover
+  acknowledged badge counts, filtered replay, cross-constellation progression
+  and the last result returning to Mon ciel. Keep the strict catalogue audit
+  and embedded hints tests for this navigation change.
+- `locale-tests.mjs` and `es-journeys-browser-tests.mjs` cover ordered browser
+  fallback, per-account choice, offline retry, switching without a new attempt
+  and no repeated locale write when Auth refreshes the session. Browser fixtures
+  simulate Auth and use local test state.
+- Landing SEO, landing browser and privacy readiness cover the public pages.
+  Auth mail and Stripe fixtures verify FR/EN/ES requests with simulated providers.
+- On Android Play TWA (Android 13+ and earlier), Safari iPhone and installed
+  iOS PWA, verify first launch, an existing account, switching while playing
+  and offline relaunch. Follow a challenge link from a player in a different
+  language and restore a test purchase. Check Spanish victory, account, social
+  and store controls on a narrow screen.
+- The Lumen Auth mail flow uses Resend. A web release cannot publish Auth mail
+  or Stripe Checkout Edge functions. Record their hosted deployment and isolated
+  FR/EN/ES checks separately. Shared Supabase Auth templates, Brevo operator
+  mail and Play Console listings are external. The listing drafts are under
+  `docs/google-play/`.
+
 ## Cloud persistence regression matrix
 
 Critical alert tests run the production migration against disposable PostgreSQL and simulate interrupted transport, replayed observations, one affected account and unauthorized acknowledgements. The public probe test also rejects maintenance HTML with HTTP 200.

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_title">Actualización de Android</string>
+    <string name="update_required_title">Se necesita una actualización de Android</string>
+    <string name="update_recommended">Hay una nueva versión de Lumen para Android en Google Play. Descárgala ahora o sigue jugando.</string>
+    <string name="update_required">Para seguir jugando en Android, actualiza Lumen. Instala la nueva versión de Google Play sin desinstalar Lumen.</string>
+    <string name="update_ready">La actualización ya está descargada. Instálala y vuelve a abrir Lumen.</string>
+    <string name="update_store_advisory">Esta versión de Android es antigua y Lumen no puede comprobar si hay una actualización. Abre la ficha en Google Play o sigue jugando por ahora.</string>
+    <string name="update_store_unavailable">No se ha podido abrir la ficha de Lumen en Google Play.</string>
+    <string name="update_action">Actualizar</string>
+    <string name="update_restart">Instalar</string>
+    <string name="update_later">Más tarde</string>
+    <string name="update_store">Abrir Google Play</string>
+    <string name="update_exit">Salir</string>
+</resources>
