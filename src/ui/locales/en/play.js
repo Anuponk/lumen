@@ -1,6 +1,7 @@
 // #945 Game copy moved out of code (quest challenges, return, sync, victory, friends).
 export default Object.freeze({
   'celebration.constellationCount': {"one": "{count} constellation","other": "{count} constellations"},
+  'celebration.nextAdventure': "Discover the next Adventure",
   'celebration.nextConstellation': "Next constellation",
   'celebration.viewSky': "View My Sky",
   'celebration.skyMastered': "The sky fully mastered",

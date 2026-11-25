@@ -1,6 +1,7 @@
 // #945 Textes de jeu sortis du code (défis de quête, retour, synchronisation, victoire, amis).
 export default Object.freeze({
   'celebration.constellationCount': {"one": "{count} constellation","other": "{count} constellations"},
+  'celebration.nextAdventure': "Découvrir l’aventure suivante",
   'celebration.nextConstellation': "Constellation suivante",
   'celebration.viewSky': "Admirer mon ciel",
   'celebration.skyMastered': "Le ciel pleinement maîtrisé",

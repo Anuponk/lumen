@@ -26,7 +26,11 @@ android {
     namespace 'fr.nopuna.lumen'
     compileSdk 36
     buildToolsVersion '35.0.0'
+    androidResources {
+        generateLocaleConfig true
+    }
     defaultConfig {
+        resourceConfigurations += ['fr', 'en', 'es']
         applicationId packageId
         minSdk 24
         targetSdk 36

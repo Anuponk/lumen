@@ -1,6 +1,7 @@
 // #945 Textos de juego sacados del código (retos de misión, regreso, sincronización, victoria, amigos).
 export default Object.freeze({
   'celebration.constellationCount': {"one": "{count} constelación","other": "{count} constelaciones"},
+  'celebration.nextAdventure': "Descubrir la siguiente Aventura",
   'celebration.nextConstellation': "Siguiente constelación",
   'celebration.viewSky': "Ver Mi cielo",
   'celebration.skyMastered': "Todo el cielo dominado",

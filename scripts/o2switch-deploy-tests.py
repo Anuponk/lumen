@@ -275,7 +275,7 @@ elif [[ "$endpoint" == *'/admin/analytics?'* ]]; then
 elif [[ "$endpoint" == *'/constellations?'* ]]; then
  [[ "${TEST_CONSTELLATIONS_FORBIDDEN:-0}" != 1 ]] || exit 22
  cat "$HOME/lumen.nopuna.fr/constellations/index.html"
-elif [[ "$endpoint" == *'.html?'* || "$endpoint" == *'.txt?'* || "$endpoint" == *'.xml?'* ]]; then
+elif [[ "$endpoint" == *'.html?'* || "$endpoint" == *'.txt?'* || "$endpoint" == *'.xml?'* || "$endpoint" == *'.webmanifest?'* ]]; then
  [[ "${TEST_PAGE_FORBIDDEN:-0}" != 1 ]] || exit 22
  asset="${endpoint#https://lumen.nopuna.fr/}"
  cat "$HOME/lumen.nopuna.fr/${asset%%\\?*}"

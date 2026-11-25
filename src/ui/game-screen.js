@@ -5812,7 +5812,7 @@ function showCelestialVictory(){
  const packEntries=CONTENT_CONSTELLATIONS.filter(c=>c.packId===q.packId),following=packEntries.slice(packEntries.findIndex(c=>c.id===q.constellationId)+1);
  const next=adventure?nextPack?.accessible&&quests.find(x=>x.packId===nextPack.id&&!questIsCompleted(lumenProgress,x.id)&&celestialQuestAvailable(x)):following.flatMap(c=>quests.filter(x=>x.constellationId===c.id)).find(x=>!questIsCompleted(lumenProgress,x.id)&&celestialQuestAvailable(x));
  const filtered=inBadgeJourney(),filteredNext=filtered&&nextBadgeJourneyQuest();
- const primary=filtered?{label:t(filteredNext?'victory.next':'results.mySky'),run:leave(handleSuccessAdvance)}:next?{label:t(adventure?'sky.discoverNext':'celebration.nextConstellation'),run:leave(()=>startCelestialQuest(next))}:{label:t(adventure?'celebration.viewSky':'results.mySky'),run:leave(sky)};
+ const primary=filtered?{label:t(filteredNext?'victory.next':'results.mySky'),run:leave(handleSuccessAdvance)}:next?{label:t(adventure?'celebration.nextAdventure':'celebration.nextConstellation'),run:leave(()=>startCelestialQuest(next))}:{label:t(adventure?'celebration.viewSky':'sky.back'),run:leave(sky)};
  const entry=entries.find(c=>c.id===q.constellationId);
  const challenge=document.getElementById('successShare');
  const name=entry?skyNavigation.displayName(entry):q.constellationId;
