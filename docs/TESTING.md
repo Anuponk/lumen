@@ -495,7 +495,7 @@ checks the exact client boundary against `MAX_PROFILE_BYTES`.
 
 Cold account recovery (#971): the account-switch browser fixture delays the game entry point, restores an explicit Spanish preference and checks the first visible title, message and sign-out control. It also covers switching to French and recovery in English through an offline reload and reconnection. It opens beta feedback in all three languages and checks the active category and both actions, including a live language change while the dialog is open.
 
-Account switch (#711): `account-switch-browser-tests.mjs` uses `scripts/fixtures/multi-account-browser.mjs` (per-account profiles, receipts and wallet; any RPC naming another account than the session is refused and recorded). With 800 ms per RPC it plays A → sign out → B → sign out → A: B is never shown A's progress during its load (screen held), B gets its own next quest, A's pending victory stays durable under B and is credited to A only, no call targets another account, and a failed B load stays held until « Réessayer » installs B. After an explicit sign-out, the neutral screen covers the app (also after reload), with the sign-in dialog opening above it and nothing erased locally.
+Account switch (#711): `account-switch-browser-tests.mjs` uses `scripts/fixtures/multi-account-browser.mjs` (per-account profiles, receipts and wallet; an RPC naming a different account from the session at dispatch is refused and recorded, even if the session changes while the request is in transit). With 800 ms per RPC it plays A → sign out → B → sign out → A: B is never shown A's progress during its load (screen held), B gets its own next quest, A's pending victory stays durable under B and is credited to A only, no call targets another account, and a failed B load stays held until « Réessayer » installs B. After an explicit sign-out, the neutral screen covers the app (also after reload), with the sign-in dialog opening above it and nothing erased locally.
 
 Test aids and diagnostics: `node --test scripts/test-tools-tests.mjs` covers the admin adventure-mastery preview (#705: real celebration, no challenge, nothing written, refused during a victory or outside an adventure) and the bounded hydration-failure telemetry (#711: fine reason and stage). `admin-preview-browser-tests.mjs` opens the preview from the admin cockpit at 360×640, 390×844 and 412×915, starting from a previous review's leftover performance state, and requires the real quest board (rank + 3-step podium), the 5 badges and no vertical scroll, with a single CTA and no local or server write. In `canonical-ledger`, `scripts/fixtures/sync-health-stage.sql` checks that a stage from the fixed list is stored and free text becomes unknown.
 
@@ -777,6 +777,10 @@ account or RPC is involved. This does not establish real-phone recovery or a
 fully atomic offline application release. Existing eight browser suites remain.
 
 ## Local affected tests (phase 2)
+
+Before marking a PR ready for review, run the applicable checks locally
+and group related corrections in one push. See the
+[local-first workflow](CI_EFFICIENCY.md#local-first-validation-and-publication-1039).
 
 Requires Node 22+ and Git on PATH. No npm install or third-party test dependency:
 `npm run test:affected` aliases `node scripts/test-affected.mjs`.

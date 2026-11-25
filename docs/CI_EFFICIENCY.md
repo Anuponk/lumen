@@ -1,5 +1,34 @@
 # CI and Codex efficiency — phase 3
 
+## Local-first validation and publication (#1039)
+
+Keep related commits on one branch. Before opening a PR for review, install
+locked dependencies with `npm ci --ignore-scripts --no-audit --no-fund`,
+run `npm run format:check` and `npm run test:affected` locally. Use Node 22
+to match CI. Run `npm run test:full` if the selection or product impact
+requires it, and run the relevant isolated SQL or release checks when those
+boundaries change. Use a draft for unfinished work that needs to be shared.
+Batch related corrections and push the tested revision. Mark the PR ready
+after local validation.
+
+Draft events defer the `quality` workflow's runner jobs. On readiness and on
+subsequent ready-PR revisions, GitHub still performs the usual `quality`
+checks. Deferred or skipped jobs cannot supply the required quality result.
+The other required workflows keep their existing triggers. The publisher
+verifies the successful `quality` job for the exact workflow attempt, in
+addition to the reviewed head, merge ancestry and exact-main gates.
+
+The automatic deployment is triggered by main ledger SQL completion. This
+normally avoids allocating a production runner while the slower SQL suite is
+still executing. The publisher still waits for both exact-main gates if their
+order changes. After a reconciliation-only recovery, the cron fallback and the
+normal guarded manual dispatch remain available. Keep the hosting-filter retries
+and public SHA verification.
+
+Measured CI reductions require counting runner minutes, including setup,
+cancelled runs, and repetitions, at comparable work and PR volume. A ready
+PR's checked runtime suite is still required for merge.
+
 ## Remove duplicate PR execution (#1039)
 
 The PR Node quality job delegates ten identical suites to the existing required

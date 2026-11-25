@@ -1,7 +1,8 @@
 name: Deploy Lumen to o2switch
 on:
   workflow_run:
-    workflows: ['Cloud reconciliation matrix']
+    # SQL normally finishes after reconciliation. Keep both exact-SHA gates.
+    workflows: ['Canonical ledger SQL regression']
     branches: [main]
     types: [completed]
   workflow_dispatch:

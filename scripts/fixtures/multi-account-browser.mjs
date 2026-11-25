@@ -23,12 +23,14 @@ window.supabase={createClient(){return {auth:{
  signOut:async()=>{setSession('SIGNED_OUT',null);return {error:null}},
  updateUser:async()=>({error:null}),verifyOtp:async()=>({error:null})
 },rpc:async(name,args={})=>{
- if(window.__rpcDelay)await new Promise(r=>setTimeout(r,window.__rpcDelay)); // 4G-like latency.
  {const down=sessionStorage.getItem('fixtureNetworkDown');window.__networkCalls=(window.__networkCalls||0)+(down?1:0);if(down==='hang')return new Promise(()=>{});if(down)return {data:null,error:{message:'TypeError: Failed to fetch',details:'',hint:'',code:''},status:0};}
  if(!uid())return {data:null,error:{code:'PGRST301',message:'JWT required'},status:401};
  if(Object.hasOwn(args,'p_expected_user_id')&&args.p_expected_user_id!==uid())return refuse(name,args);
+ const requestOwner=uid();
  const a=account();
- if(name==='lumen_restore_profile'&&sessionStorage.getItem('failRestoreFor')===uid())return {data:null,error:{code:'PGRST003',message:'Service unavailable'},status:503};
+ // Request headers carry the dispatch session. Network transit can outlive it.
+ if(window.__rpcDelay)await new Promise(r=>setTimeout(r,window.__rpcDelay)); // 4G-like latency.
+ if(name==='lumen_restore_profile'&&sessionStorage.getItem('failRestoreFor')===requestOwner)return {data:null,error:{code:'PGRST003',message:'Service unavailable'},status:503};
   const guardedCas=sessionStorage.getItem('fixtureWalletAuthority')==='1';
   if(name==='lumen_restore_profile'){
    if(guardedCas&&!sessionStorage.getItem('fixtureWalletHydrationInput'))

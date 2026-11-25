@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import vm from 'node:vm';
+import {multiAccountFixture} from './fixtures/multi-account-browser.mjs';
 import {createOutboxHealthReporter,outboxHealthVersion,outboxStorageFields} from '../src/persistence/outbox-health.js';
 test('outbox health survives quota, deduplicates, and never transmits operation facts',async()=>{
  const calls=[],client={};
@@ -43,4 +45,27 @@ test('outbox health sends only storage buckets and a storage error category',asy
  await reporter.report({userId:'synthetic',client:{},state:'pending',pending:[{createdAt:'2026-10-23T11:59:00Z'}]});
  assert.equal(Object.hasOwn(calls[1],'p_storage_kb'),false,'no storage fields when unknown (older server stays compatible)');
  assert(!JSON.stringify(calls).match(/secret|lumen[A-Z]/));
+});
+
+test('a dispatched RPC keeps its account during transit and rejects an actual wrong account',async()=>{
+ const storage=()=>{
+  const values=new Map();
+  return {getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,String(value))};
+ };
+ const delayed=[];
+ const window={__rpcDelay:800};
+ vm.runInNewContext(multiAccountFixture({a:{},b:{}},'b'),{
+  window,localStorage:storage(),sessionStorage:storage(),
+  setTimeout:resolve=>{delayed.push(resolve);}
+ });
+ const client=window.supabase.createClient();
+ const inFlight=client.rpc('lumen_record_outbox_health',{p_expected_user_id:'b'});
+ await client.auth.signInWithPassword({email:'a@example.test'});
+ delayed.shift()?.();
+ assert.equal((await inFlight).error,null);
+ assert.equal(window.__server.refused.length,0);
+ const wrongAccount=client.rpc('lumen_record_outbox_health',{p_expected_user_id:'b'});
+ delayed.shift()?.();
+ assert.equal((await wrongAccount).status,403);
+ assert.equal(window.__server.refused[0].session,'a');
 });

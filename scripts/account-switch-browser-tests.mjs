@@ -76,6 +76,12 @@ try {
   await send('Network.setBlockedURLs', { urls: ['*supabase.co*'] });
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await send('Page.addScriptToEvaluateOnNewDocument', { source: multiAccountFixture({ a: A, b: B }, 'a') + `
+const fixtureSessionOnReload=sessionStorage.getItem('fixtureSessionOnReload');
+if(fixtureSessionOnReload){
+  window.__server.session=JSON.parse(fixtureSessionOnReload);
+  sessionStorage.removeItem('fixtureSessionOnReload');
+  window.__saveServer();
+}
 if (!sessionStorage.getItem('coldAccountTest')) {
   sessionStorage.setItem('coldAccountTest','1');
   localStorage.setItem('lumen.locale','es');
@@ -213,7 +219,9 @@ Object.defineProperty(navigator,'onLine',{get:()=>!window.__offline});
   await navigateAndWait({send,evaluate},'Page.reload');
   assert.equal(await evaluate("document.getElementById('accountSwitchHold').hidden"),true,'A verified offline cache opens for its own account');
   assert.deepEqual(await evaluate(local),summary(B),'Offline uses B’s known profile');
-  await evaluate("window.__server.session={user:{id:'a'}};window.__saveServer();localStorage.setItem('lumen.locale','en');localStorage.setItem('sb-tjdjlavmusmncuszhsuw-auth-token',JSON.stringify(window.__server.session))");
+  // The stored token is for the next document. The live B client has not switched.
+  await evaluate("(()=>{const next=JSON.stringify({user:{id:'a'}});sessionStorage.setItem('fixtureSessionOnReload',next);localStorage.setItem('lumen.locale','en');localStorage.setItem('sb-tjdjlavmusmncuszhsuw-auth-token',next)})()");
+  assert.equal(await evaluate("window.__server.session?.user?.id"),'b','The current document keeps B until reload');
   await navigateAndWait({send,evaluate},'Page.reload');
   assert.deepEqual(await evaluate("[document.documentElement.lang,document.getElementById('accountSwitchHoldTitle').textContent,document.getElementById('accountSwitchHoldSignout').textContent]"),['en','You\u2019re offline','Sign out'],'A different stored session stays covered and uses English offline');
   assert.deepEqual(await evaluate(local),summary(B),'The previous cache is preserved while unavailable');

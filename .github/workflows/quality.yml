@@ -3,6 +3,7 @@ name: Lumen quality gate
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
 
 permissions:
   contents: read
@@ -14,6 +15,7 @@ concurrency:
 
 jobs:
   prepare:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -199,9 +201,11 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+  # A skipped job with the required name would count as success on GitHub.
   quality:
+    name: ${{ github.event.pull_request.draft == false && 'quality' || 'quality-deferred' }}
     needs: [prepare, node, browser]
-    if: always()
+    if: always() && github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
