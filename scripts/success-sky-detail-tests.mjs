@@ -9,9 +9,9 @@ assert(start>0&&end>start);
 for(const quest of [{id:'stable',ordinal:80,legacyIndex:null,constellationId:'c'},{id:'numeric',ordinal:91,legacyIndex:70,constellationId:'c'}]){
  const button={};let opened;
  const context={document:{getElementById:()=>button},activeQuest:()=>quest,CONTENT_CONSTELLATIONS:[{id:'c',questStart:20}],
-  levelIndex:0,hideSuccess(){},learningSkyDiscoveryRequired:()=>false,localStorage:{getItem:()=>null},openJourneyMap:(focus,options)=>{opened={focus,options}}};
+  levelIndex:0,inBadgeJourney:()=>true,hideSuccess(){},learningSkyDiscoveryRequired:()=>false,localStorage:{getItem:()=>null},openJourneyMap:(focus,options)=>{opened={focus,options}}};
  vm.createContext(context);vm.runInContext(src.slice(start,end),context);button.onclick();
- assert(opened.focus&&opened.options.detail);assert.equal(opened.options.constellationId,'c');
+ assert(opened.focus&&opened.options.detail);assert.equal(opened.options.advanceOnClose,false);assert.equal(opened.options.constellationId,'c');
  assert.equal(opened.options.questIndex,quest.legacyIndex??20,'Played identity must win over dormant numeric position');
 }
 assert.match(src,/openSky\.onclick=\(\)=>openJourneyMap\(true\);/,'Regular Mon ciel entry stays in overview');

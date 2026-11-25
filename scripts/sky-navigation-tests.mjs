@@ -1,5 +1,6 @@
 import {readFileSync} from "node:fs";
 import assert from 'node:assert/strict';
+import {nextIncompleteBadgeQuest} from '../src/ui/celestial-progress.js';
 import {CONTENT_PACKS,BASE_PACK_ID,BASE_CONSTELLATIONS,contentMapModel,hasPackAccess,preserveStartedAdventureAccess} from '../src/campaign/content.js';
 import {skySelection,constellationUnlocked,skyPickerVisible,swipeAdventureTarget,swipeConstellationTarget} from '../src/ui/sky-navigation.js';
 assert.equal(skyPickerVisible(contentMapModel()),false);
@@ -113,3 +114,16 @@ const normalModel=contentMapModel([],{progress:{solved:{},badges:{}}});
 assert.equal(skySelection(normalModel,{},0).adventure.id,BASE_PACK_ID);
 assert(skySelection(normalModel,{},0).entries.length>0);
 assert.equal(skySelection({skies:[]},{},0).adventure,null);
+
+const badgeQuests=[2,3,4,5,8,9,10].map(ordinal=>({
+ id:'quest-'+ordinal,ordinal,legacyIndex:ordinal-1,packId:ordinal===10?'other':'base',constellationId:ordinal<8?'first':'second',
+}));
+const allBadges={autonomy:true,speed:true,noError:true,mastery:true};
+const progress={performances:{2:{version:3,badges:allBadges}}};
+const byOrdinal=n=>badgeQuests.find(q=>q.ordinal===n);
+const available=q=>q.ordinal!==4&&q.ordinal!==9;
+assert.equal(nextIncompleteBadgeQuest(badgeQuests,byOrdinal(2),progress,available),byOrdinal(5));
+assert.equal(nextIncompleteBadgeQuest(badgeQuests,byOrdinal(5),progress,available),byOrdinal(8));
+assert.equal(nextIncompleteBadgeQuest(badgeQuests,byOrdinal(8),progress,available),undefined);
+progress.performances[4]={version:3,badges:allBadges};
+assert.equal(nextIncompleteBadgeQuest(badgeQuests,byOrdinal(2),progress,available),byOrdinal(8));

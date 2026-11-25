@@ -65,6 +65,7 @@ import esConstellations from './locales/es/constellations.js';
 
 const DEFAULT_LOCALE = 'fr';
 const PREFERENCE_KEY = 'lumen.locale';
+export const ACCOUNT_LOCALE_FIELD = 'lumen_locale';
 
 export const locales = Object.freeze({
   fr: Object.freeze({ nativeName: 'Français', enabled: true, fallback: null, messages: Object.freeze({ ...frPrivacy, ...frDaily, ...frResults, ...frBoard, ...frWelcome, ...frLearning, ...frPwaWelcome, ...frSocial, ...frDuel, ...frAdmin, ...frCircles, ...frPlay, ...frHints, ...frConstellations, ...frMap, ...frStore, ...frStatus, ...frAccountFlow, ...frSky, ...frShell }) }),
@@ -87,25 +88,79 @@ function matchLanguage(registry, language) {
 }
 
 export function createLocalePreference({
-  registry = locales, storage, languages = [], language, appLanguage,
+  registry = locales, storage, languages = [], language, appLanguage, initialOwner, clock = Date.now,
 } = {}) {
-  let mode = 'auto';
+  let guestMode = 'auto';
+  let owner = initialOwner || null;
+  const accounts = new Map();
   try {
     const saved = storage?.getItem(PREFERENCE_KEY);
-    if (typeof saved === 'string' && saved) mode = saved;
+    if (typeof saved === 'string' && saved) guestMode = saved;
   } catch {
     // Storage access can be unavailable in private browsing.
   }
   const automatic = [appLanguage, ...(languages.length ? languages : [language])]
     .map(candidate => matchLanguage(registry, candidate)).find(Boolean) ?? DEFAULT_LOCALE;
 
+  function validMode(mode) {
+    return typeof mode === 'string' && (mode === 'auto' || !!lookup(registry, mode)?.enabled);
+  }
+
+  function verifiedChoice(choice) {
+    return validMode(choice?.mode) && Number.isSafeInteger(choice.at) && choice.at > 0
+      ? { mode: choice.mode, at: choice.at }
+      : null;
+  }
+
+  function account() {
+    if (!accounts.has(owner)) {
+      let stored;
+      try { stored = JSON.parse(storage?.getItem(PREFERENCE_KEY + ':' + owner) ?? 'null'); } catch {}
+      accounts.set(owner, { choice: verifiedChoice(stored?.choice), pending: stored?.pending === true });
+    }
+    return accounts.get(owner);
+  }
+
+  function save(entry) {
+    try { storage?.setItem(PREFERENCE_KEY + ':' + owner, JSON.stringify(entry)); } catch {}
+  }
+
+  function currentMode() {
+    return owner ? account().choice?.mode ?? guestMode : guestMode;
+  }
+
   function currentLocale() {
+    const mode = currentMode();
     if (mode === 'auto') return automatic;
     return lookup(registry, mode)?.enabled ? mode : DEFAULT_LOCALE;
   }
 
   return {
-    get mode() { return mode; },
+    get mode() { return currentMode(); },
+    setAccount(user) {
+      owner = user?.id ?? null;
+      if (!owner || !user.user_metadata) return;
+      const remote = verifiedChoice(user.user_metadata[ACCOUNT_LOCALE_FIELD]);
+      const entry = account();
+      if (!remote || remote.at < (entry.choice?.at ?? 0)) return;
+      if (entry.pending || remote.at !== entry.choice?.at || remote.mode !== entry.choice?.mode) {
+        entry.choice = remote;
+        entry.pending = false;
+        save(entry);
+      }
+    },
+    pendingFor(ownerId) {
+      if (!owner || owner !== ownerId) return null;
+      const entry = account();
+      return entry.pending ? entry.choice : null;
+    },
+    acknowledge(ownerId, choice) {
+      if (owner !== ownerId || account().choice !== choice) return;
+      const entry = account();
+      if (!entry.pending) return;
+      entry.pending = false;
+      save(entry);
+    },
     get locale() { return currentLocale(); },
     get options() {
       return Object.entries(registry).filter(([, entry]) => entry.enabled)
@@ -113,16 +168,50 @@ export function createLocalePreference({
     },
     translator: () => createTranslator({ registry, locale: currentLocale() }),
     setMode(next) {
-      if (next !== 'auto' && !lookup(registry, next)?.enabled) return false;
-      mode = next;
+      if (!validMode(next)) return false;
+      if (next === (owner ? account().choice?.mode : guestMode)) return true;
+      if (owner) {
+        const entry = account();
+        entry.choice = { mode: next, at: Math.max(clock(), (entry.choice?.at ?? 0) + 1) };
+        entry.pending = true;
+        save(entry);
+        return true;
+      }
+      guestMode = next;
       try {
-        storage?.setItem(PREFERENCE_KEY, mode);
+        storage?.setItem(PREFERENCE_KEY, guestMode);
       } catch {
         // Keep the choice for the current session even when persistence fails.
       }
       return true;
     },
   };
+}
+
+export function browserLocalePreference({ storage, navigator, location, sessionStorage }) {
+  const fragment = new URLSearchParams(location.hash.slice(1));
+  const query = new URLSearchParams(location.search);
+  const authReturn = ['lumen_confirm', 'code', 'token_hash'].some(key => query.has(key)) ||
+    fragment.has('access_token');
+  let appLanguage, initialOwner;
+  try {
+    if (fragment.has('lumen-app-language')) {
+      appLanguage = fragment.get('lumen-app-language');
+      sessionStorage?.setItem('lumenAppLanguage', appLanguage);
+    } else {
+      appLanguage = sessionStorage?.getItem('lumenAppLanguage');
+    }
+  } catch {}
+  try {
+    if (!authReturn && !query.has('qa') && sessionStorage?.getItem('lumenAccountSwitchHoldV1') !== '1') {
+      const session = JSON.parse(storage?.getItem('sb-tjdjlavmusmncuszhsuw-auth-token') ?? 'null');
+      const cachedOwner = storage?.getItem('lumenCloudOwnerId');
+      if (cachedOwner && session?.user?.id === cachedOwner) initialOwner = cachedOwner;
+    }
+  } catch {}
+  return createLocalePreference({
+    storage, languages: navigator.languages, language: navigator.language, appLanguage, initialOwner,
+  });
 }
 
 export function createTranslator({

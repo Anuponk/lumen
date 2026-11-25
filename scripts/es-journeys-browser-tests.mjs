@@ -34,12 +34,25 @@ const BASE = process.env.LUMEN_TEST_URL || 'http://127.0.0.1:8000/';
 const ALLOW =
   /^(?:LUMEN|Lumen|Ana945|Moi945|VS|QA|XP|OK|Orion|Canal|disponible|Stellarium|Google Play|Google|Hipparcos.*|CC BY-SA.*|LUMEN · v[\w.-]+|😵 Frustrante)$/;
 
-function fixture({ locale, signedIn }) {
+function fixture({ locale, signedIn, accountMode }) {
   return `localStorage.clear();localStorage.setItem('lumen.locale',${JSON.stringify(locale)});localStorage.setItem('lumenSound','off');localStorage.setItem('lumenPushChoice','off');
   window.__missing=[];const warn=console.warn;console.warn=(...a)=>{if(a[0]==='Missing Lumen translation')window.__missing.push(a.slice(1).join(':'));return warn.apply(console,a)};
   ${signedIn ? `localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(profile))});for(const k of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(OWNER)});` : ''}
-  window.supabase={createClient:()=>({auth:{getSession:async()=>(${signedIn}?{data:{session:{user:{id:${JSON.stringify(OWNER)}}}}}:{data:{session:null}}),
-   getUser:async()=>({data:{user:${signedIn ? `{id:${JSON.stringify(OWNER)}}` : 'null'}}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
+  const owner=${JSON.stringify(OWNER)};
+  const mode=${JSON.stringify(accountMode) ?? 'null'};
+  let user=${signedIn}?{id:owner,user_metadata:mode?{lumen_locale:{mode,at:10}}:{}}:null;
+  let authListener;
+  window.__localeWrites=[];
+  window.__localeAuthEvent=(event,next=user)=>{user=next;authListener?.(event,user?{user}:null)};
+  window.supabase={createClient:()=>({auth:{
+   updateUser:async ({data})=>{
+    window.__localeWrites.push(data.lumen_locale.mode);
+    user={...user,user_metadata:{...user.user_metadata,...data}};
+    window.__localeAuthEvent('USER_UPDATED');
+    return {data:{user},error:null};
+   },
+   getSession:async()=>({data:{session:user?{user}:null}}),
+   getUser:async()=>({data:{user:${signedIn ? `{id:${JSON.stringify(OWNER)}}` : 'null'}}}),onAuthStateChange:listener=>{authListener=listener;return {data:{subscription:{unsubscribe(){}}}}}},
    rpc:async(name)=>{
     if(name==='lumen_ranking_account')return {data:{nicknameRequired:false,withdrawn:false,participating:true}};
     if(name==='lumen_restore_profile')return {data:${JSON.stringify(profile)}};
@@ -65,7 +78,7 @@ const click = (sel) =>
   evaluate(
     `(()=>{const e=document.querySelector(${JSON.stringify(sel)});if(e){e.click();return true}return false})()`,
   );
-async function open({ locale, signedIn, width, query = '' }) {
+async function open({ locale, signedIn, width, accountMode, query = '' }) {
   await send('Emulation.setDeviceMetricsOverride', {
     width,
     height: width < 700 ? 640 : 900,
@@ -73,7 +86,7 @@ async function open({ locale, signedIn, width, query = '' }) {
     deviceScaleFactor: 1,
   });
   const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: fixture({ locale, signedIn }),
+    source: fixture({ locale, signedIn, accountMode }),
   });
   const url = new URL(BASE);
   url.search = query;
@@ -223,7 +236,15 @@ try {
   );
   await choose('auto');
   await sleep(150);
-  assert.equal(await evaluate(`localStorage.getItem('lumen.locale')`), 'auto');
+  assert.equal(
+    await evaluate(`localStorage.getItem('lumen.locale')`),
+    'es',
+    'Account choices keep the guest preference',
+  );
+  assert.deepEqual(await evaluate('window.__localeWrites'), ['fr', 'en', 'es', 'auto']);
+  await evaluate("window.__localeAuthEvent('TOKEN_REFRESHED')");
+  await sleep(150);
+  assert.deepEqual(await evaluate('window.__localeWrites'), ['fr', 'en', 'es', 'auto']);
   assert.equal(
     await evaluate(
       `JSON.stringify({a:JSON.parse(localStorage.getItem('lumenActiveAttemptV1')||'null')?.attemptId,b:lumenDiagnostics.snapshot().state})`,
@@ -241,8 +262,42 @@ try {
     ).then((v) => v.slice(0, 2)),
     ['es-MX', 'es'],
   );
+  await open({ locale: 'auto', signedIn: true, width: 390, accountMode: 'en' });
+  assert.equal(
+    await evaluate('document.documentElement.lang'),
+    'en',
+    'An existing account choice wins on another device',
+  );
+  assert.deepEqual(
+    await evaluate('window.__localeWrites'),
+    [],
+    'Reading the account locale does not write it back',
+  );
+  await send('Network.emulateNetworkConditions', {
+    offline: true,
+    latency: 0,
+    downloadThroughput: 0,
+    uploadThroughput: 0,
+  });
+  await choose('fr');
+  assert.equal(await evaluate('document.documentElement.lang'), 'fr');
+  assert.deepEqual(await evaluate('window.__localeWrites'), []);
+  await send('Network.emulateNetworkConditions', {
+    offline: false,
+    latency: 0,
+    downloadThroughput: -1,
+    uploadThroughput: -1,
+  });
+  await sleep(250);
+  assert.deepEqual(await evaluate('window.__localeWrites'), ['fr']);
+  await evaluate("window.__localeAuthEvent('SIGNED_OUT',null)");
+  assert.equal(
+    await evaluate('document.documentElement.lang'),
+    'es',
+    'Signing out returns to the device choice',
+  );
   await send('Emulation.setUserAgentOverride', { userAgent });
-  results.push({ switching: true, autoEsMx: true });
+  results.push({ switching: true, autoEsMx: true, accountLocale: true, offlineLocaleRetry: true });
   assert.deepEqual(errors, []);
   if (process.argv[2])
     fs.writeFileSync(process.argv[2], JSON.stringify({ results, physicalDevice: false }, null, 2));

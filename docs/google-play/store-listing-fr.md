@@ -2,6 +2,8 @@
 
 **Statut :** textes préparés, visuels promotionnels approuvés en conversation mais fichiers PNG **pas encore importés dans le dépôt**. Suivi : [#170](https://github.com/Anuponk/lumen/issues/170).
 
+Versions à intégrer dans Play Console : [English](store-listing-en.md) et [Español](store-listing-es.md).
+
 ## Informations
 
 - Nom : **Lumen – Jeu de logique**

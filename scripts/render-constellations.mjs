@@ -3,8 +3,11 @@ import { pathToFileURL } from 'node:url';
 import { CONSTELLATION_FACTS, localizedConstellationFact } from '../src/campaign/constellation-facts.js';
 import { createTranslator, locales } from '../src/ui/i18n.js';
 
-const PAGES={fr:new URL('../constellations/index.html',import.meta.url),en:new URL('../constellations/en.html',import.meta.url)};
-const paths={fr:'/constellations/',en:'/constellations/en.html'};
+const editions={
+ fr:{path:'/constellations/',file:'index.html',discovery:'decouvrir.html',guide:'apprendre-constellations.html',legal:'mentions-legales.html',privacy:'confidentialite.html',og:'fr_FR',image:'og.jpg'},
+ en:{path:'/constellations/en.html',file:'en.html',discovery:'discover.html',guide:'learn-constellations.html',legal:'legal-notice.html',privacy:'privacy-policy.html',og:'en_US',image:'og-en.jpg'},
+ es:{path:'/constellations/es.html',file:'es.html',discovery:'descubrir.html',guide:'aprender-constelaciones.html',legal:'aviso-legal.html',privacy:'politica-privacidad.html',og:'es_ES',image:'og-es.jpg'},
+};
 const site='https://lumen.nopuna.fr';
 
 function html(value) {
@@ -47,7 +50,7 @@ function renderCard(fact,total,locale,t) {
 
 export function renderConstellations(locale="fr") {
   const {t}=createTranslator({locale});
-  const fr=locale==="fr",alternate=fr?"en":"fr";
+  const edition=editions[locale],alternates=Object.entries(editions).filter(([code])=>code!==locale);
   const count=CONSTELLATION_FACTS.length;
   const title=html(t("fact.directoryTitle",{count}));
   const description=html(t("fact.directoryDescription",{count}));
@@ -62,18 +65,19 @@ export function renderConstellations(locale="fr") {
  <meta name="viewport" content="width=device-width,initial-scale=1">
  <title>${title} — Lumen</title>
  <meta name="description" content="${description}">
- <link rel="canonical" href="${site+paths[locale]}">
- <link rel="alternate" hreflang="fr" href="${site+paths.fr}">
- <link rel="alternate" hreflang="en" href="${site+paths.en}">
- <link rel="alternate" hreflang="x-default" href="${site+paths.fr}">
+ <link rel="canonical" href="${site+edition.path}">
+ <link rel="alternate" hreflang="fr" href="${site+editions.fr.path}">
+ <link rel="alternate" hreflang="en" href="${site+editions.en.path}">
+ <link rel="alternate" hreflang="es" href="${site+editions.es.path}">
+ <link rel="alternate" hreflang="x-default" href="${site+editions.fr.path}">
  <meta property="og:type" content="website">
- <meta property="og:locale" content="${fr?"fr_FR":"en_US"}">
- <meta property="og:locale:alternate" content="${fr?"en_US":"fr_FR"}">
+ <meta property="og:locale" content="${edition.og}">
+${alternates.map(([, alternate])=>` <meta property="og:locale:alternate" content="${alternate.og}">`).join("\n")}
  <meta property="og:site_name" content="Lumen">
  <meta property="og:title" content="${title}">
  <meta property="og:description" content="${description}">
- <meta property="og:url" content="${site+paths[locale]}">
- <meta property="og:image" content="https://lumen.nopuna.fr/src/landing/${fr?"og.jpg":"og-en.jpg"}">
+ <meta property="og:url" content="${site+edition.path}">
+ <meta property="og:image" content="https://lumen.nopuna.fr/src/landing/${edition.image}">
  <meta property="og:image:alt" content="${html(t("fact.directoryAlt"))}">
  <meta name="theme-color" content="#07111d">
  <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -83,8 +87,8 @@ export function renderConstellations(locale="fr") {
 </head>
 <body>
  <header class="hero constellation-hero">
-  <p class="brand"><a href="/${fr?"decouvrir.html":"discover.html"}">✦ LUMEN</a></p>
-  <p><a href="${paths[alternate]}" hreflang="${alternate}" lang="${alternate}">${fr?"English":"Français"}</a></p>
+  <p class="brand"><a href="/${edition.discovery}">✦ LUMEN</a></p>
+  <p>${alternates.map(([code, alternate])=>`<a href="${alternate.path}" hreflang="${code}" lang="${code}">${html(locales[code].nativeName)}</a>`).join(" · ")}</p>
   <h1>${title}</h1>
   <p class="lead">${html(t("fact.directoryLead",{count}))}</p>
   <p class="cta"><a class="play" href="/">${html(t("fact.directoryPlay"))}</a></p>
@@ -104,7 +108,7 @@ ${entries}
   </section>
  </main>
  <footer>
-  <p><a href="/${fr?"decouvrir.html":"discover.html"}">${html(t("fact.directoryExplore"))}</a> · <a href="/${fr?"apprendre-constellations.html":"learn-constellations.html"}">${html(t("fact.directoryGuide"))}</a> · <a href="/${fr?"mentions-legales.html":"legal-notice.html"}">${html(t("app.legal"))}</a> · <a href="/${fr?"confidentialite.html":"privacy-policy.html"}">${html(t("app.privacy"))}</a></p>
+  <p><a href="/${edition.discovery}">${html(t("fact.directoryExplore"))}</a> · <a href="/${edition.guide}">${html(t("fact.directoryGuide"))}</a> · <a href="/${edition.legal}">${html(t("app.legal"))}</a> · <a href="/${edition.privacy}">${html(t("app.privacy"))}</a></p>
  </footer>
 </body>
 </html>
@@ -117,7 +121,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (args.length && (args.length!==1 || args[0]!=="--check")) {
     console.error("Usage: node scripts/render-constellations.mjs [--check]");
     process.exitCode=2;
-  } else for(const [locale,file] of Object.entries(PAGES)){
+  } else for(const [locale,edition] of Object.entries(editions)){
+    const file=new URL(`../constellations/${edition.file}`,import.meta.url);
     const generated=renderConstellations(locale);
     if(!args.length){writeFileSync(file,generated);continue}
     const current=existsSync(file)?readFileSync(file,"utf8").replace(/\r\n/g,"\n"):"";

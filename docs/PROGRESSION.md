@@ -232,6 +232,15 @@ Existing performance data must be migrated conservatively; never infer newly ear
 
 ### Badge completion in Mon ciel (#985)
 
+A quest played from the **To complete** filter keeps that navigation context
+through victory. Next Quest selects the next accessible quest with missing
+acknowledged badges in catalogue order within the current Adventure. The
+selection can cross constellations. At the end it opens Mon ciel with the
+filter still active. Replays use the regular cooldown confirmation and a
+pending victory retains its existing retry path. Filtering reads the current
+local progression and never grants a badge, unlocks a quest or reads Supabase.
+Turning the filter off restores normal navigation.
+
 Owner decision 24/11/2026: **4 badges per quest** (Autonomie, Rapidité, Sans
 erreur, Maîtrise; eligibility from `performanceEligibility`, never a hardcoded
 total), counted with `celestialScope` from the progress already loaded — no

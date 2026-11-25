@@ -6,6 +6,24 @@ const headers={"content-type":"application/json","cache-control":"no-store","acc
 const reply=(status:number,body:Record<string,unknown>={ok:false})=>{if(status>=500)console.error("[lumen-auth-mail] failure",{status,reason:typeof body.reason==="string"?body.reason:"upstream_mail_failure"});return new Response(JSON.stringify(body),{status,headers})};
 const accepted=()=>reply(200,{ok:true});
 async function digest(s:string){const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(d)].map(n=>n.toString(16).padStart(2,"0")).join("")}
+const mailCopy = {
+ fr: {
+  signup: ["Confirme ton adresse email ✨", "Confirme ton email pour sauvegarder tes étoiles et retrouver ta progression.", "Confirmer mon email", "Confirme ton inscription Lumen"],
+  recovery: ["Retrouve ton accès à Lumen", "Pour retrouver ton accès, utilise le bouton ci-dessous.", "Réinitialiser mon mot de passe", "Réinitialise ton mot de passe Lumen"],
+  ignore: "Si tu n'as rien demandé, ignore cet email.", open: "Pour continuer sur Lumen, ouvre ce lien :",
+ },
+ en: {
+  signup: ["Confirm your email address ✨", "Confirm your email to save your stars and keep your progress.", "Confirm my email", "Confirm your Lumen sign-up"],
+  recovery: ["Get back into Lumen", "Use the button below to reset your password.", "Reset my password", "Reset your Lumen password"],
+  ignore: "If you didn't request this, ignore this email.", open: "To continue in Lumen, open this link:",
+ },
+ es: {
+  signup: ["Confirma tu correo electrónico ✨", "Confirma tu correo para guardar tus estrellas y recuperar tu progreso.", "Confirmar mi correo", "Confirma tu registro en Lumen"],
+  recovery: ["Recupera tu acceso a Lumen", "Usa el botón de abajo para restablecer tu contraseña.", "Restablecer mi contraseña", "Restablece tu contraseña de Lumen"],
+  ignore: "Si no has solicitado nada, ignora este correo.", open: "Para continuar en Lumen, abre este enlace:",
+ },
+} as const;
+
 Deno.serve(async req=>{
  if(req.headers.get("origin")!==HOST)return reply(403);
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
@@ -70,14 +88,11 @@ Deno.serve(async req=>{
   ? HOST+"/?lumen_confirm="+encodeURIComponent(hashedToken)+"&type="+encodeURIComponent(confirmationType)
   : action;
  const escapeHtml=(value:string)=>value.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]||c));
- const title=type==="signup"?"Confirme ton adresse email ✨":"Retrouve ton accès à Lumen";
- const instruction=type==="signup"?"Confirme ton email pour sauvegarder tes étoiles et retrouver ta progression.":
-  "Pour retrouver ton accès, utilise le bouton ci-dessous.";
- const button=type==="signup"?"Confirmer mon email":"Réinitialiser mon mot de passe";
- const html=`<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body style="margin:0;padding:32px 16px;background:#07111d;font-family:Arial,Helvetica,sans-serif;color:#eef8ff"><table role="presentation" cellspacing="0" cellpadding="0" style="max-width:520px;margin:auto;background:#102237;border-radius:16px;padding:32px;width:100%"><tr><td><p style="font-size:14px;letter-spacing:3px;color:#92dfff">✦ LUMEN</p><h1 style="font-size:25px;line-height:1.3;color:#ffffff">${escapeHtml(title)}</h1><p style="line-height:1.7;color:#daeaf7">${escapeHtml(instruction)}</p><p style="padding:20px 0"><a href="${escapeHtml(brandedLink)}" style="display:inline-block;padding:14px 24px;background:#f6d67a;color:#142236;font-weight:bold;text-decoration:none;border-radius:8px">${escapeHtml(button)}</a></p><p style="font-size:13px;color:#a8becd">Si tu n'as rien demandé, ignore cet email.</p><p style="font-size:12px;color:#8da9bc">Lumen • lumen.nopuna.fr</p></td></tr></table></body></html>`;
- // Recovery establishes a password on the existing account.
- const label=type==="signup"?"Confirme ton inscription Lumen":"Réinitialise ton mot de passe Lumen";
- const text="Pour continuer sur Lumen, ouvre ce lien : "+brandedLink+"\n\nSi tu n'as rien demandé, ignore cet email.";
+ const locale=input.locale==="en"||input.locale==="es"?input.locale:"fr";
+ const copy=mailCopy[locale];
+ const [title,instruction,button,label]=type==="signup"?copy.signup:copy.recovery;
+ const html=`<!doctype html><html lang="${locale}"><head><meta charset="utf-8"></head><body style="margin:0;padding:32px 16px;background:#07111d;font-family:Arial,Helvetica,sans-serif;color:#eef8ff"><table role="presentation" cellspacing="0" cellpadding="0" style="max-width:520px;margin:auto;background:#102237;border-radius:16px;padding:32px;width:100%"><tr><td><p style="font-size:14px;letter-spacing:3px;color:#92dfff">✦ LUMEN</p><h1 style="font-size:25px;line-height:1.3;color:#ffffff">${escapeHtml(title)}</h1><p style="line-height:1.7;color:#daeaf7">${escapeHtml(instruction)}</p><p style="padding:20px 0"><a href="${escapeHtml(brandedLink)}" style="display:inline-block;padding:14px 24px;background:#f6d67a;color:#142236;font-weight:bold;text-decoration:none;border-radius:8px">${escapeHtml(button)}</a></p><p style="font-size:13px;color:#a8becd">${escapeHtml(copy.ignore)}</p><p style="font-size:12px;color:#8da9bc">Lumen • lumen.nopuna.fr</p></td></tr></table></body></html>`;
+ const text=copy.open+" "+brandedLink+"\n\n"+copy.ignore;
  try{
   const sent=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"authorization":"Bearer "+key,"content-type":"application/json"},body:JSON.stringify({from:"Lumen <auth@nopuna.fr>",to:[email],subject:label,text,...(html?{html}:{})})});
   if(!sent.ok)return reply(502,{ok:false,reason:"mail_provider_rejected"});

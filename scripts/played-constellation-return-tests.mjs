@@ -11,5 +11,5 @@ assert.equal(skyQuestTarget(model,0,'played').sky.id,'late','Search all skies be
 assert.equal(skyQuestTarget(model,0,'played').entry,inserted,'Exact inserted canonical identity overrides dormant index');
 assert.equal(skyQuestTarget(model,0).entry,earlier,'Numeric quests retain their fallback');
 assert.match(opening,/selection=target\?\{skyId:target\.sky\.id,packId:target\.pack\.id\}/,'Choose played adventure before rendering');
-assert.match(game,/openJourneyMap\(true,\{detail:true,advanceOnClose:true,learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId\}\)/);
+assert.match(game,/openJourneyMap\(true,\{detail:true,advanceOnClose:!inBadgeJourney\(\),learningTour,questIndex:targetLegacyIndex,constellationId:targetConstellationId\}\)/);
 console.log('Played-constellation return navigation contract passed');

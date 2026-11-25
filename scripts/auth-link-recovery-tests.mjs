@@ -111,7 +111,7 @@ for(const [reply,expected] of [
  const sent=[];
  const h=harness({fetch:async(url,init)=>{sent.push({url,body:JSON.parse(init.body)});return reply()}});
  assert.deepEqual(await h.api.requestPasswordRecovery('  Player@Example.TEST '),expected);
- assert.deepEqual(sent[0].body,{type:'recovery',email:'player@example.test'},'No password or redirect is sent with recovery');
+ assert.deepEqual(sent[0].body,{type:'recovery',email:'player@example.test',locale:'fr'},'Only the email and display language are sent with recovery');
 }
 {
  let fetched=false;const h=harness({fetch:async()=>{fetched=true;return response(200,{ok:true})}});

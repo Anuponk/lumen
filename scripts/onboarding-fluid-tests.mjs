@@ -12,7 +12,7 @@ const source=fs.readFileSync(new URL('../src/ui/game-screen.js',import.meta.url)
 test('fresh ordinary victories let the player continue without a required sky tour',()=>{
  for(const ordinal of [1,2,3,4,5]){
   let advanced=0,sky=0;
-  const ctx={QUEST_MILESTONES,activeQuestOrdinal:()=>ordinal,replayMode:false,socialChallenge:null,
+  const ctx={inBadgeJourney:()=>false,QUEST_MILESTONES,activeQuestOrdinal:()=>ordinal,replayMode:false,socialChallenge:null,
    syncPresentation:{celebration(){}},pendingVictoryView:null,learningReplayActive:()=>false,
    advanceToNextPuzzle(){advanced++},hideSuccess(){},openJourneyMap(){sky++}};
   vm.createContext(withNetworkContext(ctx));

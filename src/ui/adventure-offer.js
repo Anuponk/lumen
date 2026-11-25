@@ -222,7 +222,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   updateAdventureOfferMastery(section,model,{onClaim,onContinue,t});
   root.append(section);
  }
- const terms=el('a',{className:'adventure-offer-terms',href:locale==='en'?'/terms-of-sale.html':SALES_TERMS_URL,target:'_blank',rel:'noopener'},t('store.terms'));terms.dataset.offer='terms';
+ const terms=el('a',{className:'adventure-offer-terms',href:locale==='es'?'/condiciones-venta.html':locale==='en'?'/terms-of-sale.html':SALES_TERMS_URL,target:'_blank',rel:'noopener'},t('store.terms'));terms.dataset.offer='terms';
  const termsLine=el('p',{className:'adventure-offer-terms-line'});termsLine.append(terms);
  if(restoreButton)termsLine.append(document.createTextNode(' · '+t('store.restoreHint')+' '),restoreButton);
  root.append(termsLine);

@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "lang": "es",
+  "name": "LUMEN — Puzle de luz",
+  "short_name": "LUMEN",
+  "description": "Coloca Guardianes para completar misiones, recuperar estrellas y volver a iluminar las constelaciones.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07111d",
+  "theme_color": "#07111d",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

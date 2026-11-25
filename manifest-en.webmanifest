@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "lang": "en",
+  "name": "LUMEN — Puzzle of Light",
+  "short_name": "LUMEN",
+  "description": "Place Guardians to solve quests, recover stars and relight the constellations.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07111d",
+  "theme_color": "#07111d",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -30,7 +30,8 @@ try{
    const filename=viewport.mobile?'ci-constellations-public-mobile.png':'ci-constellations-public-desktop.png';
    fs.writeFileSync(path.join(screenshotDir,filename),Buffer.from(data,'base64'));
   }
-  Object.assign(viewportResult,await verifyConstellationDirectory({send,evaluate},url,{locale:'en'}));
+  Object.assign(viewportResult,await verifyConstellationDirectory({send,evaluate},url,{locale:'en'}),
+   await verifyConstellationDirectory({send,evaluate},url,{locale:'es'}),await verifyLearnConstellations({send,evaluate},url,'es'));
  }
  await send('Page.navigate',{url:new URL('/decouvrir.html',url).href});
  await waitForDiscovery('/decouvrir.html');

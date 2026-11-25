@@ -208,6 +208,39 @@ try{
 
   await click('#puzzleGrid .puzzle-card.done');assert.equal(await evaluate("document.getElementById('skyReveal').classList.contains('quest-review')"),true,'A completed quest opens its review');await evaluate(REPLAY_FROM_REVIEW);assert((await snapshot()).replayMode);assert.deepEqual((await snapshot()).progress,original.progress);
   await click('#openSky');await click('#closeMap');assert((await snapshot()).replayMode,'Browsing must preserve replay');
+
+  if(viewport.width===360){
+   const base=canonicalQuestList().filter(q=>q.packId===CONTENT_PACKS[0].id);
+   const first=base.findLast(q=>q.constellationId===base[0].constellationId&&q.legacyIndex!==null);
+   const next=base.find(q=>q.constellationId!==first.constellationId);
+   const all=Object.fromEntries(PERFORMANCE_BADGES.map(key=>[key,true]));
+   const seeded={solved:{},performances:{},canonicalQuestState:{},badges:{historical:1}};
+   for(const quest of base){
+    const badges=quest===first||quest===next?{}:all;
+    if(quest.legacyIndex===null)seeded.canonicalQuestState[quest.id]={solved:true,badges};
+    else{
+     seeded.solved[quest.legacyIndex]=1;
+     seeded.performances[quest.legacyIndex]={version:3,badges};
+    }
+   }
+   await evaluate(`localStorage.setItem('lumenQaProgressV1',${JSON.stringify(JSON.stringify(seeded))});localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1')`);
+   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();await acknowledgeLearningMilestones(evaluate);
+   await click('#openSky');
+   await evaluate(`document.querySelector('#adventureRail button').click();document.querySelector('#sectorTabs .constellation-card').click()`);
+   await click('#badgeFilter');
+   await evaluate(`document.querySelector('[data-quest-id="${first.id}"]').click()`);
+   await evaluate(REPLAY_FROM_REVIEW);
+   await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
+   await until('!document.getElementById("skyReveal").hidden');
+   await evaluate('document.getElementById("skyRevealNext").click()');
+   await until(`lumenDiagnostics.snapshot().levelIndex===${next.legacyIndex}`);
+   await evaluate('(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()');
+   await until('!document.getElementById("skyReveal").hidden');
+   assert.match(await evaluate('document.getElementById("skyRevealNext").textContent'),/Mon ciel/i,'last matching quest offers Mon ciel');
+   await evaluate('document.getElementById("skyRevealNext").click()');
+   await until('!document.getElementById("mapModal").hidden');
+   assert.equal(await evaluate("document.getElementById('badgeFilter').getAttribute('aria-pressed')"),'true');
+  }
   // Real prior progression beyond Adventure 1 remains accessible after reload.
   await evaluate(`localStorage.setItem('lumenQaProgressV1',JSON.stringify({solved:Object.fromEntries(Array.from({length:100},(_,i)=>[i,1])),badges:{historical:1}}));localStorage.removeItem('lumenActiveAttemptV1');localStorage.removeItem('lumenQualifyingStartsV1')`);
   await send('Page.reload',{ignoreCache:true});await sleep(500);await ready();await acknowledgeLearningMilestones(evaluate);await click('#openSky');

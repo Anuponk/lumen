@@ -34,11 +34,11 @@ async function call({fetchImpl=fetch,endpoint,apiKey,accessToken,body}){
  }catch(_){return {http:0,body:{error:'network'}}}
 }
 
-// Start a checkout. Only the product id and the waiver go to the server: never a price.
+// Start a checkout with the product id, waiver and display language. The server owns the price.
 // Returns {status:'redirecting'|'busy'|'already_owned'|'sky_after_single'|'offer_changed'|'not_eligible'|'rate_limited'|'session'|'error'}.
-export async function startStripeCheckout({productId,waiver,navigate,...transport}){
+export async function startStripeCheckout({productId,waiver,navigate,locale,...transport}){
  if(waiver?.accepted!==true)return {status:'waiver'};
- const {http,body}=await call({...transport,body:{mode:'checkout',productId,waiver:true}});
+ const {http,body}=await call({...transport,body:{mode:'checkout',productId,waiver:true,locale}});
  if(http===200&&typeof body.url==='string'&&body.url.startsWith('https://checkout.stripe.com/')){navigate(body.url);return {status:'redirecting'}}
  if(http===409&&body.error==='checkout_in_progress')return {status:'busy'};
  if(http===409&&(body.error==='already_owned'||body.error==='sky_after_single'||body.error==='offer_changed'))return {status:body.error};

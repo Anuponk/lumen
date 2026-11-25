@@ -2,6 +2,7 @@ package fr.nopuna.lumen;
 
 import android.app.ActivityManager;
 import android.app.AlertDialog;
+import android.app.LocaleManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.IntentSender;
@@ -16,6 +17,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.LocaleList;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -489,6 +491,27 @@ public final class LauncherActivity extends com.google.androidbrowserhelper.trus
         gate = false;
         dismissDialog();
         launchTwa();
+    }
+
+    @Override
+    protected Uri getLaunchingUrl() {
+        Uri url = super.getLaunchingUrl();
+        if (url.getFragment() != null || !"/".equals(url.getPath())) return url;
+        LocaleList preferred = LocaleList.getDefault();
+        if (Build.VERSION.SDK_INT >= 33) {
+            LocaleManager manager = getSystemService(LocaleManager.class);
+            if (manager != null) {
+                preferred = manager.getApplicationLocales();
+                if (preferred.isEmpty()) preferred = manager.getSystemLocales();
+            }
+        }
+        for (int i = 0; i < preferred.size(); i++) {
+            String language = preferred.get(i).getLanguage();
+            if ("fr".equals(language) || "en".equals(language) || "es".equals(language)) {
+                return url.buildUpon().encodedFragment("lumen-app-language=" + language).build();
+            }
+        }
+        return url.buildUpon().encodedFragment("lumen-app-language=auto").build();
     }
 
     private void log(String event) {

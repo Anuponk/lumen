@@ -75,6 +75,18 @@ test('a valid checkout is created server-side from the catalogue reservation, fo
  assert.match(p.get('invoice_creation[invoice_data][footer]'),/renonciation au droit de rétractation[^]*L221-28, 13°[^]*TVA non applicable, art\. 293 B du CGI/);
  const attach=f.calls.find(c=>c.name==='lumen_stripe_checkout_attach');assert.equal(attach.args.p_session_id,'cs_test_NEW');
 });
+test('checkout and the durable receipt use the selected language without changing the reservation',async()=>{
+ for(const [requested,locale,name] of [['en','en','Adventure'],['es','es','Aventura'],['xx','fr','Aventure']]){
+  const f=fixture();
+  const r=await f.checkout({body:{productId:'real-adventure-02',waiver:true,locale:requested}});
+  assert.equal(r.status,200);
+  const p=new URLSearchParams(f.calls.find(c=>c.path==='/v1/checkout/sessions'&&c.method==='POST').body);
+  assert.equal(p.get('locale'),locale);
+  assert.equal(p.get('line_items[0][price_data][product_data][name]'),'Lumen · '+name+' 2');
+  assert.equal(p.get('line_items[0][price_data][unit_amount]'),'100');
+  assert.match(p.get('invoice_creation[invoice_data][footer]'),/L221-28.*293 B/);
+ }
+});
 // 2. Unauthenticated
 test('unauthenticated or invalid sessions are refused before any reservation',async()=>{
  for(const [opts,status] of [[{token:null},401],[{},401]]){

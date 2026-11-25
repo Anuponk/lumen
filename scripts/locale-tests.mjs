@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
-import { createLocalePreference, createTranslator, locales } from '../src/ui/i18n.js';
+import { ACCOUNT_LOCALE_FIELD, browserLocalePreference, createLocalePreference, createTranslator, locales } from '../src/ui/i18n.js';
 import fr from '../src/ui/locales/fr/welcome.js';
 import en from '../src/ui/locales/en/welcome.js';
 
@@ -114,4 +114,52 @@ test('plural grammar follows the source of fallback copy and values are formatte
   assert.equal(english.number(1.25, { style: 'currency', currency: 'EUR' }), '€1.25');
   assert.equal(english.number(2, { style: 'unit', unit: 'second', unitDisplay: 'long' }), '2 seconds');
   assert.equal(french.date(new Date('2026-11-20T12:00:00Z'), { month: 'long', timeZone: 'UTC' }), 'novembre');
+});
+
+
+test('device auto, explicit account choices and offline changes are isolated by owner', () => {
+  const device = new Map();
+  const storage = { getItem: key => device.get(key), setItem: (key, value) => device.set(key, value) };
+  const config = { storage, languages: ['es-MX'], clock: () => 30 };
+  const account = (id, mode, at) => ({ id, user_metadata: mode ? { [ACCOUNT_LOCALE_FIELD]: { mode, at } } : {} });
+  const first = createLocalePreference(config);
+  first.setMode('en');
+  first.setAccount(account('a', 'fr', 10));
+  assert.equal(first.locale, 'fr');
+  assert.equal(first.pendingFor('a'), null);
+  first.setMode('es');
+  const queued = first.pendingFor('a');
+  assert.deepEqual(queued, { mode: 'es', at: 30 });
+  first.setAccount(account('a', 'fr', 10));
+  assert.equal(first.locale, 'es', 'stale session events cannot overwrite an offline choice');
+  first.setAccount(account('b'));
+  assert.equal(first.locale, 'en', 'a new account uses the existing device preference');
+  assert.equal(first.pendingFor('a'), null);
+  first.acknowledge('a', queued);
+  first.setAccount(null);
+  assert.equal(first.locale, 'en');
+  const reopened = createLocalePreference({ ...config, initialOwner: 'a' });
+  assert.equal(reopened.locale, 'es');
+  assert.deepEqual(reopened.pendingFor('a'), queued);
+  reopened.setAccount(account('a', 'auto', 40));
+  assert.equal(reopened.mode, 'auto');
+  assert.equal(reopened.locale, 'es', 'auto follows this device');
+  assert.equal(reopened.pendingFor('a'), null);
+  const other = createLocalePreference({ languages: ['en-GB'] });
+  other.setAccount(account('a', 'auto', 40));
+  assert.equal(other.locale, 'en');
+});
+
+test('Android launch hint is tab-scoped, respects overrides and falls back for unknown languages', () => {
+  const local = new Map();
+  const tab = new Map();
+  const adapter = map => ({getItem: key => map.get(key), setItem: (key, value) => map.set(key, value)});
+  const at = hash => browserLocalePreference({ storage: adapter(local), sessionStorage: adapter(tab),
+    navigator: { languages: ['en-US'] }, location: { hash, search: '' } });
+  assert.equal(at('#lumen-app-language=es').locale, 'es');
+  assert.equal(at('').locale, 'es');
+  at('').setMode('fr');
+  assert.equal(at('#lumen-app-language=en').locale, 'fr');
+  at('').setMode('auto');
+  assert.equal(at('#lumen-app-language=auto').locale, 'en');
 });

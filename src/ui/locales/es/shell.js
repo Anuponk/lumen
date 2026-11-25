@@ -1,5 +1,12 @@
 // #945 Español · estructura de la aplicación, cuenta y Mi cielo.
 export default Object.freeze({
+  'credits.attribution': "Datos de las constelaciones occidentales © equipo de Stellarium, CC BY-SA. Coordenadas estelares de Hipparcos II (ESA) a través de CDS VizieR. Proyección y adaptación para Lumen.",
+  'credits.scope': "Los datos de las figuras derivadas de Stellarium siguen bajo la licencia CC BY-SA. La licencia se aplica solo a esos datos.",
+  'credits.stellarium': "Aviso de licencia de Stellarium Western",
+  'credits.licence': "Licencia Creative Commons BY-SA",
+  'credits.catalogue': "Catálogo Hipparcos II (CDS VizieR)",
+  'credits.sources': "Fuentes y adaptaciones documentadas",
+
   'page.title': "LUMEN — Puzle de luz",
   'account.syncLoading': "Cargando tu cielo…",
   'account.syncRestore': "Recuperando tu progreso.",

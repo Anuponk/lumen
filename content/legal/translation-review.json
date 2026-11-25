@@ -1,18 +1,22 @@
 {
   "legal-notice.html": {
-    "mentions-legales.html": "ad8b47768c987349d12a917b3b1a87597c42fe14e6ecc50e6dca192dfc0abbe4",
-    "legal-notice.html": "58fbda3936944e75d62947abcb8d49889d758c6b9be6180366e2fc68dfe8626c"
+    "mentions-legales.html": "5ad2ec45aa598c1447f1460e6b9789811a039d450370afafb676556c233c3fbe",
+    "legal-notice.html": "146159d6aec0cba3221f8ae61ecbbe52ab852166838e2fadebdb3a4de851d4ff",
+    "aviso-legal.html": "9bce4436234de3e0224976b48c2be3110db10f852122a167f9f5eea92c810ffc"
   },
   "privacy-policy.html": {
-    "confidentialite.html": "cbe5d9b9af02a5ab8499977424c6db4be834c69ae7098591d602cf7e9f7d2965",
-    "privacy-policy.html": "7f0052cc155a7ba924d1ab0883878937e35cb6cf19108a5172ff41973fccbef4"
+    "confidentialite.html": "3223ee3c042b46fc393fcb1ebd4679f633c82deddbab9086882207c4a5cb406b",
+    "privacy-policy.html": "b099ab3dfec74451ffab7e6b5d1fd09a4724518fc41f29a39c2d791ba68e1642",
+    "politica-privacidad.html": "2bcfdc25c208f2fe75b6e5589712bee26e3946ede475d74a6dcbd7d93162c404"
   },
   "terms-of-sale.html": {
-    "cgv.html": "4a1c39cc908710417f027e1b706409ff37c1a79868baac974f6b122fdf090611",
-    "terms-of-sale.html": "8866e83efa593b111b9cd1e97e92a00a1fa9c0e8affd1fe8216fb8a9e450c051"
+    "cgv.html": "0bef4bedd0be4f72c633b0dd71751da9bb2e867555f7ba9001fe9b0e42507df9",
+    "terms-of-sale.html": "2d341725dfac5e626ffcb2392cc8b97f73f58a394aa9cf8f94a27d451c61c758",
+    "condiciones-venta.html": "b21611a2e91563590d2a7e4f2eaabef8a8cc399861b101f88236dcca38637214"
   },
   "delete-account.html": {
-    "supprimer-compte.html": "25980ec35e8b03e0470dab21b691e2b831d8f1d9bc433a49b5a00b449f54c5c7",
-    "delete-account.html": "cd834361ec553f2517ad6821fbf9510037b895b68dcd7741f49a1fa7f0a805d0"
+    "supprimer-compte.html": "4234a7c953c1a75b8788d8d15a1dc3380ad6a61d851900ccedf55dac1a79ce3c",
+    "delete-account.html": "d947a49a50ec4bdc6a2e11c6985e103cbc3cd8c3213cef142b6ce6d9215aca2f",
+    "eliminar-cuenta.html": "a60516170a9222319ca4689f0a873e5b76d8c8852a77149074e81fcf73ee0070"
   }
 }

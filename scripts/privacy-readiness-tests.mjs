@@ -36,19 +36,22 @@ assert.equal(englishMail.pathname,url.pathname);
 assert.equal(englishMail.searchParams.get('subject'),'Lumen account deletion request');
 assert.match(englishMail.searchParams.get('body'),/Account email: parent\+account@example\.test/);
 const legalPairs=[
- ['mentions-legales.html','legal-notice.html'],
- ['confidentialite.html','privacy-policy.html'],
- ['cgv.html','terms-of-sale.html'],
- ['supprimer-compte.html','delete-account.html']
+ ['mentions-legales.html','legal-notice.html','aviso-legal.html'],
+ ['confidentialite.html','privacy-policy.html','politica-privacidad.html'],
+ ['cgv.html','terms-of-sale.html','condiciones-venta.html'],
+ ['supprimer-compte.html','delete-account.html','eliminar-cuenta.html']
 ];
 const reviewFile='content/legal/translation-review.json';
-const current=Object.fromEntries(legalPairs.map(([fr,en])=>[
- en, Object.fromEntries([fr,en].map(file=>[file,createHash('sha256')
+const current=Object.fromEntries(legalPairs.map(([fr,en,es])=>[
+ en, Object.fromEntries([fr,en,es].map(file=>[file,createHash('sha256')
    .update(fs.readFileSync(file,'utf8').replace(/\r\n/g,'\n')).digest('hex')]))
 ]));
 if(process.argv[2]==='--review-legal-translations')fs.writeFileSync(reviewFile,JSON.stringify(current,null,2)+'\n');
 assert.deepEqual(current,JSON.parse(fs.readFileSync(reviewFile,'utf8')),'Review the updated French and English documents in context');
-for(const [fr,en] of legalPairs){
+for(const [fr,en,es] of legalPairs){
+ const spanish=fs.readFileSync(es,"utf8");
+ assert(spanish.includes('<html lang="es">'));
+ assert(spanish.includes('href="/'+fr+'" lang="fr"'));
  const original=fs.readFileSync(fr,'utf8'),translation=fs.readFileSync(en,'utf8');
  assert(original.includes('href="/'+en+'" hreflang="en"'));
  assert(translation.includes('<html lang="en">')&&translation.includes('href="/'+fr+'" lang="fr"'));
@@ -56,6 +59,7 @@ for(const [fr,en] of legalPairs){
  assert.equal(translation.includes('content="no-referrer"'),original.includes('content="no-referrer"'));
  for(const shipper of ['scripts/o2switch-cron-publish.sh','scripts/o2switch-safe-release.sh','scripts/o2switch-deploy-tests.py']){
   assert(fs.readFileSync(shipper,'utf8').includes(en),en+' is included in '+shipper);
+  assert(fs.readFileSync(shipper,'utf8').includes(es),es+' is included in '+shipper);
  }
 }
 const englishPage=fs.readFileSync('delete-account.html','utf8');
