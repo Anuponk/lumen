@@ -8,7 +8,12 @@ import urllib.request
 REPOSITORY_ID = 1401296378
 REPOSITORY_API = f"/repositories/{REPOSITORY_ID}"
 REQUIRED = {"cloud-reconciliation-matrix.yml", "canonical-ledger.yml"}
-PR_REQUIRED = {"quality.yml", "cloud-reconciliation-matrix.yml", "canonical-ledger.yml", "cloud-persistence-contract.yml", "docs-consistency.yml"}
+PR_REQUIRED_JOBS = {
+    "quality.yml": "quality",
+    "canonical-ledger.yml": "ledger-sql",
+    "cloud-reconciliation-matrix.yml": "reconciliation",
+}
+PR_REQUIRED = PR_REQUIRED_JOBS.keys() | {"cloud-persistence-contract.yml", "docs-consistency.yml"}
 
 
 def check_runs(runs, sha):
@@ -30,6 +35,27 @@ def check_runs(runs, sha):
     if pending:
         return 75, "Waiting for exact-SHA release gates: " + ", ".join(pending)
     return 0, "All release gates passed for " + sha
+
+
+def has_required_pr_job(run, name, fetch):
+    path = (f"{REPOSITORY_API}/actions/runs/{run['id']}"
+            f"/attempts/{run.get('run_attempt', 1)}/jobs?per_page=100")
+    result = fetch(path)
+    jobs = result["jobs"]
+    required = [job for job in jobs if job.get("name") == name]
+    if len(jobs) != result.get("total_count") or len(required) != 1:
+        return False
+    if required[0].get("status") != "completed":
+        return False
+    if required[0].get("conclusion") == "success":
+        return True
+    # Previous #744 workflows skipped the static check after a successful
+    # landing classifier. A deferred draft has no successful classifier.
+    return (name in ("ledger-sql", "reconciliation")
+            and required[0].get("conclusion") == "skipped"
+            and len(jobs) == 2
+            and any(job.get("name") == "scope" and job.get("status") == "completed"
+                    and job.get("conclusion") == "success" for job in jobs))
 
 
 def validated_merged_pr(sha, fetch):
@@ -77,17 +103,10 @@ def validated_merged_pr(sha, fetch):
                 return 75, "Waiting for PR release gate: " + name
             if run.get("conclusion") != "success":
                 return 1, "PR release gate failed: " + name
-        # An all-skipped draft workflow can report success without validating the PR.
-        quality_run = latest["quality.yml"]
-        job_path = (f"{REPOSITORY_API}/actions/runs/{quality_run['id']}"
-                    f"/attempts/{quality_run.get('run_attempt', 1)}/jobs?per_page=100")
-        job_results = fetch(job_path)
-        jobs = job_results["jobs"]
-        quality_jobs = [job for job in jobs if job.get("name") == "quality"]
-        if (len(jobs) != job_results.get("total_count") or len(quality_jobs) != 1
-                or quality_jobs[0].get("status") != "completed"
-                or quality_jobs[0].get("conclusion") != "success"):
-            return 1, "PR quality workflow lacks a successful required quality job"
+        # A successful workflow alone does not prove that a required job ran.
+        for workflow, name in PR_REQUIRED_JOBS.items():
+            if not has_required_pr_job(latest[workflow], name, fetch):
+                return 1, "PR workflow lacks required check evidence: " + name
         return 0, "Merged PR quality verified: #" + str(pr["number"])
     return 1, "No verified squash/merge PR matching the exact main commit and parents"
 

@@ -2627,13 +2627,14 @@ denial. The shop displays no count while the server response is unavailable.
 | `landing` | `decouvrir.html`, `comment-jouer.html`, `apprendre-constellations.html`, `robots.txt`, `sitemap.xml`, `src/landing/*`, the `scripts/landing-*.mjs` files, `scripts/how-to-play.mjs`, with or without docs | Formatting and o2switch release tests; `landing-seo-tests`; `landing-browser-tests` on shard 1 |
 | `full` | Anything else, e.g. `index.html`, `sw.js`, `src/` outside `landing`, release scripts, workflows, `ci-scope.mjs` | Everything |
 
-**What `landing` skips:** the other Node suites, the cloud steps, browser shards 2 and 3, and the `ledger-sql` and `reconciliation` jobs.
+**What `landing` skips:** the other Node suites, the cloud steps, browser shards 2 and 3, and the ledger and reconciliation suites. The latter two required checks confirm the successful base classification.
 
 **Mechanics:**
 - `prepare` (`quality.yml`) exposes `scope`, and `LUMEN_QUALITY_SCOPE` reaches `quality-gate.mjs` in both the `node` and `browser` jobs.
 - The browser matrix schedules only shard 1 for `landing`. `selectQualityPlan` (`quality-gate-browser-suites.mjs`) runs the page suite there and rejects unknown scopes.
-- `canonical-ledger.yml` and `cloud-reconciliation-matrix.yml` each have a `scope` job. Their required job is skipped for `landing`; a skipped required job reports success.
-- Pushes to `main` always run everything.
+- `canonical-ledger.yml` and `cloud-reconciliation-matrix.yml` classify ready PRs in `scope`. A successful `landing` result runs a confirmation under the required check name. Missing or failed classification takes the full route.
+- Drafts defer these suites. The required names are reported by the eligible jobs after readiness.
+- Pushes to `main` run both full suites on the exact commit. PR classification is omitted.
 
 **Tests:**
 - `scripts/ci-scope-tests.mjs` (quality gate): classification, fail-closed CLI and wiring.

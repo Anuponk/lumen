@@ -37,8 +37,7 @@ assert.equal(cli(path.join(dir,'docs')),'scope=docs\nrun_full=false\n');
 assert.equal(cli(path.join(dir,'missing')),'scope=full\nrun_full=true\n');
 fs.rmSync(dir,{recursive:true,force:true});
 
-// Wiring: the quality job runs the page checks and skips the game suites; the other
-// required workflows skip their job (a skipped required job reports success).
+// Hosted jobs keep their required names only when they can produce review evidence.
 const read=p=>fs.readFileSync(p,'utf8').replace(/\r\n/g,'\n');
 const quality=read('.github/workflows/quality.yml'),suites=read('scripts/quality-gate-browser-suites.mjs'),gate=read('scripts/quality-gate.mjs');
 assert.match(quality,/git show "\$BASE_SHA:scripts\/ci-scope\.mjs" > \/tmp\/ci-scope\.mjs[^\n]*\n\s+node \/tmp\/ci-scope\.mjs \/tmp\/lumen-changed-paths/,'The base classifier decides');
@@ -52,9 +51,20 @@ for(const step of ['Complete cloud profile backup regression','Cross-device clou
 assert.match(quality,/name: Validate o2switch release script syntax\n\s+run:/,'Release tests still run for the page');
 assert.match(suites,/"script": "landing-browser-tests\.mjs",\n\s+"output": "ci-landing\.json",\n\s+"port": 9261/);
 assert.match(gate,/selectNodeSuites\(plan\.scope\)/);
+const readyPR="github.event_name == 'pull_request' && github.event.pull_request.draft == false";
+const landing="needs.scope.result == 'success' && needs.scope.outputs.scope == 'landing'";
+const full="needs.scope.result != 'success' || needs.scope.outputs.scope != 'landing'";
+const mainOrReview="(github.event_name == 'push' || ("+readyPR+" && ("+full+")))";
+const landingReview="("+readyPR+" && "+landing+")";
+const expressionStart='$'+'{{ ';
 for(const [file,job] of [['.github/workflows/canonical-ledger.yml','ledger-sql'],['.github/workflows/cloud-reconciliation-matrix.yml','reconciliation']]){
- const w=read(file);
+ const w=read(file),flat=w.replace(/\s+/g,' ');
  assert.match(w,/git show "\$BASE_SHA:scripts\/ci-scope\.mjs" > \/tmp\/ci-scope\.mjs[^\n]*\n\s+node \/tmp\/ci-scope\.mjs \/tmp\/lumen-changed-paths/,file);
- assert.match(w,new RegExp('  '+job+':\\n    needs: scope\\n    if: needs\\.scope\\.outputs\\.scope != \'landing\'\\n'),file);
+ assert.match(w,/types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/,file);
+ assert.ok(w.includes('  scope:\n    if: '+readyPR),file+' scopes only ready PRs');
+ assert.ok(flat.includes(expressionStart+mainOrReview+" && '"+job+"' || '"+job+"-deferred' }}"),file+' full gate check name');
+ assert.ok(flat.includes(expressionStart+'!cancelled() && '+mainOrReview+' }}'),file+' full gate runs on main without needing scope');
+ assert.ok(flat.includes(expressionStart+landingReview+" && '"+job+"' || '"+job+"-landing-deferred' }}"),file+' landing check name');
+ assert.ok(flat.includes(expressionStart+'!cancelled() && '+landingReview+' }}'),file+' landing requires base classifier success');
 }
-console.log('ci-scope-tests: docs, landing and full scopes, fail-closed CLI and workflow wiring OK');
+console.log('ci-scope-tests: docs, landing and full scopes, draft deferral, release and fail-closed wiring OK');

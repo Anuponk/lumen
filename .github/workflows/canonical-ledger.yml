@@ -1,6 +1,7 @@
 name: Canonical ledger SQL regression
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   push:
     branches: [main]
 permissions:
@@ -9,9 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
-  # #744: a presentation-page-only pull request skips this job; a skipped required
-  # job reports success. Pushes to main and any ambiguity keep the full job.
+  # Main always runs the full suite and needs no pull request classification.
   scope:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     outputs:
       scope: ${{ steps.scope.outputs.scope }}
@@ -40,9 +41,32 @@ jobs:
           else
             echo "Scope classifier absent from the base; running the full gate"
           fi
+  # The two routes can publish the required check name only when eligible.
+  landing-check:
+    needs: scope
+    name: >-
+      ${{ (github.event_name == 'pull_request' && github.event.pull_request.draft == false &&
+      needs.scope.result == 'success' && needs.scope.outputs.scope == 'landing') &&
+      'ledger-sql' || 'ledger-sql-landing-deferred' }}
+    if: >-
+      ${{ !cancelled() && (github.event_name == 'pull_request' && github.event.pull_request.draft == false &&
+      needs.scope.result == 'success' && needs.scope.outputs.scope == 'landing') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm the reviewed presentation-only scope
+        run: echo 'The base classifier confirmed a presentation-only pull request.'
+
   ledger-sql:
     needs: scope
-    if: needs.scope.outputs.scope != 'landing'
+    name: >-
+      ${{ (github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false &&
+      (needs.scope.result != 'success' || needs.scope.outputs.scope != 'landing'))) &&
+      'ledger-sql' || 'ledger-sql-deferred' }}
+    if: >-
+      ${{ !cancelled() && (github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false &&
+      (needs.scope.result != 'success' || needs.scope.outputs.scope != 'landing'))) }}
     runs-on: ubuntu-latest
     services:
       postgres:
