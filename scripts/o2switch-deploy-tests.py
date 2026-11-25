@@ -108,15 +108,19 @@ class Gates(unittest.TestCase):
               "head": {"sha": head, "repo": {"id": REPOSITORY_ID, "full_name": "Anuponk/project-menlu"}}}
         trusted_run_repository = {"id": REPOSITORY_ID, "full_name": "Anuponk/renamed-again"}
         run_repository = trusted_run_repository
-        verified_jobs = [{"name": "quality", "status": "completed", "conclusion": "success"}]
-        quality_jobs = verified_jobs
+        names = {1: "ledger-sql", 3: "reconciliation", 5: "quality"}
+        verified_jobs = {run_id: [{"name": name, "status": "completed", "conclusion": "success"}]
+                         for run_id, name in names.items()}
+        jobs_by_run = verified_jobs.copy()
         def fetch(path):
             if path.endswith("/commits/" + merged):
                 return {"parents": [{"sha": base}]}
             if path.endswith("/commits/" + merged + "/pulls"):
                 return [pr]
             if path.endswith("/attempts/1/jobs?per_page=100"):
-                return {"total_count": len(quality_jobs), "jobs": quality_jobs}
+                run_id = int(path.split("/actions/runs/", 1)[1].split("/", 1)[0])
+                jobs = jobs_by_run[run_id]
+                return {"total_count": len(jobs), "jobs": jobs}
             if "actions/runs?" in path:
                 return {"workflow_runs": [
                     {"id": i, "path": ".github/workflows/" + name,
@@ -126,14 +130,22 @@ class Gates(unittest.TestCase):
                     for i, name in enumerate(sorted(ci.PR_REQUIRED), 1)]}
             raise AssertionError(path)
         self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 0)
-        for quality_jobs in (
-            [],
-            [{"name": "quality-deferred", "status": "completed", "conclusion": "skipped"}],
-            [{"name": "quality", "status": "completed", "conclusion": "skipped"}],
-            [{"name": "quality", "status": "completed", "conclusion": "failure"}],
-        ):
-            self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
-        quality_jobs = verified_jobs
+        scope_skipped = {"name": "scope", "status": "completed", "conclusion": "skipped"}
+        for run_id, name in names.items():
+            for bad_jobs in (
+                [],
+                [{"name": name + "-deferred", "status": "completed", "conclusion": "skipped"}, scope_skipped],
+                [{"name": name, "status": "completed", "conclusion": "skipped"}, scope_skipped],
+                [{"name": name, "status": "completed", "conclusion": "failure"}],
+            ):
+                jobs_by_run[run_id] = bad_jobs
+                self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
+            jobs_by_run[run_id] = verified_jobs[run_id]
+        # Historic presentation-only PRs skipped both suites after base classification.
+        scope_ok = {"name": "scope", "status": "completed", "conclusion": "success"}
+        for run_id in (1, 3):
+            jobs_by_run[run_id] = [scope_ok, {"name": names[run_id], "status": "completed", "conclusion": "skipped"}]
+        self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 0)
         for run_repository in (None, {"full_name": "Anuponk/project-menlu"}, {"id": REPOSITORY_ID + 1}):
             self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 75)
         run_repository = trusted_run_repository
@@ -159,8 +171,10 @@ class Gates(unittest.TestCase):
             if path.endswith("/commits/" + merged + "/pulls"):
                 return [pr]
             if path.endswith("/attempts/1/jobs?per_page=100"):
+                run_id = int(path.split("/actions/runs/", 1)[1].split("/", 1)[0])
+                check = {1: "ledger-sql", 3: "reconciliation", 5: "quality"}[run_id]
                 return {"total_count": 1, "jobs": [
-                    {"name": "quality", "status": "completed", "conclusion": "success"}]}
+                    {"name": check, "status": "completed", "conclusion": "success"}]}
             if "actions/runs?" in path:
                 return {"workflow_runs": [
                     {"id": i, "path": ".github/workflows/" + name,

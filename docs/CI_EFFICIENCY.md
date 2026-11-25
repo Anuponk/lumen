@@ -11,12 +11,19 @@ boundaries change. Use a draft for unfinished work that needs to be shared.
 Batch related corrections and push the tested revision. Mark the PR ready
 after local validation.
 
-Draft events defer the `quality` workflow's runner jobs. On readiness and on
-subsequent ready-PR revisions, GitHub still performs the usual `quality`
-checks. Deferred or skipped jobs cannot supply the required quality result.
-The other required workflows keep their existing triggers. The publisher
-verifies the successful `quality` job for the exact workflow attempt, in
-addition to the reviewed head, merge ancestry and exact-main gates.
+Draft events defer the `quality`, `ledger-sql` and `reconciliation` workloads.
+Marking a PR ready for review schedules their required checks, and subsequent
+ready-PR revisions still receive the applicable suites. The cloud declaration
+and documentation checks keep their existing triggers. Landing-only PRs get
+a small confirmation job for each existing exemption. The base classifier
+must have passed and emitted `landing` for those exemptions to apply.
+
+Both main suites run in full on the exact merged SHA. The two scope jobs are
+PR-only, so a main push uses no runner for PR classification. The publisher
+verifies the required PR jobs in the exact workflow attempts as well as the
+reviewed head, merge ancestry and both exact-main workflows. A deferred draft
+cannot provide publication evidence. Older landing-only checks with a
+successful base classifier retain the #744 exemption.
 
 The automatic deployment is triggered by main ledger SQL completion. This
 normally avoids allocating a production runner while the slower SQL suite is
@@ -80,7 +87,7 @@ browser results, or explicit documentation-only classification with both runtime
 jobs skipped. Matrix fail-fast is disabled so independent failures retain reports.
 Workflow identity, the final `quality` context, independent cloud/SQL checks,
 documentation classification and optional learning selection remain unchanged.
-Presentation-page scope (#744): `prepare` also exposes `scope` from the base copy of `scripts/ci-scope.mjs`. For a `landing` PR, the `node` job runs formatting, the release tests and `landing-seo-tests`. Only browser shard 1 is scheduled and runs `landing-browser-tests`. `ledger-sql` and `reconciliation` are skipped. See [TESTING](TESTING.md#ci-scope-presentation-page-only-744).
+Presentation-page scope (#744): `prepare` also exposes `scope` from the base copy of `scripts/ci-scope.mjs`. For a `landing` PR, the `node` job runs formatting, the release tests and `landing-seo-tests`. Only browser shard 1 is scheduled and runs `landing-browser-tests`. The ledger and reconciliation suites are replaced by lightweight confirmations of the base classification for their required checks. See [TESTING](TESTING.md#ci-scope-presentation-page-only-744).
 The old schedule/main-only steps were unreachable under the PR-only trigger and
 are removed; no current validation is removed.
 

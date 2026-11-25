@@ -28,7 +28,10 @@ For o2switch, `Deploy Lumen to o2switch` publishes the exact successful `main`
 revision after all three release gates pass, when `O2SWITCH_DEPLOY_ENABLED=true`. The main ledger SQL workflow triggers
 publication after successful completion, so the deployment runner usually does
 not wait for the slow SQL suite. The verifier still requires both exact-main
-gates and a successful `quality` job on the reviewed PR workflow attempt.
+gates and the required `quality`, `ledger-sql` and `reconciliation` checks on the
+specific reviewed PR workflow attempts. A ready landing-only PR confirms the
+existing #744 exemption through its base classifier. A deferred draft provides
+no publication evidence.
 The verifier uses the stable GitHub repository ID for API lookups and matches it
 against the PR base, PR head and workflow runs. A rename keeps the same identity.
 A missing or different ID cannot satisfy a release gate.
