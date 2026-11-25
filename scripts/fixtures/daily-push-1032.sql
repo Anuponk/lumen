@@ -16,6 +16,8 @@ declare
  subscription constant jsonb:=jsonb_build_object('endpoint','https://fcm.googleapis.com/fcm/send/synthetic-1032',
   'keys',jsonb_build_object('p256dh',key,'auth',repeat('A',22)));
  result jsonb;
+ consent_at timestamptz;
+ device_activity timestamptz;
 begin
  assert not has_function_privilege('anon',account_rpc,'execute'),'hosted anon defaults explicitly revoked';
  assert not has_function_privilege('anon',internal_rpc,'execute');
@@ -60,6 +62,11 @@ begin
   raise exception 'unsupported host accepted';
  exception when invalid_parameter_value then assert sqlerrm='push_invalid_device'; end;
  begin
+  perform public.lumen_daily_push_v1(a,'enable',d1,0,true,
+   subscription||'{"endpoint":"https://fcmXgoogleapisYcom/geography"}','Europe/Paris','fr');
+  raise exception 'lookalike host accepted';
+ exception when invalid_parameter_value then assert sqlerrm='push_invalid_device'; end;
+ begin
   perform public.lumen_daily_push_v1(a,'enable',d1,0,true,subscription,'Moon/Base','fr');
   raise exception 'unsupported time zone accepted';
  exception when invalid_parameter_value then assert sqlerrm='push_invalid_device'; end;
@@ -68,6 +75,46 @@ begin
  assert result->>'dailyEnabled'='true' and result->>'deviceRegistered'='true' and result->>'revision'='1'
     and result->>'reminderHour'='18';
  assert not (result ? 'endpoint' or result ? 'subscription' or result ? 'keys'),'browser cannot read secrets';
+ reset role;
+ select daily_consented_at into consent_at from lumen_commands.push_preferences where user_id=a;
+ set local role authenticated;
+ result:=public.lumen_daily_push_v1(a,'refresh',d1,1,null,null,'America/Chicago','en');
+ assert result->>'dailyEnabled'='true' and result->>'revision'='1' and result->>'deviceRegistered'='true';
+ begin
+  perform public.lumen_daily_push_v1(a,'refresh',d1,0,null,null,'Europe/Paris','fr');
+  raise exception 'stale device refresh accepted';
+ exception when serialization_failure then assert sqlerrm='push_stale_revision'; end;
+ begin
+  perform public.lumen_daily_push_v1(a,'refresh',d2,1,null,null,'America/Chicago','en');
+  raise exception 'unregistered device was refreshed';
+ exception when invalid_parameter_value then assert sqlerrm='push_device_unavailable'; end;
+ begin
+  perform public.lumen_daily_push_v1(a,'refresh',d1,1,null,subscription,'America/Chicago','en');
+  raise exception 'refresh accepted a replacement subscription';
+ exception when invalid_parameter_value then assert sqlerrm='push_invalid_request'; end;
+ reset role;
+ assert (select daily_consented_at=consent_at and revision=1 from lumen_commands.push_preferences where user_id=a),
+  'travel does not extend consent';
+ assert (select timezone='America/Chicago' and locale='en' and endpoint=subscription->>'endpoint'
+   and p256dh=key and auth_secret=repeat('A',22) from lumen_commands.push_devices where user_id=a and device_id=d1),
+  'refresh changes only locale, zone and device activity';
+
+ update lumen_commands.push_devices set updated_at=now()-interval '1 day' where user_id=a and device_id=d1
+ returning updated_at into device_activity;
+ set local role authenticated;
+ perform public.lumen_daily_push_v1(a,'refresh',d1,1,null,null,'America/Chicago','en');
+ reset role;
+ assert (select updated_at=device_activity from lumen_commands.push_devices where user_id=a and device_id=d1),
+  'unchanged recent metadata is write-free';
+ update lumen_commands.push_devices set updated_at=now()-interval '31 days' where user_id=a and device_id=d1
+ returning updated_at into device_activity;
+ set local role authenticated;
+ perform public.lumen_daily_push_v1(a,'refresh',d1,1,null,null,'America/Chicago','en');
+ reset role;
+ assert (select updated_at>device_activity from lumen_commands.push_devices where user_id=a and device_id=d1),
+  'confirmed device activity renews the aging subscription even without a metadata change';
+ assert (select daily_consented_at=consent_at and revision=1 from lumen_commands.push_preferences where user_id=a);
+ set local role authenticated;
  result:=public.lumen_daily_push_v1(a,'read',d2);
  assert result->>'dailyEnabled'='true' and result->>'deviceRegistered'='false','account and device are separate';
  begin
@@ -93,8 +140,22 @@ begin
  reset role;
  update lumen_commands.feature_flags set enabled=false where name='daily_push';
  set local role authenticated;
+ begin
+  perform public.lumen_daily_push_v1(a,'refresh',d1,1,null,null,'America/Chicago','en');
+  raise exception 'disabled rollout accepted device refresh';
+ exception when insufficient_privilege then assert sqlerrm='push_disabled'; end;
  result:=public.lumen_daily_push_v1(a,'disable',d1,1);
  assert result->>'dailyEnabled'='false' and result->>'revision'='2' and result->>'deviceRegistered'='true';
+ reset role;
+ update lumen_commands.feature_flags set enabled=true where name='daily_push';
+ set local role authenticated;
+ begin
+  perform public.lumen_daily_push_v1(a,'refresh',d1,2,null,null,'America/Chicago','en');
+  raise exception 'device refresh revived disabled consent';
+ exception when invalid_parameter_value then assert sqlerrm='push_device_unavailable'; end;
+ reset role;
+ update lumen_commands.feature_flags set enabled=false where name='daily_push';
+ set local role authenticated;
  result:=public.lumen_daily_push_v1(a,'unlink',d1);
  assert result->>'deviceRegistered'='false' and result->>'revision'='3','revocation works with flag off';
  reset role;

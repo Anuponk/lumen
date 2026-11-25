@@ -66,6 +66,7 @@ declare
  v_flag boolean;
  v_public_key text;
  v_pref lumen_commands.push_preferences%rowtype;
+ v_device lumen_commands.push_devices%rowtype;
  v_endpoint text;
  v_p256dh text;
  v_auth text;
@@ -81,9 +82,10 @@ begin
     or not exists(select 1 from lumen.profiles as p where p.user_id=v_user) then
   raise exception using errcode='42501',message='push_account_required';
  end if;
- if p_action is null or p_action not in ('read','enable','disable','unlink')
-    or (p_action in ('enable','unlink') and p_device_id is null)
-    or (p_action in ('enable','disable') and coalesce(p_expected_revision,-1)<0) then
+ if p_action is null or p_action not in ('read','enable','disable','unlink','refresh')
+    or (p_action in ('enable','unlink','refresh') and p_device_id is null)
+    or (p_action in ('enable','disable','refresh') and coalesce(p_expected_revision,-1)<0)
+    or (p_action='refresh' and p_subscription is not null) then
   raise exception using errcode='22023',message='push_invalid_request';
  end if;
 
@@ -92,30 +94,39 @@ begin
  join lumen_commands.feature_flags as f on f.name='daily_push' and f.enabled
  where c.singleton;
  v_flag:=v_public_key is not null;
- if p_action='enable' then
+ if p_action in ('enable','refresh') then
   if not v_flag then raise exception using errcode='42501',message='push_disabled'; end if;
-  if p_confirm_daily is distinct from true then
+  if p_action='enable' and p_confirm_daily is distinct from true then
    raise exception using errcode='22023',message='push_consent_required';
   end if;
+  if coalesce(p_locale,'') not in ('fr','en','es')
+     or coalesce(length(p_timezone),0) not between 1 and 80
+     or not exists(select 1 from pg_catalog.pg_timezone_names as tz where tz.name=p_timezone) then
+   raise exception using errcode='22023',message='push_invalid_device';
+  end if;
+ end if;
+ if p_action='enable' then
   v_endpoint:=p_subscription->>'endpoint';
   v_p256dh:=p_subscription#>>'{keys,p256dh}';
   v_auth:=p_subscription#>>'{keys,auth}';
   -- Future delivery may reach only supported Web Push providers, over HTTPS.
   -- Ignore any extra subscription fields and persist no whole request object.
   if coalesce(length(v_endpoint),0) not between 25 and 2048
-     or v_endpoint !~ '^https://(fcm.googleapis.com|updates.push.services.mozilla.com|web.push.apple.com)/[A-Za-z0-9._~%/?=&+:-]+$'
+     or v_endpoint !~ '^https://(fcm[.]googleapis[.]com|updates[.]push[.]services[.]mozilla[.]com|web[.]push[.]apple[.]com)/[A-Za-z0-9._~%/?=&+:-]+$'
      or coalesce(v_p256dh,'') !~ '^B[A-Za-z0-9_-]{86}$'
-     or coalesce(v_auth,'') !~ '^[A-Za-z0-9_-]{22}$'
-     or coalesce(p_locale,'') not in ('fr','en','es')
-     or coalesce(length(p_timezone),0) not between 1 and 80
-     or not exists(select 1 from pg_catalog.pg_timezone_names as tz where tz.name=p_timezone) then
+     or coalesce(v_auth,'') !~ '^[A-Za-z0-9_-]{22}$' then
    raise exception using errcode='22023',message='push_invalid_device';
   end if;
  end if;
 
  if p_action<>'read' then
-  insert into lumen_commands.push_preferences(user_id) values(v_user) on conflict(user_id) do nothing;
+  if p_action<>'refresh' then
+   insert into lumen_commands.push_preferences(user_id) values(v_user) on conflict(user_id) do nothing;
+  end if;
   select p.* into v_pref from lumen_commands.push_preferences as p where p.user_id=v_user for update;
+  if p_action='refresh' and (not found or v_pref.daily_consented_at is null) then
+   raise exception using errcode='22023',message='push_device_unavailable';
+  end if;
   if p_action<>'unlink' and v_pref.revision<>p_expected_revision then
    raise exception using errcode='40001',message='push_stale_revision';
   end if;
@@ -133,12 +144,22 @@ begin
    exception when unique_violation then
     raise exception using errcode='22023',message='push_device_conflict';
    end;
-  end if;
-  if p_action='unlink' then
+  elsif p_action='refresh' then
+   select d.* into v_device from lumen_commands.push_devices as d
+   where d.user_id=v_user and d.device_id=p_device_id and d.updated_at>=v_now-interval '90 days' for update;
+   if not found then
+    raise exception using errcode='22023',message='push_device_unavailable';
+   end if;
+   if v_device.timezone<>p_timezone or v_device.locale<>p_locale or v_device.updated_at<v_now-interval '30 days' then
+    update lumen_commands.push_devices as d
+    set timezone=p_timezone,locale=p_locale,updated_at=v_now
+    where d.user_id=v_user and d.device_id=p_device_id;
+   end if;
+  elsif p_action='unlink' then
    delete from lumen_commands.push_devices as d where d.user_id=v_user and d.device_id=p_device_id;
   end if;
   -- A revocation invalidates an in-flight enrollment even if the user had already turned reminders off.
-  if p_action<>'enable' or v_pref.daily_consented_at is null then
+  if p_action in ('disable','unlink') or (p_action='enable' and v_pref.daily_consented_at is null) then
    update lumen_commands.push_preferences as p
    set revision=p.revision+1,daily_consented_at=case p_action
     when 'disable' then null when 'enable' then v_now else p.daily_consented_at end

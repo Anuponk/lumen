@@ -38,7 +38,7 @@ Il masque l’endpoint et les clés de souscription.
 `lumen_daily_push_v1` expose une réponse sans données d’abonnement. Son compte
 provient d’une session Auth encore valide pour un profil Lumen. Le client
 passe son identifiant de compte attendu pour bloquer un changement de compte
-pendant une requête. Les options sont `read`, `enable`, `disable` et `unlink`.
+pendant une requête. Les options sont `read`, `enable`, `disable`, `unlink` et `refresh`.
 La réponse donne la version du contrat, la disponibilité, l’état quotidien du
 compte, le statut du seul appareil demandé, la révision, l’heure de rappel et
 la clé publique si la fonctionnalité est disponible.
@@ -49,6 +49,11 @@ la clé publique si la fonctionnalité est disponible.
 - `disable` désactive le rappel au niveau du compte et avance la révision.
   `unlink` supprime l’abonnement d’un appareil du compte et avance aussi la
   révision. Les deux commandes restent disponibles si le drapeau est coupé.
+- `refresh` actualise le fuseau, la langue et l'activité d'un appareil déjà
+  inscrit. Elle requiert l'accord et la révision en cours. Le navigateur
+  la déclenche au retour dans Lumen après un changement ou au bout de 30 jours
+  d'activité depuis le dernier enregistrement. L'accord, sa révision et les
+  clés de l'inscription restent identiques.
 - Une révision périmée est refusée. Relire l’état serveur avant toute nouvelle
   action. Si une réponse de désactivation est perdue, la relecture peut prouver
   que le choix est déjà désactivé. Une requête en attente ne vaut pas accord.
