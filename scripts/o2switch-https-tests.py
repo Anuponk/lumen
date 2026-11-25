@@ -260,6 +260,7 @@ class ClientTests(unittest.TestCase):
         self.assertIn('needs: [deploy, deploy-retry-1, deploy-retry-2]', workflow)
         self.assertIn('*" published "*', workflow)
         self.assertIn("cancel-in-progress: false", workflow)
+        self.assertIn("workflows: ['Canonical ledger SQL regression']", workflow)
 
     def test_filter_diagnostic_bounds_body_and_rejects_untrusted_request_id(self):
         marker = 'https://faq.o2switch.fr/cpanel/o2switch/tiger-protect-waf/'

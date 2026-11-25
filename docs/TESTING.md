@@ -778,6 +778,10 @@ fully atomic offline application release. Existing eight browser suites remain.
 
 ## Local affected tests (phase 2)
 
+Before marking a PR ready for review, run the applicable checks locally
+and group related corrections in one push. See the
+[local-first workflow](CI_EFFICIENCY.md#local-first-validation-and-publication-1039).
+
 Requires Node 22+ and Git on PATH. No npm install or third-party test dependency:
 `npm run test:affected` aliases `node scripts/test-affected.mjs`.
 The application remains static native ES modules, without a build step.

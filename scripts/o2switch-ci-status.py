@@ -77,6 +77,17 @@ def validated_merged_pr(sha, fetch):
                 return 75, "Waiting for PR release gate: " + name
             if run.get("conclusion") != "success":
                 return 1, "PR release gate failed: " + name
+        # An all-skipped draft workflow can report success without validating the PR.
+        quality_run = latest["quality.yml"]
+        job_path = (f"{REPOSITORY_API}/actions/runs/{quality_run['id']}"
+                    f"/attempts/{quality_run.get('run_attempt', 1)}/jobs?per_page=100")
+        job_results = fetch(job_path)
+        jobs = job_results["jobs"]
+        quality_jobs = [job for job in jobs if job.get("name") == "quality"]
+        if (len(jobs) != job_results.get("total_count") or len(quality_jobs) != 1
+                or quality_jobs[0].get("status") != "completed"
+                or quality_jobs[0].get("conclusion") != "success"):
+            return 1, "PR quality workflow lacks a successful required quality job"
         return 0, "Merged PR quality verified: #" + str(pr["number"])
     return 1, "No verified squash/merge PR matching the exact main commit and parents"
 

@@ -42,6 +42,9 @@ fs.rmSync(dir,{recursive:true,force:true});
 const read=p=>fs.readFileSync(p,'utf8').replace(/\r\n/g,'\n');
 const quality=read('.github/workflows/quality.yml'),suites=read('scripts/quality-gate-browser-suites.mjs'),gate=read('scripts/quality-gate.mjs');
 assert.match(quality,/git show "\$BASE_SHA:scripts\/ci-scope\.mjs" > \/tmp\/ci-scope\.mjs[^\n]*\n\s+node \/tmp\/ci-scope\.mjs \/tmp\/lumen-changed-paths/,'The base classifier decides');
+assert.match(quality,/types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+assert.match(quality,/  prepare:\n    if: github\.event\.pull_request\.draft == false/);
+assert.match(quality,/  quality:\n    name: \$\{\{ github\.event\.pull_request\.draft == false && 'quality' \|\| 'quality-deferred' \}\}\n    needs: \[prepare, node, browser\]\n    if: always\(\) && github\.event\.pull_request\.draft == false/);
 assert.match(quality,/      scope: \$\{\{ steps\.scope\.outputs\.scope \}\}/);
 assert.equal(quality.match(/LUMEN_QUALITY_SCOPE: \$\{\{ needs\.prepare\.outputs\.scope \|\| 'full' \}\}/g).length,2,'Node and browser jobs receive the scope');
 for(const step of ['Complete cloud profile backup regression','Cross-device cloud persistence regression matrix','Guest save migration recovery regression','OAuth redirect regression'])

@@ -108,11 +108,15 @@ class Gates(unittest.TestCase):
               "head": {"sha": head, "repo": {"id": REPOSITORY_ID, "full_name": "Anuponk/project-menlu"}}}
         trusted_run_repository = {"id": REPOSITORY_ID, "full_name": "Anuponk/renamed-again"}
         run_repository = trusted_run_repository
+        verified_jobs = [{"name": "quality", "status": "completed", "conclusion": "success"}]
+        quality_jobs = verified_jobs
         def fetch(path):
             if path.endswith("/commits/" + merged):
                 return {"parents": [{"sha": base}]}
             if path.endswith("/commits/" + merged + "/pulls"):
                 return [pr]
+            if path.endswith("/attempts/1/jobs?per_page=100"):
+                return {"total_count": len(quality_jobs), "jobs": quality_jobs}
             if "actions/runs?" in path:
                 return {"workflow_runs": [
                     {"id": i, "path": ".github/workflows/" + name,
@@ -122,6 +126,14 @@ class Gates(unittest.TestCase):
                     for i, name in enumerate(sorted(ci.PR_REQUIRED), 1)]}
             raise AssertionError(path)
         self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 0)
+        for quality_jobs in (
+            [],
+            [{"name": "quality-deferred", "status": "completed", "conclusion": "skipped"}],
+            [{"name": "quality", "status": "completed", "conclusion": "skipped"}],
+            [{"name": "quality", "status": "completed", "conclusion": "failure"}],
+        ):
+            self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
+        quality_jobs = verified_jobs
         for run_repository in (None, {"full_name": "Anuponk/project-menlu"}, {"id": REPOSITORY_ID + 1}):
             self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 75)
         run_repository = trusted_run_repository
@@ -146,6 +158,9 @@ class Gates(unittest.TestCase):
                 return {"parents": [{"sha": value} for value in parents]}
             if path.endswith("/commits/" + merged + "/pulls"):
                 return [pr]
+            if path.endswith("/attempts/1/jobs?per_page=100"):
+                return {"total_count": 1, "jobs": [
+                    {"name": "quality", "status": "completed", "conclusion": "success"}]}
             if "actions/runs?" in path:
                 return {"workflow_runs": [
                     {"id": i, "path": ".github/workflows/" + name,
