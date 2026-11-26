@@ -1845,7 +1845,9 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .beta-full-copy-note{margin:0 0 4px;font-size:12.5px;line-height:1.4;color:#9fb3c8}
 .beta-full-copy[hidden],.beta-full-copy-note[hidden]{display:none}
 /* #959/#960: minimal diagnostic (required for a bug) and the complete copy preview. */
-.beta-diagnostic label{display:inline-flex;align-items:center;gap:10px;min-height:44px;font-size:14px;color:#dceaf6;cursor:pointer}
+.beta-diagnostic{display:flex;flex-wrap:wrap;align-items:center;column-gap:6px}
+.beta-diagnostic .beta-diagnostic-what{flex-basis:100%}
+.beta-diagnostic label{flex:1 1 0;min-width:0;display:inline-flex;align-items:center;gap:10px;min-height:44px;font-size:14px;color:#dceaf6;cursor:pointer}
 .beta-diagnostic input{width:20px;height:20px;flex:0 0 auto}
 .beta-diagnostic-what{margin:0 0 4px;font-size:12.5px;line-height:1.4;color:#9fb3c8}
 .beta-diagnostic[hidden],.beta-guest-note[hidden]{display:none}
