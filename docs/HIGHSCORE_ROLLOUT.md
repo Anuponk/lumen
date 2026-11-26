@@ -118,7 +118,7 @@ comptes concurrents. Consigner version, SHA public, appareil et résultats.
 
 ## Classements constellation et aventure (#974)
 
-Le barème a été validé par le propriétaire le 24/11/2026. Migration : `20261126100000_constellation_rankings_974.sql`.
+Le barème a été validé par le propriétaire le 24/11/2026. Migration : `20261126200100_constellation_rankings_974.sql`.
 
 - **Points par quête classée** : 1er 100, 2e 80, 3e 65, 4e 55, 5e 50, puis −2 par place jusqu'à un plancher de 10 (`lumen_commands.ranking_points`).
   - Les ex aequo ont la même place et les mêmes points ; la place suivante est sautée (`rank()`).

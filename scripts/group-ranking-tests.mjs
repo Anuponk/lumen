@@ -10,7 +10,7 @@ test('owner scale: 100 80 65 55 50, then -2 per place, floor 10; unplayed 0', ()
   for (const [place, points] of Object.entries(expected)) assert.equal(rankingPoints(Number(place)), points, 'place ' + place);
   assert.equal(rankingPoints(0), 0);
   assert.equal(rankingPoints(null), 0);
-  const sql = fs.readFileSync('supabase/migrations/20261126100000_constellation_rankings_974.sql', 'utf8');
+  const sql = fs.readFileSync('supabase/migrations/20261126200100_constellation_rankings_974.sql', 'utf8');
   assert.match(sql, /when p_place = 1 then 100 when p_place = 2 then 80 when p_place = 3 then 65/);
   assert.match(sql, /when p_place = 4 then 55 when p_place = 5 then 50/);
   assert.match(sql, /else greatest\(10, 50 - 2 \* \(p_place - 5\)\) end/);

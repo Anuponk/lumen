@@ -1,7 +1,7 @@
 # Assistance, diagnostics et cockpit — chantier E (#959 #960 #1020 #708 #848)
 
 Chaîne visée : **joueur → signalement → diagnostic → analyse admin → réponse → notification joueur → résolution**.
-Migration unique et additive : `supabase/migrations/20261124160000_assistance_loop_chantier_e.sql` (aucune nouvelle table).
+Migration unique et additive : `supabase/migrations/20261126200000_assistance_loop_chantier_e.sql` (aucune nouvelle table).
 Fixture SQL : `scripts/fixtures/assistance-loop-chantier-e.sql` (CI `canonical-ledger`, migration appliquée deux fois).
 
 ## 1. Entrée unique et diagnostic (#959, #960)

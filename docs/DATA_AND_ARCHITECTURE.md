@@ -183,7 +183,7 @@ rollback limits: [runbook](TECHNICAL_RETENTION_RUNBOOK.md).
   - Closing starts the existing 180-day technical retention.
 - **Erasure and rights export** cover the new columns, because reports stay owned by `user_id` / `anonymous_id`.
 - **Client:** `src/ui/beta-feedback.js`.
-- **`lumen_send_feedback_v4`** (chantier E, migration `20261124160000_assistance_loop_chantier_e.sql`) keeps the v3 contract; for bugs only it also stores the bounded snapshot of the moment and references (never copies) to the full support capture. The same row holds the player/admin exchange (`thread`), `answered_at` and `player_read_at`; status gains `answered`. Player reads: `lumen_my_feedback`, `lumen_feedback_reply`; administrators: `lumen_admin_feedback_inbox`, `lumen_admin_feedback_detail`, `lumen_admin_feedback_reply`. See [assistance chantier E](ASSISTANCE_CHANTIER_E.md).
+- **`lumen_send_feedback_v4`** (chantier E, migration `20261126200000_assistance_loop_chantier_e.sql`) keeps the v3 contract; for bugs only it also stores the bounded snapshot of the moment and references (never copies) to the full support capture. The same row holds the player/admin exchange (`thread`), `answered_at` and `player_read_at`; status gains `answered`. Player reads: `lumen_my_feedback`, `lumen_feedback_reply`; administrators: `lumen_admin_feedback_inbox`, `lumen_admin_feedback_detail`, `lumen_admin_feedback_reply`. See [assistance chantier E](ASSISTANCE_CHANTIER_E.md).
   - The draft is kept in `lumenFeedbackDraftV1`, and the per-tab session id in `sessionStorage`.
   - Reporting never touches the board: the modal pauses the attempt like any menu.
 

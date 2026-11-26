@@ -6,8 +6,8 @@ end $$;
 -- Hosted Supabase grants anon EXECUTE on new public functions: the explicit revokes
 -- of the migration must hold anyway. Applied twice: additive and idempotent.
 alter default privileges in schema public grant execute on functions to anon,authenticated;
-\ir ../../supabase/migrations/20261124160000_assistance_loop_chantier_e.sql
-\ir ../../supabase/migrations/20261124160000_assistance_loop_chantier_e.sql
+\ir ../../supabase/migrations/20261126200000_assistance_loop_chantier_e.sql
+\ir ../../supabase/migrations/20261126200000_assistance_loop_chantier_e.sql
 alter default privileges in schema public revoke execute on functions from anon,authenticated;
 
 begin;
