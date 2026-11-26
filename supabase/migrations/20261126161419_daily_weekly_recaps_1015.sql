@@ -46,6 +46,20 @@ create trigger daily_week_member_guard before insert or update on lumen_commands
  for each row execute function lumen_commands.guard_daily_week_member();
 revoke all on function lumen_commands.guard_daily_week_member() from public,anon,authenticated,service_role;
 
+-- Same ownership pattern as social_friend_edges: deleting a player's own
+-- standings also removes incoming memberships without treating other owners
+-- as the player's anonymous actors in the erasure policy.
+create or replace function lumen_commands.delete_daily_week_memberships() returns trigger
+language plpgsql security definer set search_path='' as $$
+begin
+ delete from lumen_commands.daily_week_friends where member_id=old.user_id and monday=old.monday;
+ return old;
+end $$;
+drop trigger if exists daily_week_memberships_delete on lumen_commands.daily_week_standings;
+create trigger daily_week_memberships_delete after delete on lumen_commands.daily_week_standings
+ for each row execute function lumen_commands.delete_daily_week_memberships();
+revoke all on function lumen_commands.delete_daily_week_memberships() from public,anon,authenticated,service_role;
+
 create or replace function lumen_commands.daily_week_finalize(p_monday date) returns boolean
 language plpgsql security definer set search_path='' as $$
 declare d date;
@@ -178,19 +192,6 @@ language sql stable security definer set search_path='' as $$
  ('lumen_commands','daily_recap_seen','user_id',null,null,'delete')
 $$;
 revoke all on function lumen_privacy.policy(),lumen_privacy.policy_before_daily_recaps_1015() from public,anon,authenticated,service_role;
-do $$begin
- if to_regprocedure('lumen_privacy.scope_predicate_before_recaps_1015(text,text,text,text,text)') is null then
-  alter function lumen_privacy.scope_predicate(text,text,text,text,text) rename to scope_predicate_before_recaps_1015;
- end if;
-end $$;
-create or replace function lumen_privacy.scope_predicate(ns text,rel text,uid_col text,actor_col text,key_col text)
-returns text language plpgsql immutable set search_path='' as $$
-begin
- if ns='lumen_commands' and rel='daily_week_friends' then return 'user_id=$1 or member_id=$1';end if;
- return lumen_privacy.scope_predicate_before_recaps_1015(ns,rel,uid_col,actor_col,key_col);
-end $$;
-revoke all on function lumen_privacy.scope_predicate(text,text,text,text,text),
- lumen_privacy.scope_predicate_before_recaps_1015(text,text,text,text,text) from public,anon,authenticated,service_role;
 select lumen_privacy.install_guards();
 notify pgrst,'reload schema';
 commit;
