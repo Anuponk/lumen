@@ -2,6 +2,8 @@
 
 ## One-tap transmission (#962)
 
+> Chantier E (#959): the complete copy is now an option of « Signaler un problème » (never pre-ticked, local preview). Its dossier is activated first, so the report references the exact capture (`support_case_id`, `support_capture_id`). The panel in « Données et confidentialité » keeps consent, 24 h incident activation, retry of a failed copy, and deactivation with deletion; its separate send action and review were removed. See [assistance chantier E](ASSISTANCE_CHANTIER_E.md).
+
 The assistance panel sits three levels deep (Mon espace → Données et diagnostic →
 Diagnostic de synchronisation → Assistance) and needs a checkbox plus three buttons;
 on 22 November 2026 a player with a blocked board had never found it. Mon espace then

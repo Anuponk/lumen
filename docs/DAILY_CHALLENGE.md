@@ -24,6 +24,13 @@ serveur). L'expérience joueur et le thème (PR B), puis le bilan et la mesure
 
 Aucun nouveau moteur de grille, de classement, d'amitié ou de chronomètre.
 
+Écran de quête (#1049) :
+- L'entrée « Défi du jour » de Mon ciel (`#dailyQuestBanner`, même composant `daily-entry`) est aussi placée sous les actions Annuler, Effacer, Vérifier et Indice, tant que le défi du jour n'est pas joué.
+- Elle lit le même `lumen_daily_today` mémorisé et le même état « déjà joué » que la pastille. Elle n'ajoute aucune requête.
+- Elle disparaît dès la réalisation (`rememberDailyDone`) et revient avec le défi suivant, à l'expiration de la mémoire ou au retour au premier plan.
+- Elle n'apparaît que si elle tient entièrement sous les actions, mesure faite au rendu et au redimensionnement. La taille de la grille ne change jamais et l'écran ne défile pas : sur un petit écran sans place, la pastille d'en-tête reste l'accès.
+- Absente pendant un défi, une relecture d'apprentissage ou le mode QA. Le clic suit le même parcours que la pastille (`handOffDaily`, règles de tentative existantes).
+
 Découverte (#1003) : depuis l'activation du drapeau `daily_challenge`, le client
 lit `lumen_daily_today` pour tous les joueurs, invités compris, et le serveur
 décide (drapeau ou capacité `daily_preview`). La réponse est mémorisée pour la
