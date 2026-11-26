@@ -654,6 +654,8 @@ follows the real session. A verified sign-up uses the session supplied by
 `verifyOtp` to start normal profile hydration unless a newer Auth event has
 changed the account (#1037). The neutral hold exposes its usual retry after
 15 seconds and records one local `profile_hold_timeout` with session state flags.
+A fresh account profile carries the current sky-history version and empty
+daily and challenge records. The first load uses the same defaults.
 A verified recovery link marks the recovery
 pending, which keeps hydration paused until the new password is saved. The
 recovery request counts as sent only on the endpoint's `{ok:true}` contract;

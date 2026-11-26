@@ -946,7 +946,9 @@ const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilit
   let cached=null;if(currentOwner===accountId&&original){try{cached=JSON.parse(original)}catch{}}
   const existing=await confirmVerifiedProfile(hydrationClient,{userId:accountId,candidates:[cached]});
   if(!sessionValid())return;
-  const fresh={solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},xp:0,skyScore:0,shards:3,catalogueOrigin:currentCatalogueOrigin};
+  // Match the defaults installed by the game shell on the next load.
+  const fresh={solved:{},historyBackup:{},badges:{},stars:{},performances:{},noHint:{},
+   daily:{dates:{},rewards:{}},challenges:{},xp:0,skyScore:0,skyHistoryVersion:4,shards:3,catalogueOrigin:currentCatalogueOrigin};
   hydrationStage="cloud_initialize";
   let cloud=existing||await initializeCloudProfile(hydrationClient,currentOwner===accountId?incoming:!currentOwner?guestAccountSeed(incoming,currentOwner,accountId,fresh):fresh,{userId:accountId,sessionValid,...(!currentOwner&&original!==null?{guestSource:{storage:localStorage,original}}:{})});
   if(!sessionValid())return;

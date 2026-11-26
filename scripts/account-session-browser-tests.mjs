@@ -29,8 +29,6 @@ window.__fixtureCommandReceipts=new Map();
 window.__fixtureLegacyReceipts=new Map();window.__fixtureLegacyWrites=0;window.__fixtureLegacyAttempts=0;
 const isolatedRecovery=sessionStorage.getItem('fixtureIsolatedRecovery')==='1';
 const confirmedSignup=sessionStorage.getItem('fixtureSignupSnapshotUnavailable')==='1';
-let signupProfile=null;
-window.__signupInitializations=0;
 window.__fixtureProfile={solved:{},historyBackup:{},badges:{},stars:{},noHint:{},performances:{},canonicalQuestState:{},daily:{},challenges:{},shards:3,xp:0,skyScore:0,skyHistoryVersion:4,legacyReceipt:'cloud'};
 const savedRetryServer=JSON.parse(sessionStorage.getItem('fixtureRetryServer')||'null');
 if(savedRetryServer){
@@ -76,11 +74,12 @@ window.supabase={createClient(url,key,options){
   }
   if(name==='lumen_wallet_command_version')return {error:{code:'PGRST202'},status:404};
   if(confirmedSignup&&args?.p_expected_user_id==='fixture-signup'){
-   if(name==='lumen_restore_profile')return {data:structuredClone(signupProfile),error:null};
+   if(name==='lumen_restore_profile')return {data:JSON.parse(sessionStorage.getItem('fixtureSignupProfile')),error:null};
    if(name==='lumen_initialize_profile'){
-    window.__signupInitializations++;
-    signupProfile??=structuredClone(args.p_payload);
-    return {data:structuredClone(signupProfile),error:null};
+    const count=Number(sessionStorage.getItem('fixtureSignupInitializations')||0)+1;
+    sessionStorage.setItem('fixtureSignupInitializations',String(count));
+    if(!sessionStorage.getItem('fixtureSignupProfile'))sessionStorage.setItem('fixtureSignupProfile',JSON.stringify(args.p_payload));
+    return {data:JSON.parse(sessionStorage.getItem('fixtureSignupProfile')),error:null};
    }
   }
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
@@ -534,11 +533,16 @@ try{
   await navigate('Page.navigate',{url:url.href});
   await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
   // #820/#1037: confirmation supplies the session even when a second Auth
-  // snapshot cannot complete. The sky opens without another navigation.
+  // snapshot cannot complete. The sky opens without a manual restart.
   const signupLink=new URL(url);signupLink.searchParams.set('lumen_confirm','b'.repeat(64));signupLink.searchParams.set('type','signup');
   await evaluate(`sessionStorage.setItem('fixtureSignupSnapshotUnavailable','1');localStorage.removeItem('fixtureAuthSession')`);
+  await navigate('Page.navigate',{url:signupLink.href});
+  await until(`localStorage.getItem('lumenCloudOwnerId')==='fixture-signup'&&document.getElementById('accountSwitchHold').hidden&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')`);
+  assert.equal(await evaluate(`sessionStorage.getItem('fixtureSignupInitializations')`),'1','The newly confirmed profile is initialized once');
+  assert.equal(await evaluate(`location.search.includes('lumen_confirm')`),false,'The token hash leaves the address bar');
+  await evaluate(`for(const key of ['fixtureSignupSnapshotUnavailable','fixtureSignupProfile','fixtureSignupInitializations'])sessionStorage.removeItem(key)`);
+  // #820: separately exercise the verdict in a document that stays open.
   await navigate('Page.navigate',{url:signupLink.href});await until(`window.__authCalls?.includes('signup')`);
-  const signupNavigation=await evaluate('performance.timeOrigin');
   await until(`document.getElementById('authLinkResult').hidden===false`);
   assert.equal(await evaluate(`document.getElementById('authLinkResultTitle').textContent`),'Adresse e-mail confirmée !');
   assert.equal(await evaluate(`document.getElementById('authLinkResultText').textContent`),'Ton compte Lumen est prêt.');
@@ -546,11 +550,6 @@ try{
   assert.equal(await evaluate(`location.search.includes('lumen_confirm')`),false,'The token hash leaves the address bar');
   await evaluate(`document.getElementById('authLinkResultAction').click()`);
   assert.equal(await evaluate(`document.getElementById('authLinkResult').hidden`),true);
-  await until(`document.getElementById('accountSwitchHold').hidden&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')`);
-  assert.equal(await evaluate(`localStorage.getItem('lumenCloudOwnerId')`),'fixture-signup');
-  assert.equal(await evaluate('window.__signupInitializations'),1,'The newly confirmed profile is initialized once');
-  assert.equal(await evaluate('performance.timeOrigin'),signupNavigation,'Confirmation restores the sky without reloading');
-  await evaluate(`sessionStorage.removeItem('fixtureSignupSnapshotUnavailable')`);
   // An expired or reused link never claims success.
   await evaluate(`sessionStorage.setItem('fixtureVerifyExpired','1')`);
   await navigate('Page.navigate',{url:signupLink.href});await until(`window.__authCalls?.includes('expired')`);

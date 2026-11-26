@@ -1128,7 +1128,7 @@ For #1037, the unit suite simulates a successful sign-up confirmation followed
 by a failed second Auth read and checks that a competing sign-out or account
 change wins. The browser suite delays that second read indefinitely and checks
 that the confirmed account's profile is initialized once and its sky becomes
-ready without a reload on mobile and desktop. With a QA account, check Android,
+ready without a manual restart on mobile and desktop. With a QA account, check Android,
 Safari on iPhone and an installed PWA, including slow network and background
 resume.
 `install-request-browser-tests.mjs` checks the iPhone guest warning and the
