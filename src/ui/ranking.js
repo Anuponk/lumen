@@ -20,7 +20,7 @@ export function rankingVerdict(reason,excluded,t=fr){
 // view's capture; one early retry (RANKING_QUICK_RETRY_MS) shortens a blip, the
 // existing 30 s wake and the online event do the rest (no new polling).
 export const RANKING_FAILED_AFTER=3,RANKING_QUICK_RETRY_MS=5000;
-export function createRankingView({client,getContext,format,document=globalThis.document,onUpdate=()=>{},t=fr,setTimer=(fn,ms)=>setTimeout(fn,ms)}={}){
+export function createRankingView({client,getContext,format,document=globalThis.document,onUpdate=()=>{},onGroups=null,t=fr,setTimer=(fn,ms)=>setTimeout(fn,ms)}={}){
  const root=document.createElement('section');root.className='ranking';root.hidden=true;root.setAttribute('aria-label',t('ranking.board'));
  let generation=0,quest=null,owner=null,connection=null,operation=null,improvedForView=false,excludedForView=false,reasonForView=null,personalBest=null,animated=false,review=false,failures=0;
  const reduced=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -66,6 +66,8 @@ export function createRankingView({client,getContext,format,document=globalThis.
   const verdict=rankingVerdict(data.reason,data.excluded,t);
   if(verdict){const p=element('p','ranking-excluded',verdict);p.dataset.reason=data.reason||'excluded';root.append(p)}
   if(!data.participating)root.append(element('p','ranking-note',data.withdrawn?t('ranking.withdrawing'):t('ranking.account')));
+  // #974: one tap from the quest podium to its constellation and adventure rankings.
+  if(onGroups&&quest?.constellationId&&quest?.packId){const q=quest,b=element('button','ranking-groups',t('groupRanking.open'));b.type='button';b.onclick=()=>onGroups(q,b);root.append(b)}
   if(!animated&&!reduced()){
    [...list.children].forEach((e,i)=>e.animate?.([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:450,delay:i*300,easing:'ease-out',fill:'backwards'}));
    list.querySelector('.ranking-mine')?.animate?.([{boxShadow:'0 0 0 0 rgba(255,225,160,0)'},{boxShadow:'0 0 22px 4px rgba(255,225,160,.75)'},{boxShadow:'0 0 12px 2px rgba(255,225,160,.45)'}],{duration:1400,delay:900,fill:'forwards'});

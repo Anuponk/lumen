@@ -206,6 +206,7 @@ export const nodeSuites=[
   "feedback-journal-tests.mjs",
   "report-snapshot-tests.mjs",
   "player-health-tests.mjs",
+  "group-ranking-tests.mjs",
   "production-isolation-tests.mjs",
  "support-quick-send-tests.mjs",
  "performance-badge-tests.mjs",

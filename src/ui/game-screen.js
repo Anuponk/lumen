@@ -95,6 +95,7 @@ import {gameplayDomainState} from '../persistence/gameplay-sync.js';
 import {createOutboxHealthReporter,LOCAL_STORAGE_LIMIT_BYTES} from "../persistence/outbox-health.js";
 import {buildReportSnapshot} from './report-snapshot.js';
 import {createMyReports} from './my-reports.js';
+import {createGroupRanking} from './group-ranking.js';
 import {mountFeedbackInbox} from './feedback-inbox.js';
 import {appendPlayerDates} from './cockpit-dates.js';
 import {playerHealth} from './player-health.js';
@@ -2904,7 +2905,14 @@ const attemptEngine=createAttemptEngine({onChange:attempt=>{updateAttemptUI();co
 function capturedTiming(){return qaActive||officialTimingSupported(lumenSupabase)?{timing:attemptTiming(attemptEngine.snapshot()??{})}:{}}
 const rankingContext=()=>({owner:lumenUser?.id,client:lumenSupabase,nickname:lumenNickname,qa:qaActive});
 const rankingClient=createRankingClient({storage:localStorage,getContext:rankingContext,currentGridRevision:id=>{const q=canonicalQuestById(id);return q?q.gridRevision??0:null}});
-const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds),onUpdate:update=>renderVictoryRank(update),t});
+const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds),onUpdate:update=>renderVictoryRank(update),onGroups:(quest,origin)=>openGroupRanking(quest,origin),t});
+// #974: constellation and adventure rankings (materialized server aggregates, read on open).
+let groupRanking=null;
+function openGroupRanking(quest,origin){
+ if(!quest?.constellationId||!quest?.packId)return;
+ const entry=CONTENT_CONSTELLATIONS.find(c=>c.id===quest.constellationId),pack=CONTENT_PACKS.find(p=>p.id===quest.packId);
+ groupRanking?.open({constellationId:quest.constellationId,adventureId:quest.packId,constellationName:entry?skyNavigation.displayName(entry):null,adventureName:pack?adventureDisplayName(pack,t):null,origin});
+}
 let nicknameOnboardingOwner=null;
 let nicknameOnboardingBusy=false;
 function showMandatoryNickname(required,owner=lumenUser?.id){
@@ -3705,7 +3713,7 @@ function resumeGameClock(){attemptEngine.resume();clock()}
 // #925: top menus and in-game dialogs reuse this same pause while they are open.
 // Mon ciel is a navigation destination, not a menu: its behaviour is unchanged.
 const menuPause=createMenuPause({document,
- ids:['socialHub','friendsModal','friendPickerModal','myChallengesModal','circlesModal','mobileAuthPopover','dailyInfoPopover','rulesModal','feedbackModal','myReportsModal','lumenShareDialog','lumenConfirm','abandonConfirm'],
+ ids:['socialHub','friendsModal','friendPickerModal','myChallengesModal','circlesModal','mobileAuthPopover','dailyInfoPopover','rulesModal','feedbackModal','myReportsModal','groupRankingModal','lumenShareDialog','lumenConfirm','abandonConfirm'],
  running:()=>attemptEngine.snapshot()?.state===ATTEMPT_STATES.RUNNING,
  paused:()=>attemptEngine.snapshot()?.state===ATTEMPT_STATES.PAUSED,
  attemptId:()=>attemptEngine.snapshot()?.attemptId??null,
@@ -4129,6 +4137,8 @@ function setupBetaFeedback(){
  myReports=createMyReports({document,storage:localStorage,t,
   rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{message:'offline'}}),
   identity:()=>({userId:qaActive?null:lumenUser?.id||null,anonymousId:lumenAnonymousId,client:qaActive?null:lumenSupabase})});
+ groupRanking=createGroupRanking({document,t,signedIn:()=>!!lumenUser&&!qaActive,
+  rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{message:'offline'}})});
  const reportsButton=document.getElementById('myReportsBtn');
  if(reportsButton)reportsButton.onclick=()=>myReports.open({origin:document.getElementById('mobileAccount')});
  // One summary per session (count only), so a new answer shows as a discreet dot.
@@ -5978,7 +5988,7 @@ window.addEventListener('offline',()=>{
 window.addEventListener('online',()=>{
  if(!document.getElementById('mapModal').hidden)void refreshPlayReviewMap();
 });
-const skyNavigation=createSkyNavigation({renderLockedOffer:renderAdventureOffer,t,locale:()=>localePreference?.locale??"fr",document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()}),getQuest:()=>currentQuestPosition(),
+const skyNavigation=createSkyNavigation({onRanking:options=>groupRanking?.open(options),renderLockedOffer:renderAdventureOffer,t,locale:()=>localePreference?.locale??"fr",document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()}),getQuest:()=>currentQuestPosition(),
  getSolved:i=>!!lumenProgress.solved[i],
  getCanonicalQuests:id=>canonicalQuestList().filter(q=>q.constellationId===id),
  getCanonicalSolved:q=>questIsCompleted(lumenProgress,q.id),

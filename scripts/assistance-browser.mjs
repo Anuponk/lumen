@@ -113,5 +113,52 @@ export async function verifyAssistance({ send, evaluate, url }) {
   assert.equal(player.reopened, true, 'a reply reopens the report');
   assert.equal(player.badgeCleared, true);
   assert.equal(player.fits && !player.overflow, true);
-  return { adminInbox: true, linkedDiagnostic: true, idempotentAnswer: true, playerReports: true, guestDeviceOnly: true, textOnly: true };
+  // #974: constellation / adventure rankings — podium, my place, pages on demand.
+  const ranking = await evaluate(
+    `(async()=>{
+  const {createGroupRanking}=await import('/src/ui/group-ranking.js');
+  const markup=new DOMParser().parseFromString(await(await fetch('/index.html')).text(),'text/html');
+  document.body.append(document.importNode(markup.getElementById('groupRankingModal'),true));
+  const calls=[];let signed=false;
+  const row=(i,mine=false)=>({nickname:'<i>Étoile '+i+'</i>',points:400-i*10,quests:3,place:i,mine});
+  const rpc=async(name,args)=>{calls.push(args);
+   if(args.p_limit)return {data:{rows:Array.from({length:args.p_offset?2:10},(_,i)=>row(args.p_offset+i+1,args.p_offset+i+1===12)),more:!args.p_offset}};
+   return {data:{kind:args.p_kind,questTotal:args.p_kind==='adventure'?100:10,participants:12,participating:true,top:[row(1),row(2),row(3)],personal:{place:14,points:120,quests:2},rows:[]}}};
+  const view=createGroupRanking({document,t:(k,p)=>k+(p?JSON.stringify(p):''),rpc,signedIn:()=>signed});
+  view.open({constellationId:'real-01',adventureId:'base-real-sky',constellationName:'Grande Ourse',adventureName:'Ciel réel'});
+  await new Promise(r=>setTimeout(r,30));
+  const guest=document.getElementById('groupRankingStatus').textContent==='groupRanking.signIn'&&calls.length===0;
+  view.close();signed=true;
+  view.open({constellationId:'real-01',adventureId:'base-real-sky',constellationName:'Grande Ourse',adventureName:'Ciel réel'});
+  for(let i=0;i<40&&!document.querySelector('.group-ranking-podium');i++)await new Promise(r=>setTimeout(r,25));
+  const podium=document.querySelectorAll('.group-ranking-podium li').length;
+  const text=!document.querySelector('#groupRankingBody i')&&document.getElementById('groupRankingBody').textContent.includes('<i>Étoile 1</i>');
+  const me=document.querySelector('.group-ranking-me').textContent;
+  const tabs=[...document.querySelectorAll('[data-ranking-kind]')].map(b=>b.textContent);
+  const first=calls.length===1&&!calls[0].p_limit;
+  const more=document.querySelector('.group-ranking-more');more.click();
+  for(let i=0;i<40&&document.querySelectorAll('.group-ranking-list li').length<10;i++)await new Promise(r=>setTimeout(r,25));
+  more.click();for(let i=0;i<40&&document.querySelectorAll('.group-ranking-list li').length<12;i++)await new Promise(r=>setTimeout(r,25));
+  const paged=document.querySelectorAll('.group-ranking-list li').length===12&&more.hidden&&calls[1].p_offset===0&&calls[2].p_offset===10;
+  const mineHighlighted=!!document.querySelector('.group-ranking-list .ranking-mine');
+  document.querySelector('[data-ranking-kind="adventure"]').click();
+  for(let i=0;i<40&&calls.at(-1).p_kind!=='adventure';i++)await new Promise(r=>setTimeout(r,25));
+  const adventure=calls.at(-1).p_kind==='adventure'&&calls.at(-1).p_id==='base-real-sky'&&document.querySelector('[data-ranking-kind="adventure"]').getAttribute('aria-selected')==='true';
+  const fits=document.querySelector('.group-ranking-card').getBoundingClientRect().right<=innerWidth+1&&document.documentElement.scrollWidth<=innerWidth;
+  view.close();
+  return {guest,podium,text,me,tabs,first,paged,mineHighlighted,adventure,fits};
+ })()`,
+    true,
+  );
+  assert.equal(ranking.guest, true, 'guests are invited to sign in, nothing is read');
+  assert.equal(ranking.podium, 3);
+  assert.equal(ranking.text, true, 'nicknames are text');
+  assert.match(ranking.me, /groupRanking\.mine.*"place":14.*"points":120.*"quests":2.*"total":10/, 'my place, points and ranked quests off the podium');
+  assert.deepEqual(ranking.tabs, ['Grande Ourse', 'Ciel réel']);
+  assert.equal(ranking.first, true, 'one read: top 3 + my position, no page');
+  assert.equal(ranking.paged, true, 'pages of 10 on demand');
+  assert.equal(ranking.mineHighlighted, true);
+  assert.equal(ranking.adventure, true);
+  assert.equal(ranking.fits, true);
+  return { adminInbox: true, linkedDiagnostic: true, idempotentAnswer: true, playerReports: true, guestDeviceOnly: true, textOnly: true, groupRanking: true };
 }

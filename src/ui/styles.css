@@ -1931,3 +1931,18 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .admin-inbox-thread p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .admin-inbox-reply{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
 .admin-inbox-reply textarea{flex:1 1 100%;min-height:4em;font:inherit}
+/* #974: constellation and adventure rankings. */
+.group-ranking-card{max-height:min(88vh,640px);overflow:auto}
+.group-ranking-tabs{display:flex;gap:6px;margin:4px 0 8px}
+.group-ranking-tabs button{flex:1 1 0;min-height:40px;border:1px solid #294359;border-radius:999px;background:#0f1d2d;color:#dceaf6;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group-ranking-tabs button[aria-selected="true"]{background:#16405a;border-color:#68e7ff;color:#fff}
+.group-ranking-podium,.group-ranking-list{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.group-ranking-row{display:grid;grid-template-columns:2.2em 1fr auto;align-items:center;gap:2px 8px;padding:6px 8px;border-radius:8px;background:#0f1d2d;font-size:13px}
+.group-ranking-row .ranking-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group-ranking-row small{grid-column:2/4;color:#9fb3c8;font-size:11px}
+.group-ranking-podium .group-ranking-row:first-child{background:#2a2410}
+.group-ranking-row.ranking-mine{outline:2px solid #f4cf78}
+.group-ranking-points{font-weight:800;color:#f4cf78}
+.group-ranking-me{margin:8px 0;font-size:13px;color:#dceaf6}
+.group-ranking-more,.ranking-groups{min-height:40px;margin-top:6px}
+.ranking-groups{display:block;margin-inline:auto;background:none;border:1px solid #294359;border-radius:999px;color:#bcd2e3;font-size:12.5px;padding:4px 12px}
