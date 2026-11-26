@@ -82,6 +82,10 @@ assert.equal(meta(spanish,'property','og:image'),'https://lumen.nopuna.fr/src/la
 for(const field of ['title','description','image','image:alt'])assert.equal(meta(spanish,'name','twitter:'+field),meta(spanish,'property','og:'+field));
 {const d=meta(spanish,'name','description');assert(d&&d.length>=70&&d.length<=170,'Spanish meta description length')}
 assert.match(spanish,/<a class="play" href="\/">Jugar a Lumen<\/a>/);
+for (const [file, label] of [['aviso-legal.html', 'Aviso legal'], ['politica-privacidad.html', 'Política de privacidad']]) {
+  assert(spanish.includes(`<a href="/${file}" hreflang="es">${label}</a>`), `Spanish discovery links to ${file} in Spanish`);
+  assert.match(read(file), /<html lang="es">/);
+}
 assert.match(spanish,/nunca se tocan, ni siquiera en diagonal/);
 assert.match(spanish,/100 puzles gratis y sin anuncios/);
 assert.match(spanish,/Stellarium.*CC BY-SA.*Hipparcos/);
