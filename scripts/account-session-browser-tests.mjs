@@ -535,7 +535,9 @@ try{
   // #820/#1037: confirmation supplies the session even when a second Auth
   // snapshot cannot complete. The sky opens without a manual restart.
   const signupLink=new URL(url);signupLink.searchParams.set('lumen_confirm','b'.repeat(64));signupLink.searchParams.set('type','signup');
-  await evaluate(`sessionStorage.setItem('fixtureSignupSnapshotUnavailable','1');localStorage.removeItem('fixtureAuthSession')`);
+  // The preceding scenarios keep a historical profile. Give it an explicit
+  // owner so it cannot be mistaken for transferable guest progress.
+  await evaluate(`sessionStorage.setItem('fixtureSignupSnapshotUnavailable','1');localStorage.removeItem('fixtureAuthSession');localStorage.setItem('lumenCloudOwnerId','fixture-previous')`);
   await navigate('Page.navigate',{url:signupLink.href});
   await until(`localStorage.getItem('lumenCloudOwnerId')==='fixture-signup'&&document.getElementById('accountSwitchHold').hidden&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')`);
   assert.equal(await evaluate(`sessionStorage.getItem('fixtureSignupInitializations')`),'1','The newly confirmed profile is initialized once');
