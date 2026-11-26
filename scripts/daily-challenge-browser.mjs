@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {navigateAndWait,acknowledgeLearningMilestones} from './cdp-client.mjs';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
+import {verifyDailyRecaps} from './daily-recaps-browser.mjs';
 
 // #882 (EPIC #881 Lot 3, PR B): daily challenge journey through the real page.
 // The RPC transport is an in-page model of the server contract proven by
@@ -47,6 +48,7 @@ function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginR
     if(name==='lumen_daily_week'){const mine=run?.status==='completed';
      return {data:{monday:DAY,days:Array.from({length:7},(_,i)=>i===0?(mine?{day:DAY,state:'completed',final:false,run,general_rank:5,general_total:12,friends_rank:1,friends_total:1}:{day:DAY,state:run?.status||'missed',final:false}):{day:'2026-11-'+(23+i),state:'future'})}}}
     if(name==='lumen_daily_board'){const b=boardOf(run);b.closes_at=closes;return {data:b}}
+    if(name==='lumen_daily_week_board')return {data:window.__weeklyBoard||{monday:DAY,final:false}};
     if(name==='lumen_daily_begin'){if(!run)run={day:${JSON.stringify(beginDay)},status:'started',operation_id:args.p_operation_id,started_at:now()};
      return {data:{...run,server_now:now(),resumed:${beginResume}||run.operation_id!==args.p_operation_id}}}
     if(name==='lumen_daily_finish'){if(finishFails)return {data:null,error:{message:'Failed to fetch'}};
@@ -275,6 +277,16 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   assert.doesNotMatch(await evaluate(`document.getElementById('dailyWeekBody').textContent`),/Ana|Cy/,'no other player in the weekly summary');
   assert.equal(await evaluate(`document.getElementById('dailyWeekPrev').disabled&&document.getElementById('dailyWeekNext').disabled`),true,'first week: no past, no future');
   assert.equal((await calls(evaluate,'lumen_daily_week'))[0].args.p_day,DAY);
+  await evaluate(`document.getElementById('dailyWeekRanking').click()`);
+  await until(evaluate,`!document.getElementById('dailyWeekBoard').hidden&&document.getElementById('dailyWeekBoardPanel').textContent.length>0`,'weekly ranking pending');
+  assert.equal((await calls(evaluate,'lumen_daily_week_board')).length,1);
+  await evaluate(`document.getElementById('dailyWeekRanking').click();window.__weeklyBoard={monday:${JSON.stringify(DAY)},final:true,general:{participants:1,top:[{nickname:'Moi',rank:1,points:70,mine:true}],me:{rank:1,points:70,played:7,score:420,best_score:60}},friends:{participants:1,top:[{nickname:'Moi',rank:1,points:70,mine:true}],me:{rank:1,points:70,played:7,score:420,best_score:60}}};document.getElementById('dailyWeekRanking').click()`);
+  await until(evaluate,`document.getElementById('dailyWeekBoardPanel').textContent.includes('70')`,'weekly points');
+  await evaluate(`document.getElementById('dailyWeekTabFriends').click()`);
+  assert.match(await evaluate(`document.getElementById('dailyWeekBoardPanel').textContent`),/70/);
+  await evaluate(`document.getElementById('dailyWeekRanking').click();document.getElementById('dailyWeekRanking').click()`);
+  assert.equal((await calls(evaluate,'lumen_daily_week_board')).length,2,'final weekly board is reused for this account');
+  await evaluate(`document.getElementById('dailyWeekRanking').click()`);
   // #1015 history: a day opens its board in place of the stats, one read per tap.
   const boardReads=(await calls(evaluate,'lumen_daily_board')).length;
   await evaluate(`document.querySelector('#dailyWeekBody [data-daily-day]').click()`);
@@ -361,5 +373,6 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await until(evaluate,`!localStorage.getItem('lumenDailyPendingV1')`,'pending sent');
  await until(evaluate,`/Ta position/.test(document.getElementById('dailyBoardPanel').textContent)`,'board after retry');
  results.push({kind:'offline-retry'});
+ results.push({recaps:await verifyDailyRecaps({send,evaluate})});
  return results;
 }

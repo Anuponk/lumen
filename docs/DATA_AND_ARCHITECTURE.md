@@ -570,6 +570,13 @@ desired choice.
 
 ## Cloud persistence contract
 
+Daily-challenge weekly aggregates and recap watermarks (#1015) live in private
+`lumen_commands.daily_week_standings`, `daily_week_friends`, `daily_week_finalized`
+and `daily_recap_seen`. They derive from official daily results and grant no
+campaign rewards. The erasure policy removes both ownership and membership in
+weekly friends rows. Their materialization and once-per-account claim follow
+the [daily challenge contract](DAILY_CHALLENGE.md#6-quater-classement-à-points-et-récapitulatifs-1015).
+
 The [critical-alert contract](OBSERVABILITY_946.md#alertes-critiques-947) reads existing sync observations and the payment access projection, and records only operational incident summaries.
 
 The [health cockpit and digest contract](OBSERVABILITY_946.md#cockpit-de-santé-et-bilan-quotidien-949) defines a capability-gated read projection and a daily entry in the existing delivery queue. The reporting reads authoritative account and payment data without mutating profiles, purchases or entitlements.

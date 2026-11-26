@@ -1,4 +1,12 @@
 export default Object.freeze({
+  'daily.weekRanking': "Classement de la semaine",
+  'daily.weekPoints': "{count} points",
+  'daily.weekOwnPoints': "Tes points : {points} · hors classement général",
+  'daily.weekPerformance': "{count} défis réussis · temps cumulé {time}",
+  'daily.weekPending': "Le classement sera disponible après la clôture des sept défis de la semaine.",
+  'daily.recapDay': "Ton défi dans les étoiles",
+  'daily.recapWeek': "Ta semaine dans les étoiles",
+  'daily.recapBoard': "Voir le classement complet",
   'daily.pushSettings': "Notifications",
   'daily.pushSchedule': "Un rappel du défi du jour à 18 h, heure de cet appareil.",
   'daily.pushEnable': "Activer sur cet appareil",

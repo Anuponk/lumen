@@ -101,6 +101,8 @@ export function createDailyClient(supabase){
   begin:operationId=>rpc('lumen_daily_begin',{p_operation_id:operationId}),
   finish:({day,operationId,status,seconds,hint=0,verify=0,guided=0})=>rpc('lumen_daily_finish',{p_day:day,p_operation_id:operationId,p_status:status,p_seconds:seconds,p_hint:hint,p_verify:verify,p_guided:guided}),
   board:day=>rpc('lumen_daily_board',{p_day:day??null}),
-  week:day=>rpc('lumen_daily_week',{p_day:day??null})
+  week:day=>rpc('lumen_daily_week',{p_day:day??null}),
+  weekBoard:day=>rpc('lumen_daily_week_board',{p_day:day??null}),
+  recap:()=>rpc('lumen_daily_recap')
  };
 }

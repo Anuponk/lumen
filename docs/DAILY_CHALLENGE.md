@@ -214,8 +214,8 @@ through its existing entries or a direct link.
   « Ta position », temps officiel, participants, onglets Général / Mes amis) via
   `lumen_daily_board(p_day)`, en lecture seule. Une lecture par appui explicite ;
   un classement figé (`final`) est gardé pour la session et jamais relu. Les
-  récapitulatifs automatiques et le classement hebdomadaire à points attendent
-  la validation du barème.
+  classements hebdomadaires définitifs sont accessibles par « Classement de la
+  semaine ». Avant la clôture, ce bouton indique que le classement est en attente.
 - **Navigation** : semaines passées jusqu'à la première semaine du calendrier
   (`DAILY_SCHEDULE_START`), jamais au-delà de la semaine courante.
 - **Mesure** : aucun nouvel événement ni nouvelle collecte. La collecte reste
@@ -228,6 +228,44 @@ through its existing entries or a direct link.
   (`week_offset`, `week_participations`, `week_frozen`, `source`), sans
   `acquisition_channel`, donc hors tunnel d'acquisition.
 - **Captures** : `docs/validation/daily-week-{390,1440}.png`.
+
+## 6 quater. Classement à points et récapitulatifs (#1015)
+
+Le barème validé le 24/11/2026 attribue 10, 8 et 6 points aux trois premières
+places quotidiennes, 4 aux places 4–10, puis 2 à tout autre défi réussi.
+Les égalités de rang donnent les mêmes points. Abandon et absence donnent zéro.
+Le classement hebdomadaire départage par points, nombre de défis réussis puis
+somme des temps officiels. Les égalités sur ces trois critères partagent un rang.
+La semaine suit le lundi au dimanche de Paris et attend la finalisation des sept
+jours, donc lundi à 6 h au plus tôt. Le meilleur temps est également conservé.
+
+`lumen_daily_week_board` matérialise une fois les résultats depuis
+`daily_standings` et `daily_runs`, sous verrou transactionnel. Les consultations
+suivantes lisent les agrégats. Le classement amis reprend les mêmes points et
+fige le groupe d'amis et ses rangs à la clôture. Les pseudonymes viennent des
+profils actuels et une désinscription du classement masque le joueur. Un
+effacement supprime aussi ses lignes dans les groupes d'amis sans renuméroter
+les autres rangs. Les tables restent privées, avec RLS et aucun droit direct.
+
+`lumen_daily_recap` réserve atomiquement le dernier bilan pertinent du compte.
+Il préfère une semaine clôturée et acquitte les jours inclus pour éviter une
+suite de fenêtres au retour d'une absence. Le filigrane appartient au compte,
+indépendamment des appareils. Un résultat reçu pendant que le joueur commence
+une quête attend le retour à un ciel inactif dans la même session. Un changement
+de compte invalide la réponse. Une perte de réponse après l'acquittement serveur
+peut empêcher l'affichage automatique, mais les résultats restent consultables.
+
+Le client tente une lecture au maximum par compte et jour de Paris dans chaque
+session, uniquement en ligne, visible, avec profil vérifié et Mon ciel ouvert,
+hors partie active et autre dialogue. Aucun sondage périodique n'est ajouté.
+Le bilan présente podium, rang personnel, points et performances hebdomadaires,
+avec accès au classement et fermeture clavier. L'étoile animée respecte le
+réglage de mouvement réduit et le son réutilise la préférence du jeu. FR/EN/ES.
+
+La migration `20261126161419_daily_weekly_recaps_1015.sql` précède le client.
+La CI SQL la rejoue deux fois, teste les égalités, la clôture, les lectures
+répétées, le filigrane multi-appareils et l'effacement. Son application en
+production et la recette physique des clôtures nécessitent leurs preuves propres.
 
 ## 7. Tests et retour arrière
 

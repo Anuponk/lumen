@@ -1,4 +1,12 @@
 export default Object.freeze({
+  'daily.weekRanking': "Weekly ranking",
+  'daily.weekPoints': "{count} points",
+  'daily.weekOwnPoints': "Your points: {points} · unranked overall",
+  'daily.weekPerformance': "{count} challenges completed · total time {time}",
+  'daily.weekPending': "The ranking will be available after all seven daily challenges close.",
+  'daily.recapDay': "Your challenge among the stars",
+  'daily.recapWeek': "Your week among the stars",
+  'daily.recapBoard': "View the full ranking",
   'daily.pushSettings': "Notifications",
   'daily.pushSchedule': "A Daily Challenge reminder at 6 pm in this device’s time zone.",
   'daily.pushEnable': "Enable on this device",
