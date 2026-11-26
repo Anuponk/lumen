@@ -1,5 +1,13 @@
 // #945 Español · Reto del día y semana.
 export default Object.freeze({
+  'daily.weekRanking': "Clasificación semanal",
+  'daily.weekPoints': "{count} puntos",
+  'daily.weekOwnPoints': "Tus puntos: {points} · fuera de la clasificación general",
+  'daily.weekPerformance': "{count} retos completados · tiempo total {time}",
+  'daily.weekPending': "La clasificación estará disponible tras el cierre de los siete retos de la semana.",
+  'daily.recapDay': "Tu reto entre las estrellas",
+  'daily.recapWeek': "Tu semana entre las estrellas",
+  'daily.recapBoard': "Ver la clasificación completa",
   'daily.pushSettings': "Notificaciones",
   'daily.pushSchedule': "Un recordatorio del desafío del día a las 18:00 en la zona horaria de este dispositivo.",
   'daily.pushEnable': "Activar en este dispositivo",

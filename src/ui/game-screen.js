@@ -19,9 +19,10 @@ import {questReviewModel} from './quest-review.js';
 import {reviewNeighbour,bindReviewNavigation} from './quest-review-navigation.js';
 import {attemptTiming,officialResult} from '../campaign/official-time.js';
 import {RANKING_PENALTIES,rankedTime} from '../campaign/ranking.js';
-import {addDays,createDailyClient,dailyBounds,dailyQuest} from '../campaign/daily-challenge.js';
+import {addDays,createDailyClient,dailyBounds,dailyQuest,parisDay} from '../campaign/daily-challenge.js';
 import {dailyErrorMessage,formatDailyDate,formatRemaining,renderDailyBoard,renderDailyWeek,formatWeekRange} from './daily-view.js';
 import {summarizeWeek,weekMonday,weekNavigation} from '../campaign/daily-week.js';
+import {setupDailyRecaps} from './daily-recaps.js';
 import {officialTimingSupported,refreshOfficialTimingSupport} from '../persistence/official-time.js';
 import {createRankingClient} from '../persistence/ranking.js';
 import {setupSocialHub} from './social-hub.js';
@@ -920,7 +921,7 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),getLocale:()=>localePreference?.locale??"fr",isLocaleWriteAck:user=>localeWrite?.owner===user.id&&user.user_metadata?.[ACCOUNT_LOCALE_FIELD]?.at===localeWrite.choice.at&&user.user_metadata?.[ACCOUNT_LOCALE_FIELD]?.mode===localeWrite.choice.mode,onAccountChanged:(event)=>{if(event?.type==="account"||event?.type==="password_recovery")updateLocaleAccount(event.authEvent);queueMicrotask(()=>rankingView.mount());if(event?.type==="account")queueMicrotask(()=>{void refreshDailyEntry();dailyPushSettings?.ownerChanged()});queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery")openPasswordRecovery()},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),getLocale:()=>localePreference?.locale??"fr",isLocaleWriteAck:user=>localeWrite?.owner===user.id&&user.user_metadata?.[ACCOUNT_LOCALE_FIELD]?.at===localeWrite.choice.at&&user.user_metadata?.[ACCOUNT_LOCALE_FIELD]?.mode===localeWrite.choice.mode,onAccountChanged:(event)=>{if(event?.type==="account"||event?.type==="password_recovery")updateLocaleAccount(event.authEvent);queueMicrotask(()=>rankingView.mount());if(event?.type==="account")queueMicrotask(()=>{void dailyRecaps?.wake();void refreshDailyEntry();dailyPushSettings?.ownerChanged()});queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery")openPasswordRecovery()},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  const priorAcquisitionRecovery=canonicalRecoveryContext;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
@@ -2459,6 +2460,7 @@ let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="",pendingC
 // with daily:true): it inherits every campaign/ranking/learning guard of #18.
 // Only the intro, the server submission and the official clock differ.
 const dailyClient=createDailyClient(lumenSupabase),DAILY_PENDING_KEY='lumenDailyPendingV1';
+let dailyRecaps=null;
 let dailyBannerTimer=null,dailyEntryRequest=0,dailyEntryTimer=null;
 // Measurement reuses the existing app_opened envelope (no new event name, no
 // new collection): surface=daily + daily_action. Disabled collection stays off.
@@ -2609,6 +2611,7 @@ async function refreshDailyEntry(){
    :t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
   if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}
   renderDailyChip(today,owner);
+  void dailyRecaps?.wake();
  }catch{if(current()){entry.hidden=true;if(week)week.hidden=true;if(chip)chip.hidden=true}}
  finally{
   if(current()){
@@ -2657,46 +2660,50 @@ let dailyWeekRequest=0;
 // board never changes, so it is kept for the session and never re-read.
 const dailyFinalBoards=new Map();let dailyDayRequest=0;
 function closeDailyDay(){
+ dailyDayRequest++;
  const box=document.getElementById('dailyWeekBoard');if(box)box.hidden=true;
  document.getElementById('dailyWeekModal')?.classList.remove('showing-day');
- for(const b of document.querySelectorAll('#dailyWeekBody [data-daily-day]'))b.setAttribute('aria-pressed','false');
+ for(const b of document.querySelectorAll('#dailyWeekBody [data-daily-day],#dailyWeekRanking'))b.setAttribute('aria-pressed','false');
 }
-async function openDailyDay(day,button){
+async function openDailyDay(day,button,weekly=false){
  if(button?.getAttribute('aria-pressed')==='true'){closeDailyDay();return}
  closeDailyDay();button?.setAttribute('aria-pressed','true');
+ const owner=lumenUser?.id,cacheKey=owner+':'+(weekly?'week:':'day:')+day;
  const request=++dailyDayRequest,box=document.getElementById('dailyWeekBoard'),panel=document.getElementById('dailyWeekBoardPanel'),status=document.getElementById('dailyWeekStatus');
- document.getElementById('dailyWeekBoardTitle').textContent=t('daily.dayBoardTitle',{date:dailyDate(day)});
+ document.getElementById('dailyWeekBoardTitle').textContent=weekly?t('daily.weekRanking'):t('daily.dayBoardTitle',{date:dailyDate(day)});
  document.getElementById('dailyWeekModal').classList.add('showing-day');box.hidden=false;panel.innerHTML='';status.textContent=t('daily.load');
  try{
-  const board=dailyFinalBoards.get(day)||await dailyClient.board(day);if(request!==dailyDayRequest)return;
-  if(board?.final)dailyFinalBoards.set(day,board);
+  const board=dailyFinalBoards.get(cacheKey)||await (weekly?dailyClient.weekBoard(day):dailyClient.board(day));
+  if(request!==dailyDayRequest||owner!==lumenUser?.id)return;
+  if(board?.final)dailyFinalBoards.set(cacheKey,board);
   status.textContent='';
-  const show=scope=>{for(const [id,tab] of [['dailyWeekTabGeneral','general'],['dailyWeekTabFriends','friends']])document.getElementById(id).setAttribute('aria-selected',String(tab===scope));panel.innerHTML=renderDailyBoard(board?.[scope],{scope,formatDuration,t})+(board?.final?'':'<p class="daily-week-state">'+escapeSocialHtml(t('daily.provisional'))+'</p>')};
+  const show=scope=>{for(const [id,tab] of [['dailyWeekTabGeneral','general'],['dailyWeekTabFriends','friends']])document.getElementById(id).setAttribute('aria-selected',String(tab===scope));panel.innerHTML=weekly&&!board?.final?'<p class="daily-week-state">'+escapeSocialHtml(t('daily.weekPending'))+'</p>':renderDailyBoard(board?.[scope],{scope,formatDuration,t,weekly})+(board?.final?'':'<p class="daily-week-state">'+escapeSocialHtml(t('daily.provisional'))+'</p>')};
   document.getElementById('dailyWeekTabGeneral').onclick=()=>show('general');document.getElementById('dailyWeekTabFriends').onclick=()=>show('friends');
   show('general');
- }catch(e){if(request!==dailyDayRequest)return;box.hidden=true;status.textContent=dailyErrorMessage(e,t)}
+ }catch(e){if(request!==dailyDayRequest||owner!==lumenUser?.id)return;box.hidden=true;status.textContent=dailyErrorMessage(e,t)}
 }
-async function openDailyWeek(today,source='result'){
+async function openDailyWeek(today,source='result',initialMonday=weekMonday(today)){
  const modal=document.getElementById('dailyWeekModal');if(!modal||!today)return;
  const current=weekMonday(today),close=document.getElementById('dailyWeekClose');
  const opener=document.activeElement;
- close.onclick=()=>{closeDailyDay();modal.hidden=true;opener?.focus?.({preventScroll:true})};
+ close.onclick=()=>{dailyWeekRequest++;closeDailyDay();modal.hidden=true;opener?.focus?.({preventScroll:true})};
  document.getElementById('dailyWeekBody').onclick=event=>{const b=event.target.closest('[data-daily-day]');if(b)void openDailyDay(b.dataset.dailyDay,b)};
  const load=async monday=>{
-  const request=++dailyWeekRequest,status=document.getElementById('dailyWeekStatus'),body=document.getElementById('dailyWeekBody');
+  const request=++dailyWeekRequest,owner=lumenUser?.id,status=document.getElementById('dailyWeekStatus'),body=document.getElementById('dailyWeekBody');
   const nav=weekNavigation(monday,today),prev=document.getElementById('dailyWeekPrev'),next=document.getElementById('dailyWeekNext');
   prev.disabled=!nav.previous;next.disabled=!nav.next;prev.onclick=()=>nav.previous&&load(nav.previous);next.onclick=()=>nav.next&&load(nav.next);
   document.getElementById('dailyWeekRange').textContent=formatWeekRange(monday,addDays(monday,6),{t,locale:dailyLocale()});
+  document.getElementById('dailyWeekRanking').onclick=event=>void openDailyDay(monday,event.currentTarget,true);
   closeDailyDay();status.textContent=t('daily.load');
   try{
-   const week=await dailyClient.week(monday);if(request!==dailyWeekRequest)return;
+   const week=await dailyClient.week(monday);if(request!==dailyWeekRequest||owner!==lumenUser?.id)return;
    const summary=summarizeWeek(week);
    body.innerHTML=renderDailyWeek(summary,{formatDuration,t,locale:dailyLocale()});status.textContent='';
    trackDaily('week_viewed',{week_monday:monday,week_offset:Math.round((Date.parse(monday)-Date.parse(current))/604800000),week_participations:summary.participations,week_frozen:summary.frozen,source});
   }catch(e){if(request!==dailyWeekRequest)return;body.innerHTML='';status.textContent=dailyErrorMessage(e,t)}
  };
  modal.hidden=false;close.focus({preventScroll:true});
- await load(current);
+ await load(initialMonday);
 }
 function readPendingDaily(){try{return JSON.parse(localStorage.getItem(DAILY_PENDING_KEY)||'null')}catch{return null}}
 async function retryPendingDaily(show=false){
@@ -6635,6 +6642,23 @@ function reloadWhenSafe(){
  updateAuthUI();
 }
 window.addEventListener('online',()=>{if(!networkUnavailable)return;clearTimeout(networkProbeTimer);networkProbeTimer=null;scheduleNetworkProbe(1000)});
+dailyRecaps=setupDailyRecaps({document,t,locale:dailyLocale,formatDuration,
+ context:()=>({owner:lumenUser?.id,client:lumenSupabase,day:parisDay(),safe:
+  !qaActive&&cloudProfileReady&&!authSessionPending&&!socialChallenge&&
+  document.visibilityState==='visible'&&navigator.onLine!==false&&
+  document.getElementById('mapModal')?.hidden===false&&
+  !['RUNNING','PAUSED'].includes(attemptEngine.snapshot()?.state)&&
+  ![...document.querySelectorAll('[role="dialog"]:not([hidden]),[role="alertdialog"]:not([hidden])')].some(node=>node.id!=='mapModal')}),
+ read:()=>dailyClient.recap(),celebrate:()=>victorySound(),
+ ownerChanged:()=>{dailyWeekRequest++;dailyFinalBoards.clear();closeDailyDay();document.getElementById('dailyWeekModal').hidden=true},
+ openBoard:async recap=>{
+  await openDailyWeek(parisDay(),'recap',weekMonday(recap.day));
+  await openDailyDay(recap.day,null,recap.kind==='week');
+ }
+});
+new MutationObserver(()=>void dailyRecaps.wake()).observe(document.getElementById('mapModal'),{attributes:true,attributeFilter:['hidden']});
+document.addEventListener('visibilitychange',()=>void dailyRecaps.wake());
+void dailyRecaps.wake();
 void initializeAccountSession();
 
 function canReloadForAppUpdate(){

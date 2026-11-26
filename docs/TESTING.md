@@ -1034,6 +1034,14 @@ mocked and asserts the header switches from played to available in the same page
 
 ## Cloud persistence regression matrix
 
+Weekly daily-challenge results (#1015) use the isolated SQL fixture
+`scripts/fixtures/daily-weekly-recaps-1015.sql` for frozen points, ties, friends,
+one recap per account and erasure. `daily-recaps-tests.mjs` checks bounded reads
+and old-account responses. The daily browser journey exercises the recap dialog
+in FR/EN/ES on a narrow viewport, with keyboard focus and an explicit board link.
+Physical multi-device acceptance, real week closure and migration deployment
+remain separate from these simulated browser and isolated database tests.
+
 Critical alert tests run the production migration against disposable PostgreSQL and simulate interrupted transport, replayed observations, one affected account and unauthorized acknowledgements. The public probe test also rejects maintenance HTML with HTTP 200.
 
 The [admin activity mail tests](OBSERVABILITY_946.md#configuration-et-recette-opérateur) cover deduplication and role grants in disposable PostgreSQL and capture mail with a simulated provider.

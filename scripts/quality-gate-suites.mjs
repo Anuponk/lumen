@@ -240,6 +240,7 @@ export const nodeSuites=[
  "daily-challenge-tests.mjs",
  "daily-view-tests.mjs",
  "daily-week-tests.mjs",
+ "daily-recaps-tests.mjs",
  "social-hub-tests.mjs",
  "analytics-engagement-tests.mjs",
  "analytics-versions-tests.mjs",

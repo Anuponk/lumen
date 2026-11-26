@@ -42,24 +42,29 @@ function bold(value) {
 
 // Top three plus my position when outside the top. The rank and participant
 // count still come entirely from the server. Nicknames are escaped as data.
-export function renderDailyBoard(part, {scope='general',formatDuration=seconds=>seconds+' s',t=french} = {}) {
+export function renderDailyBoard(part, {scope='general',formatDuration=seconds=>seconds+' s',t=french,weekly=false} = {}) {
   const top = Array.isArray(part?.top) ? part.top : [], total = Number(part?.participants) || 0, me = part?.me;
-  if (!total || !top.length) {
+  if ((!total || !top.length) && !(weekly && me)) {
     return '<p class="daily-board-empty">' + escapeDaily(t(scope === 'friends' ? 'daily.friendsEmpty' : 'daily.generalEmpty')) + '</p>';
   }
-  const row = ({rank,nickname,score,mine}) =>
+  const result = entry => weekly ? t('daily.weekPoints',{count:entry.points}) : formatDuration(entry.score);
+  const row = ({rank,nickname,score,mine,points}) =>
     '<li class="daily-board-row' + (mine ? ' mine' : '') + '"><span class="daily-board-rank">' + escapeDaily(formatRank(rank,t)) +
     '</span><span class="daily-board-name">' + escapeDaily(mine ? t('daily.you',{name:nickname}) : nickname) +
-    '</span><span class="daily-board-time">' + escapeDaily(formatDuration(score)) + '</span></li>';
+    '</span><span class="daily-board-time">' + escapeDaily(result({score,points})) + '</span></li>';
   let html = '<ol class="daily-board-list">' + top.map(row).join('') + '</ol>';
   if (me && !top.some(row => row.mine)) {
-    const time = formatDuration(me.score);
+    const time = result(me);
     const message = me.rank
       ? t('daily.yourRank',{rank:bold(formatRank(me.rank,t)),time:escapeDaily(time)})
-      : escapeDaily(t('daily.yourTimeOptedOut',{time}));
+      : escapeDaily(t(weekly?'daily.weekOwnPoints':'daily.yourTimeOptedOut',weekly?{points:time}:{time}));
     html += '<p class="daily-board-me">' + message + '</p>';
   }
   if (scope === 'friends' && total === 1 && top[0]?.mine) html += '<p class="daily-board-empty">' + escapeDaily(t('daily.friendsAlone')) + '</p>';
+  if(weekly&&me){
+    html += '<p class="daily-week-state">'+escapeDaily(t('daily.weekPerformance',{count:me.played,time:formatDuration(me.score)}))+'</p>';
+    if(Number.isFinite(me.best_score))html += '<p class="daily-week-state">'+escapeDaily(t('daily.bestTime')+' · '+formatDuration(me.best_score))+'</p>';
+  }
   return html + '<p class="daily-board-count">' + escapeDaily(t(scope === 'friends' ? 'daily.friendsCount' : 'daily.participantCount',{count:total})) + '</p>';
 }
 
