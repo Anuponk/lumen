@@ -76,6 +76,34 @@ assert.equal(recoveryScreen.missing,1,'Losing the session ends an open recovery 
 assert.equal(authNodes.get('mobileAuthAction').disabled,false);assert(authNodes.get('mobileAuthAction').textContent.includes('Se connecter'));
 console.log('The mobile account menu distinguishes pending restoration, a restored account and a confirmed guest');
 
+// A hung restore keeps the previous account covered and exposes a single retry
+// diagnostic, even when the UI is refreshed by other account events.
+{
+ const nodes=new Map(),observed=[];
+ let fire,scheduled=0;
+ const holdContext=vm.createContext({t:createTranslator().t,
+  document:{body:{classList:{toggle(){}}},getElementById:id=>{
+   if(!nodes.has(id))nodes.set(id,{});
+   return nodes.get(id);
+  }},
+  navigator:{onLine:true},sessionStorage:{setItem(){},removeItem(){}},
+  profileHoldOwner:undefined,profileHoldTimer:null,profileHoldTimedOut:false,
+  lumenUser:{id:'confirmed'},authSessionPending:false,cloudProfileFailure:null,
+  refreshAdventureOffer:null,updateSignedOutScreen(){},accountSwitchPending:()=>true,
+  setTimeout(fn,ms){assert.equal(ms,15000);fire=fn;return ++scheduled},clearTimeout(){},
+  recordCloudDiagnostic:(event,detail)=>observed.push({event,...detail})});
+ vm.runInContext(functionSource(ui,'updateAccountSwitchHold'),holdContext);
+ holdContext.updateAccountSwitchHold();holdContext.updateAccountSwitchHold();
+ assert.equal(nodes.get('accountSwitchHold').hidden,false);
+ assert.equal(nodes.get('accountSwitchHoldRetry').hidden,true);
+ assert.equal(scheduled,1);
+ fire();holdContext.updateAccountSwitchHold();
+ assert.equal(nodes.get('accountSwitchHold').hidden,false);
+ assert.equal(nodes.get('accountSwitchHoldRetry').hidden,false);
+ assert.equal(scheduled,1);
+ assert.deepEqual(observed,[{event:'profile_hold_timeout',signedIn:true,sessionPending:false}]);
+}
+
 // A nickname must never replace the actual sync verdict.
 recoveryState.clear();menuContext.lumenUser={id:'restored-player'};menuContext.lumenNickname='Anupon';menuContext.cloudProfileReady=true;
 menuContext.cloudProfileBusy=false;menuContext.cloudProfileDirty=false;menuContext.navigator={onLine:true};
