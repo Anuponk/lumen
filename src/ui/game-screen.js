@@ -95,6 +95,9 @@ import {gameplayDomainState} from '../persistence/gameplay-sync.js';
 import {createOutboxHealthReporter,LOCAL_STORAGE_LIMIT_BYTES} from "../persistence/outbox-health.js";
 import {buildReportSnapshot} from './report-snapshot.js';
 import {createMyReports} from './my-reports.js';
+import {mountFeedbackInbox} from './feedback-inbox.js';
+import {appendPlayerDates} from './cockpit-dates.js';
+import {playerHealth} from './player-health.js';
 import {createDiagnosticReporter,mapCloudDiagnostic,installDiagnosticListeners,diagnosticErrorKind} from '../persistence/diagnostic-reporter.js';
 import {createSyncPresentation} from "../persistence/sync-presentation.js";
 import {walletCommandsSupported,recoverWalletCacheDurably} from "../persistence/wallet-command.js";
@@ -3727,31 +3730,44 @@ let betaFeedback=null,myReports=null;
 function openBetaFeedback(options={}){betaFeedback?.open(options)}
 // #960: a « Report this problem » action for blocking errors, prefilled with the error code.
 function reportProblemButton(errorCode,surface='error'){const b=document.createElement('button');b.type='button';b.className='report-problem';b.textContent=t('feedback.reportThis');b.onclick=()=>openBetaFeedback({kind:'bug',surface,errorCode,origin:b});return b}
-// #960: admin report rows (v2 adds status and the allowlisted context) and triage.
-const FEEDBACK_KIND_KEYS={bug:'admin.feedback.kind.bug',question:'admin.feedback.kind.question',idea:'admin.feedback.kind.idea',rule:'admin.feedback.kind.rule',difficulty:'admin.feedback.kind.difficulty',other:'admin.feedback.kind.other'};
-const FEEDBACK_STATUS_KEYS={new:'admin.feedback.status.new',reviewed:'admin.feedback.status.reviewed',fixed:'admin.feedback.status.fixed',closed:'admin.feedback.status.closed'};
-function adminFeedbackRow(x){
- const c=x.context&&typeof x.context==='object'?x.context:{};
- const facts=[c.platform,c.browser,c.screen,c.locale,c.quest_ordinal?'Q'+c.quest_ordinal:(x.puzzle_id?'Q'+x.puzzle_id:null),c.surface,c.error_code,c.offline?t('admin.feedback.offline'):null,c.session_id].filter(Boolean).map(adminEsc).join(' · ');
- const status=x.status&&FEEDBACK_STATUS_KEYS[x.status]?'<select data-feedback-status="'+adminEsc(x.id)+'" aria-label="'+adminEsc(t('admin.feedback.statusLabel',{id:String(x.id)}))+'">'+Object.entries(FEEDBACK_STATUS_KEYS).map(([v,k])=>'<option value="'+v+'"'+(v===x.status?' selected':'')+'>'+adminEsc(t(k))+'</option>').join('')+'</select>':'';
- return '<div class="admin-feedback"><strong>'+(x.id?'n° '+adminEsc(x.id)+' · ':'')+adminEsc(FEEDBACK_KIND_KEYS[x.kind]?t(FEEDBACK_KIND_KEYS[x.kind]):x.kind)+' · '+adminEsc(x.player_label)+'</strong>'+status+'<p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+(facts?' · '+facts:'')+'</small>'+(x.id?'<details class="admin-feedback-journal" data-feedback-journal="'+adminEsc(x.id)+'"><summary>'+adminEsc(t('admin.feedback.journal'))+'</summary><pre></pre></details>':'')+'</div>';
+// #1020/#960: the reports inbox (feedback-inbox.js) and the facts of the player table
+// (one bounded lumen_admin_player_health read), kept for the player's summary card.
+let adminInbox=null,adminHealth=null,adminPlayerNames=new Map();
+function adminFeedbackInbox(owner,client){
+ if(adminInbox?.owner===owner&&adminInbox.client===client)return adminInbox;
+ const authorized=()=>lumenUser?.id===owner&&lumenSupabase===client&&hasInternalCapability('analytics_cockpit');
+ const inbox=mountFeedbackInbox(document.getElementById('adminFeedbacks'),{rpc:(name,args)=>client.rpc(name,args),authorized,
+  days:()=>Math.max(30,Number(document.getElementById('adminCockpitDays')?.value||30)),
+  onPlayer:key=>{adminAnalytics?.navigate('players');void loadAdminTimeline(key);document.getElementById('adminTimeline')?.scrollIntoView({block:'nearest'})},
+  onDossier:(host,{target,reference})=>mountSupportDossier(host,{client,owner,target,reference,authorized})});
+ adminInbox={...inbox,owner,client};return adminInbox;
 }
-function bindAdminFeedbackTriage(root){
- if(!root||root.dataset.triageBound)return;root.dataset.triageBound='1';
- // #1010: the sync journal attached to a report, read on demand (administrators only).
- root.addEventListener('toggle',async e=>{
-  const box=e.target.closest?.('details[data-feedback-journal]');if(!box||!box.open||box.dataset.loaded||!lumenSupabase)return;
-  const pre=box.querySelector('pre');box.dataset.loaded='1';pre.textContent='…';
-  const {data,error}=await lumenSupabase.rpc('lumen_admin_feedback_journal',{p_id:Number(box.dataset.feedbackJournal)});
-  if(error){delete box.dataset.loaded;pre.textContent=t('admin.feedback.journalError');return}
-  pre.textContent=Array.isArray(data)&&data.length?JSON.stringify(data,null,1):t('admin.feedback.journalEmpty');
- },true);
- root.addEventListener('change',async e=>{
-  const select=e.target.closest('select[data-feedback-status]');if(!select||!lumenSupabase)return;
-  select.disabled=true;
-  const {error}=await lumenSupabase.rpc('lumen_admin_feedback_set_status',{p_id:Number(select.dataset.feedbackStatus),p_status:select.value});
-  select.disabled=false;select.classList.toggle('admin-error',!!error);if(error)select.title=t('admin.feedback.statusError');
- });
+function showPlayerReports(key,label){
+ adminAnalytics?.navigate('support');
+ void adminInbox?.filterPlayer(key,label||adminPlayerNames.get(key)||key);
+ document.getElementById('adminFeedbacks')?.closest('details')?.setAttribute('open','');
+}
+// #708: compact summary first (health, last quest, versions, check), details folded.
+function renderAdminPlayerSummary(box,key){
+ const facts=adminHealth?.players?.[key];if(!box)return;
+ const model=playerHealth(facts),doc=box.ownerDocument,card=doc.createElement('section');card.className='admin-player-summary';card.dataset.health=model.state;
+ const title=doc.createElement('h4');title.textContent=(adminPlayerNames.get(key)||'Joueur')+' — '+model.icon+' '+model.label;card.append(title);
+ const list=doc.createElement('ul');
+ const line=(label,value)=>{const li=doc.createElement('li');const strong=doc.createElement('strong');strong.textContent=label+' : ';li.append(strong,value);list.append(li)};
+ const date=v=>v?new Date(v).toLocaleString('fr-FR'):null;
+ line('État',model.reasons.join(' · '));
+ line('Dernière quête terminée',date(model.gameAt)||'aucune quête terminée observée');
+ line('Synchronisation',model.devices?(model.pending?model.pending+' opération(s) en attente':'aucune opération en attente'):'non observée');
+ line('Version Web',model.web?model.web.version+' · vue le '+date(model.web.at):'inconnue');
+ line('Version Android',model.android?model.android.version+' · vue le '+date(model.android.at):'aucune version native transmise');
+ line('Dernier contrôle technique',model.observedAt?date(model.observedAt)+' ('+model.freshness+')':'aucun');
+ line('Dernière connexion Auth',date(facts?.auth_at)||'inconnue');
+ card.append(list);
+ if(model.reports.total){const b=doc.createElement('button');b.type='button';b.textContent='Signalements : '+model.reports.open+' ouvert(s) / '+model.reports.total;b.onclick=()=>showPlayerReports(key);card.append(b)}
+ const details=doc.createElement('details');const summary=doc.createElement('summary');summary.textContent='Détails techniques';details.append(summary);
+ const dates=doc.createElement('div');dates.className='admin-player-dates';appendPlayerDates(dates,{},facts||undefined);details.append(dates);
+ const devices=doc.createElement('pre');devices.textContent=JSON.stringify(facts?.devices||[],null,1);details.append(devices);card.append(details);
+ box.prepend(card);
 }
 function adminEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function adminNumber(v){return new Intl.NumberFormat("fr-FR").format(Number(v)||0)}
@@ -3769,6 +3785,7 @@ async function loadAdminTimeline(key){
  const {data,error}=response;
  if(error){box.innerHTML="<p>Timeline indisponible.</p>";return}
  renderPlayerSessions(box,data,{authorized,scope:owner+':'+key});
+ renderAdminPlayerSummary(box,key);
  void mountSupportDossier(box,{client,owner,target:key.slice(2),authorized});
  void mountAdventureAccess(box,{client,owner,target:key.slice(2),authorized,packs:CONTENT_PACKS});
 }
@@ -3942,10 +3959,9 @@ async function loadAdminCockpit(){
  mountSupportLookup(supportLookup,{client:requestClient,owner:requestUser,authorized});
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
- const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth,questMetrics,engagement,versionHealth,criticalIncidents,healthSnapshot]=await Promise.all([
+ const [cockpit,accounts,playerSnapshot,syncHealth,questMetrics,engagement,versionHealth,criticalIncidents,healthSnapshot]=await Promise.all([
    lumenSupabase.rpc("lumen_admin_cockpit",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_accounts",{p_limit:250}),
-   lumenSupabase.rpc("lumen_admin_feedback_v2",{p_days:days}).then(r=>r.error?lumenSupabase.rpc("lumen_admin_feedback",{p_days:days}):r),
    lumenSupabase.rpc("lumen_admin_recent_players",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_sync_health",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days}),
@@ -3970,9 +3986,10 @@ async function loadAdminCockpit(){
  const receivedPlayers=new Map((cockpit.data?.service_activity?.players||[]).map(p=>[p.player_key,p]));
  const players=analyticsPlayers(playerSnapshot.error?[]:playerSnapshot.data,accounts.error?[]:accounts.data).map(x=>({...x,current_quest:Math.max(questMetrics.data?.current_players?.[x.player_key]||0,receivedPlayers.get(x.player_key)?.furthest_confirmed_quest||0)||null}));
  const playerError=playerSnapshot.error&&accounts.error;
- let observations;try{observations=await requestClient.rpc('lumen_admin_player_observations',{p_player_keys:players.map(p=>p.player_key)})}catch(_){observations={error:true}}
+ // #708: one bounded read gives the facts of the whole player table (replaces observations).
+ let observations;try{observations=await requestClient.rpc('lumen_admin_player_health',{p_player_keys:players.map(p=>p.player_key)})}catch(_){observations={error:true}}
  if(!authorized())return;
- const realFeedbacks=feedbacks.data||[];
+ adminHealth=observations.error?null:observations.data;adminPlayerNames=new Map(players.map(p=>[p.player_key,String(p.display_name||p.player_label||'Joueur')]));
  const d={...cockpit.data,friction:questMetrics.data?.friction||[],funnel:questMetrics.data?.funnel||[]},m=d.summary||{};
  document.getElementById("adminCockpitKpis").innerHTML=[
   ["Joueurs uniques",null],["Nouveaux",null],["Revenants",null],["DAU",null],["WAU",null],["Sessions",null],["Quêtes commencées",null],["Quêtes terminées",null],["Feedbacks reçus",m.feedback_count]
@@ -3991,7 +4008,7 @@ async function loadAdminCockpit(){
  const alerts=[...syncAlerts,...outboxAlerts.map(a=>'Sauvegarde '+a.state+' · '+a.pending+' opération(s) · '+a.platform+' · '+a.version),...detailAlerts.map(a=>a.text)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’alerte dans les sources disponibles. La couverture reste partielle.</p>";
  const directory=document.getElementById('adminPlayers');
  if(playerError){directory.replaceChildren();const note=document.createElement('p');note.textContent='Activité récente indisponible.';directory.append(note)}
- else renderPlayerDirectory(directory,players,observations.error?undefined:observations.data,{authorized,onSelect:loadAdminTimeline});
+ else renderPlayerDirectory(directory,players,observations.error?undefined:observations.data,{authorized,onSelect:loadAdminTimeline,onReports:showPlayerReports});
  const timeline=document.getElementById('adminTimeline');
  if(timeline?.cockpitPlayer){
   if(players.some(p=>p.player_key===timeline.cockpitPlayer))loadAdminTimeline(timeline.cockpitPlayer);
@@ -3999,8 +4016,8 @@ async function loadAdminCockpit(){
  }
  const accountRows=document.getElementById("adminAccounts");
  if(accountRows)accountRows.innerHTML=accounts.error?'<tr><td colspan="6">Comptes indisponibles.</td></tr>':(accounts.data||[]).map(x=>'<tr><td>'+adminEsc(x.email||"—")+'</td><td>'+adminEsc(x.nickname||"—")+'</td><td>'+new Date(x.created_at).toLocaleString("fr-FR")+'</td><td>'+(x.last_sign_in_at?new Date(x.last_sign_in_at).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.last_activity?new Date(x.last_activity).toLocaleString("fr-FR"):"—")+'</td><td>'+(questMetrics.data?.current_players?.['u:'+x.user_id]||"—")+'</td></tr>').join("")||'<tr><td colspan="6">Aucun compte.</td></tr>';
- document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":realFeedbacks.map(adminFeedbackRow).join("");
- bindAdminFeedbackTriage(document.getElementById("adminFeedbacks"));
+ // #1020: the inbox reads its own page (filters and counters kept across refreshes).
+ void adminFeedbackInbox(requestUser,requestClient).load();
  renderAnalyticsDashboard({overview:document.getElementById('analyticsOverview'),journeys:document.getElementById('analyticsJourneys'),technical:document.getElementById('analyticsTechnical')},
   buildAnalyticsDashboard({product:cockpit.error?null:cockpit.data,quests:questMetrics.error?null:questMetrics.data,health,players,observations:observations.error?null:observations.data,catalogue:adminCanonicalCatalogueTree(),days}),
   {authorized,scope:requestUser,onAction:action=>{
@@ -4010,9 +4027,9 @@ async function loadAdminCockpit(){
    adminAnalytics?.navigate(section);
    if(action.type==='quest')revealAnalyticsQuest(document.getElementById('analyticsJourneys'),action.key);
    if(['player','players'].includes(action.type)){
-    const directory=document.getElementById('adminPlayers'),search=directory.querySelector('input'),filter=directory.querySelector('[aria-label="Filtrer l’état observé"]');
+    const directory=document.getElementById('adminPlayers'),search=directory.querySelector('input[type=search]');
     if(search){search.value='';search.dispatchEvent(new Event('input'))}
-    if(filter){filter.value=action.state||'all';filter.dispatchEvent(new Event('change'))}
+    directory.querySelector('[data-health-filter="'+(action.state||'all')+'"]')?.click();
     if(action.type==='player')void loadAdminTimeline(action.key);
     reveal(document.getElementById(action.type==='player'?'adminTimeline':'adminPlayers'));
    }

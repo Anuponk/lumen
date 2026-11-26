@@ -83,7 +83,7 @@
   <details class="admin-section"><summary><h3>Observations brutes par quête</h3></summary><div class="admin-table-wrap"><table><thead><tr><th>Quête</th><th>Débuts · joueurs</th><th>Fins · joueurs</th><th>Reset</th><th>Abandon explicite</th><th>Indices</th><th>Vérifier</th><th>Temps actif médian</th></tr></thead><tbody id="adminFriction"></tbody></table></div></details>
   </div>
   <div data-analytics-panel="players" hidden>
-  <div class="admin-grid"><details class="admin-section" open><summary><h3>Joueurs inscrits · 250 maximum</h3></summary><p>Comptes Lumen et activité connue. Une activité, une progression ou un nombre de sessions absent reste inconnu.</p><div id="adminPlayers"></div></details><details class="admin-section" open><summary><h3>Sessions du joueur sélectionné</h3></summary><div id="adminTimeline" class="admin-timeline"><p>Sélectionne un joueur inscrit.</p></div></details></div>
+  <div class="admin-grid"><details class="admin-section" open><summary><h3>Joueurs inscrits · 250 maximum</h3></summary><p>Santé = dernier état connu ; la fraîcheur est affichée à part. Une information absente reste « inconnue ».</p><div id="adminPlayers"></div></details><details class="admin-section" open><summary><h3>Sessions du joueur sélectionné</h3></summary><div id="adminTimeline" class="admin-timeline"><p>Sélectionne un joueur inscrit.</p></div></details></div>
   <details class="admin-section"><summary><h3>Informations des comptes · détail</h3></summary><p class="admin-cockpit-status">Visible uniquement par un administrateur autorisé.</p><div class="admin-table-wrap"><table><thead><tr><th>Email</th><th>Pseudo</th><th>Créé le</th><th>Dernière connexion Auth</th><th>Activité enregistrée</th><th>Quête</th></tr></thead><tbody id="adminAccounts"></tbody></table></div></details>
   </div>
   <div data-analytics-panel="sync" hidden><section id="analyticsHealthCockpit" class="analytics-engagement"></section><section id="analyticsCriticalIncidents" class="analytics-engagement" aria-live="polite"></section><div id="analyticsVersions" class="analytics-engagement" aria-live="polite"></div>
@@ -92,8 +92,8 @@
   </div>
   <div data-analytics-panel="support" hidden>
   <p data-game-text="admin.supportIntro"></p>
+  <details class="admin-section" open><summary><h3>Signalements des joueurs</h3></summary><p class="admin-cockpit-status">Bugs, questions et suggestions. Ouvrir un signalement charge son diagnostic ; la réponse apparaît dans « Mes signalements » du joueur.</p><div id="adminFeedbacks"></div></details>
   <details class="admin-section" open><summary><h3>Outils de test</h3></summary><p>Aperçus sans effet sur la progression ni les sauvegardes.</p><button id="adminPreviewMastery" type="button">Aperçu : aventure pleinement maîtrisée</button> <span id="adminPreviewStatus" role="status"></span><div id="analyticsSupportTools" class="analytics-support-tools"></div></details>
-  <details class="admin-section" open><summary><h3>Feedbacks récents</h3></summary><div id="adminFeedbacks"></div></details>
   </div>
  </div>
 </div>

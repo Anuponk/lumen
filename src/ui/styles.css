@@ -1884,3 +1884,50 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 #puzzleGrid.is-badge-filtered .performance-slot:not(.earned)>span{visibility:visible;opacity:.34}
 #puzzleGrid.is-badge-filtered .puzzle-card:is(.done,.locked)::before{content:attr(data-quest-number);display:block;font-size:10px;line-height:12px;color:#c9dcea}
 #puzzleGrid.is-badge-filtered .puzzle-card.done .performance-grid{height:calc(100% - 12px)}
+/* #708: dense, sortable player table (horizontal scroll inside its own box only). */
+.admin-health-filters,.admin-inbox-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.admin-health-filters button,.admin-inbox-filters button{min-height:36px;padding:4px 10px;border:1px solid #294359;border-radius:999px;background:#0f1d2d;color:#dceaf6;font-size:12.5px}
+.admin-health-filters button[aria-pressed="true"],.admin-inbox-filters button[aria-pressed="true"]{background:#16405a;border-color:#68e7ff;color:#fff}
+.admin-health-reports{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+.admin-player-table-wrap{max-width:100%;max-height:70vh;overflow:auto;border:1px solid #1d3047;border-radius:8px}
+.admin-player-table{width:100%;min-width:860px;border-collapse:collapse;font-size:12.5px}
+.admin-player-table th,.admin-player-table td{padding:6px 8px;border-bottom:1px solid #1d3047;text-align:left;vertical-align:top}
+.admin-player-table thead th{position:sticky;top:0;background:#0b1828;z-index:1}
+.admin-player-table thead button{background:none;border:0;padding:0;color:#bcd2e3;font:inherit;font-weight:800;cursor:pointer;min-height:32px}
+.admin-player-table thead th[aria-sort="ascending"] button::after{content:" ▲"}
+.admin-player-table thead th[aria-sort="descending"] button::after{content:" ▼"}
+.admin-player-table td small{display:block;color:#9fb3c8;font-size:11px}
+.admin-player-table td button{min-height:32px;font-size:12px}
+.admin-player-table tr[data-health="trouble"]{background:rgba(255,120,120,.07)}
+.admin-player-table tr[data-health="trouble"] .admin-health-badge{color:#ff9d9d;font-weight:800}
+.admin-player-table tr[data-health="pending"] .admin-health-badge{color:#f4cf78;font-weight:700}
+.admin-player-table tr[data-health="healthy"] .admin-health-badge{color:#73e8b0}
+.admin-player-table tr[data-health="unknown"] .admin-health-badge{color:#9fb3c8}
+.admin-cell-muted{color:#7f94ad}
+.admin-player-summary{margin:0 0 10px;padding:10px;border:1px solid #294359;border-radius:10px}
+.admin-player-summary[data-health="trouble"]{border-left:4px solid #ff9d9d}
+.admin-player-summary[data-health="pending"]{border-left:4px solid #f4cf78}
+.admin-player-summary[data-health="healthy"]{border-left:4px solid #73e8b0}
+.admin-player-summary h4{margin:0 0 6px}
+.admin-player-summary ul{margin:0 0 6px;padding-left:18px;font-size:12.5px;line-height:1.6}
+.admin-player-summary pre,.admin-inbox-body pre{max-height:14rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}
+/* #1020: reports inbox. */
+.admin-inbox-list{display:grid;gap:6px}
+.admin-inbox-item{border:1px solid #1d3047;border-radius:8px;padding:6px 8px}
+.admin-inbox-item>summary{cursor:pointer;list-style:revert}
+.admin-inbox-item small{display:block;color:#9fb3c8}
+.admin-inbox-message{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.admin-inbox-status{padding:1px 8px;border-radius:999px;background:#1d3047;font-size:12px}
+.admin-inbox-item[data-status="answered"] .admin-inbox-status{background:#16405a}
+.admin-inbox-item[data-status="closed"] .admin-inbox-status,.admin-inbox-item[data-status="fixed"] .admin-inbox-status{background:#173a2a}
+.admin-inbox-action{padding:1px 8px;border-radius:999px;background:#f4cf78;color:#1a1300;font-size:11px;font-weight:800}
+.admin-inbox-synthesis{display:grid;grid-template-columns:minmax(110px,max-content) 1fr;gap:2px 10px;margin:8px 0;font-size:12.5px}
+.admin-inbox-synthesis dt{color:#9fb3c8}.admin-inbox-synthesis dd{margin:0;overflow-wrap:anywhere}
+.admin-inbox-links{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.admin-inbox-board{font-family:ui-monospace,monospace;line-height:1.3}
+.admin-inbox-thread{list-style:none;padding:0;display:grid;gap:6px}
+.admin-inbox-thread li{padding:6px 8px;border-radius:6px;background:#0f1d2d}
+.admin-inbox-thread li[data-by="admin"]{background:#12304a}
+.admin-inbox-thread p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.admin-inbox-reply{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
+.admin-inbox-reply textarea{flex:1 1 100%;min-height:4em;font:inherit}
