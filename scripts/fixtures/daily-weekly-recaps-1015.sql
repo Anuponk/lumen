@@ -1,5 +1,13 @@
 -- Disposable clock: exercise two fully closed Paris weeks during rollout week.
 begin;
+-- Earlier ledger fixtures leave their synthetic daily attempts in this shared
+-- test database. Isolate the two weeks, then rollback restores every row.
+delete from lumen_commands.daily_week_friends where monday between date '2026-11-23' and date '2026-11-30';
+delete from lumen_commands.daily_week_standings where monday between date '2026-11-23' and date '2026-11-30';
+delete from lumen_commands.daily_week_finalized where monday between date '2026-11-23' and date '2026-11-30';
+delete from lumen_commands.daily_standings where day between date '2026-11-23' and date '2026-12-06';
+delete from lumen_commands.daily_finalized where day between date '2026-11-23' and date '2026-12-06';
+delete from lumen_commands.daily_runs where day between date '2026-11-23' and date '2026-12-06';
 create or replace function lumen_commands.daily_today() returns date
 language sql stable set search_path='' as $$select date '2026-12-07'$$;
 create or replace function lumen_commands.daily_closes_at(p_day date) returns timestamptz
