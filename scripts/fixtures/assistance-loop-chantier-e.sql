@@ -21,6 +21,9 @@ declare
   own_case uuid; foreign_case uuid; capture uuid := gen_random_uuid();
   x jsonb; y jsonb; q jsonb; mine jsonb; bug_id bigint; guest_id bigint; f lumen.feedback;
   client uuid := gen_random_uuid(); session uuid := gen_random_uuid(); row lumen_commands.outbox_health%rowtype;
+  -- The technical-retention columns exist only where that migration ran first.
+  retention boolean := exists (select 1 from information_schema.columns where table_schema = 'lumen' and table_name = 'feedback' and column_name = 'privacy_closed_at');
+  flag boolean;
 begin
   -- Privileges: players and guests report, read and reply to their own reports only.
   assert has_function_privilege('anon', 'public.lumen_send_feedback_v4(text,text,text,jsonb,text,jsonb,jsonb,uuid,uuid)', 'execute');
@@ -120,7 +123,11 @@ begin
   y := public.lumen_admin_feedback_reply(bug_id, 'Merci, corrigé dans la prochaine version.', 'adminMsgRef0001');
   assert (y ->> 'duplicate')::boolean and (select jsonb_array_length(thread) from lumen.feedback where id = bug_id) = 1, 'no duplicate answer';
   perform public.lumen_admin_feedback_reply(guest_id, 'Bonne idée !', 'adminMsgRef0002', true);
-  assert (select status = 'closed' and privacy_closed_at is not null from lumen.feedback where id = guest_id), 'answer and resolve, retention starts';
+  assert (select status = 'closed' from lumen.feedback where id = guest_id), 'answer and resolve';
+  if retention then
+    execute 'select privacy_closed_at is not null from lumen.feedback where id = $1' into flag using guest_id;
+    assert flag, 'resolving starts the 180-day retention clock';
+  end if;
 
   perform set_config('request.jwt.claim.sub', player::text, true);
   mine := public.lumen_my_feedback(null, null, true);
@@ -137,7 +144,11 @@ begin
 
   perform set_config('request.jwt.claim.sub', '', true);
   y := public.lumen_feedback_reply(guest_id, 'Merci, autre idée', 'guestMsgRef0001', guest, array[guest_ref]);
-  assert y ->> 'status' = 'reviewed' and (select privacy_closed_at is null from lumen.feedback where id = guest_id), 'reopened, retention clock stopped';
+  assert y ->> 'status' = 'reviewed', 'a player reply reopens';
+  if retention then
+    execute 'select privacy_closed_at is null from lumen.feedback where id = $1' into flag using guest_id;
+    assert flag, 'reopened, retention clock stopped';
+  end if;
   for i in 2..5 loop perform public.lumen_feedback_reply(guest_id, 'Encore ' || i, 'guestMsgRef000' || i, guest, array[guest_ref]); end loop;
   begin perform public.lumen_feedback_reply(guest_id, 'Trop', 'guestMsgRef0009', guest, array[guest_ref]); raise exception 'no rate limit';
   exception when raise_exception then
