@@ -3,25 +3,21 @@
 // report's linked data (journal, snapshot of the moment, capture state, exchange) is
 // read only when it is opened. Answers are idempotent (one reference per draft) and
 // a failed send keeps the draft. Every DOM text is set with textContent.
-const KIND = { bug: 'Bug', question: 'Question', idea: 'Suggestion', rule: 'Règle', difficulty: 'Difficulté', other: 'Autre' };
-export const INBOX_STATUS = Object.freeze({ new: 'Reçu', reviewed: 'En cours', answered: 'Réponse disponible', fixed: 'Résolu', closed: 'Résolu' });
-const CAPTURE = {
-  none: 'Aucune copie complète demandée',
-  pending: 'Copie complète en cours d’envoi',
-  received: 'Copie complète reçue',
-  failed: 'Copie complète non reçue (échec ou envoi interrompu)',
-  expired: 'Copie complète expirée',
-  deleted: 'Copie complète effacée (désactivation ou purge)',
-};
+import { createTranslator } from './i18n.js';
+const defaultT = createTranslator().t;
+const STATUS = { new: 'new', reviewed: 'reviewed', answered: 'answered', fixed: 'closed', closed: 'closed' };
+const STATUS_KEYS = { new: 'admin.inbox.status.new', reviewed: 'admin.inbox.status.reviewed', answered: 'admin.inbox.status.answered', closed: 'admin.inbox.status.closed' };
+const KIND_KEYS = { bug: 'admin.inbox.kind.bug', question: 'admin.inbox.kind.question', idea: 'admin.inbox.kind.idea', rule: 'admin.inbox.kind.rule', difficulty: 'admin.inbox.kind.difficulty', other: 'admin.inbox.kind.other' };
+const FILTER_KEYS = { action: 'admin.inbox.filter.action', all: 'admin.inbox.filter.all', new: 'admin.inbox.filter.new', reviewed: 'admin.inbox.filter.reviewed', answered: 'admin.inbox.filter.answered', closed: 'admin.inbox.filter.closed' };
+const CATEGORY_KEYS = { all: 'admin.inbox.category.all', bug: 'admin.inbox.category.bug', question: 'admin.inbox.category.question', idea: 'admin.inbox.category.idea', other: 'admin.inbox.category.other' };
+const CAPTURE_KEYS = { none: 'admin.inbox.capture.none', pending: 'admin.inbox.capture.pending', received: 'admin.inbox.capture.received', failed: 'admin.inbox.capture.failed', expired: 'admin.inbox.capture.expired', deleted: 'admin.inbox.capture.deleted' };
+const DOMAIN_KEYS = { canonical: 'admin.inbox.snapshot.domain.canonical', legacy: 'admin.inbox.snapshot.domain.legacy', wallet: 'admin.inbox.snapshot.domain.wallet' };
+export const inboxStatusLabel = (status, t = defaultT) => (STATUS[status] ? t(STATUS_KEYS[STATUS[status]]) : status);
 const el = (doc, tag, text, className) => {
   const node = doc.createElement(tag);
   if (text !== undefined && text !== null) node.textContent = text;
   if (className) node.className = className;
   return node;
-};
-const when = (value) => {
-  const at = Date.parse(value);
-  return Number.isFinite(at) ? new Date(at).toLocaleString('fr-FR') : '—';
 };
 const newRef = () => {
   try {
@@ -30,26 +26,31 @@ const newRef = () => {
     return 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
   }
 };
+const whenWith = (t) => (value) => {
+  const at = Date.parse(value);
+  return Number.isFinite(at) ? new Date(at).toLocaleString(t('admin.dateLocale')) : '—';
+};
 
 // Readable synthesis of the snapshot before any raw detail.
-export function snapshotSummary(snapshot) {
+export function snapshotSummary(snapshot, t = defaultT) {
   if (!snapshot || typeof snapshot !== 'object') return [];
+  const when = whenWith(t);
   const lines = [];
-  if (snapshot.taken_at) lines.push(['Moment du signalement', when(snapshot.taken_at)]);
-  if (snapshot.surface || snapshot.menu) lines.push(['Écran', [snapshot.surface, snapshot.menu].filter(Boolean).join(' · ')]);
-  lines.push(['Connexion', snapshot.online === false ? 'hors ligne' : 'en ligne']);
+  if (snapshot.taken_at) lines.push([t('admin.inbox.snapshot.moment'), when(snapshot.taken_at)]);
+  if (snapshot.surface || snapshot.menu) lines.push([t('admin.inbox.snapshot.screen'), [snapshot.surface, snapshot.menu].filter(Boolean).join(' · ')]);
+  lines.push([t('admin.inbox.snapshot.connection'), snapshot.online === false ? t('admin.inbox.snapshot.offline') : t('admin.inbox.snapshot.online')]);
   const sync = snapshot.sync || {};
-  if (sync.hydration) lines.push(['Profil', sync.hydration + (sync.hydration_error ? ' (' + sync.hydration_error + ')' : '')]);
+  if (sync.hydration) lines.push([t('admin.inbox.snapshot.profile'), sync.hydration + (sync.hydration_error ? ' (' + sync.hydration_error + ')' : '')]);
   const pending = ['canonical', 'legacy', 'wallet'].filter((d) => Number.isFinite(sync['pending_' + d]));
-  if (pending.length) lines.push(['En attente', pending.map((d) => ({ canonical: 'quêtes', legacy: 'historique', wallet: 'portefeuille' })[d] + ' ' + sync['pending_' + d]).join(' · ')]);
-  if (sync.last_success) lines.push(['Dernier succès', sync.last_success + ' · ' + when(sync.last_success_at)]);
-  if (sync.last_error) lines.push(['Dernière erreur', sync.last_error + ' · ' + when(sync.last_error_at)]);
-  if (snapshot.storage) lines.push(['Stockage', [snapshot.storage.ratio !== undefined ? snapshot.storage.ratio + ' %' : null, snapshot.storage.error].filter(Boolean).join(' · ') || '—']);
-  if (snapshot.quest) lines.push(['Quête', [snapshot.quest.adventure, snapshot.quest.ordinal ? 'Q' + snapshot.quest.ordinal : null, snapshot.quest.id].filter(Boolean).join(' · ')]);
+  if (pending.length) lines.push([t('admin.inbox.snapshot.pending'), pending.map((d) => t(DOMAIN_KEYS[d]) + ' ' + sync['pending_' + d]).join(' · ')]);
+  if (sync.last_success) lines.push([t('admin.inbox.snapshot.lastSuccess'), sync.last_success + ' · ' + when(sync.last_success_at)]);
+  if (sync.last_error) lines.push([t('admin.inbox.snapshot.lastError'), sync.last_error + ' · ' + when(sync.last_error_at)]);
+  if (snapshot.storage) lines.push([t('admin.inbox.snapshot.storage'), [snapshot.storage.ratio !== undefined ? snapshot.storage.ratio + ' %' : null, snapshot.storage.error].filter(Boolean).join(' · ') || '—']);
+  if (snapshot.quest) lines.push([t('admin.inbox.snapshot.quest'), [snapshot.quest.adventure, snapshot.quest.ordinal ? 'Q' + snapshot.quest.ordinal : null, snapshot.quest.id].filter(Boolean).join(' · ')]);
   if (snapshot.attempt) {
     const a = snapshot.attempt;
-    const helps = Object.entries(a).filter(([k]) => k.startsWith('help_')).map(([k, v]) => k.slice(5) + ' ' + v);
-    lines.push(['Tentative', [a.state, a.mode, Number.isFinite(a.elapsed_s) ? a.elapsed_s + ' s' : null, a.qualifying ? 'qualifiante' : null, a.assistance ? 'aide utilisée' : null, a.mistake ? 'erreur commise' : null, a.resets ? a.resets + ' reset(s)' : null, ...helps].filter(Boolean).join(' · ')]);
+    const helps = Object.entries(a).filter(([key]) => key.startsWith('help_')).map(([key, v]) => key.slice(5) + ' ' + v);
+    lines.push([t('admin.inbox.snapshot.attempt'), [a.state, a.mode, Number.isFinite(a.elapsed_s) ? a.elapsed_s + ' s' : null, a.qualifying ? t('admin.inbox.snapshot.qualifying') : null, a.assistance ? t('admin.inbox.snapshot.assistance') : null, a.mistake ? t('admin.inbox.snapshot.mistake') : null, a.resets ? t('admin.inbox.snapshot.resets', { count: a.resets }) : null, ...helps].filter(Boolean).join(' · ')]);
   }
   return lines;
 }
@@ -63,18 +64,19 @@ export function boardText(board) {
     .join('\n');
 }
 
-export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onPlayer = () => {}, onDossier = null }) {
+export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onPlayer = () => {}, onDossier = null, t = defaultT }) {
   if (!host) return { load() {}, filterPlayer() {} };
-  const doc = host.ownerDocument;
+  const doc = host.ownerDocument,
+    when = whenWith(t);
+  const kindLabel = (kind) => (KIND_KEYS[kind] ? t(KIND_KEYS[kind]) : kind);
   const state = { status: 'action', kind: '', player: null, playerLabel: '', items: [], next: null, counts: null, request: 0 };
   const cache = new Map();
   host.replaceChildren();
   const filters = el(doc, 'div', null, 'admin-inbox-filters');
   filters.setAttribute('role', 'group');
-  filters.setAttribute('aria-label', 'Filtrer les signalements');
-  const statuses = [['action', 'À traiter'], ['all', 'Tous'], ['new', 'Reçus'], ['reviewed', 'En cours'], ['answered', 'Réponse disponible'], ['closed', 'Résolus']];
-  const chips = statuses.map(([value, label]) => {
-    const chip = el(doc, 'button', label);
+  filters.setAttribute('aria-label', t('admin.inbox.filterLabel'));
+  const chips = ['action', 'all', 'new', 'reviewed', 'answered', 'closed'].map((value) => {
+    const chip = el(doc, 'button', t(FILTER_KEYS[value]));
     chip.type = 'button';
     chip.dataset.inboxStatus = value;
     chip.onclick = () => {
@@ -82,12 +84,12 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
       void load();
     };
     filters.append(chip);
-    return [value, label, chip];
+    return [value, chip];
   });
   const kind = el(doc, 'select');
-  kind.setAttribute('aria-label', 'Catégorie');
-  for (const [value, label] of [['', 'Toutes catégories'], ['bug', 'Bugs'], ['question', 'Questions'], ['idea', 'Suggestions'], ['other', 'Anciens retours']]) {
-    const option = el(doc, 'option', label);
+  kind.setAttribute('aria-label', t('admin.inbox.categoryLabel'));
+  for (const value of ['', 'bug', 'question', 'idea', 'other']) {
+    const option = el(doc, 'option', t(CATEGORY_KEYS[value || 'all']));
     option.value = value;
     kind.append(option);
   }
@@ -103,21 +105,21 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
   const status = el(doc, 'p', '', 'admin-cockpit-status');
   status.setAttribute('role', 'status');
   const list = el(doc, 'div', null, 'admin-inbox-list');
-  const more = el(doc, 'button', 'Charger les signalements plus anciens');
+  const more = el(doc, 'button', t('admin.inbox.older'));
   more.type = 'button';
   more.hidden = true;
   more.onclick = () => load({ append: true });
   host.append(filters, status, list, more);
 
   function renderChips() {
-    for (const [value, label, chip] of chips) {
+    for (const [value, chip] of chips) {
       const n = state.counts ? (value === 'all' ? state.counts.all : state.counts[value]) : null;
-      chip.textContent = label + (Number.isFinite(n) ? ' ' + n : '');
+      chip.textContent = t(FILTER_KEYS[value]) + (Number.isFinite(n) ? ' ' + n : '');
       chip.setAttribute('aria-pressed', String(state.status === value));
     }
     player.hidden = !state.player;
-    player.textContent = state.player ? 'Joueur : ' + state.playerLabel + ' ✕' : '';
-    player.setAttribute('aria-label', 'Retirer le filtre joueur ' + state.playerLabel);
+    player.textContent = state.player ? t('admin.inbox.playerFilter', { name: state.playerLabel }) : '';
+    player.setAttribute('aria-label', t('admin.inbox.playerFilterClear', { name: state.playerLabel }));
   }
   async function load({ append = false } = {}) {
     if (!authorized()) return;
@@ -127,7 +129,7 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
       state.next = null;
       list.replaceChildren();
     }
-    status.textContent = 'Chargement…';
+    status.textContent = t('admin.inbox.loading');
     more.hidden = true;
     let result;
     try {
@@ -144,7 +146,7 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
     }
     if (request !== state.request || !authorized()) return;
     if (result.error) {
-      status.textContent = 'Signalements indisponibles. Réessayez.';
+      status.textContent = t('admin.inbox.unavailable');
       return;
     }
     const data = result.data || {};
@@ -153,7 +155,7 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
     state.items.push(...items);
     state.next = data.next_before ?? null;
     for (const item of items) list.append(row(item));
-    status.textContent = state.items.length ? '' : 'Aucun signalement pour ces filtres.';
+    status.textContent = state.items.length ? '' : t('admin.inbox.empty');
     more.hidden = !state.next;
     renderChips();
   }
@@ -168,14 +170,15 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
     card.dataset.feedbackId = item.id;
     card.dataset.status = item.status;
     const summary = el(doc, 'summary');
-    const title = el(doc, 'strong', 'n° ' + item.id + ' · ' + (KIND[item.kind] || item.kind) + ' · ' + (item.player_label || 'Joueur'));
-    const badge = el(doc, 'span', INBOX_STATUS[item.status] || item.status, 'admin-inbox-status');
+    const title = el(doc, 'strong', t('admin.inbox.title', { id: item.id, kind: kindLabel(item.kind), name: item.player_label || t('admin.inbox.player') }));
+    const badge = el(doc, 'span', inboxStatusLabel(item.status, t), 'admin-inbox-status');
     summary.append(title, ' ', badge);
-    if (item.needs_action) summary.append(' ', el(doc, 'span', item.last_by === 'player' ? 'Nouvelle réponse du joueur' : 'À traiter', 'admin-inbox-action'));
+    if (item.needs_action) summary.append(' ', el(doc, 'span', item.last_by === 'player' ? t('admin.inbox.playerReplied') : t('admin.inbox.filter.action'), 'admin-inbox-action'));
+    const read = item.player_read_at && Date.parse(item.player_read_at) >= Date.parse(item.answered_at);
     const facts = [when(item.created_at), item.app_version, item.context?.platform, item.context?.quest_ordinal ? 'Q' + item.context.quest_ordinal : null,
-      item.journal_count ? 'journal ' + item.journal_count : null, item.snapshot ? 'instantané' : null, item.capture ? 'copie complète' : null,
-      item.messages ? item.messages + ' message(s)' : null,
-      item.answered_at ? (item.player_read_at && Date.parse(item.player_read_at) >= Date.parse(item.answered_at) ? 'réponse lue' : 'réponse non lue') : null].filter(Boolean);
+      item.journal_count ? t('admin.inbox.fact.journal', { count: item.journal_count }) : null, item.snapshot ? t('admin.inbox.fact.snapshot') : null, item.capture ? t('admin.inbox.fact.capture') : null,
+      item.messages ? t('admin.inbox.fact.messages', { count: item.messages }) : null,
+      item.answered_at ? (read ? t('admin.inbox.fact.read') : t('admin.inbox.fact.unread')) : null].filter(Boolean);
     summary.append(el(doc, 'small', facts.join(' · ')));
     summary.append(el(doc, 'p', item.message || '', 'admin-inbox-message'));
     card.append(summary);
@@ -188,7 +191,7 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
   }
   async function detail(item, card, body) {
     card.dataset.loaded = '1';
-    body.replaceChildren(el(doc, 'p', 'Chargement du diagnostic…'));
+    body.replaceChildren(el(doc, 'p', t('admin.inbox.detailLoading')));
     let result;
     try {
       result = cache.has(item.id) ? { data: cache.get(item.id) } : await rpc('lumen_admin_feedback_detail', { p_id: item.id });
@@ -198,7 +201,7 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
     if (!authorized() || !card.isConnected) return;
     if (result.error || !result.data) {
       delete card.dataset.loaded;
-      body.replaceChildren(el(doc, 'p', 'Détail indisponible. Refermez et rouvrez pour réessayer.'));
+      body.replaceChildren(el(doc, 'p', t('admin.inbox.detailUnavailable')));
       return;
     }
     const d = result.data;
@@ -209,22 +212,22 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
     const add = (label, value) => {
       synthesis.append(el(doc, 'dt', label), el(doc, 'dd', value));
     };
-    add('Version', [item.app_version || 'inconnue', item.context?.android_version ? 'Android ' + item.context.android_version : null].filter(Boolean).join(' · '));
-    add('Appareil', [item.context?.platform, item.context?.browser, item.context?.screen, item.context?.offline ? 'hors ligne' : null].filter(Boolean).join(' · ') || '—');
-    add('Journal technique', d.journal?.length ? d.journal.length + ' événement(s)' : 'absent');
-    add('Copie complète', CAPTURE[d.capture?.state] || CAPTURE.none + (d.capture?.received_at ? ' · ' + when(d.capture.received_at) : ''));
-    if (d.capture?.state === 'received') synthesis.lastChild.textContent = CAPTURE.received + ' · ' + when(d.capture.received_at) + ' · ' + d.capture.bytes + ' octets';
-    for (const [label, value] of snapshotSummary(d.snapshot)) add(label, value);
-    if (!d.snapshot) add('Instantané', item.kind === 'bug' ? 'absent (signalement antérieur ou envoi sans instantané)' : 'non demandé pour cette catégorie');
+    add(t('admin.inbox.field.version'), [item.app_version || t('admin.inbox.unknownVersion'), item.context?.android_version ? 'Android ' + item.context.android_version : null].filter(Boolean).join(' · '));
+    add(t('admin.inbox.field.device'), [item.context?.platform, item.context?.browser, item.context?.screen, item.context?.offline ? t('admin.inbox.snapshot.offline') : null].filter(Boolean).join(' · ') || '—');
+    add(t('admin.inbox.field.journal'), d.journal?.length ? t('admin.inbox.fact.events', { count: d.journal.length }) : t('admin.inbox.absent'));
+    const capture = CAPTURE_KEYS[d.capture?.state] ? d.capture.state : 'none';
+    add(t('admin.inbox.field.capture'), capture === 'received' ? t('admin.inbox.capture.receivedAt', { date: when(d.capture.received_at), bytes: d.capture.bytes }) : t(CAPTURE_KEYS[capture]));
+    for (const [label, value] of snapshotSummary(d.snapshot, t)) add(label, value);
+    if (!d.snapshot) add(t('admin.inbox.field.snapshot'), item.kind === 'bug' ? t('admin.inbox.snapshotMissing') : t('admin.inbox.snapshotNotAsked'));
     body.append(synthesis);
     // 2. Links: player, sessions/diagnostic, support dossier.
     const links = el(doc, 'div', null, 'admin-inbox-links');
     if (d.player_key) {
-      const open = el(doc, 'button', 'Voir le joueur et ses sessions');
+      const open = el(doc, 'button', t('admin.inbox.openPlayer'));
       open.type = 'button';
       open.onclick = () => authorized() && onPlayer(d.player_key, { feedbackId: item.id });
       links.append(open);
-    } else links.append(el(doc, 'span', 'Visiteur sans compte : pas de fiche joueur.'));
+    } else links.append(el(doc, 'span', t('admin.inbox.guest')));
     body.append(links);
     if (d.capture?.case_id && onDossier) {
       const dossier = el(doc, 'div');
@@ -235,38 +238,38 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
     const grid = boardText(d.snapshot?.board);
     if (grid) {
       const box = el(doc, 'details');
-      box.append(el(doc, 'summary', 'Grille au moment du signalement'), el(doc, 'pre', grid, 'admin-inbox-board'));
+      box.append(el(doc, 'summary', t('admin.inbox.board')), el(doc, 'pre', grid, 'admin-inbox-board'));
       body.append(box);
     }
     const raw = el(doc, 'details');
-    raw.append(el(doc, 'summary', 'Détails techniques bruts'), el(doc, 'pre', JSON.stringify({ context: item.context, snapshot: d.snapshot, journal: d.journal }, null, 1)));
+    raw.append(el(doc, 'summary', t('admin.inbox.raw')), el(doc, 'pre', JSON.stringify({ context: item.context, snapshot: d.snapshot, journal: d.journal }, null, 1)));
     body.append(raw);
     // 4. Exchange, answer and status.
     const thread = el(doc, 'ol', null, 'admin-inbox-thread');
     const message = (m) => {
       const li = el(doc, 'li');
       li.dataset.by = m.by;
-      li.append(el(doc, 'strong', m.by === 'admin' ? 'Équipe Lumen' : 'Joueur'), ' · ' + when(m.at), el(doc, 'p', m.body));
+      li.append(el(doc, 'strong', m.by === 'admin' ? t('admin.inbox.team') : t('admin.inbox.player')), ' · ' + when(m.at), el(doc, 'p', m.body));
       return li;
     };
     for (const m of d.thread || []) thread.append(message(m));
-    if (!d.thread?.length) thread.append(el(doc, 'li', 'Pas encore d’échange.'));
+    if (!d.thread?.length) thread.append(el(doc, 'li', t('admin.inbox.noExchange')));
     body.append(thread);
     const form = el(doc, 'form', null, 'admin-inbox-reply');
     const area = el(doc, 'textarea');
     area.maxLength = 2000;
     area.rows = 3;
-    area.setAttribute('aria-label', 'Réponse au joueur (n° ' + item.id + ')');
-    area.placeholder = 'Réponse visible par le joueur dans « Mes signalements »';
+    area.setAttribute('aria-label', t('admin.inbox.replyLabel', { id: item.id }));
+    area.placeholder = t('admin.inbox.replyPlaceholder');
     let ref = newRef();
-    const answer = el(doc, 'button', 'Répondre');
+    const answer = el(doc, 'button', t('admin.inbox.reply'));
     answer.type = 'submit';
-    const resolve = el(doc, 'button', 'Répondre et résoudre');
+    const resolve = el(doc, 'button', t('admin.inbox.replyResolve'));
     resolve.type = 'button';
     const select = el(doc, 'select');
-    select.setAttribute('aria-label', 'Statut du signalement n° ' + item.id);
-    for (const [value, label] of [['new', 'Reçu'], ['reviewed', 'En cours'], ['answered', 'Réponse disponible'], ['closed', 'Résolu']]) {
-      const option = el(doc, 'option', label);
+    select.setAttribute('aria-label', t('admin.inbox.statusLabel', { id: item.id }));
+    for (const value of ['new', 'reviewed', 'answered', 'closed']) {
+      const option = el(doc, 'option', inboxStatusLabel(value, t));
       option.value = value;
       option.selected = value === (item.status === 'fixed' ? 'closed' : item.status);
       select.append(option);
@@ -278,17 +281,17 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
     const setStatus = (value) => {
       item.status = value;
       card.dataset.status = value;
-      card.querySelector('.admin-inbox-status').textContent = INBOX_STATUS[value] || value;
+      card.querySelector('.admin-inbox-status').textContent = inboxStatusLabel(value, t);
       select.value = value === 'fixed' ? 'closed' : value;
     };
     async function send(resolveToo) {
       const text = area.value.trim();
       if (text.length < 2) {
-        note.textContent = 'Écrivez la réponse (2 caractères minimum).';
+        note.textContent = t('admin.inbox.replyTooShort');
         return;
       }
       answer.disabled = resolve.disabled = true;
-      note.textContent = 'Envoi…';
+      note.textContent = t('admin.inbox.sending');
       try {
         const { data, error } = await rpc('lumen_admin_feedback_reply', { p_id: item.id, p_body: text, p_message_ref: ref, p_resolve: resolveToo });
         if (!authorized() || !card.isConnected) return;
@@ -299,10 +302,10 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
         ref = newRef();
         cache.delete(item.id);
         setStatus(data?.status || (resolveToo ? 'closed' : 'answered'));
-        note.textContent = 'Réponse envoyée. Le joueur la verra dans « Mes signalements ».';
+        note.textContent = t('admin.inbox.replySent');
       } catch {
         // Same reference on retry: never a duplicate answer.
-        note.textContent = 'Réponse non confirmée. Le texte est gardé : réessayez.';
+        note.textContent = t('admin.inbox.replyFailed');
       } finally {
         answer.disabled = resolve.disabled = false;
       }
@@ -317,11 +320,11 @@ export function mountFeedbackInbox(host, { rpc, authorized, days = () => 30, onP
       const { error } = await rpc('lumen_admin_feedback_set_status', { p_id: item.id, p_status: select.value }).catch(() => ({ error: true }));
       select.disabled = false;
       if (error) {
-        note.textContent = 'Statut non enregistré.';
+        note.textContent = t('admin.inbox.statusFailed');
         select.value = item.status === 'fixed' ? 'closed' : item.status;
       } else {
         setStatus(select.value);
-        note.textContent = 'Statut enregistré.';
+        note.textContent = t('admin.inbox.statusSaved');
       }
     };
   }

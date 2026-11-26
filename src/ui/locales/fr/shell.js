@@ -215,4 +215,10 @@ export default Object.freeze({
   'groupRanking.next': "Voir la suite",
   'groupRanking.retry': "Réessayer",
   'groupRanking.signIn': "Connecte-toi pour voir les classements et y participer.",
+  'support.panelConsent': "J’autorise le partage temporaire d’une copie technique de ce compte lors d’un incident, pendant 24 heures.",
+  'support.panelHint': "Pour envoyer une copie maintenant : Signaler un problème.",
+  'support.panelDetails': "Détails et confidentialité",
+  'support.panelContent': "La copie contient progression, badges, résultats, solde, codes d’incident et copies de récupération attribuables à ce compte. Aucun mot de passe ni e-mail. Vos données de jeu ne sont pas modifiées.",
+  'support.panelRetention': "Activation : 24 heures. Conservation : sept jours maximum sous réserve du fonctionnement de la purge serveur. Seul le support habilité peut consulter les copies privées. Les champs inconnus et archives sans propriétaire fiable restent sur cet appareil.",
+  'support.panelLocal': "Copier le diagnostic ou le partager dans une autre application reste un export local, sans confirmation de réception. Une copie attend au maximum une heure dans la mémoire de cette page ; fermer la page l’annule. Maximum huit captures conservées par compte, une par minute.",
 });

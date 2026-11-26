@@ -216,4 +216,10 @@ export default Object.freeze({
   'groupRanking.next': "Ver más",
   'groupRanking.retry': "Reintentar",
   'groupRanking.signIn': "Inicia sesión para ver las clasificaciones y participar.",
+  'support.panelConsent': "Autorizo compartir temporalmente una copia técnica de esta cuenta durante un incidente, durante 24 horas.",
+  'support.panelHint': "Para enviar una copia ahora: Informar de un problema.",
+  'support.panelDetails': "Detalles y privacidad",
+  'support.panelContent': "La copia contiene progreso, insignias, resultados, saldo, códigos de incidente y copias de recuperación atribuibles a esta cuenta. Ninguna contraseña ni correo. Tus datos de juego no cambian.",
+  'support.panelRetention': "Activación: 24 horas. Conservación: siete días como máximo, si la purga del servidor funciona. Solo el soporte autorizado puede consultar las copias privadas. Los campos desconocidos y archivos sin propietario fiable se quedan en este dispositivo.",
+  'support.panelLocal': "Copiar el diagnóstico o compartirlo en otra app sigue siendo una exportación local, sin confirmación de recepción. Una copia espera como máximo una hora en la memoria de esta página; cerrar la página la cancela. Como máximo ocho capturas por cuenta, una por minuto.",
 });

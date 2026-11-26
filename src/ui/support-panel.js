@@ -1,3 +1,5 @@
+import {createTranslator} from './i18n.js';
+const supportT=createTranslator().t;
 import {createSupportSession} from '../persistence/support-session.js';
 const labels={disabled:'Assistance désactivée',unavailable:'Assistance indisponible pour le moment',activating:'Activation en cours',ready:'Prêt à envoyer',preparing:'Préparation du diagnostic',review:'Diagnostic préparé · confirmation attendue',sending:'Envoi en cours',offline:'En attente de connexion',confirmed:'Reçu et confirmé par le support Lumen',failed:'Échec, réessayer',expired:'Assistance expirée',revoking:'Désactivation ou suppression en cours · confirmation serveur en attente',deleted:'Assistance désactivée · copies effacées côté serveur'};
 export function mountSupportPanel(host,options){
@@ -6,17 +8,19 @@ export function mountSupportPanel(host,options){
  // incident captures, the retry of a failed copy, and deactivation with deletion.
  host.innerHTML=`<details class="support-panel"><summary>Assistance</summary>
  <p data-support-status role="status" aria-live="polite"></p><p data-support-info></p>
- <label><input type="checkbox" data-support-consent> J’autorise le partage temporaire d’une copie technique de ce compte lors d’un incident, pendant 24 heures.</label>
+ <label><input type="checkbox" data-support-consent> <span data-support-text="support.panelConsent"></span></label>
  <button type="button" data-support-activate>Activer l’assistance</button>
  <button type="button" data-support-send hidden>Réessayer l’envoi</button>
  <button type="button" data-support-revoke hidden>Désactiver l’assistance et effacer les copies</button>
- <p class="support-panel-hint">Pour envoyer une copie maintenant : Signaler un problème.</p>
- <details class="support-panel-details"><summary>Détails et confidentialité</summary>
- <p>La copie contient progression, badges, résultats, solde, codes d’incident et copies de récupération attribuables à ce compte. Aucun mot de passe ni e-mail. Vos données de jeu ne sont pas modifiées.</p>
- <p>Activation : 24 heures. Conservation : sept jours maximum sous réserve du fonctionnement de la purge serveur. Seul le support habilité peut consulter les copies privées. Les champs inconnus et archives sans propriétaire fiable restent sur cet appareil.</p>
+ <p class="support-panel-hint" data-support-text="support.panelHint"></p>
+ <details class="support-panel-details"><summary data-support-text="support.panelDetails"></summary>
+ <p data-support-text="support.panelContent"></p>
+ <p data-support-text="support.panelRetention"></p>
  <p>La désactivation arrête les envois ici immédiatement et demande l’effacement des copies au serveur. Hors connexion, cet effacement reste en attente. Les fichiers déjà téléchargés par le support ne peuvent pas être rappelés automatiquement ; ils doivent être effacés selon la même durée.</p>
- <p>Copier le diagnostic ou le partager dans une autre application reste un export local, sans confirmation de réception. Une copie attend au maximum une heure dans la mémoire de cette page ; fermer la page l’annule. Maximum huit captures conservées par compte, une par minute.</p>
+ <p data-support-text="support.panelLocal"></p>
  </details></details>`;
+ // Visible copy comes from the catalogue (options.t, French by default).
+ const tr=options.t||supportT;for(const node of host.querySelectorAll('[data-support-text]'))node.textContent=tr(node.dataset.supportText);
  const get=name=>host.querySelector('[data-support-'+name+']');
  let consentOwner=null;
  const session=createSupportSession({...options,onChange(v){

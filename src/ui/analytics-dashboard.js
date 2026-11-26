@@ -205,11 +205,11 @@ export function renderAnalyticsDashboard(hosts,model,{authorized=()=>false,onAct
   notice(queues,'État envoyé par les appareils, pouvant être ancien. Ces alertes ne donnent pas l’identité du compte ; aucun rapprochement avec un joueur n’est inventé.');
   const players=group(technical,'Joueurs à examiner');
   if(!model.technical.observationsAvailable)notice(players,'Les observations individuelles sont indisponibles.');
-  else if(!model.technical.priority.length)notice(players,'Aucun joueur en difficulté ni en attente dans le dernier état connu de cet annuaire borné.');
-  for(const player of model.technical.priority.slice(0,12))action(players,player.label+' · '+player.icon+' '+player.statusLabel+(player.reason?' · '+player.reason:'')+' · contrôle '+player.freshness,{type:'player',key:player.key},options);
-  notice(players,number(model.technical.observedPlayers)+' inscrit(s) dans l’annuaire chargé · '+number(model.technical.unknownPlayers)+' non évalué(s), faute d’observation technique.');
+  else if(!model.technical.priority.length)notice(players,adminT('admin.dashboard.noPriority'));
+  for(const player of model.technical.priority.slice(0,12))action(players,adminT('admin.dashboard.priority',{label:player.label,icon:player.icon,state:player.statusLabel,reason:player.reason||'',freshness:player.freshness}),{type:'player',key:player.key},options);
+  notice(players,adminT('admin.dashboard.observed',{count:number(model.technical.observedPlayers),unknown:number(model.technical.unknownPlayers)}));
   action(players,'Voir les joueurs en attente',{type:'players',state:'pending'},options);
-  action(players,'Voir les joueurs en difficulté',{type:'players',state:'trouble'},options);
+  action(players,adminT('admin.dashboard.trouble'),{type:'players',state:'trouble'},options);
   const split=element(technical.ownerDocument,'div',undefined,'analytics-columns');technical.append(split);
   bars(group(split,'Causes d’échec enregistrées'),model.technical.reasons,model.healthAvailable?'Aucune cause enregistrée dans la réponse disponible.':'Causes indisponibles.');
   bars(group(split,'Échecs enregistrés par version'),model.technical.versions,model.healthAvailable?'Aucune version renseignée dans la réponse disponible.':'Versions indisponibles.');

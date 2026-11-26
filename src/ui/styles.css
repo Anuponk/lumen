@@ -1946,8 +1946,10 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .group-ranking-row.ranking-mine{outline:2px solid #f4cf78}
 .group-ranking-points{font-weight:800;color:#f4cf78}
 .group-ranking-me{margin:8px 0;font-size:13px;color:#dceaf6}
-.group-ranking-more,.ranking-groups{min-height:40px;margin-top:6px}
-.ranking-groups{display:block;margin-inline:auto;background:none;border:1px solid #294359;border-radius:999px;color:#bcd2e3;font-size:12.5px;padding:4px 12px}
+.group-ranking-more{min-height:40px;margin-top:6px}
+.ranking-personal:has(.ranking-groups){position:relative;padding-right:34px}
+.ranking-groups{position:absolute;top:50%;right:4px;transform:translateY(-50%);width:28px;height:28px;margin:0;padding:0;display:grid;place-items:center;background:none;border:1px solid #294359;border-radius:50%;color:#f4cf78;font-size:14px;line-height:1}
+.ranking-groups::after{content:"";position:absolute;inset:-8px}
 
 /* #1049: the Défi du jour entry under the quest actions (only when it fits). */
 .daily-quest-banner{display:flex;align-items:center;gap:10px;width:100%;max-width:520px;margin:8px auto 0;min-height:44px;box-sizing:border-box}

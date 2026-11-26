@@ -1,3 +1,5 @@
+import {createTranslator} from './i18n.js';
+const datesT=createTranslator().t;
 // Administrative read model. A durable server commit is not a device ACK.
 // #708 (24/11): the visual health now comes from player-health.js (last known state
 // per device, freshness shown separately). The former 15-minute rule used the OLDEST
@@ -22,11 +24,11 @@ export function dateNode(document,value,options){
  if(value&&Number.isFinite(Date.parse(value)))node.dateTime=new Date(value).toISOString();
  return node;
 }
-export const DATE_SOURCE_DESCRIPTION='Dernière quête : dernière quête terminée reçue par le serveur (reçu de quête), jamais une connexion ni une requête de fond. Synchro : dernier commit confirmé par reçu serveur, par domaine ; réception sur l’appareil non attestée. Auth : dernière authentification connue, distincte d’une réouverture. Contrôle : dernière observation technique d’un appareil.';
+export const DATE_SOURCE_DESCRIPTION=datesT('admin.dates.description');
 export function appendPlayerDates(host,player,proof,{explain=true}={}){
  const doc=host.ownerDocument,model=playerDates(player,proof);
  const add=(label,value)=>{const line=doc.createElement('div');line.append(label+' : ',dateNode(doc,value));host.append(line)};
- add('Dernière quête terminée',model.activity);add('Dernière connexion Auth',model.auth);
+ add(datesT('admin.dates.lastQuest'),model.activity);add('Dernière connexion Auth',model.auth);
  for(const [domain,label] of [['canonical','Quêtes'],['legacy','Historique'],['wallet','Portefeuille']])add('Dernière synchro réussie · '+label,model.domains[domain]);
  if(explain){const note=doc.createElement('small');note.textContent=DATE_SOURCE_DESCRIPTION;host.append(note)}
  const state=doc.createElement('div');state.textContent='État observé : '+({pending:'en attente',failure:'échec / revue',observed:'file observée sans attente',unknown:'inconnu'}[model.state]);host.append(state);add('Observation de la file',model.observedAt);

@@ -215,4 +215,10 @@ export default Object.freeze({
   'groupRanking.next': "See more",
   'groupRanking.retry': "Try again",
   'groupRanking.signIn': "Sign in to see the rankings and take part.",
+  'support.panelConsent': "I allow a technical copy of this account to be shared temporarily during an incident, for 24 hours.",
+  'support.panelHint': "To send a copy now: Report a problem.",
+  'support.panelDetails': "Details and privacy",
+  'support.panelContent': "The copy contains progress, badges, results, balance, incident codes and recovery copies attributable to this account. No password or email. Your game data is not changed.",
+  'support.panelRetention': "Activation: 24 hours. Retention: seven days at most, subject to the server purge working. Only authorised support can read the private copies. Unknown fields and archives without a reliable owner stay on this device.",
+  'support.panelLocal': "Copying the diagnosis or sharing it to another app stays a local export, without a receipt. A copy waits at most one hour in this page’s memory; closing the page cancels it. At most eight captures kept per account, one per minute.",
 });

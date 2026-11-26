@@ -3769,7 +3769,7 @@ function adminFeedbackInbox(owner,client){
  const inbox=mountFeedbackInbox(document.getElementById('adminFeedbacks'),{rpc:(name,args)=>client.rpc(name,args),authorized,
   days:()=>Math.max(30,Number(document.getElementById('adminCockpitDays')?.value||30)),
   onPlayer:key=>{adminAnalytics?.navigate('players');void loadAdminTimeline(key);document.getElementById('adminTimeline')?.scrollIntoView({block:'nearest'})},
-  onDossier:(host,{target,reference})=>mountSupportDossier(host,{client,owner,target,reference,authorized})});
+  onDossier:(host,{target,reference})=>mountSupportDossier(host,{client,owner,target,reference,authorized}),t});
  adminInbox={...inbox,owner,client};return adminInbox;
 }
 function showPlayerReports(key,label){
@@ -3780,21 +3780,21 @@ function showPlayerReports(key,label){
 // #708: compact summary first (health, last quest, versions, check), details folded.
 function renderAdminPlayerSummary(box,key){
  const facts=adminHealth?.players?.[key];if(!box)return;
- const model=playerHealth(facts),doc=box.ownerDocument,card=doc.createElement('section');card.className='admin-player-summary';card.dataset.health=model.state;
- const title=doc.createElement('h4');title.textContent=(adminPlayerNames.get(key)||'Joueur')+' — '+model.icon+' '+model.label;card.append(title);
+ const model=playerHealth(facts,{t}),doc=box.ownerDocument,card=doc.createElement('section');card.className='admin-player-summary';card.dataset.health=model.state;
+ const title=doc.createElement('h4');title.textContent=(adminPlayerNames.get(key)||t('admin.summary.player'))+' — '+model.icon+' '+model.label;card.append(title);
  const list=doc.createElement('ul');
- const line=(label,value)=>{const li=doc.createElement('li');const strong=doc.createElement('strong');strong.textContent=label+' : ';li.append(strong,value);list.append(li)};
- const date=v=>v?new Date(v).toLocaleString('fr-FR'):null;
- line('État',model.reasons.join(' · '));
- line('Dernière quête terminée',date(model.gameAt)||'aucune quête terminée observée');
- line('Synchronisation',model.devices?(model.pending?model.pending+' opération(s) en attente':'aucune opération en attente'):'non observée');
- line('Version Web',model.web?model.web.version+' · vue le '+date(model.web.at):'inconnue');
- line('Version Android',model.android?model.android.version+' · vue le '+date(model.android.at):'aucune version native transmise');
- line('Dernier contrôle technique',model.observedAt?date(model.observedAt)+' ('+model.freshness+')':'aucun');
- line('Dernière connexion Auth',date(facts?.auth_at)||'inconnue');
+ const line=(label,value)=>{const li=doc.createElement('li');const strong=doc.createElement('strong');strong.textContent=t(label)+' : ';li.append(strong,value);list.append(li)};
+ const date=v=>v?new Date(v).toLocaleString(t('admin.dateLocale')):null;
+ line('admin.summary.state',model.reasons.join(' · '));
+ line('admin.summary.lastQuest',date(model.gameAt)||t('admin.summary.noQuest'));
+ line('admin.summary.sync',model.devices?(model.pending?t('admin.summary.pending',{count:model.pending}):t('admin.summary.noPending')):t('admin.summary.notObserved'));
+ line('admin.summary.web',model.web?t('admin.summary.seen',{version:model.web.version,date:date(model.web.at)}):t('admin.summary.unknown'));
+ line('admin.summary.android',model.android?t('admin.summary.seen',{version:model.android.version,date:date(model.android.at)}):t('admin.summary.noNative'));
+ line('admin.summary.check',model.observedAt?t('admin.summary.checkValue',{date:date(model.observedAt),freshness:model.freshness}):t('admin.summary.none'));
+ line('admin.summary.auth',date(facts?.auth_at)||t('admin.summary.unknown'));
  card.append(list);
- if(model.reports.total){const b=doc.createElement('button');b.type='button';b.textContent='Signalements : '+model.reports.open+' ouvert(s) / '+model.reports.total;b.onclick=()=>showPlayerReports(key);card.append(b)}
- const details=doc.createElement('details');const summary=doc.createElement('summary');summary.textContent='Détails techniques';details.append(summary);
+ if(model.reports.total){const b=doc.createElement('button');b.type='button';b.textContent=t('admin.summary.reports',{open:model.reports.open,total:model.reports.total});b.onclick=()=>showPlayerReports(key);card.append(b)}
+ const details=doc.createElement('details');const summary=doc.createElement('summary');summary.textContent=t('admin.summary.details');details.append(summary);
  const dates=doc.createElement('div');dates.className='admin-player-dates';appendPlayerDates(dates,{},facts||undefined);details.append(dates);
  const devices=doc.createElement('pre');devices.textContent=JSON.stringify(facts?.devices||[],null,1);details.append(devices);card.append(details);
  box.prepend(card);
@@ -4038,7 +4038,7 @@ async function loadAdminCockpit(){
  const alerts=[...syncAlerts,...outboxAlerts.map(a=>'Sauvegarde '+a.state+' · '+a.pending+' opération(s) · '+a.platform+' · '+a.version),...detailAlerts.map(a=>a.text)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’alerte dans les sources disponibles. La couverture reste partielle.</p>";
  const directory=document.getElementById('adminPlayers');
  if(playerError){directory.replaceChildren();const note=document.createElement('p');note.textContent='Activité récente indisponible.';directory.append(note)}
- else renderPlayerDirectory(directory,players,observations.error?undefined:observations.data,{authorized,onSelect:loadAdminTimeline,onReports:showPlayerReports});
+ else renderPlayerDirectory(directory,players,observations.error?undefined:observations.data,{authorized,onSelect:loadAdminTimeline,onReports:showPlayerReports,t});
  const timeline=document.getElementById('adminTimeline');
  if(timeline?.cockpitPlayer){
   if(players.some(p=>p.player_key===timeline.cockpitPlayer))loadAdminTimeline(timeline.cockpitPlayer);
@@ -4157,10 +4157,10 @@ function setupBetaFeedback(){
  });
  // #1020: « Mes signalements » (own reports, answers, one complementary reply).
  myReports=createMyReports({document,storage:localStorage,t,
-  rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{message:'offline'}}),
+  rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{offline:true}}),
   identity:()=>({userId:qaActive?null:lumenUser?.id||null,anonymousId:lumenAnonymousId,client:qaActive?null:lumenSupabase})});
  groupRanking=createGroupRanking({document,t,signedIn:()=>!!lumenUser&&!qaActive,
-  rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{message:'offline'}})});
+  rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{offline:true}})});
  const reportsButton=document.getElementById('myReportsBtn');
  if(reportsButton)reportsButton.onclick=()=>myReports.open({origin:document.getElementById('mobileAccount')});
  // One summary per session (count only), so a new answer shows as a discreet dot.

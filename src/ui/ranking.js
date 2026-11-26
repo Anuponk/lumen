@@ -56,6 +56,9 @@ export function createRankingView({client,getContext,format,document=globalThis.
    const third=top.find(r=>r.position===3);if(third&&mine.score>third.score)card.append(element('small','',t('ranking.toPodium',{time:format(mine.score-third.score)})));
   }else if(!mine)card.append(element('span','',t('ranking.noCompetitiveTime')));
   // #761: a victory the server refused is never shown as if the podium were its result.
+  // #974: one tap from the quest podium to its constellation and adventure rankings:
+  // a small icon inside the personal card, outside the swipe area, no extra height.
+  if(onGroups&&quest?.constellationId&&quest?.packId){const q=quest,b=element('button','ranking-groups','🏆');b.type='button';b.setAttribute('aria-label',t('groupRanking.title'));b.title=t('groupRanking.title');b.onclick=()=>onGroups(q,b);card.append(b)}
   if(card.childNodes.length)root.append(card);
   // #851: the private record and the best ranked time are different facts.
   if(Number.isSafeInteger(personalBest)&&mine&&Number.isSafeInteger(mine.score)&&personalBest!==mine.score){
@@ -66,8 +69,6 @@ export function createRankingView({client,getContext,format,document=globalThis.
   const verdict=rankingVerdict(data.reason,data.excluded,t);
   if(verdict){const p=element('p','ranking-excluded',verdict);p.dataset.reason=data.reason||'excluded';root.append(p)}
   if(!data.participating)root.append(element('p','ranking-note',data.withdrawn?t('ranking.withdrawing'):t('ranking.account')));
-  // #974: one tap from the quest podium to its constellation and adventure rankings.
-  if(onGroups&&quest?.constellationId&&quest?.packId){const q=quest,b=element('button','ranking-groups',t('groupRanking.open'));b.type='button';b.onclick=()=>onGroups(q,b);root.append(b)}
   if(!animated&&!reduced()){
    [...list.children].forEach((e,i)=>e.animate?.([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:450,delay:i*300,easing:'ease-out',fill:'backwards'}));
    list.querySelector('.ranking-mine')?.animate?.([{boxShadow:'0 0 0 0 rgba(255,225,160,0)'},{boxShadow:'0 0 22px 4px rgba(255,225,160,.75)'},{boxShadow:'0 0 12px 2px rgba(255,225,160,.45)'}],{duration:1400,delay:900,fill:'forwards'});
