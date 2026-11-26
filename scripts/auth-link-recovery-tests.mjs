@@ -45,20 +45,39 @@ assert.equal(classifyAuthLinkError('weird',''),'invalid');
  assert.equal(authLinkMessage({status:'error',kind:'signup',reason:'expired_or_used'},{signedIn:false}).action,'signin');
 }
 
-function harness({session=null,verify=async()=>({error:null}),updateUser=async()=>({error:null}),fetch=null,bootAuthLink=null,href=host}={}){
+function harness({session=null,verify=async()=>({error:null}),readSession,afterSignup=()=>{},updateUser=async()=>({error:null}),fetch=null,bootAuthLink=null,href=host}={}){
  let callback;const events=[],calls=[],replaced=[];
  globalThis.window={location:{href},history:{state:null,replaceState:(_,__,url)=>{replaced.push(url);globalThis.window.location.href=new URL(url,host).href}}};
  if(fetch)globalThis.fetch=fetch;
  const model={lumenUser:null,lumenSupabase:{auth:{
   onAuthStateChange:fn=>{callback=fn},
-  getSession:async()=>({data:{session}}),
-  verifyOtp:async value=>{calls.push(['verify',value.type,replaced.length]);const result=await verify(value);if(!result.error&&value.type==='signup'){session={user:{id:'confirmed'}};callback('SIGNED_IN',session)}return result},
+  getSession:async()=>readSession?readSession():{data:{session}},
+  verifyOtp:async value=>{calls.push(['verify',value.type,replaced.length]);const result=await verify(value);if(!result.error&&value.type==='signup'){session=result.data?.session||{user:{id:'confirmed'}};callback('SIGNED_IN',session);afterSignup(callback)}return result},
   updateUser:async value=>{calls.push(['updateUser']);return updateUser(value)}
  },rpc:async name=>{calls.push([name]);return {data:[],error:null}}}};
- const api=createCloudPersistence(model,{onAccountChanged:e=>events.push(e),refreshJourney:()=>{},renderDaily:()=>{},holdLegacyMergeForFullRestore:async()=>true,afterAuthCloudSync:async()=>{}},{console:{warn:()=>{}},setTimeout:()=>{},bootAuthLink});
+ const api=createCloudPersistence(model,{onAccountChanged:e=>events.push(e),refreshJourney:()=>{},renderDaily:()=>{},holdLegacyMergeForFullRestore:async()=>true,afterAuthCloudSync:async()=>calls.push(['hydrate',model.lumenUser.id])},{console:{warn:()=>{}},setTimeout:()=>{},bootAuthLink});
  return {api,model,events,calls,replaced};
 }
 const token='c'.repeat(64);
+// #1037: a confirmed account must restore its sky even if a redundant Auth
+// snapshot would fail.
+{
+ const session={user:{id:'confirmed'}},h=harness({href:host+'?lumen_confirm='+token+'&type=signup',
+  verify:async()=>({data:{session},error:null}),
+  readSession:async()=>({data:{session:null},error:{status:0,message:'Failed to fetch'}})});
+ await h.api.initLumenCloud();
+ assert.deepEqual(h.calls.filter(([name])=>name==='hydrate'),[['hydrate','confirmed']]);
+ assert.equal(h.events.some(event=>event.type==='restore_failed'),false);
+}
+for(const newer of [null,{user:{id:'other'}}]){
+ const session={user:{id:'confirmed'}},h=harness({href:host+'?lumen_confirm='+token+'&type=signup',
+  verify:async()=>({data:{session},error:null}),
+  afterSignup:notify=>notify(newer?'SIGNED_IN':'SIGNED_OUT',newer),
+  readSession:async()=>({data:{session:newer},error:null})});
+ await h.api.initLumenCloud();
+ assert.equal(h.model.lumenUser?.id,newer?.user.id);
+ assert.deepEqual(h.calls.filter(([name])=>name==='hydrate'),newer?[['hydrate','other']]:[]);
+}
 // Branded sign-up link: tokens leave the URL before verification; one verdict after the session.
 {
  const h=harness({href:host+'?lumen_confirm='+token+'&type=signup'});

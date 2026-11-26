@@ -649,8 +649,12 @@ and keeps « Historique à vérifier ». No migration is involved.
 A native Supabase redirect (`#access_token…&type=…` or `#error…`) is read
 before the Auth SDK starts; its error parameters are removed from the address.
 A branded `lumen_confirm` link is removed before `verifyOtp`. One verdict is
-emitted after the session restore: success only after verification, and the
-action follows the real session. A verified recovery link marks the recovery
+emitted once Auth is known: success only after verification, and the action
+follows the real session. A verified sign-up uses the session supplied by
+`verifyOtp` to start normal profile hydration unless a newer Auth event has
+changed the account (#1037). The neutral hold exposes its usual retry after
+15 seconds and records one local `profile_hold_timeout` with session state flags.
+A verified recovery link marks the recovery
 pending, which keeps hydration paused until the new password is saved. The
 recovery request counts as sent only on the endpoint's `{ok:true}` contract;
 429, 5xx, invalid JSON and network failures have their own copy, identical for

@@ -1740,7 +1740,11 @@ function updateAccountSwitchHold(){
  }
  if(!pending)return;
  if(profileHoldTimer===null&&!profileHoldTimedOut)profileHoldTimer=setTimeout(()=>{
-  profileHoldTimedOut=true;updateAccountSwitchHold();
+  profileHoldTimer=null;
+  if(!accountSwitchPending()||profileHoldOwner!==(lumenUser?.id??null))return;
+  profileHoldTimedOut=true;
+  recordCloudDiagnostic('profile_hold_timeout',{signedIn:!!lumenUser,sessionPending:authSessionPending});
+  updateAccountSwitchHold();
  },15000);
  const offline=navigator.onLine===false,failed=!!cloudProfileFailure||profileHoldTimedOut;
  const walletReview=cloudProfileFailure?.reason==='partial_reconciliation'&&cloudProfileFailure.domain==='wallet';

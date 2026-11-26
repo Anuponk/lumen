@@ -28,6 +28,7 @@ window.__diagnosticRows=JSON.parse(sessionStorage.getItem('fixtureDiagnosticRows
 window.__fixtureCommandReceipts=new Map();
 window.__fixtureLegacyReceipts=new Map();window.__fixtureLegacyWrites=0;window.__fixtureLegacyAttempts=0;
 const isolatedRecovery=sessionStorage.getItem('fixtureIsolatedRecovery')==='1';
+const confirmedSignup=sessionStorage.getItem('fixtureSignupSnapshotUnavailable')==='1';
 window.__fixtureProfile={solved:{},historyBackup:{},badges:{},stars:{},noHint:{},performances:{},canonicalQuestState:{},daily:{},challenges:{},shards:3,xp:0,skyScore:0,skyHistoryVersion:4,legacyReceipt:'cloud'};
 const savedRetryServer=JSON.parse(sessionStorage.getItem('fixtureRetryServer')||'null');
 if(savedRetryServer){
@@ -72,6 +73,7 @@ window.supabase={createClient(url,key,options){
    return {data:{disabled:!allowed,accepted:allowed?args.p_events.map(e=>e.id):[]},error:null};
   }
   if(name==='lumen_wallet_command_version')return {error:{code:'PGRST202'},status:404};
+  if(confirmedSignup&&name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
   if(!isolatedRecovery)return name==='lumen_restore_profile'?{data:null,error:{message:'simulated restore outage'}}:{data:[],error:null};
   if(name==='lumen_restore_profile')return {data:structuredClone(window.__fixtureProfile),error:null};
   if(name==='lumen_reconcile_acquisitions')return {error:{code:'PGRST202'},status:404};
@@ -134,7 +136,8 @@ window.supabase={createClient(url,key,options){
   return {data:[],error:null};
  },auth:{
  getSession:async()=>{
-  if(sessionStorage.getItem('fixtureDelaySessionRestore')==='1'){
+  if(sessionStorage.getItem('fixtureDelaySessionRestore')==='1'||
+     (confirmedSignup&&window.__authCalls.includes('signup'))){
    window.__sessionRestoreWaiting=true;
    await new Promise(resolve=>{window.__completeSessionRestore=resolve});
   }
@@ -143,7 +146,7 @@ window.supabase={createClient(url,key,options){
  signInWithPassword:async()=>{window.__authCalls.push('password');set('SIGNED_IN',{user:{id:'fixture-player'}});return {data:{session},error:null}},
  verifyOtp:async(args)=>{
   if(sessionStorage.getItem('fixtureVerifyExpired')==='1'){window.__authCalls.push('expired');return {error:{code:'otp_expired',message:'Email link is invalid or has expired',status:403}}}
-  if(args?.type==='signup'){window.__authCalls.push('signup');set('SIGNED_IN',{user:{id:'fixture-player'}});return {error:null}}
+  if(args?.type==='signup'){window.__authCalls.push('signup');set('SIGNED_IN',{user:{id:'fixture-player'}});return {data:{session},error:null}}
   window.__authCalls.push('recovery');set('PASSWORD_RECOVERY',{user:{id:'fixture-player'}});return {error:null}},
  updateUser:async(value)=>{
   if(sessionStorage.getItem('fixtureUpdateFailOnce')==='1'){sessionStorage.removeItem('fixtureUpdateFailOnce');window.__authCalls.push('password_update_failed');return {error:{name:'AuthRetryableFetchError',status:0}}}
@@ -521,9 +524,12 @@ try{
   await evaluate(`sessionStorage.removeItem('lumenPasswordRecoveryPending')`);
   await navigate('Page.navigate',{url:url.href});
   await until(`document.getElementById('mobileAuthAction').textContent==='Déconnexion'`);
-  // #820: a confirmed sign-up link states its real verdict once, then follows the session.
+  // #820/#1037: confirmation supplies the session even when a second Auth
+  // snapshot cannot complete. The sky opens without another navigation.
   const signupLink=new URL(url);signupLink.searchParams.set('lumen_confirm','b'.repeat(64));signupLink.searchParams.set('type','signup');
+  await evaluate(`sessionStorage.setItem('fixtureSignupSnapshotUnavailable','1');localStorage.removeItem('fixtureAuthSession')`);
   await navigate('Page.navigate',{url:signupLink.href});await until(`window.__authCalls?.includes('signup')`);
+  const signupNavigation=await evaluate('performance.timeOrigin');
   await until(`document.getElementById('authLinkResult').hidden===false`);
   assert.equal(await evaluate(`document.getElementById('authLinkResultTitle').textContent`),'Adresse e-mail confirmée !');
   assert.equal(await evaluate(`document.getElementById('authLinkResultText').textContent`),'Ton compte Lumen est prêt.');
@@ -531,6 +537,9 @@ try{
   assert.equal(await evaluate(`location.search.includes('lumen_confirm')`),false,'The token hash leaves the address bar');
   await evaluate(`document.getElementById('authLinkResultAction').click()`);
   assert.equal(await evaluate(`document.getElementById('authLinkResult').hidden`),true);
+  await until(`document.getElementById('accountSwitchHold').hidden&&document.getElementById('mobileAuthStatus').textContent.includes('Progression synchronis')`);
+  assert.equal(await evaluate('performance.timeOrigin'),signupNavigation,'Confirmation restores the sky without reloading');
+  await evaluate(`sessionStorage.removeItem('fixtureSignupSnapshotUnavailable')`);
   // An expired or reused link never claims success.
   await evaluate(`sessionStorage.setItem('fixtureVerifyExpired','1')`);
   await navigate('Page.navigate',{url:signupLink.href});await until(`window.__authCalls?.includes('expired')`);

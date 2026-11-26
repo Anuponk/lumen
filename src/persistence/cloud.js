@@ -133,17 +133,17 @@ async function confirmBrandedAuthLink(){
  url.searchParams.delete("type");
  window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
  const kind=type==="recovery"?"recovery":"signup";
- if(!/^[a-f0-9]{64}$/i.test(hash)||!["signup","recovery"].includes(type||""))return {status:"error",kind,reason:"invalid"};
+ if(!/^[a-f0-9]{64}$/i.test(hash)||!["signup","recovery"].includes(type||""))return {result:{status:"error",kind,reason:"invalid"}};
  // #820: report the real verdict. An expired/reused link never revokes an
  // otherwise valid session, and success is only stated after verifyOtp.
- let error;
- try{({error}=await model.lumenSupabase.auth.verifyOtp({token_hash:hash,type}))}catch(thrown){error=thrown}
+ let data,error;
+ try{({data,error}=await model.lumenSupabase.auth.verifyOtp({token_hash:hash,type}))}catch(thrown){error=thrown}
  if(error){
   const reason=classifyAuthLinkError(error.code||error.status,error.message);
   console.warn("LUMEN confirmation link could not be validated",reason);
-  return {status:"error",kind,reason};
+  return {result:{status:"error",kind,reason}};
  }
- return {status:"verified",kind};
+ return {result:{status:"verified",kind},signupSession:kind==="signup"?data?.session:null};
 }
 async function initLumenCloud(){
  if(!model.lumenSupabase){onAccountChanged({type:"account"});return}
@@ -168,12 +168,21 @@ async function initLumenCloud(){
     setTimeout(()=>loadInternalCapabilities().catch(error=>console.warn("LUMEN capabilities refresh",error)),0);
    }else if(!model.lumenUser){model.lumenEntitlements=[];model.lumenCapabilities=[];refreshJourney();onAccountChanged({type:"account"})}
  });
- const linkResult=await confirmBrandedAuthLink()||environment.bootAuthLink||null;
+ const verificationRevision=revision;
+ const confirmation=await confirmBrandedAuthLink();
+ const linkResult=confirmation?.result||environment.bootAuthLink||null;
+ const signupSession=confirmation?.signupSession;
+ // verifyOtp has already installed the signup session. A second Auth read can
+ // strand a confirmed account before profile restore. Respect any newer owner.
+ const useSignupSession=!!signupSession?.user?.id&&
+  (revision===verificationRevision||model.lumenUser?.id===signupSession.user.id);
  const snapshotRevision=revision;
- const {data,error}=await model.lumenSupabase.auth.getSession();
+ const {data,error}=useSignupSession?{data:{session:signupSession}}:await model.lumenSupabase.auth.getSession();
  // A late startup snapshot must never undo a more recent auth event.
  booting=false;
- if(snapshotRevision===revision&&!error){model.lumenUser=data.session?.user||null;onAccountChanged({type:"account"})}
+ if(snapshotRevision===revision&&!error&&(!useSignupSession||model.lumenUser?.id!==signupSession.user.id)){
+  model.lumenUser=data.session?.user||null;onAccountChanged({type:"account"});
+ }
  // One verdict per opened link, once the real session is known.
  if(linkResult)onAccountChanged({type:"auth_link",result:linkResult});
  if(error){console.warn("LUMEN session restore",error);onAccountChanged({type:"restore_failed",network:isNetworkFailure(error,error?.status)});return}

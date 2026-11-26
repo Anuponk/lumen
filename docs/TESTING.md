@@ -1124,6 +1124,12 @@ In Chrome, `account-session-browser-tests.mjs` checks the sign-up verdict,
 an expired branded link, a native error redirect and the recovery screen
 (dedicated dialog, reload, mismatch, first network failure then success,
 readable verdict without reload).
+For #1037, the unit suite simulates a successful sign-up confirmation followed
+by a failed second Auth read and checks that a competing sign-out or account
+change wins. The browser suite delays that second read indefinitely and checks
+that the confirmed account's sky becomes ready without a reload on mobile and
+desktop. Physical Android, Safari iPhone and installed PWA, slow network, and
+returning from the background are separate acceptance checks with a QA account.
 `install-request-browser-tests.mjs` checks the iPhone guest warning and the
 installed app's first opening, with an emulated iPhone user agent. WebKit and
 a real home-screen app are not exercised: Chrome cannot reproduce iOS storage
