@@ -1946,3 +1946,9 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .group-ranking-me{margin:8px 0;font-size:13px;color:#dceaf6}
 .group-ranking-more,.ranking-groups{min-height:40px;margin-top:6px}
 .ranking-groups{display:block;margin-inline:auto;background:none;border:1px solid #294359;border-radius:999px;color:#bcd2e3;font-size:12.5px;padding:4px 12px}
+
+/* #1049: the Défi du jour entry under the quest actions (only when it fits). */
+.daily-quest-banner{display:flex;align-items:center;gap:10px;width:100%;max-width:520px;margin:8px auto 0;min-height:44px;box-sizing:border-box}
+.daily-quest-banner[hidden]{display:none}
+.daily-quest-banner small{display:block}
+.daily-quest-banner-go{margin-left:auto;font-size:20px;line-height:1;opacity:.8}

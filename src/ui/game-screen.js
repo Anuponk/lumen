@@ -2589,7 +2589,28 @@ function dailyChipState(day,owner){
  const pending=readPendingDaily();if(pending?.day===day)return 'done';
  return 'open';
 }
-function rememberDailyDone(day){try{if(day)localStorage.setItem(DAILY_DONE_KEY,JSON.stringify({day,owner:lumenUser?.id||'guest'}))}catch{}}
+function rememberDailyDone(day){try{if(day)localStorage.setItem(DAILY_DONE_KEY,JSON.stringify({day,owner:lumenUser?.id||'guest'}))}catch{}renderDailyQuestBanner()}
+// #1049: the Mon ciel « Défi du jour » entry also sits under the quest actions while
+// today's challenge is not done. Same memoized lumen_daily_today read and the same
+// « already played » state as the header chip: no extra request. It never shrinks
+// the board nor scrolls: it shows only when it fits entirely below the actions.
+let dailyQuestToday=null;
+function renderDailyQuestBanner(){
+ const banner=document.getElementById('dailyQuestBanner');if(!banner)return;
+ const today=dailyQuestToday,owner=lumenUser?.id;
+ const show=!!today?.enabled&&!socialChallenge&&!qaActive&&!learningReplayActive()&&dailyChipState(today.day,owner)!=='done';
+ banner.hidden=!show;delete banner.dataset.fits;if(!show)return;
+ document.getElementById('dailyQuestBannerState').textContent=t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
+ banner.setAttribute('aria-label',t('daily.chipOpenLabel',{date:dailyDate(today.day)}));
+ banner.onclick=()=>{trackDaily('quest_banner_opened');handOffDaily()};
+ fitDailyQuestBanner();
+}
+function fitDailyQuestBanner(){
+ const banner=document.getElementById('dailyQuestBanner');if(!banner||(banner.hidden&&banner.dataset.fits!=='no'))return;
+ banner.hidden=false;const fits=banner.getBoundingClientRect().bottom<=(window.visualViewport?.height??innerHeight)+0.5;
+ banner.hidden=!fits;banner.dataset.fits=fits?'yes':'no';
+}
+window.addEventListener('resize',()=>{if(document.getElementById('dailyQuestBanner')?.dataset.fits)fitDailyQuestBanner()});
 function renderDailyChip(today,owner){
  const chip=document.getElementById('dailyChip');if(!chip)return;
  const enabled=!!today?.enabled&&!socialChallenge;chip.hidden=!enabled;if(!enabled)return;
@@ -2609,7 +2630,7 @@ async function refreshDailyEntry(){
  clearTimeout(dailyEntryTimer);dailyEntryTimer=null;
  const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek'),chip=document.getElementById('dailyChip');
  const request=++dailyEntryRequest,owner=lumenUser?.id;
- if(!entry||socialChallenge){if(chip)chip.hidden=true;return}
+ if(!entry||socialChallenge){if(chip)chip.hidden=true;dailyQuestToday=null;renderDailyQuestBanner();return}
  const current=()=>request===dailyEntryRequest&&owner===lumenUser?.id&&!socialChallenge;
  entry.onclick=()=>handOffDaily();
  try{
@@ -2624,7 +2645,8 @@ async function refreshDailyEntry(){
   if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}
   renderDailyChip(today,owner);
   void dailyRecaps?.wake();
- }catch{if(current()){entry.hidden=true;if(week)week.hidden=true;if(chip)chip.hidden=true}}
+  dailyQuestToday=today;renderDailyQuestBanner();
+ }catch{if(current()){entry.hidden=true;if(week)week.hidden=true;if(chip)chip.hidden=true;dailyQuestToday=null;renderDailyQuestBanner()}}
  finally{
   if(current()){
    const expiry=dailyTodayMemo?.until??Date.now()+60_000;
