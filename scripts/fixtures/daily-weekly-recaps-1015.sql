@@ -76,6 +76,12 @@ begin
  perform lumen_privacy.erase_account(b,array[]::text[],'ERASE LUMEN '||b::text);
  assert not exists(select 1 from lumen_commands.daily_week_standings where user_id=b);
  assert not exists(select 1 from lumen_commands.daily_week_friends where user_id=b or member_id=b);
+ begin
+  insert into lumen_commands.daily_week_friends values('2026-11-23',a,b,1,2);
+  raise exception 'erased member recreated';
+ exception when insufficient_privilege then
+  if sqlerrm<>'LUMEN_ACCOUNT_ERASED' then raise;end if;
+ end;
  assert exists(select 1 from lumen_commands.daily_week_standings where user_id=a),'other players keep their history';
 end $$;
 rollback;

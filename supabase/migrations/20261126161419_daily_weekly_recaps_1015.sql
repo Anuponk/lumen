@@ -29,6 +29,23 @@ alter table lumen_commands.daily_recap_seen enable row level security;
 revoke all on lumen_commands.daily_week_finalized,lumen_commands.daily_week_standings,
  lumen_commands.daily_week_friends,lumen_commands.daily_recap_seen from public,anon,authenticated,service_role;
 
+-- The generic privacy guard checks the row owner. This second identity is a
+-- different account and must also stay erased after a concurrent finalization.
+create or replace function lumen_commands.guard_daily_week_member() returns trigger
+language plpgsql security definer set search_path='' as $$
+begin
+ if current_setting('transaction_isolation')<>'read committed' then
+  raise exception using errcode='25000',message='LUMEN_WRITE_REQUIRES_READ_COMMITTED';end if;
+ if exists(select 1 from lumen_privacy.erased_identifiers where kind='user'
+  and digest=lumen_privacy.fingerprint(new.member_id::text)) then
+  raise exception using errcode='42501',message='LUMEN_ACCOUNT_ERASED';end if;
+ return new;
+end $$;
+drop trigger if exists daily_week_member_guard on lumen_commands.daily_week_friends;
+create trigger daily_week_member_guard before insert or update on lumen_commands.daily_week_friends
+ for each row execute function lumen_commands.guard_daily_week_member();
+revoke all on function lumen_commands.guard_daily_week_member() from public,anon,authenticated,service_role;
+
 create or replace function lumen_commands.daily_week_finalize(p_monday date) returns boolean
 language plpgsql security definer set search_path='' as $$
 declare d date;

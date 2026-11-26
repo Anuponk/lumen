@@ -3,7 +3,7 @@ import {addDays} from '../campaign/daily-challenge.js';
 
 // The server claims one latest recap per account. Keep a received recap until
 // the player returns to an idle sky, including when a request finishes late.
-export function setupDailyRecaps({document,context,read,t,locale,formatDuration,openBoard,celebrate}) {
+export function setupDailyRecaps({document,context,read,t,locale,formatDuration,openBoard,celebrate,ownerChanged}) {
   let scope=null,attempted=null,busy=false,pending=null,overlay=null,opener=null;
   const close=()=>{
     overlay?.remove();overlay=null;
@@ -53,6 +53,7 @@ export function setupDailyRecaps({document,context,read,t,locale,formatDuration,
     const c=context(),key=c.owner?c.owner+':'+c.day:null;
     if(scope?.owner!==c.owner||scope?.client!==c.client){
       close();scope={owner:c.owner,client:c.client};attempted=null;pending=null;busy=false;
+      ownerChanged?.();
     }
     if(!key||!c.safe||overlay)return;
     if(pending){const recap=pending;pending=null;show(recap);return}
