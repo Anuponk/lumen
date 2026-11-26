@@ -51,7 +51,7 @@ export function playerHealth(facts, { now = Date.now(), t = defaultT } = {}) {
     if (device.state === 'critical') trouble.push(t('admin.health.saveFailed'));
     else if (device.state === 'review') trouble.push(t('admin.health.saveReview'));
     else if (count(device.failures) >= 3) trouble.push(t('admin.health.failures', { count: count(device.failures) }));
-    else if (device.state === 'auth' && n > 0) trouble.push(t('admin.health.auth', { count: n }));
+    else if (device.state === 'auth' && n > 0) trouble.push(t('admin.health.signInNeeded', { count: n }));
     else if (n > 0) waiting.push(since !== null ? t('admin.health.pendingSince', { count: n, date: date(since) }) : t('admin.health.pending', { count: n }));
     if (device.storage_error === 'quota') trouble.push(t('admin.health.storageFull'));
     else if (device.storage_error === 'storage') trouble.push(t('admin.health.storageError'));

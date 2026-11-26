@@ -3791,7 +3791,7 @@ function renderAdminPlayerSummary(box,key){
  line('admin.summary.web',model.web?t('admin.summary.seen',{version:model.web.version,date:date(model.web.at)}):t('admin.summary.unknown'));
  line('admin.summary.android',model.android?t('admin.summary.seen',{version:model.android.version,date:date(model.android.at)}):t('admin.summary.noNative'));
  line('admin.summary.check',model.observedAt?t('admin.summary.checkValue',{date:date(model.observedAt),freshness:model.freshness}):t('admin.summary.none'));
- line('admin.summary.auth',date(facts?.auth_at)||t('admin.summary.unknown'));
+ line('admin.summary.lastSignIn',date(facts?.auth_at)||t('admin.summary.unknown'));
  card.append(list);
  if(model.reports.total){const b=doc.createElement('button');b.type='button';b.textContent=t('admin.summary.reports',{open:model.reports.open,total:model.reports.total});b.onclick=()=>showPlayerReports(key);card.append(b)}
  const details=doc.createElement('details');const summary=doc.createElement('summary');summary.textContent=t('admin.summary.details');details.append(summary);
