@@ -257,3 +257,10 @@ les essais non classés, les égalités, N=1, grands effectifs, arrivées/retrai
 les écritures concurrentes sur deux quêtes et les reconstructions répétées.
 Les suites chronométriques et le Défi du jour restent des non-régressions séparées.
 La recette sur téléphone physique reste à faire après publication.
+
+### Records historiques prouvés sur la grille actuelle (27/11/2026)
+
+L’import du 11/11 excluait toute quête dont la grille n’est plus en révision 0. Les temps
+qualifiés après une réinitialisation de quête vers la révision actuelle sont désormais
+importés (migration `ranking_reset_proven_records_974`, 171 records mesurés sur les aventures
+5 et 6), avec sauvegarde et mêmes garde-fous ; les cas non prouvés restent exclus.
