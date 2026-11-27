@@ -1974,3 +1974,19 @@ body[data-seasonal="winter-stars"] #dailyIntro h2::after { content: var(--season
 /* #974 recette 27/11: my off-podium line uses the ranking row look after a discreet separator. */
 .group-ranking-personal{list-style:none;margin:6px 0 0;padding:6px 0 0;border-top:1px dashed rgba(159,179,200,.35);display:grid}
 .group-ranking-personal[hidden]{display:none}
+/* #1030 lot 2: advanced statistics and archive replay (Premium, hidden by default). */
+.premium-stats-card{max-height:min(88vh,680px);overflow:auto}
+.premium-stats-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0 10px}
+.premium-stats-tile{display:grid;gap:2px;padding:8px;border-radius:8px;background:#0f1d2d;font-size:12px;color:#9fb3c8}
+.premium-stats-tile strong{font-size:18px;color:#f4cf78}
+.premium-stats-chart{display:block;width:100%;height:auto;max-height:140px}
+.premium-stats-bar{fill:rgba(244,207,120,.55)}
+.premium-stats-line{stroke:#9fd2ff;stroke-width:2}
+.premium-stats-legend{font-size:11px;color:#9fb3c8;margin:2px 0 8px}
+.premium-stats-table{width:100%;border-collapse:collapse;font-size:12px}
+.premium-stats-table th,.premium-stats-table td{padding:4px;text-align:left;border-bottom:1px solid rgba(159,179,200,.2)}
+.premium-stats-history{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.premium-stats-run{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 8px;padding:6px 8px;border-radius:8px;background:#0f1d2d;font-size:12px}
+.premium-stats-run small{grid-column:2/4;color:#f4cf78}
+.premium-stats-quest{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.daily-archive-replay{margin-top:8px;min-height:40px}

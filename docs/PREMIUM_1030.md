@@ -61,10 +61,11 @@ avec des empreintes courtes et jamais d'identifiant. Rollback :
 | Uniquement achats remboursés | 1 | Gratuit |
 | Complément intégral payé, cinq achats unitaires payés | 0 | (règles prêtes) |
 
-Cas à soumettre au propriétaire : (1) ciel intégral composé d'attributions admin et
-d'achats ; (2) le compte de revue Google Play deviendra Premium par la règle
-« attribution administrative » — à confirmer ; (3) sources `manual` assimilées à
-l'administration.
+Décision du propriétaire (27/11/2026) : ciel intégral mixte attributions administratives +
+achats unitaires, compte de revue Google Play et sources `manual` deviennent Premium au
+lancement (`premium_backfill(true)`, sources `admin_full_sky` / `admin_mixed_full_sky`,
+migration `20261128090000_premium_mixed_sky_1030`). Un ciel incluant une maîtrise reste
+sans Premium automatique.
 
 ## 3. Moteur de quotas
 
@@ -135,8 +136,8 @@ maîtrise reste affiché. Stripe refuse Premium à un compte déjà Premium
 | Fonction | Serveur | Client |
 |---|---|---|
 | Cercles : création Premium, participation gratuite | `lumen_circle_create` contrôle `premium_circles` | message `circle_premium_required` |
-| Archives jouables | `lumen_daily_archive(day)` : jour passé uniquement, aucune écriture de run ni de classement | **à faire** : entrée « Rejouer » dans l'historique #1015 et mode entraînement daté |
-| Statistiques avancées | `lumen_premium_stats` : historique paginé (≤ 50), série 90 j, records | **à faire** : écran joueur et agrégation par difficulté |
+| Archives jouables | `lumen_daily_archive(day)` : jour passé uniquement, aucune écriture de run ni de classement | bouton « Rejouer ce défi (entraînement) » dans le classement d'un jour passé de « Ma semaine » ; URL `?daily=1&training=1&archive=AAAA-MM-JJ` ; partie d'entraînement hors quota, sans tentative officielle |
+| Statistiques avancées | `lumen_premium_stats` : historique paginé (≤ 50), série 90 j, records | « Statistiques avancées » dans Mon espace (`src/ui/premium-stats.js`) : indicateurs 90 j, graphique victoires/temps médian, records par difficulté (catalogue), historique « Voir plus » par curseur. Un joueur gratuit au-delà du seuil voit l'entrée et se voit proposer Premium |
 
 Perte du droit Premium par le créateur d'un cercle : le cercle, ses membres, ses
 invitations et liens restent ; il ne peut plus en créer de nouveau. Les membres

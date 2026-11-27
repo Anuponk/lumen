@@ -4,6 +4,7 @@ import {createShareDialog,discoveryUrl,adventureShareMilestone,tryNativeShare,tr
 import {createCircleClient,setupCircles,readCircleToken} from './circles.js';
 import {createQuotaLedger,constellationOrdinals,activationReached,attemptQuotaKind,quotaDecision,quotasApply} from '../campaign/premium-quota.js';
 import {createCommerceClient,premiumSurfaceVisible} from '../persistence/commerce.js';
+import {createPremiumStats} from './premium-stats.js';
 import {consumeInstallRequest,isIosDevice,requestedInstallCopy,installGuestWarning} from './install-request.js';
 import {pwaFirstOpenEligible,createPwaFirstOpen} from './pwa-first-open.js';
 import {readNativeAuthLinkResult,scrubNativeAuthLinkError,authLinkMessage} from '../persistence/auth-link-result.js';
@@ -2505,7 +2506,7 @@ function trackDaily(action,extra={}){return trackLumenEvent('app_opened',null,{s
 const dailyLocale=()=>localePreference?.locale??'fr';
 const dailyDate=day=>formatDailyDate(day,dailyLocale());
 const dailyDuration=ms=>formatRemaining(ms,t);
-function dailyUrl(training=false){const u=new URL(location.origin+location.pathname);u.searchParams.set('daily','1');if(training)u.searchParams.set('training','1');return u.toString()}
+function dailyUrl(training=false,archive=null){const u=new URL(location.origin+location.pathname);u.searchParams.set('daily','1');if(training)u.searchParams.set('training','1');if(archive)u.searchParams.set('archive',archive);return u.toString()}
 // #1003: one lumen_daily_today read per account and day (Free-first). The memo
 // lasts until the server's closing time, or 6 h while the challenge is closed.
 let dailyTodayMemo=null;
@@ -2534,23 +2535,23 @@ function discoverDailyToday(owner){
 // Only an explicit hand-off (a tap on the chip / Mon ciel / Social entry less than
 // 30 s ago, consumed once) may reuse it; any other load reads the server.
 const DAILY_TODAY_KEY='lumenDailyTodayV1',DAILY_HANDOFF_KEY='lumenDailyHandoffV1',DAILY_TODAY_MARGIN_MS=60000,DAILY_HANDOFF_MS=30000;
-function handOffDaily(training=false){
+function handOffDaily(training=false,archive=null){
  try{sessionStorage.setItem(DAILY_HANDOFF_KEY,String(Date.now()))}catch{}
  // #1015 (recette 24/11 : 5-6 s par sens) : recharger la page relançait toute
  // l'hydratation cloud (4-5 RPC de 1 à 2,5 s sur mobile). Le défi s'ouvre désormais
  // dans la page, avec la session et le profil déjà vérifiés. Déjà dans un défi :
  // le chemin historique (rechargement) est conservé.
- if(socialChallenge||qaActive||typeof history?.pushState!=='function'){location.href=dailyUrl(training);return}
- void enterDailyInPage(training);
+ if(socialChallenge||qaActive||typeof history?.pushState!=='function'){location.href=dailyUrl(training,archive);return}
+ void enterDailyInPage(training,archive);
 }
 let dailyTransition=false;
-async function enterDailyInPage(training=false){
+async function enterDailyInPage(training=false,archive=null){
  if(dailyTransition)return;
  dailyTransition=true;
  try{
   pauseGameClock();menuPause?.release?.();clearInterval(timer);
   const map=document.getElementById('mapModal');if(map&&!map.hidden){map.hidden=true;map.dataset.advanceOnClose='';const tour=document.getElementById('skyTour');if(tour)tour.hidden=true}
-  history.pushState({lumenDaily:true},'',dailyUrl(training));
+  history.pushState({lumenDaily:true},'',dailyUrl(training,archive));
   const entered=await bootstrapDailyChallenge();
   if(entered&&socialChallenge?.daily){restoreCanonicalCampaignAttempt();init();void refreshDailyEntry();void retryPendingDaily();refreshJourney();return}
   // Unavailable or left from the intro: back to the campaign as a fresh boot would.
@@ -2559,7 +2560,7 @@ async function enterDailyInPage(training=false){
  }finally{dailyTransition=false}
 }
 function stripDailyUrl(){
- const url=new URL(location.href);for(const key of ['daily','training','sky'])url.searchParams.delete(key);
+ const url=new URL(location.href);for(const key of ['daily','training','sky','archive'])url.searchParams.delete(key);
  history.replaceState(null,'',url.pathname+url.search+url.hash);
 }
 // Leaves the daily mode exactly as the page restart used to: no daily state,
@@ -2745,10 +2746,17 @@ async function openDailyDay(day,button,weekly=false){
   const show=scope=>{for(const [id,tab] of [['dailyWeekTabGeneral','general'],['dailyWeekTabFriends','friends']])document.getElementById(id).setAttribute('aria-selected',String(tab===scope));panel.innerHTML=weekly&&!board?.final?'<p class="daily-week-state">'+escapeSocialHtml(t('daily.weekPending'))+'</p>':renderDailyBoard(board?.[scope],{scope,formatDuration,t,weekly})+(board?.final?'':'<p class="daily-week-state">'+escapeSocialHtml(t('daily.provisional'))+'</p>')};
   document.getElementById('dailyWeekTabGeneral').onclick=()=>show('general');document.getElementById('dailyWeekTabFriends').onclick=()=>show('friends');
   show('general');
+  // #1030 lot 2: Premium players replay a past day as training (hidden otherwise).
+  if(!weekly&&dailyWeekToday&&day<dailyWeekToday&&premiumSurfaceVisible({state:commerce.state,feature:'archives',activated:true})){
+   const replay=document.createElement('button');replay.type='button';replay.className='daily-archive-replay';replay.textContent=t('premium.archiveReplay');
+   replay.onclick=()=>{document.getElementById('dailyWeekClose')?.click();handOffDaily(true,day)};panel.append(replay);
+  }
  }catch(e){if(request!==dailyDayRequest||owner!==lumenUser?.id)return;box.hidden=true;status.textContent=dailyErrorMessage(e,t)}
 }
+let dailyWeekToday=null;
 async function openDailyWeek(today,source='result',initialMonday=weekMonday(today)){
  const modal=document.getElementById('dailyWeekModal');if(!modal||!today)return;
+ dailyWeekToday=today;
  const current=weekMonday(today),close=document.getElementById('dailyWeekClose');
  const opener=document.activeElement;
  close.onclick=()=>{dailyWeekRequest++;closeDailyDay();modal.hidden=true;opener?.focus?.({preventScroll:true})};
@@ -2789,8 +2797,28 @@ async function finishDaily(status){
   showDailyResult({pending:true,official});
  }
 }
+// #1030 lot 2: a PAST official Défi du jour replayed by a Premium player. The server
+// returns only a past day's board identity; the run is a training run (no official
+// attempt, no ranking, no standing), exempt from daily quotas like every daily run.
+async function bootstrapDailyArchive(day){
+ const fail=key=>{showRewardToast(t(key));return false};
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(day||'')||!lumenSupabase)return fail('premium.archiveRequired');
+ // A cold reload on the archive URL may run before account hydration (same rule as the daily).
+ let signedIn=!!lumenUser;if(!signedIn){try{signedIn=!!(await lumenSupabase.auth?.getSession?.())?.data?.session?.user}catch{}}
+ if(!signedIn)return fail('premium.archiveRequired');
+ let archive;
+ try{const {data,error}=await lumenSupabase.rpc('lumen_daily_archive',{p_day:day});if(error)throw error;archive=data}
+ catch(e){return /premium_required/.test(e?.message||'')?fail('premium.archiveRequired'):(showRewardToast(dailyErrorMessage(e,t)),false)}
+ let quest;try{quest=dailyQuest({questId:archive.quest_id,gridRevision:archive.grid_revision})}catch{return fail('premium.archiveUnavailable')}
+ socialChallenge={daily:true,training:true,archive:true,challenge_id:'daily-'+archive.day+'-archive',day:archive.day,grid_revision:archive.grid_revision,closes_at:null,clockSkewMs:0};
+ canonicalActiveQuest=quest;levelIndex=quest.legacyIndex??0;replayMode=false;
+ trackDaily('opened',{daily_day:archive.day,daily_training:true});
+ document.body.classList.add('daily-mode');renderDailyBanner();
+ return true;
+}
 async function bootstrapDailyChallenge(){
  const params=new URL(location.href).searchParams;if(!params.has('daily'))return false;
+ if(params.has('archive'))return bootstrapDailyArchive(params.get('archive'));
  let today=cachedDailyToday();
  if(!today){try{today=await dailyClient.today();if(today?.enabled)rememberDailyToday(today)}catch{today=null}}
  // The same answer feeds the header chip / Mon ciel entry: no second read.
@@ -2960,7 +2988,7 @@ const rankingContext=()=>({owner:lumenUser?.id,client:lumenSupabase,nickname:lum
 const rankingClient=createRankingClient({storage:localStorage,getContext:rankingContext,currentGridRevision:id=>{const q=canonicalQuestById(id);return q?q.gridRevision??0:null}});
 const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds),onUpdate:update=>renderVictoryRank(update),onGroups:(quest,origin)=>openGroupRanking(quest,origin),t});
 // #974: the only general ranking exposed is the adventure ranking.
-let groupRanking=null;
+let groupRanking=null,premiumStats=null;
 function openGroupRanking(quest,origin){
  if(!quest?.packId)return;
  const pack=CONTENT_PACKS.find(p=>p.id===quest.packId);
@@ -3162,7 +3190,21 @@ function showQuotaLimit(gate){
   cancel:t(offer?'premium.later':'premium.ok'),confirm:offer?t('premium.discover'):t('premium.ok'),onConfirm:()=>{if(offer)openPremiumOffer()}});
 }
 function openPremiumOffer(){openJourneyMap(true)}
+// Premium-only entries: shown to Premium accounts, in QA preview, or once the free
+// player has reached the threshold (never during the discovery phase).
+function premiumActivated(){
+ const st=commerce.state,ledger=quotaLedgerFor(qualificationOwner());
+ return !!ledger.snapshot().activatedAt||activationReached({quests:canonicalQuestList(),threshold:st.config.thresholdConstellation,isCompleted:q=>questIsCompleted(lumenProgress,q.id)});
+}
+function premiumStatsOpen(origin){
+ const st=commerce.state;
+ if(st.premium||st.preview){void premiumStats?.open({origin});return}
+ const offer=premiumOfferAvailable();
+ lumenConfirm().open({title:t('premiumStats.title'),copy:t('premiumStats.required'),cancel:t(offer?'premium.later':'premium.ok'),confirm:offer?t('premium.discover'):t('premium.ok'),returnFocus:origin,onConfirm:()=>{if(offer)openPremiumOffer()}});
+}
 function refreshPremiumBadge(){
+ const stats=document.getElementById('premiumStatsBtn');
+ if(stats)stats.hidden=!lumenUser||qaActive||!premiumSurfaceVisible({state:commerce.state,feature:'stats',activated:premiumActivated()});
  const el=document.getElementById('premiumBadge');if(!el)return;
  const st=commerce.state,show=!!st.premium&&(st.config.premiumEnabled||st.preview);
  el.hidden=!show;if(show){el.textContent=t('premium.badge');el.setAttribute('aria-label',t('premium.badgeLabel'))}
@@ -3718,8 +3760,8 @@ function maybeShowAutonomy(){
 function prepareQuestStart(){let q=activeBonusChallenge(),o=document.getElementById("questStart");questFailed=false;if(!q||lumenProgress.stars[q.id]){questStarted=true;o.hidden=true;return}questStarted=false;pauseGameClock();const shown=localizedChallenge(q);document.getElementById("questStartTitle").textContent=t('challenge.startTitle',{title:shown.title,level:localizedDifficultyLabel()});document.getElementById("questStartRule").textContent=(q.type===1?t('challenge.flashCopy',{seconds:q.seconds}):shown.copy)+" "+t('challenge.reward');o.hidden=false}
 document.getElementById("questGo").onclick=()=>{document.getElementById("questStart").hidden=true;questStarted=true;clock();updateAttemptUI()};
 // #945: engine difficulty labels are French reference values; display translates them.
-function localizedDifficultyLabel(){
- const label=puz.difficulty?.label??qualifyDifficulty(puz).label;
+function localizedDifficultyLabel(){return localizedDifficultyName(puz.difficulty?.label??qualifyDifficulty(puz).label)}
+function localizedDifficultyName(label){
  const difficultyKey={
   Facile:'board.difficultyEasy',Intermédiaire:'board.difficultyIntermediate',
   Difficile:'board.difficultyHard',Avancé:'board.difficultyAdvanced',
@@ -4242,6 +4284,11 @@ function setupBetaFeedback(){
   identity:()=>({userId:qaActive?null:lumenUser?.id||null,anonymousId:lumenAnonymousId,client:qaActive?null:lumenSupabase})});
  groupRanking=createGroupRanking({document,t,signedIn:()=>!!lumenUser&&!qaActive,nickname:()=>lumenNickname||'',
   rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{offline:true}})});
+ // #1030 lot 2: advanced statistics (Premium, or offered once the feature is met).
+ premiumStats=createPremiumStats({document,t,owner:()=>lumenUser?.id,rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:new Error('cloud_unavailable')}),
+  questById:id=>canonicalQuestById(id),questName:q=>q?t('premiumStats.questLabel',{number:q.ordinal}):'',difficultyLabel:label=>localizedDifficultyName(label),formatDuration,locale:()=>localePreference?.locale??'fr'});
+ const statsButton=document.getElementById('premiumStatsBtn');
+ if(statsButton)statsButton.onclick=()=>premiumStatsOpen(statsButton);
  const reportsButton=document.getElementById('myReportsBtn');
  if(reportsButton)reportsButton.onclick=()=>myReports.open({origin:document.getElementById('mobileAccount')});
  // One summary per session (count only), so a new answer shows as a discreet dot.
