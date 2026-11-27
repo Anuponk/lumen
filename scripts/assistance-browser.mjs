@@ -152,7 +152,7 @@ export async function verifyAssistance({ send, evaluate, url }) {
    const rpc=async(name,args)=>{calls.push(args);return {data:{scoringVersion:2,maxPoints:10000,kind:'adventure',questTotal:100,
     participants:18,participating:true,top:rows.slice(0,3),personal:{place:14,points:120,quests:2},
     rows:args.p_limit?rows.slice(args.p_offset,args.p_offset+args.p_limit):[],more:args.p_offset+args.p_limit<rows.length}}};
-   const view=createGroupRanking({document,t:(k,p)=>k+(p?JSON.stringify(p):''),rpc,signedIn:()=>signed});
+   const view=createGroupRanking({document,t:(k,p)=>k+(p?JSON.stringify(p):''),rpc,signedIn:()=>signed,nickname:()=>'<i>Étoile 14</i>'});
    const options={adventureId:'base-real-sky',adventureName:'Ciel réel'};
    view.open(options);await new Promise(r=>setTimeout(r,30));
    const guest=document.getElementById('groupRankingStatus').textContent==='groupRanking.signIn'&&calls.length===0;
@@ -160,14 +160,16 @@ export async function verifyAssistance({ send, evaluate, url }) {
    for(let i=0;i<40&&!document.querySelector('.group-ranking-podium');i++)await new Promise(r=>setTimeout(r,25));
    const podium=document.querySelectorAll('.group-ranking-podium li').length;
    const text=!document.querySelector('#groupRankingBody i')&&document.getElementById('groupRankingBody').textContent.includes('<i>Étoile 1</i>');
-   const me=document.querySelector('.group-ranking-me').textContent;
+   const mine=document.querySelector('.group-ranking-personal .group-ranking-row.ranking-mine');
+   const me=mine?[...mine.children].map(n=>n.textContent).join('|'):'';
    const adventure=document.querySelectorAll('[data-ranking-kind]').length===0&&document.getElementById('groupRankingName').textContent==='Ciel réel'&&calls[0].p_kind==='adventure';
    const first=calls.length===1&&!calls[0].p_limit;
    const toggle=document.querySelector('.group-ranking-more'),list=document.querySelector('.group-ranking-list');
    toggle.click();for(let i=0;i<40&&list.children.length<10;i++)await new Promise(r=>setTimeout(r,25));
    document.querySelector('.group-ranking-next').click();for(let i=0;i<40&&list.children.length<15;i++)await new Promise(r=>setTimeout(r,25));
-   const names=[...document.querySelectorAll('.group-ranking-row .ranking-name')].map(n=>n.textContent);
-   const paged=list.children.length===15&&new Set(names).size===18&&calls[1].p_offset===3&&calls[2].p_offset===13;
+   const names=[...document.querySelectorAll('.group-ranking-podium .ranking-name,.group-ranking-list .ranking-name')].map(n=>n.textContent);
+   const personalHidden=document.querySelector('.group-ranking-personal').hidden&&getComputedStyle(document.querySelector('.group-ranking-personal')).display==='none';
+   const paged=list.children.length===15&&new Set(names).size===18&&names.length===18&&calls[1].p_offset===3&&calls[2].p_offset===13&&personalHidden;
    const mineHighlighted=!!list.querySelector('.ranking-mine');
    toggle.click();const collapsed=list.hidden&&getComputedStyle(list).display==='none'&&document.querySelectorAll('.group-ranking-podium li').length===3;
    toggle.click();const cached=!list.hidden&&calls.length===3;
@@ -194,7 +196,8 @@ export async function verifyAssistance({ send, evaluate, url }) {
   assert.equal(ranking.guest, true, 'guests do not trigger RPC reads');
   assert.equal(ranking.podium, 3);
   assert.equal(ranking.text, true, 'nicknames remain plain text');
-  assert.match(ranking.me, /groupRanking\.mine.*"place":14.*"points":120.*"quests":2.*"total":100/);
+  // #974 recette 27/11: my off-podium line has the same look as the other lines.
+  assert.match(ranking.me, /^14\|<i>Étoile 14<\/i>\|groupRanking\.points\{"points":120\}\|groupRanking\.questsShort\{"count":2\}\|ranking\.you$/);
   for (const key of [
     'first',
     'paged',

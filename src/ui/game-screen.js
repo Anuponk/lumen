@@ -4188,7 +4188,7 @@ function setupBetaFeedback(){
  myReports=createMyReports({document,storage:localStorage,t,
   rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{offline:true}}),
   identity:()=>({userId:qaActive?null:lumenUser?.id||null,anonymousId:lumenAnonymousId,client:qaActive?null:lumenSupabase})});
- groupRanking=createGroupRanking({document,t,signedIn:()=>!!lumenUser&&!qaActive,
+ groupRanking=createGroupRanking({document,t,signedIn:()=>!!lumenUser&&!qaActive,nickname:()=>lumenNickname||'',
   rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{offline:true}})});
  const reportsButton=document.getElementById('myReportsBtn');
  if(reportsButton)reportsButton.onclick=()=>myReports.open({origin:document.getElementById('mobileAccount')});

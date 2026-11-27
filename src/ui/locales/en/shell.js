@@ -214,6 +214,7 @@ export default Object.freeze({
   'groupRanking.notRanked': "Not ranked yet: finish one of the {total} quests with an official time.",
   'groupRanking.empty': "Nobody is ranked here yet.",
   'groupRanking.all': "See the whole ranking ({count})",
+  'groupRanking.more': "See more ({count} left)",
   'groupRanking.next': "See more",
   'groupRanking.retry': "Try again",
   'groupRanking.signIn': "Sign in to see the rankings and take part.",
