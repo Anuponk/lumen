@@ -1,7 +1,7 @@
 // #1056 · Plan of the daily 08:00 Facebook posts.
 //   node scripts/marketing/social-posts.mjs                 write content/generated/social-posts.json
 //   node scripts/marketing/social-posts.mjs --check         CI: the committed plan is up to date
-//   node scripts/marketing/social-posts.mjs --metricool=out.csv   CSV for a Metricool bulk import
+//   node scripts/marketing/social-posts.mjs --metricool=out.csv [--from=…] [--to=…]   Metricool calendar import
 // The plan covers the mini-puzzle calendar range. Publication itself is done
 // by the o2switch cron (scripts/lumen_social_post.py), off by default.
 import fs from 'node:fs';
@@ -43,8 +43,13 @@ if (process.argv[1]?.replaceAll('\\', '/').endsWith('marketing/social-posts.mjs'
     }
     console.log('social-posts: ' + plan.posts.length + ' posts up to date');
   } else if (csv) {
-    fs.writeFileSync(csv, metricoolCsv(plan.posts));
-    console.log('social-posts: ' + plan.posts.length + ' rows written to ' + csv);
+    // Optional --from=AAAA-MM-JJ --to=AAAA-MM-JJ, e.g. one month per import.
+    const from = args.find((a) => a.startsWith('--from='))?.split('=')[1] || plan.from;
+    const to = args.find((a) => a.startsWith('--to='))?.split('=')[1] || plan.to;
+    const posts = plan.posts.filter((p) => p.day >= from && p.day <= to);
+    // --draft: import as drafts (a one-row rehearsal before the real batch).
+    fs.writeFileSync(csv, metricoolCsv(posts, { draft: args.includes('--draft') }));
+    console.log('social-posts: ' + posts.length + ' rows (' + from + ' → ' + to + ') written to ' + csv);
   } else {
     fs.writeFileSync(OUT, text);
     console.log('social-posts: wrote ' + plan.posts.length + ' posts (' + plan.from + ' → ' + plan.to + ')');

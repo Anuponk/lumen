@@ -9,7 +9,7 @@ Chantier du 27/11/2026, coordonné avec le studio vidéo [#1046](https://github.
 | Rythme de 08h00 | Du 1er au 24 décembre, chaque post est une case du calendrier de l'Avent (mini-puzzle), avec un rappel du Défi du jour officiel. Ensuite, alternance : jour impair = Défi officiel, jour pair = mini-puzzle. | Un seul post par jour. Les 15 publications éditoriales de 18h30 restent sur Metricool. |
 | Visuel du Défi officiel | La grille initiale est visible : seulement les territoires, aucun Gardien. | **Risque accepté** : un joueur peut étudier la grille avant de lancer son chrono. Le visuel ne montre jamais de Gardien, d'indice ni de solution. |
 | Mesure | Compteurs agrégés à partir du journal d'accès o2switch. | Aucune écriture Supabase, aucun identifiant conservé. |
-| Canal de publication | API Meta directe, sans frais (décision du 27/11/2026). | Publieur `lumen_social_post.py` sur le cron o2switch. Metricool reste réservé aux posts éditoriaux de 18h30. La publication réelle reste **désactivée** jusqu'à l'accord après la simulation. |
+| Canal de publication | **Metricool**, compte payant de Rachel, sans API (décision du 27/11/2026). L'API Meta directe a été abandonnée : l'autorisation `pages_manage_posts` restait indisponible pour l'app. | Import mensuel d'un CSV généré au format exact du modèle Metricool. Le publieur o2switch (`lumen_social_post.py`) reste dans le dépôt, **désactivé**, pour une éventuelle bascule vers l'API. |
 
 ## Ce qui est livré
 
@@ -57,11 +57,36 @@ Chantier du 27/11/2026, coordonné avec le studio vidéo [#1046](https://github.
 ## Quotas et options de canal (vérifiées le 27/11/2026)
 
 - **Metricool, plan gratuit** : 1 marque, environ 20 publications programmées par mois et **pas d'API**. L'API est réservée au plan Advanced, payant, à partir d'environ 43 à 53 € par mois selon le paiement, mensuel ou annuel. Les 15 posts éditoriaux de décembre consomment déjà l'essentiel du quota gratuit, donc les 31 posts quotidiens n'y tiennent pas. Aucun abonnement n'est souscrit. Sources : [Socialk](https://socialk.it/en/pricing/metricool), [Socialync](https://www.socialync.io/blog/metricool-pricing-2026), [Postiv](https://postiv.ai/blog/metricool-review). À revérifier sur la page tarifs de Metricool avant toute souscription.
-- **Export pour Metricool** : `node scripts/marketing/social-posts.mjs --metricool=decembre.csv` produit un fichier pour l'import en masse : date, heure, texte, lien, image. Les noms de colonnes sont à rapprocher du modèle CSV fourni par Metricool lors de l'import.
+- **Export pour Metricool** : voir « Import Metricool » ci-dessous, au format exact du modèle de calendrier.
 - **API Graph de Meta** : elle est gratuite. Une app Meta en mode Développement publie sur une Page que gère un de ses administrateurs, avec `pages_manage_posts`, sans App Review ni vérification d'entreprise. Ces deux démarches ne sont nécessaires que pour publier sur la Page de quelqu'un d'autre. Endpoint : `POST /{page-id}/feed` avec `message` et `link`. Sources : [Meta Pages API](https://developers.facebook.com/docs/pages-api/), [guide de publication sans App Review](https://www.creatoros.ca/blog/facebook-graph-api-page-posting-without-app-review/).
 - **Ouverture de l'application Android depuis un post** : un lien `lumen.nopuna.fr` s'ouvre d'abord dans le navigateur intégré de Facebook. Les Android App Links (`assetlinks.json`, déjà publié) peuvent ouvrir l'application installée quand le lien est ouvert hors de ce navigateur. Il n'y a pas de redirection garantie vers l'application. Le parcours `/?install=1` reste l'appel à l'action « Installer ».
 
-## Activation (après accord du propriétaire)
+## Import Metricool (canal retenu)
+
+Le modèle du calendrier Metricool (Planificateur → ⋮ → Importer CSV → Télécharger le modèle), téléchargé le 27/11/2026, compte 102 colonnes. `METRICOOL_COLUMNS` (`src/acquisition/social-posts.js`) les reprend telles quelles, et la CI vérifie l'en-tête comme chaque ligne. Chaque ligne est un post photo **Facebook uniquement**, avec :
+- le texte et son lien UTM complet ;
+- la date et l'heure 08:00:00 ;
+- le visuel du jour (`Picture Url 1`, URL publique sur `lumen.nopuna.fr`) et son texte alternatif ;
+- le raccourcisseur de liens désactivé, pour garder les UTM.
+
+Le fichier est en UTF-8 avec BOM, comme le modèle.
+
+1. **Répétition** : générer un post en brouillon et l'importer.
+   ```
+   node scripts/marketing/social-posts.mjs --metricool=test.csv --from=2026-12-01 --to=2026-12-01 --draft
+   ```
+   À l'import, choisir le format de date `AAAA-MM-JJ` et l'heure `HH:MM:SS`. Vérifier dans le brouillon les retours à la ligne, le lien, l'image et l'heure. Le fuseau de la marque doit être Europe/Paris. Supprimer ensuite le brouillon.
+2. **Mois complet** :
+   ```
+   node scripts/marketing/social-posts.mjs --metricool=decembre.csv --from=2026-12-01 --to=2026-12-31
+   ```
+   Importer le fichier **une seule fois**. Un second import créerait des doublons, que Metricool ne détecte pas.
+3. **Contrôle** : 31 posts doivent apparaître à 08h00 dans le calendrier, sans conflit avec les 15 posts éditoriaux de 18h30, ni avec les posts déjà programmés sur l'ancien compte gratuit.
+4. **Arrêt** : supprimer ou repasser en brouillon les posts programmés dans Metricool.
+
+Prévoir l'import de janvier avant le 31 décembre, en régénérant d'abord calendrier et visuels si besoin.
+
+## Activation de l'API Meta (option non retenue)
 
 Le jeton de Page ne doit jamais passer par un chat, un e-mail ni Git. Le script `scripts/meta-page-token.py` le récupère et l'écrit directement dans le fichier privé, sur o2switch.
 
