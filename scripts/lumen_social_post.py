@@ -18,24 +18,45 @@ post per day. This script publishes today's post at most once:
 No Supabase call, no secret in the repository: META_PAGE_ID and META_PAGE_TOKEN
 come from the private environment file loaded by o2switch-social-post.sh.
 """
-from __future__ import annotations
-
 import json
 import os
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 try:  # o2switch (Linux); the local test suite may run elsewhere.
     import fcntl
 except ImportError:  # pragma: no cover
     fcntl = None
 
-PARIS = ZoneInfo("Europe/Paris")
+
+
+def _last_sunday_utc(year, month):
+    """Last Sunday of a month at 01:00 UTC: the EU summer-time switch."""
+    day = datetime(year, month, 31 if month in (3, 10) else 30, 1, tzinfo=timezone.utc)
+    return day - timedelta(days=(day.weekday() + 1) % 7)
+
+
+def paris_offset(instant):
+    """UTC offset of Europe/Paris (EU rule, no tzdata: o2switch runs Python 3.6)."""
+    instant = instant.astimezone(timezone.utc)
+    summer = _last_sunday_utc(instant.year, 3) <= instant < _last_sunday_utc(instant.year, 10)
+    return timedelta(hours=2 if summer else 1)
+
+
+def paris_local(instant):
+    """Naive Paris wall-clock time of an aware instant."""
+    return (instant.astimezone(timezone.utc) + paris_offset(instant)).replace(tzinfo=None)
+
+
+def from_paris(local):
+    """Aware UTC instant of a naive Paris wall-clock time (tests and tools)."""
+    guess = local.replace(tzinfo=timezone.utc) - timedelta(hours=1)
+    return local.replace(tzinfo=timezone.utc) - paris_offset(guess)
+
 SITE = "https://lumen.nopuna.fr/"
 MODES = {"off", "dry-run", "live"}
 KEEP_ENTRIES = 120
@@ -129,7 +150,7 @@ def write_ledger(path: Path, ledger: dict) -> None:
     os.replace(tmp, path)
 
 
-def run(config: dict, now: datetime | None = None, transport=meta_transport, log=lambda line: print(line, file=sys.stderr)) -> int:
+def run(config, now=None, transport=meta_transport, log=lambda line: print(line, file=sys.stderr)) -> int:
     mode = config["mode"]
     if mode not in MODES:
         log(f"Lumen social post: unknown mode {mode!r}")
@@ -138,7 +159,7 @@ def run(config: dict, now: datetime | None = None, transport=meta_transport, log
         return 0
     if config["stop"].exists():
         return 0
-    local = (now or datetime.now(timezone.utc)).astimezone(PARIS)
+    local = paris_local(now or datetime.now(timezone.utc))
     day, clock = local.strftime("%Y-%m-%d"), local.strftime("%H:%M")
     if clock < config["publish_at"]:
         return 0

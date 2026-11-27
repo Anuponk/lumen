@@ -9,8 +9,6 @@ then reads the Page token (which does not expire while access is kept) and
 writes ~/lumen-private/social-post.env (mode 600) with LUMEN_SOCIAL_MODE=dry-run.
 Secrets are typed hidden, never printed, never sent anywhere but graph.facebook.com.
 """
-from __future__ import annotations
-
 import getpass
 import json
 import os

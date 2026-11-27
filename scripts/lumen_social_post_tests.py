@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """#1056 · Tests of the daily Facebook publisher with a fake transport (no network)."""
+import ast
 import json
 import os
+import re
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -42,7 +44,7 @@ def setup(tmp, posts, mode="live", **extra):
 
 
 def at(text):  # Paris wall time → aware instant
-    return datetime.fromisoformat(text).replace(tzinfo=social.PARIS).astimezone(timezone.utc)
+    return social.from_paris(datetime.strptime(text, "%Y-%m-%dT%H:%M"))
 
 
 def ledger(config):
@@ -54,6 +56,23 @@ def check(name, condition):
     if not condition:
         raise AssertionError(name)
 
+
+# Paris clock without tzdata (o2switch runs Python 3.6): EU summer time.
+U = lambda *a: datetime(*a, tzinfo=timezone.utc)
+check("winter offset", social.paris_local(U(2026, 12, 1, 7, 0)) == datetime(2026, 12, 1, 8, 0))
+check("summer offset", social.paris_local(U(2027, 6, 1, 6, 0)) == datetime(2027, 6, 1, 8, 0))
+check("spring switch", social.paris_local(U(2027, 3, 28, 0, 59)).hour == 1 and social.paris_local(U(2027, 3, 28, 1, 0)).hour == 3)
+check("autumn switch", social.paris_local(U(2026, 10, 25, 0, 59)).hour == 2 and social.paris_local(U(2026, 10, 25, 1, 0)).hour == 2)
+check("new year in Paris", social.paris_local(U(2026, 12, 31, 23, 30)).strftime("%Y-%m-%d") == "2027-01-01")
+check("round trip", social.from_paris(datetime(2026, 12, 1, 8, 0)) == U(2026, 12, 1, 7, 0))
+# The o2switch scripts stay compatible with Python 3.6 (no zoneinfo, no new syntax).
+here = Path(__file__).resolve().parent
+for name in ("lumen_social_post.py", "lumen_mini_counts.py", "meta-page-token.py"):
+    source = (here / name).read_text(encoding="utf-8")
+    for banned in ("from __future__", "zoneinfo", "fromisoformat", ":=", "| None", "removeprefix"):
+        check(name + " avoids " + banned, banned not in source)
+    ast.parse(source, feature_version=(3, 6))  # o2switch: Python 3.6 grammar
+    check(name + " avoids match statements", not re.search(r"^\s*match .+:\s*$", source, re.M))
 
 lines = []
 log = lines.append
