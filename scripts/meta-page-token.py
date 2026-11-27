@@ -20,7 +20,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-GRAPH = "https://graph.facebook.com/" + os.environ.get("META_GRAPH_VERSION", "v23.0")
+GRAPH = "https://graph.facebook.com/" + os.environ.get("META_GRAPH_VERSION", "v27.0")
 ENV_FILE = Path(os.path.expanduser("~/lumen-private/social-post.env"))
 NEEDED = {"pages_manage_posts", "pages_read_engagement", "pages_show_list"}
 
