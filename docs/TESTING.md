@@ -2904,6 +2904,14 @@ Run node scripts/seasonal-events-tests.mjs, node scripts/organic-acquisition-tes
 
 #1030 lot 2: `premium-quota-tests.mjs` also covers the advanced statistics model and chart and the archive wiring (past days only, training run); `scripts/fixtures/premium-mixed-sky-1030.sql` covers the owner rule for mixed administrative whole skies (mastery excluded, idempotent, traced).
 
+## Analytics activity and Premium conversion (#1044)
+
+- `scripts/fixtures/admin-activity-1044.sql` (canonical-ledger CI, hosted-default grants): permissions and bounds; reset = same attempt; receipts deduplicated; replay after the first win; 10 + 20 + 30 min = 60 min and 20 min per timed player; midnight start day; internal accounts excluded/included; Premium segment from the purchase instant; quota reached from the effective settings history; journal validation, idempotent retries, future/invalid events skipped, daily budget; blocked vs shown; funnels in chronological order; same-day vs 7-day attribution; channel filter; J+1/J+7 retention with complete follow-up only; aggregates only.
+- `scripts/commerce-journal-tests.mjs` (Node): one visit per display, CTA/close attached to the visit, batching (20), retry after a network error, settled on 22023, per-account queues, bounded offline queue, price parsing.
+- `scripts/analytics-activity-tests.mjs` (Node): unmeasured days never 0, incomplete day, measured denominators, funnel rates, simulation highlighting the quota in force, escaping, unavailable sources.
+- `scripts/clear-mind-hint-browser.mjs` (inside `browser-tests.mjs`, #1052): FR/EN/ES message in the feedback line, no attempt start, no grid/layout change, no dialog; normal quest keeps its hints.
+- `sky-navigation-browser-tests.mjs`: two voluntary displays of a locked offer = two visits (`data-offer-visits`).
+
 #974/#1029/#1015 UI refonte: `group-ranking-tests.mjs` covers the mock-up states (podium 2 – 1 – 3, cyan position, 20th → ranks 15–25, blocks of 10 to both bounds, podium/unranked from rank 4, end-of-board window, small/empty/old backends, retry, stale pages, folding without reads); `daily-view-tests.mjs`, `circles-tests.mjs` and `daily-challenge-browser.mjs` check the shared podium in the daily and circle boards; `sales-terms-tests.mjs` checks the compact Premium offer (one CTA, sign-in at purchase, waiver at the purchase moment, no disabled CTA); `adventure-offer-tests.mjs` the `lumen_premium` Play SKU mapping. Captures: lumen-marketing `captures/2026-11-27-ui/`.
 
 #974 records fix: `scripts/fixtures/ranking-reset-proven-974.sql` (canonical-ledger CI) checks proven records imported, times before the reset, other revisions and opted-out players excluded, better scores kept, worse improved, backup and idempotency. #1030: `premium-quota-tests.mjs` checks that « Découvrir Premium » opens the shop on the first locked Adventure.

@@ -23,6 +23,29 @@ const source=multiAccountFixture({admin:profile},'admin').replace("if(!uid())ret
   if(name==='lumen_admin_engagement')return sessionStorage.getItem('engagementUnavailable')?{error:{message:'Unavailable'}}:{data:{days:args?.p_days??7,traffic:{identifiers:10,human:2,qa:3,automated_test:4,undetermined:1},acquisition:[{channel:'player_share',opened:4,q1_started:2,q1_completed:1}],challenges:{created:13,senders:4,sent_to_friends:5,accepted:5,completed:5,abandoned:0,in_progress:0,guest_participations:0},daily:{flag_enabled:false,players:2,days:1,runs:2,completed:1,abandoned:0,in_progress:1},retention_by_channel:{measurable:false,reason:'no_persistent_campaign_identifier'}}};
   if(name==='lumen_admin_health_snapshot')return {data:{"availability":{"state":"healthy","sampled_at":"2026-11-21T09:25:00Z"},"active":[{"severity":"P0","signature":"purchase","affected":2,"opened_at":"2026-11-21T06:00:00Z"}],"errors":[{"severity":"P0","kind":"purchase_missing_access","observed_at":"2026-11-21T06:00:00Z"},{"severity":"P1","kind":"performance_regression","metric":"load","version":"1.11.1+719","observed_at":"2026-11-21T02:00:00Z"}],"performance":[{"metric":"load","version":"1.11.1+719","reference":"1.11.1+718","platform":"desktop","browser":"chromium","network":"4g","p90":1800,"reference_p90":900,"samples":23,"reference_samples":25,"regression":true,"confidence":"high"}],"signup_count":5,"signups":[{"effective_at":"2026-11-21T08:00:00Z","method":"google"}],"purchase_count":1,"purchases":[{"event_at":"2026-11-21T06:00:00Z","product_id":"fixture-pack","provider":"stripe","amount":10,"currency":"EUR"}],"currencies":[{"amount":"10","currency":"EUR","count":1}],"delivery":{"accepted":1}}};
   if(name==='lumen_admin_version_health')return {data:{days:args?.p_days??7,totals:{hydrations:200,failures:10},versions:[{version:'1.11.1+719',hydrations:40,failures:8,blocked:1,players:5,devices:6,waiting_devices:1},{version:'1.11.1+718',hydrations:150,failures:2,players:20}]}};
+  // #1044: synthetic aggregates for Activité & Premium (30 days, today incomplete, coverage from day 14).
+  if(name==='lumen_admin_activity'||name==='lumen_admin_conversion'){
+   const n=args?.p_days??30,today=new Date(Date.UTC(2026,10,28)),days=[...Array(n)].map((_,i)=>new Date(today.getTime()-(n-1-i)*864e5).toISOString().slice(0,10));
+   const w=i=>Math.max(0,Math.round(4+3*Math.sin(i/3)+i/6));
+   if(name==='lumen_admin_activity')return {data:{today:days.at(-1),dataStart:days[Math.max(0,n-18)],premiumLaunch:'2026-11-27T14:28:55Z',quotasOn:'2026-11-27T14:28:55Z',internalPlayers:2,priceCents:499,
+    settings:{quotas_enabled:true,quota_new_daily:15,quota_replay_daily:5,quota_threshold_constellation:4,premium_enabled:true},
+    daily:days.map((day,i)=>({day,players:w(i),finishers:Math.max(0,w(i)-1),started:w(i)*6,startedNew:w(i)*4,startedReplay:w(i)*2,completed:w(i)*5,completedNew:w(i)*3,completedReplay:w(i)*2,seconds:w(i)*5*75,timed:w(i)*5,timedPlayers:w(i),
+     freePlayers:w(i),premiumPlayers:i>n-3?1:0,subjectPlayers:i>n-3?3:0,reachNew:i>n-3?1:0,reachReplay:i>n-3?1:0,newLimit:i>n-3?15:null,replayLimit:i>n-3?5:null})),
+    behaviour:{playerDays:64,players:17,mean:6.2,median:4,p75:8,p90:15,p95:22,meanNew:4.1,meanReplay:2.1,meanCompleted:5.3,distribution:[{bucket:'0',count:3},{bucket:'1-5',count:30},{bucket:'6-10',count:15},{bucket:'11-15',count:9},{bucket:'16-20',count:4},{bucket:'21-30',count:2},{bucket:'31+',count:1}]},
+    time:{completed:320,timed:320,invalid:0},premium:{freePlayers:15,premiumPlayers:3,freePastThreshold:6,subject:{playerDays:6,players:4},
+     observed:{playerDays:6,players:4,daysReachNew:2,daysReachReplay:1,daysReachAny:3,playersReachNew:2,playersReachReplay:1},
+     beforeAfter:{before:{playerDays:58,players:16,meanStarted:6.4,meanNew:4.3,meanReplay:2.1,meanCompleted:5.4,meanMinutes:7.9},after:{playerDays:6,players:5,meanStarted:5.1,meanNew:3.2,meanReplay:1.9,meanCompleted:4.6,meanMinutes:6.3}}}}};
+   return {data:{today:days.at(-1),eventsStart:days.at(-2),windowDays:args?.p_window_days??7,channel:args?.p_channel??'all',
+    daily:days.map((day,i)=>({day,opens:i>n-3?4:0,visitors:i>n-3?3:0,ctas:i>n-3?2:0,checkouts:i>n-3?1:0,cancels:0,errors:0,purchases:i===n-2?1:0,blocksNew:i>n-3?2:0,blocksReplay:i>n-3?1:0,shown:i>n-3?3:0,blockedPlayers:i>n-3?2:0})),
+    shop:{opens:8,visitors:5,closes:7,closeMedianSeconds:42,ctas:4,ctaPlayers:3,checkouts:2,checkoutPlayers:2,cancels:1,errors:0,purchases:1,stripeSessions:{created:1,complete:0,expired:1,open:0},
+     origins:{quota_new:{opens:3,visitors:2},quota_replay:{opens:1,visitors:1},locked_adventure:{opens:4,visitors:3}},prices:[{channel:'play',priceCents:499,currency:'EUR'}]},
+    limits:{blocksNew:4,blocksReplay:2,shown:6,shownNew:4,shownReplay:2,blockedPlayers:3,blockedPlayersNew:2,blockedPlayersReplay:1,blockedPlayerDays:4,shownPlayers:3},
+    funnelBlocked:{active:15,blocked:3,shop:3,cta:2,checkout:2,purchase:1},funnelShop:{visitors:5,cta:3,checkout:2,purchase:1,purchasesWithoutVisit:0},
+    attribution:[{origin:'quota_new',channel:'play',purchases:1}],
+    retention:{blocked:{playerDays:4,players:3,j1:75,j7Eligible:0,j7:null,nextQuests:9,nextMinutes:11,prevQuests:30,sameDayQuests:17,conversion7:33.3,ageDays:12,progression:46},
+     reference:{playerDays:9,players:5,j1:44.4,j7Eligible:0,j7:null,nextQuests:6,nextMinutes:8,prevQuests:21,sameDayQuests:8,conversion7:0,ageDays:10,progression:38}}}};
+  }
+  if(name==='lumen_admin_quota_simulation')return {data:{coverage:{userDays:21,players:6},simulation:[5,10,15,20,25,30,50].map((q,i)=>({newQuota:q,replayQuota:5,userDays:21,players:6,pctDaysReachNew:[81,67,43,43,35,29,19][i],pctDaysReachAny:[81,71,62,62,55,52,43][i],pctAttemptsBeyond:[81,71,65,59,54,49,34][i],playersNeverReaching:[0,1,2,2,3,3,4][i]}))}};
   if(name==='lumen_admin_recent_players')return {data:[{player_key:'u:admin',player_type:'authenticated',display_name:'Compte de test',sessions:1}]};
   return {data:[]};
  }
@@ -46,13 +69,35 @@ try{
    return {title:document.getElementById('adminCockpitTitle').textContent,panels,searchRetained:search.value==='Compte',days:document.getElementById('adminCockpitDays').value,overflow:document.documentElement.scrollWidth>innerWidth,reads:window.__adminReads.length};
   })()`);
   assert.equal(state.title,'Lumen Analytics');assert.equal(state.searchRetained,true);assert.equal(state.days,'30');assert.equal(state.overflow,false);
-  assert.deepEqual(state.panels,[['overview'],['players'],['acquisition'],['journeys'],['sync'],['support']]);
+  assert.deepEqual(state.panels,[['overview'],['players'],['activity'],['acquisition'],['journeys'],['sync'],['support']]);
   // #708 Lot C: Acquisition & engagement, with contracts and honest « Non mesurable ».
   await evaluate("document.querySelector('[data-analytics-section=acquisition]').click();document.getElementById('adminCockpit').scrollTop=0");
   await until("document.getElementById('analyticsEngagement').textContent.includes('Défis entre joueurs')",'engagement section');
   const engagement=await evaluate(`(()=>{const h=document.getElementById('analyticsEngagement'),txt=h.textContent;return {traffic:/Joueurs humains/.test(txt)&&/Tests automatisés/.test(txt),notMeasurable:txt.includes('Non mesurable.')&&txt.includes('échantillon partiel'),rate:/25 %/.test(txt),challenges:/13/.test(txt)&&/Envoyés à des amis/.test(txt),daily:/Masqué au public/.test(txt),retention:txt.includes('Rétention J+1 / J+7 par canal'),contracts:h.querySelectorAll('.analytics-contract').length,overflow:document.documentElement.scrollWidth>innerWidth,read:window.__adminReads.includes('lumen_admin_engagement')}})()`);
   assert.deepEqual(engagement,{traffic:true,notMeasurable:true,rate:true,challenges:true,daily:true,retention:true,contracts:4,overflow:false,read:true},'engagement at '+viewport.width);
   if(process.env.LUMEN_ANALYTICS_CAPTURES&&viewport.width!==320)fs.writeFileSync(process.env.LUMEN_ANALYTICS_CAPTURES+'/analytics-acquisition-'+viewport.width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
+  // #1044: Activité & Premium, four sections, one grouped read, filters re-read, no overflow.
+  await evaluate("document.querySelector('[data-analytics-section=activity]').click();document.getElementById('adminCockpit').scrollTop=0");
+  await until("document.getElementById('analyticsActivity').textContent.includes('Conversion après blocage')",'activity section');
+  const activity=await evaluate(`(()=>{const h=document.getElementById('analyticsActivity'),txt=h.textContent;return {sections:[...h.querySelectorAll('.act-section h3')].map(e=>e.textContent),
+   charts:h.querySelectorAll('.act-chart').length,funnels:h.querySelectorAll('.act-funnel').length,unmeasured:h.querySelectorAll('.act-unmeasured').length>0,incomplete:txt.includes('incomplet'),
+   current:txt.includes('15 (en vigueur)'),overflow:document.documentElement.scrollWidth>innerWidth||[...h.querySelectorAll('.act-section')].some(e=>e.scrollWidth>e.clientWidth+1),
+   reads:['lumen_admin_activity','lumen_admin_conversion','lumen_admin_quota_simulation'].map(n=>window.__adminReads.filter(r=>r===n).length)}})()`);
+  assert.deepEqual(activity.sections,['Activité','Temps de jeu et comportement','Quotas Gratuit / Premium','Conversion et fidélisation']);
+  assert.equal(activity.charts>=10&&activity.funnels===2&&activity.unmeasured&&activity.current&&!activity.overflow,true,'activity at '+viewport.width+': '+JSON.stringify(activity));
+  assert.deepEqual(activity.reads,[1,1,1],'one grouped read, reused when the section is shown again');
+  await evaluate("document.querySelector('[data-analytics-section=players]').click();document.querySelector('[data-analytics-section=activity]').click()");
+  assert.deepEqual(await evaluate("['lumen_admin_activity'].map(n=>window.__adminReads.filter(r=>r===n).length)"),[1],'cached until a filter changes');
+  await evaluate("(()=>{const s=document.querySelector('[data-activity-filter=days]');s.value='7';s.dispatchEvent(new Event('change',{bubbles:true}))})()");
+  await until("window.__adminReads.filter(r=>r==='lumen_admin_activity').length===2",'filter re-read');
+  if(process.env.LUMEN_ANALYTICS_CAPTURES&&viewport.width!==320){
+   await evaluate("(()=>{const s=document.querySelector('[data-activity-filter=days]');s.value='30';s.dispatchEvent(new Event('change',{bubbles:true}))})()");
+   await until("window.__adminReads.filter(r=>r==='lumen_admin_activity').length===3",'back to 30 days');
+   for(const [i,label] of ['activite','temps','quotas','conversion'].entries()){
+    await evaluate(`document.querySelectorAll('#analyticsActivity .act-section')[${i}].scrollIntoView({block:'start'})`);
+    fs.writeFileSync(process.env.LUMEN_ANALYTICS_CAPTURES+'/analytics-1044-'+label+'-'+viewport.width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
+   }
+  }
   // #708 Lot D: release comparison with exposure, in Synchronisation & incidents.
   await evaluate("document.querySelector('[data-analytics-section=sync]').click()");
   await until("document.getElementById('analyticsVersions').textContent.includes('Comparaison des versions')",'release comparison');

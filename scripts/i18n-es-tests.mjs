@@ -13,6 +13,13 @@ const text = (v) => (typeof v === 'string' ? v : Object.values(v).join(' '));
 const placeholders = (v) => [...new Set(text(v).match(/\{\w+\}/g) || [])].sort().join(',');
 // Units, symbols and words spelled the same in both languages.
 const SAME_AS_FRENCH = new Set([
+  // #1044: product, channel and unit names identical in Spanish.
+  'admin.activity.channel',
+  'admin.activity.segPremium',
+  'admin.activity.chWeb',
+  'admin.activity.chPlay',
+  'admin.activity.minUnit',
+  'admin.activity.secondsUnit',
   // #1030: product names.
   'premium.badge',
   'premium.productTitle',

@@ -13,6 +13,7 @@ export default Object.freeze({
   'hint.rows': "lignes",
   'hint.columns': "colonnes",
   'hint.complete': "Ta constellation est complète.",
+  'hint.clearMindBlocked': "Les indices ne sont pas disponibles pendant le défi Esprit clair. Tu dois résoudre cette quête sans indice.",
   'hint.completePending': "Ta constellation est complète. La victoire sera validée dès que ton compte sera restauré.",
   'hint.markTarget': "{reason} Tu peux écarter la case surlignée.",
   'hint.testCell': "Teste mentalement la case {cell}. Suppose qu'elle accueille un Gardien et suis les contraintes : ligne, colonne, territoire et cases voisines.",

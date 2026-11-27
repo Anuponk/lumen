@@ -122,7 +122,7 @@ export function playUnavailableKey(errors=[]){return (errors||[]).some(e=>e?.rea
 // purchase is triggered; the legal waiver appears at that moment, before paying.
 // Never a disabled purchase button: an unavailable payment says so and the free
 // exit (the notice's « Continuer gratuitement ») stays first-class.
-export function mountPremiumOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false,locale='fr',t=french}={}){
+export function mountPremiumOffer(host,model,{onBuy=async()=>{},onCta=()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false,locale='fr',t=french}={}){
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'premium-shop'});root.dataset.premiumOffer='';
  const art=el('div',{className:'premium-shop-art'});art.setAttribute('aria-hidden','true');
@@ -149,7 +149,8 @@ export function mountPremiumOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},
  consent.append(label,error,pay);
  if(available){
   const cta=el('button',{type:'button',className:'premium-shop-cta'},t('premium.buy',{price}));cta.dataset.offer='premium-start';buttons.push(cta);
-  cta.onclick=()=>{if(!model.signedIn){onSignIn();return}cta.hidden=true;consent.hidden=false;waiver.focus()};
+  // #1044: the « Passer à Premium » click is measured once per press (never a render).
+  cta.onclick=()=>{onCta(model.premium.product);if(!model.signedIn){onSignIn();return}cta.hidden=true;consent.hidden=false;waiver.focus()};
   root.append(cta,consent);
  }else{
   const reason=model.pricesRequired?(playCheckoutPaused?t('store.playPaused'):model.priceStatus==='loading'?t('store.playLoading'):t(playUnavailableKey(model.priceErrors))):t('premiumShop.unavailable');
@@ -179,8 +180,8 @@ export function mountPremiumOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},
  host.replaceChildren(root);
  return root;
 }
-export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false,locale="fr",t=french}={}){
- if(model.premium)return mountPremiumOffer(host,model,{onBuy,onSignIn,onClaim,onContinue,onRetry,onRestorePlay,playCheckoutPaused,locale,t});
+export function mountAdventureOffer(host,model,{onBuy=async()=>{},onCta=()=>{},onSignIn=()=>{},onClaim=()=>{},onContinue=()=>{},onRetry=()=>{},onRestorePlay=null,playCheckoutPaused=false,locale="fr",t=french}={}){
+ if(model.premium)return mountPremiumOffer(host,model,{onBuy,onCta,onSignIn,onClaim,onContinue,onRetry,onRestorePlay,playCheckoutPaused,locale,t});
  const el=(tag,props={},text)=>{const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e};
  const root=el('div',{className:'adventure-offer'});
  root.append(el('p',{className:'adventure-offer-intro'},t('store.exploreMore')));
@@ -193,7 +194,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
  };
  const setBusy=busy=>{for(const b of buttons)b.disabled=busy||!model.purchasesAvailable;if(retryButton)retryButton.disabled=busy;if(restoreButton)restoreButton.disabled=busy};
  const buy=(kind,label,product)=>{const b=el('button',{type:'button',className:'adventure-offer-buy',disabled:!model.purchasesAvailable},label);b.dataset.offer=kind;buttons.push(b);
-  b.onclick=()=>{if(!model.signedIn){onSignIn();return}
+  b.onclick=()=>{onCta(product);if(!model.signedIn){onSignIn();return}
   if(!waiver?.checked){showWaiverError();return}
   onBuy(product,{setStatus,setBusy,waiver:{accepted:true,text:WAIVER_TEXT,at:new Date().toISOString()}})};return b};
  const unitAvailable=model.purchasesAvailable&&model.unitCount>0&&model.unitPriceKnown;

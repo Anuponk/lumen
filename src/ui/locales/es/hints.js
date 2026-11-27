@@ -14,6 +14,7 @@ export default Object.freeze({
   'hint.rows': "filas",
   'hint.columns': "columnas",
   'hint.complete': "Tu constelación está completa.",
+  'hint.clearMindBlocked': "Las pistas no están disponibles durante el reto Mente clara. Debes resolver esta misión sin pistas.",
   'hint.completePending': "Tu constelación está completa. La victoria se validará en cuanto se restaure tu cuenta.",
   'hint.markTarget': "{reason} Puedes descartar la casilla resaltada.",
   'hint.testCell': "Pon a prueba mentalmente la casilla {cell}. Supón que acoge un Guardián y sigue las restricciones: fila, columna, territorio y casillas vecinas.",

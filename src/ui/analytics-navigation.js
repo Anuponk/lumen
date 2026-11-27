@@ -1,9 +1,9 @@
 // Presentation/navigation only. The existing RPCs remain the data/access boundary.
-export const ANALYTICS_SECTIONS=Object.freeze(['overview','players','acquisition','journeys','sync','support']);
+export const ANALYTICS_SECTIONS=Object.freeze(['overview','players','activity','acquisition','journeys','sync','support']);
 const route=pathname=>/^\/admin\/analytics\/?$/.test(pathname);
 export function analyticsSection(value){return ANALYTICS_SECTIONS.includes(value)?value:'overview'}
 
-export function createAnalyticsNavigation({window,document,modal,allowed,onOpen,onClose=()=>{},onPeriodChange=()=>{}}){
+export function createAnalyticsNavigation({window,document,modal,allowed,onOpen,onClose=()=>{},onPeriodChange=()=>{},onSection=()=>{}}){
  const nav=modal.querySelector('[data-analytics-navigation]');
  const panels=[...modal.querySelectorAll('[data-analytics-panel]')];
  const access=document.getElementById('adminAnalyticsAccess');
@@ -11,13 +11,14 @@ export function createAnalyticsNavigation({window,document,modal,allowed,onOpen,
  let section='overview',returnUrl='/',returnFocus=null,opened=false,previousOverflow='';
  const locationUrl=()=>new URL(window.location.href);
  function select(value,{write=true,focus=false}={}){
-  section=analyticsSection(value);
+  section=analyticsSection(value);modal.dataset.analyticsCurrent=section;
   for(const panel of panels)panel.hidden=panel.dataset.analyticsPanel!==section;
   for(const button of nav.querySelectorAll('[data-analytics-section]')){
    const selected=button.dataset.analyticsSection===section;
    if(selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
    if(selected&&focus)button.focus();
   }
+  if(opened)onSection(section);
   if(write&&opened){const url=locationUrl();url.pathname='/admin/analytics';url.searchParams.set('section',section);url.searchParams.set('days',days.value);window.history.pushState(null,'',url.pathname+url.search+url.hash)}
  }
  function open({fromRoute=false}={}){
