@@ -14,6 +14,16 @@ locale du splash et des sources ne remplace pas le rendu du lanceur sur appareil
 
 ## Automatisation dédiée
 
+Pour #1034, le manifeste source et les manifests compilés APK/AAB doivent inclure
+`POST_NOTIFICATIONS`, l'activité ABH `NotificationPermissionRequestActivity`
+non exportée et l'icône du service existant. Installer un nouveau paquet Android
+avant la recette : le web ne corrige pas le manifeste d'une ancienne installation.
+Sur Android 13+, ouvrir Notifications depuis Mon espace, toucher Activer et vérifier
+la demande système, le refus, l'accord puis le push de test. Aucune demande ne doit
+apparaître au lancement seul. Sur Android 12 ou antérieur, vérifier aussi l'accord
+et l'affichage délégué. Aucun de ces résultats physiques n'est déclaré acquis par
+les tests Node ou l'émulateur de démarrage.
+
 Depuis `android/` : `node --test tools/packaging.test.mjs`, puis
 `./gradlew :app:lint :app:testDebugUnitTest :app:assembleDebug :app:bundleDebug :app:bundleRelease`.
 Le workflow dédié vérifie les artefacts compilés avec

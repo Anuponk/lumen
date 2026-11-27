@@ -1,6 +1,11 @@
 # Existing verification map
 
 Push rehearsal #1034: `daily-push-ui-tests.mjs` covers private menu discovery,
+pending permission feedback and button recovery after a rejected request.
+Android `tools/packaging.test.mjs` checks the permission activity declaration;
+`tools/verify-artifacts.py` also checks the compiled APK/AAB manifests. Those
+checks do not demonstrate permission prompts or receipt on a physical Android.
+The same UI suite retains
 explicit device consent, account changes and distinct service-worker tags;
 `daily-push-dispatch-tests.mjs` covers isolated job-authenticated test delivery.
 `fixtures/private-push-rehearsal-1034.sql` verifies hosted grants, capability expiry,

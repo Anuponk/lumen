@@ -101,7 +101,7 @@ du jeu ; installer un ancien APK ne restaure pas une ancienne version web.
 | Google | OAuth web existant dans le navigateur ; aucun SDK Google Sign-In natif, donc pas de client OAuth Android ajouté par défaut. Vérifier retour HTTPS/PKCE, même navigateur/profil et même compte |
 | Email/mot de passe | Formulaire web conservé ; tester confirmation/récupération depuis la messagerie et retour dans l'app |
 | Défis et liens | HTTPS `lumen.nopuna.fr` autoVerify, chemin/query conservés par le lanceur ; partage via API Web Share existante selon navigateur |
-| Notifications | Web Push reste géré par le navigateur, consentement web existant ; aucun service de délégation natif ni FCM. Attribution au navigateur possible. Recette réception/clic obligatoire avant toute promesse Store |
+| Notifications | Web Push piloté par le navigateur ; le service de délégation existant relaie permission et affichage Android. `POST_NOTIFICATIONS`, activité de permission non exportée et icône monochrome déclarées (#1034). Consentement au clic web uniquement, aucun SDK FCM natif. Nouveau paquet installé et recette réception/clic obligatoires |
 | Hors ligne | Dépend entièrement de la PWA, du cache et du stockage du navigateur ; première ouverture sans réseau non garantie. #597/#619 restent propriétaires |
 | Retour/reprise | Historique navigateur, cycle de vie TWA ; tester clavier, Retour gestuel, fermeture forcée, écran verrouillé |
 | Mises à jour | Jeu web via HTTPS/SW existant ; coquille via Play, versionCode croissant et certificat stable |
@@ -119,7 +119,8 @@ Les icônes raster reprennent `icon.svg` (coins transparents), les icônes
 adaptatives, le splash et l'icône Play reprennent `icon-maskable.svg` (#755), avec
 une variante monochrome du L pour Android 13+. Les couleurs restent celles de la PWA.
 Aucun contenu astronomique
-ni catalogue modifié. La seule permission plateforme déclarée est INTERNET ;
+ni catalogue modifié. Les permissions plateforme explicites sont INTERNET et
+POST_NOTIFICATIONS (demande après opt-in web, #1034) ;
 AndroidX ajoute une permission interne par package
 `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, protégée par signature et vérifiée
 dans le manifeste compilé. Ni publicité,
