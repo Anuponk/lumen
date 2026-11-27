@@ -1,5 +1,6 @@
 // #945 Español · Reto del día y semana.
 export default Object.freeze({
+  'daily.pushWorking': "Autorización o registro en curso. Comprueba la solicitud de permiso en este dispositivo.",
   'daily.pushTest': "Enviar o comprobar prueba",
   'daily.pushTestPending': "Prueba solicitada. Pulsa de nuevo en unos segundos para comprobar el envío. Una prueba por dispositivo al día.",
   'daily.pushTestSent': "El proveedor aceptó la prueba. Comprueba su recepción en este dispositivo. Una prueba al día.",

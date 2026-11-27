@@ -37,15 +37,24 @@ test('DAL merging preserves other apps and relations without broadening their tr
   assert.deepEqual(result[2].relation, ['delegate_permission/common.handle_all_urls']);
   assert.throws(() => mergeStatements({}, statement('fr.nopuna.lumen', [first])));
 });
-test('launcher opens only HTTPS Lumen links and grants only Internet permission', () => {
+test('launcher opens only HTTPS Lumen links and declares only Internet and notification permissions', () => {
   const manifest = read('app/src/main/AndroidManifest.xml');
-  assert.deepEqual([...manifest.matchAll(/<uses-permission android:name="([^"]+)"/g)].map(x => x[1]), ['android.permission.INTERNET']);
+  assert.deepEqual([...manifest.matchAll(/<uses-permission android:name="([^"]+)"/g)].map(x => x[1]), ['android.permission.INTERNET','android.permission.POST_NOTIFICATIONS']);
   assert.match(manifest, /android:autoVerify="true"/);
   assert.match(manifest, /android:scheme="https" android:host="\$\{lumenHost\}"/);
   assert.match(manifest, /android:usesCleartextTraffic="false"/);
   assert.match(manifest, /android:authorities="\$\{applicationId\}.fileprovider"/);
   assert.match(read('app/build.gradle'), /lumenHost: 'lumen\.nopuna\.fr'/);
   assert.match(read('app/src/main/res/values/strings.xml'), /https:\/\/lumen\.nopuna\.fr/);
+});
+test('web permission requests can reach the non-exported Android notification activity', () => {
+  const manifest = read('app/src/main/AndroidManifest.xml');
+  assert.match(manifest, /<activity\s+android:name="com\.google\.androidbrowserhelper\.trusted\.NotificationPermissionRequestActivity"\s+android:exported="false"/);
+  const service=manifest.match(/<service\s+android:name="\.BillingDelegationService"[\s\S]*?<\/service>/)?.[0];
+  assert.ok(service);
+  assert.match(service,/android\.support\.customtabs\.trusted\.SMALL_ICON/);
+  assert.match(service,/@drawable\/ic_monochrome/);
+  assert.match(read('app/src/main/java/fr/nopuna/lumen/BillingDelegationService.java'),/extends DelegationService/);
 });
 test('Play updates retain the public launcher component and use a separate native policy', () => {
   const manifest = read('app/src/main/AndroidManifest.xml');

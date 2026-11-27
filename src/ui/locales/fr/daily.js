@@ -1,4 +1,5 @@
 export default Object.freeze({
+  'daily.pushWorking': "Autorisation ou inscription en cours. Vérifie la demande de permission sur cet appareil.",
   'daily.pushTest': "Envoyer ou vérifier le test",
   'daily.pushTestPending': "Test demandé. Reclique dans quelques secondes pour vérifier son envoi. Un seul test par appareil et par jour.",
   'daily.pushTestSent': "Le fournisseur a accepté le test. Vérifie sa réception sur cet appareil. Un seul test par jour.",

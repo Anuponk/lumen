@@ -8,6 +8,22 @@ L’heure de Paris continue de déterminer la date officielle du défi.
 
 ### Recette privée du 27 novembre 2026 (#1034)
 
+Le retour Android après la version web 1.11.1+804 a révélé un second prérequis
+dans le wrapper : `BillingDelegationService` hérite déjà du service de délégation
+des notifications, mais le manifeste omettait `POST_NOTIFICATIONS` et
+`NotificationPermissionRequestActivity`. Le correctif les déclare avec une
+activité non exportée et l'icône monochrome existante. Android Browser Helper
+peut alors traiter la demande issue du clic web explicite. Rien n'est demandé
+automatiquement au démarrage. Cette correction exige un **nouveau paquet Android
+installé** ; une publication web ou une mise à jour du service worker ne modifie
+pas le manifeste de l'application déjà installée. La compilation CI et les
+contrôles du manifeste ne prouvent pas la réception sur appareil physique.
+Pendant une demande, l'interface affiche l'opération en cours au lieu du seul
+état « Rappels désactivés » ; après un échec résolu, le bouton redevient utilisable.
+
+Références du parcours natif : [activité de permission ABH](https://github.com/GoogleChrome/android-browser-helper/blob/main/androidbrowserhelper/src/main/java/com/google/androidbrowserhelper/trusted/NotificationPermissionRequestActivity.java),
+[service de délégation AndroidX](https://developer.android.com/reference/androidx/browser/trusted/TrustedWebActivityService).
+
 Le menu **Compte → Notifications** était absent car `daily_push=false` masquait
 les réglages pour tous les comptes. Le serveur accepte désormais soit ce drapeau
 public, soit la capacité privée `daily_push_preview`, valide et non expirée pour

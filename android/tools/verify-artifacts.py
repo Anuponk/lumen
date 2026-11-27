@@ -31,7 +31,7 @@ def verify_manifest(xml, package, debug):
     permissions = {item.attrib[ANDROID + 'name'] for item in manifest.findall('uses-permission')}
     receiver_permission = package + '.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
     # #729: Play Billing adds BILLING and ACCESS_NETWORK_STATE through the billing library.
-    assert permissions == {'android.permission.INTERNET', receiver_permission,
+    assert permissions == {'android.permission.INTERNET', 'android.permission.POST_NOTIFICATIONS', receiver_permission,
                            'com.android.vending.BILLING', 'android.permission.ACCESS_NETWORK_STATE'}, permissions
     declared = {item.attrib[ANDROID + 'name']: item.attrib[ANDROID + 'protectionLevel']
                 for item in manifest.findall('permission')}
@@ -39,6 +39,13 @@ def verify_manifest(xml, package, debug):
     # apkanalyzer prints the binary enum as 0x2; bundletool may use its symbolic name.
     assert declared[receiver_permission] in {'signature', '0x2', '0x00000002', '2'}, declared
     app = manifest.find('application')
+    notification_activity = next(item for item in app.findall('activity')
+                                 if item.attrib[ANDROID + 'name'] == 'com.google.androidbrowserhelper.trusted.NotificationPermissionRequestActivity')
+    assert notification_activity.attrib[ANDROID + 'exported'] == 'false'
+    notification_service = next(item for item in app.findall('service')
+                                if item.attrib[ANDROID + 'name'] == 'fr.nopuna.lumen.BillingDelegationService')
+    assert any(item.attrib.get(ANDROID + 'name') == 'android.support.customtabs.trusted.SMALL_ICON'
+               and item.attrib.get(ANDROID + 'resource') for item in notification_service.findall('meta-data'))
     assert app.attrib[ANDROID + 'usesCleartextTraffic'] == 'false'
     assert (app.attrib.get(ANDROID + 'debuggable') == 'true') == debug
     launcher = 'fr.nopuna.lumen.LauncherActivity'
