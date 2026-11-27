@@ -153,6 +153,24 @@ test('private menu is visible before consent and test requires this account and 
  assert.equal(hidden.get('dailyPushSettings').hidden,true);
 });
 
+test('pending Android permission explains why enable is temporarily disabled and unlocks after failure',async()=>{
+ const f=fixture({preview:true}),elements=new Map();
+ let rejectPermission;
+ f.client.enable=()=>new Promise((resolve,reject)=>{rejectPermission=reject});
+ const settings=setupDailyPushSettings({client:f.client,t:k=>k,document:{getElementById(id){
+  if(!elements.has(id))elements.set(id,{});return elements.get(id);
+ }}});
+ await settings.presentResult(true);
+ assert.equal(elements.get('dailyPushEnable').disabled,false);
+ const operation=elements.get('dailyPushEnable').onclick();
+ assert.equal(elements.get('dailyPushEnable').disabled,true);
+ assert.equal(elements.get('dailyPushStatus').textContent,'daily.pushWorking');
+ rejectPermission(new Error('native_permission_unavailable'));
+ await operation;
+ assert.equal(elements.get('dailyPushEnable').disabled,false);
+ assert.equal(elements.get('dailyPushStatus').textContent,'daily.pushError');
+});
+
 test('dedicated service worker fails closed and opens only the current daily route',async()=>{
  const handlers={},events=[],entries=new Map();
  const context={

@@ -185,7 +185,7 @@ export function setupDailyPushSettings({client,document,t}){
   test.hidden=!(state?.preview&&state?.available&&state?.dailyEnabled&&currentDevice);
   test.disabled=working;
   enable.disabled=disable.disabled=offerEnable.disabled=later.disabled=working;
-  status.textContent=t(permission==='unsupported'?'daily.pushUnsupported':permission==='denied'?'daily.pushDenied':
+  status.textContent=t(working?'daily.pushWorking':permission==='unsupported'?'daily.pushUnsupported':permission==='denied'?'daily.pushDenied':
    state?.dailyEnabled&&currentDevice?'daily.pushOn':state?.dailyEnabled?'daily.pushOtherDevice':
    state?.available?'daily.pushOff':'daily.pushUnavailable');
  }
