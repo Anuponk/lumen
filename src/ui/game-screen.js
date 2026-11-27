@@ -2791,37 +2791,33 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  document.getElementById('dailyResultTitle').textContent=t(discovery?'daily.discoveryVictory':training?'daily.trainingComplete':status==='abandoned'?'daily.abandoned':'daily.complete');
  document.getElementById('dailyResultTitle').title=status==='completed'?dailyPresentation(run?.day??socialChallenge?.day??seasonalDay,dailyLocale()).celebration:'';
  document.getElementById('dailyResultTime').textContent=status==='abandoned'?t('daily.unranked'):score!=null?formatDuration(score):'';
- const claimable=discovery&&(!!previewDay||guestRun?.status==='completed');
- note.textContent=discovery?t(claimable?'daily.discoverySave':guestPending?'daily.pendingNote':'daily.discoveryUnavailable'):training?t('daily.trainingNote'):pending?t('daily.pendingNote'):status==='completed'?t('daily.officialNote'):'';
+ note.textContent=discovery?t('daily.discoveryAppCopy'):training?t('daily.trainingNote'):pending?t('daily.pendingNote'):status==='completed'?t('daily.officialNote'):'';
  const signup=document.getElementById('dailyDiscoverySignup'),login=document.getElementById('dailyDiscoveryLogin');
- signup.hidden=login.hidden=!claimable;
- const requestAccount=mode=>{
-  try{
-   if(previewDay||dailyGuest.requestClaim(guestRun.day)){
-    dailyGuestEmailDay=guestRun?.day??null;
-    openEmailAccountOffer(mode);
-   }
-  }
-  catch{showRewardToast(t('daily.submitError'))}
- };
- signup.onclick=()=>requestAccount('signup');login.onclick=()=>requestAccount('login');
+ signup.hidden=login.hidden=true;
+ const appOffer=document.getElementById('dailyAppOffer');appOffer.hidden=!discovery;
+ const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1;
+ const android=/android/i.test(navigator.userAgent);
+ const webLink=document.getElementById('dailyAppWeb'),playLink=document.getElementById('dailyAppPlay');
+ webLink.hidden=android;playLink.hidden=ios;
+ document.getElementById('dailyAppIosHelp').hidden=!ios;
  const boards=document.getElementById('dailyBoards');boards.hidden=!board;
  if(board){showDailyBoardTab(board,'general',false);document.getElementById('dailyTabGeneral').onclick=()=>showDailyBoardTab(board,'general');document.getElementById('dailyTabFriends').onclick=()=>showDailyBoardTab(board,'friends')}
  const closes=Date.parse(board?.closes_at||socialChallenge?.closes_at||'');
- document.getElementById('dailyNext').textContent=Number.isFinite(closes)?t('daily.nextChallenge',{duration:dailyDuration(closes-Date.now())}):'';
- document.getElementById('dailyRetrySubmit').hidden=!(pending||guestPending);
+ document.getElementById('dailyNext').textContent=!discovery&&Number.isFinite(closes)?t('daily.nextChallenge',{duration:dailyDuration(closes-Date.now())}):'';
+ document.getElementById('dailyRetrySubmit').hidden=discovery||!(pending||guestPending);
  document.getElementById('dailyTrainAgain').hidden=discovery||pending||(!training&&!['completed','abandoned'].includes(status));
  document.getElementById('dailyTrainAgain').onclick=()=>handOffDaily(true);
  // #1013: the end of the Défi du jour leads to Mon ciel (the same daily for
  // everyone: no daily-specific share), never to a campaign grid.
  const continueButton=document.getElementById('dailyContinue');
- continueButton.textContent=t(claimable?'daily.discoveryLater':'daily.mySky');
+ continueButton.hidden=discovery;
+ continueButton.textContent=t('daily.mySky');
  continueButton.onclick=()=>leaveDailyToSky();
  document.getElementById('dailyRetrySubmit').onclick=()=>guestPending?retryGuestFinish(socialChallenge?.day,true):retryPendingDaily(true);
  const weekButton=document.getElementById('dailyWeekFromResult');weekButton.hidden=training||pending||!lumenUser;weekButton.onclick=()=>openDailyWeek(socialChallenge?.day||board?.day,'result');
  if(board)trackDaily('board_viewed',{daily_day:board.day||socialChallenge?.day||null,board_scope:'general',board_final:!!board.final});
  void dailyPushSettings?.presentResult(offerReminders&&status==='completed');
- modal.hidden=false;(signup.hidden?continueButton:signup).focus({preventScroll:true});
+ modal.hidden=false;(discovery?(android?playLink:webLink):continueButton).focus({preventScroll:true});
  if(victory){
   const season=dailyPresentation(run?.day??socialChallenge?.day??seasonalDay,dailyLocale()).event;
   const config=season?{...CELEBRATION_CONFIG,special:{extraParticles:12,palette:season.skin.celebrationColors}}:CELEBRATION_CONFIG;
@@ -2971,7 +2967,7 @@ async function bootstrapDailyChallenge(){
  const candidateDiscovery=(params.get('dailyLink')==='1'||!!previewDay)&&!params.has('training');
  let signedIn=!!lumenUser;if(!signedIn&&candidateDiscovery&&!previewDay){try{signedIn=!!(await lumenSupabase?.auth?.getSession?.())?.data?.session?.user}catch{}}
  socialChallenge.discovery=!signedIn&&candidateDiscovery;
- socialChallenge.guestEligible=socialChallenge.discovery&&!previewDay&&today.guest_eligible===true;
+ socialChallenge.guestEligible=false;
  trackDaily('opened',{daily_day:today.day,daily_training:params.has('training')});
  document.body.classList.add('daily-mode');renderDailyBanner();clearInterval(dailyBannerTimer);dailyBannerTimer=setInterval(renderDailyBanner,60000);
  if(socialChallenge.discovery){
