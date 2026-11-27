@@ -487,6 +487,11 @@ Phase 2 follow-up: `admin-catalogue.test.mjs`, `generated-adventure-map.test.mjs
 
 Deployment checks also exist as `scripts/o2switch-deploy-tests.py` and `scripts/o2switch-https-tests.py`. They are indexed only; deployment/Actions optimization belongs to phase 3.
 
+Release verification also covers a historical PR base with an advanced main
+parent: identical tested tree and both ancestry relations are mandatory for
+squash and regular merges; missing trees, divergent ancestry, wrong head parent
+and failed CI remain refusal cases. See [release contract](../RELEASE.md).
+
 HTTPS deployment regressions also cover TigerProtect 429/503 classification,
 bounded/private error bodies, validated support IDs and no retry after an
 identified hosting refusal. `.github/workflows/diagnose-http.yml` is a manual,

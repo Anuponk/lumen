@@ -158,6 +158,55 @@ class Gates(unittest.TestCase):
         pr["merge_commit_sha"] = "d" * 40
         self.assertEqual(ci.validated_merged_pr(merged, fetch)[0], 1)
 
+    def test_historical_pr_base_requires_exact_tested_tree_and_ancestry(self):
+        base, parent, head, tree = "c" * 40, "d" * 40, "b" * 40, "e" * 40
+        pr = {"number": 1062, "merged_at": "2026-11-27T09:40:52Z",
+              "merge_commit_sha": SHA, "base": {"ref": "main", "sha": base, "repo": {"id": REPOSITORY_ID}},
+              "head": {"sha": head, "repo": {"id": REPOSITORY_ID}}}
+        parents = [parent]
+        trees = {SHA: tree, head: tree}
+        ancestry = {(base, parent): "ahead", (parent, head): "ahead"}
+        conclusion = "success"
+        names = {1: "ledger-sql", 3: "reconciliation", 5: "quality"}
+        def fetch(path):
+            for commit_sha, commit_tree in trees.items():
+                if path.endswith("/commits/" + commit_sha):
+                    return {"parents": [{"sha": p} for p in parents], "commit": {"tree": {"sha": commit_tree}}}
+            if path.endswith("/commits/" + SHA + "/pulls"):
+                return [pr]
+            for pair, status in ancestry.items():
+                if path.endswith("/compare/" + "...".join(pair)):
+                    return {"status": status}
+            if path.endswith("/attempts/1/jobs?per_page=100"):
+                run_id = int(path.split("/actions/runs/", 1)[1].split("/", 1)[0])
+                return {"total_count": 1, "jobs": [{"name": names[run_id], "status": "completed", "conclusion": conclusion}]}
+            if "actions/runs?" in path:
+                return {"workflow_runs": [{"id": i, "path": ".github/workflows/" + name,
+                    "status": "completed", "conclusion": conclusion, "head_sha": head,
+                    "event": "pull_request", "head_repository": {"id": REPOSITORY_ID}}
+                    for i, name in enumerate(sorted(ci.PR_REQUIRED), 1)]}
+            raise AssertionError(path)
+        for shape in ([parent], [parent, head]):
+            parents[:] = shape
+            self.assertEqual(ci.validated_merged_pr(SHA, fetch)[0], 0)
+        for bad_tree in ("f" * 40, None, ""):
+            trees[head] = bad_tree
+            self.assertEqual(ci.validated_merged_pr(SHA, fetch)[0], 1)
+        trees[head] = tree
+        trees[SHA] = None
+        self.assertEqual(ci.validated_merged_pr(SHA, fetch)[0], 1)
+        trees[SHA] = tree
+        for pair in ancestry:
+            for bad_status in ("behind", "diverged", None):
+                ancestry[pair] = bad_status
+                self.assertEqual(ci.validated_merged_pr(SHA, fetch)[0], 1)
+            ancestry[pair] = "ahead"
+        parents[:] = [parent, "f" * 40]
+        self.assertEqual(ci.validated_merged_pr(SHA, fetch)[0], 1)
+        parents[:] = [parent]
+        conclusion = "failure"
+        self.assertEqual(ci.validated_merged_pr(SHA, fetch)[0], 1)
+
     def test_verified_regular_merge_reuses_green_pr_checks(self):
         base, head, merged = "c" * 40, "b" * 40, SHA
         pr = {"number": 808, "merged_at": "2026-11-18T20:08:07Z",

@@ -34,6 +34,14 @@ existing #744 exemption through its base classifier. A deferred draft provides
 no publication evidence.
 The verifier uses the stable GitHub repository ID for API lookups and matches it
 against the PR base, PR head and workflow runs. A rename keeps the same identity.
+GitHub can retain a PR's historical opening-base SHA after main advances. If the
+actual squash/merge parent differs, the verifier requires the merged tree to be
+identical to the reviewed PR head tree, the actual main parent to descend from
+the recorded base, and that parent to already be included in the tested head.
+A regular merge still requires the exact PR head as its second parent. Missing
+tree data, divergent ancestry, a changed merge resolution or failed/missing PR
+jobs refuse publication. This never replaces the exact-main gates or the
+required PR workflow/job evidence.
 A missing or different ID cannot satisfy a release gate.
 The server independently checks the gates and the published HTTP SHA, using
 the existing backup/restore and shared publish lock. An authenticated HTTPS

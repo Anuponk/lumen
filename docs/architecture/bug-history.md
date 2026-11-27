@@ -1,5 +1,16 @@
 # Verified historical causes
 
+## Release #1062 — historical PR base blocked a reviewed squash
+
+The reviewed head and merged main had identical trees, and all required CI jobs
+passed. GitHub retained the opening base c1914936 while the actual main parent
+was bbd8b7b0; the verifier rejected that legitimate advancement. The new regression
+fails before the fix and permits it only with identical merged/tested trees and
+proof that main contains the historical base and the tested head contains main.
+Wrong parents, divergent or missing ancestry, missing trees and failed jobs stay
+blocked. Windows runs the pure gate tests; disposable Linux publication tests
+still run in CI. No player, Supabase, app or marketing behavior changes.
+
 #974 mobile expansion: the full-list request started at offset 0 after rendering
 the first three entries as a podium, so those entries appeared twice. Regression
 tests fail against the previous controller and pass when expansion starts after
