@@ -254,7 +254,10 @@ test('game wiring: the first gesture can be refused, never a started run; exempt
   assert.match(src,/if\(!ensureAttemptStarted\(\)\)\{dragCross=null;return\}/);
   assert.match(src,/if\(!ensureAttemptStarted\(\)\)return;/);
   assert.match(src,/exempt:!!socialChallenge\|\|learningReplayActive\(\)\|\|scriptedLearningActive\(\)/,'daily, duels and tutorial are exempt');
-  assert.equal((src.match(/ensureAttemptStarted\(\)/g)||[]).length,4,'every caller is reviewed');
+  const guest=src.slice(src.indexOf('function guestDailyAssistance('),src.indexOf('function guestDailyClock('));
+  assert.match(guest,/if\(!challenge\?\.guestEligible\|\|challenge\.forfeited\)return false;/,'only guest daily assistance can start this attempt');
+  assert.match(guest,/if\(!ensureAttemptStarted\(\)\)return true;/,'assistance cannot bypass the attempt gate');
+  assert.equal((src.match(/ensureAttemptStarted\(\)/g)||[]).length,5,'every caller is reviewed');
 });
 
 test('shop: the single Premium offer uses the catalogue price on the web and Google Play price in the app',async()=>{

@@ -62,6 +62,7 @@ export default Object.freeze({
   'daily.discoveryVictory': "¡Enhorabuena, reto superado! ✨",
   'daily.discoverySave': "¡Guarda tu resultado y descubre tu puesto en la clasificación!",
   'daily.discoveryUnavailable': "Este resultado como invitado no puede entrar en la clasificación.",
+  'daily.discoveryAlreadyPlayed': "Esta cuenta ya tiene un intento para este reto.",
   'daily.discoverySignup': "Guardar mi resultado",
   'daily.discoveryLogin': "Ya tengo una cuenta",
   'daily.discoveryLater': "Más tarde",

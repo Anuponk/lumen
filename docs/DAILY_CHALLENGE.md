@@ -125,6 +125,55 @@ RLS active partout, aucun droit direct ; accès uniquement par RPC
   prévisualisation et le remplacement d'une grille future (sans tentative) sont
   réservés à ces comptes.
 
+### Tentative invitée depuis un lien daté
+
+L’arrivée marketing ouvre la grille commune et le premier geste initialise la
+tentative. Le navigateur conserve une clé aléatoire de 256 bits par jour. Le
+serveur ne stocke que son empreinte et réserve la première tentative pour
+cette clé et cette date de Paris. Les événements ordonnés et rejouables figent
+les suspensions et les aides. La victoire est vérifiée contre l’empreinte
+privée de la solution canonique de la grille et de sa révision. Le serveur
+mesure le temps actif et applique la formule existante (indice 15 s,
+vérification et contrôle guidé 5 s). Un échec de transport avant la réservation
+ou pendant une aide ou une suspension peut rendre le score inéligible.
+
+La création de compte et la connexion restent facultatives. Le navigateur
+stocke le reçu et l’intention de le rattacher avant d’ouvrir le formulaire.
+Pour une nouvelle inscription via un lien LUMEN, la fonction d’email associe
+le reçu au compte que Supabase vient de préparer. Le lien de confirmation ne
+contient que le jour du défi en plus de son jeton Auth habituel. L’adresse
+confirmée et le pseudonyme sont vérifiés avant le rattachement. La connexion
+existante et le retour OAuth utilisent le reçu conservé sur la même origine
+et dans le même espace de stockage navigateur.
+
+L’acceptation utilise le verrou de tentative existant pour le compte et le
+verrou de finalisation pour le jour. Elle insère une seule ligne dans
+`daily_runs`. Une tentative de compte, même démarrée ou abandonnée, conserve
+sa priorité. Le premier rattachement attribue le reçu au compte. Le même
+compte peut rejouer la demande et obtient le résultat original. La victoire
+peut être finalisée dans les six heures qui suivent le départ. Le rattachement
+reste ouvert jusqu’au gel du classement, à 06h00 heure de Paris le lendemain.
+Une confirmation plus tardive conserve l’état de victoire local et ne crée
+pas de ligne classée.
+
+La clé limite à une tentative par partition navigateur, avec verrou local
+entre onglets. Un nouvel appareil ou l’effacement des données du navigateur
+peut créer une autre identité anonyme. LUMEN ne collecte aucune empreinte
+d’appareil. La vérification de la solution et des aides demandées dans
+l’interface ne mesure pas un conseil reçu en dehors de LUMEN. Le temps serveur
+inclut le transport entre les événements de départ, pause, reprise et fin.
+
+Le drapeau `daily_guest` est désactivé par la migration. La qualification
+nécessite une affectation privée avec vérificateur. Le coût d’une victoire sans
+aide est de deux RPC invités puis, après accord et connexion, un rattachement
+et une lecture du classement. Une inscription ajoute un appel de liaison
+depuis la fonction d’email. Les pauses, reprises et aides ajoutent chacune un
+petit RPC borné à la tentative. Une ligne temporaire est conservée pour le
+jour courant et le précédent et supprimée par un passage SQL quotidien.
+L’effacement d’un compte supprime les reçus qui lui sont liés. Aucun sondage
+réseau, aucun profil complet ajouté au parcours et aucune écriture dans les
+inventaires, achats, portefeuilles ou progressions.
+
 ## 4. Calendrier des grilles
 
 `node scripts/daily-schedule.mjs` génère un calendrier **append-only** depuis le

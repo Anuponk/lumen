@@ -61,6 +61,7 @@ export default Object.freeze({
   'daily.discoveryVictory': "Well done, challenge complete! ✨",
   'daily.discoverySave': "Save your result and see where you rank!",
   'daily.discoveryUnavailable': "This guest result isn’t eligible for the leaderboard.",
+  'daily.discoveryAlreadyPlayed': "This account already has an attempt for this challenge.",
   'daily.discoverySignup': "Save my result",
   'daily.discoveryLogin': "I already have an account",
   'daily.discoveryLater': "Later",

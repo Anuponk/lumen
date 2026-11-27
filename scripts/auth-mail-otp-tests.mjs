@@ -15,6 +15,7 @@ async function scenario(settings={}) {
     console:{error:(...args)=>errors.push(args)},
     fetch:async(url,options)=>{
       calls.push({url,payload:JSON.parse(options.body)});
+      if(url.includes('lumen_daily_guest_bind_signup'))return new Response(JSON.stringify(settings.bound??true),{status:200});
       if(url.includes('/rpc/'))return new Response(JSON.stringify(settings.permitted??true),{status:settings.throttleStatus||200});
       if(url.includes('/generate_link'))return new Response(JSON.stringify(settings.nested?{properties:generated}:generated),{status:settings.authStatus||200});
       assert.equal(url,'https://api.resend.com/emails');
@@ -52,6 +53,15 @@ async function scenario(settings={}) {
   assert.equal(r.status,200);assert.match(r.calls[2].payload.html,/https:\/\/lumen\.nopuna\.fr\/\?lumen_confirm=/);
   assert.doesNotMatch(r.calls[2].payload.html,/123456/);
   r=await scenario({input:{type:'signup',email:'fake@example.test',password:'a-valid-password'}});assert.equal(r.status,200);assert.equal(r.calls[1].payload.password,'a-valid-password');
+  for(const bound of [false,true]){
+    const key='f'.repeat(64),id='00000000-0000-4000-8000-000000001057';
+    r=await scenario({env:{LUMEN_BRANDED_LINKS_ENABLED:'true'},bound,generated:{id},
+      input:{type:'signup',email:'fake@example.test',password:'a-valid-password',dailyGuest:{day:'2026-12-01',key}}});
+    assert.equal(r.status,200);
+    assert.deepEqual(r.calls[2].payload,{p_key:key,p_day:'2026-12-01',p_owner:id});
+    assert.equal(r.calls[3].payload.html.includes('daily_signup=2026-12-01'),bound);
+    assert(!r.calls[3].payload.html.includes(key),'possession secret stays out of the email');
+  }
   for(const [locale,lang,button] of [['es','es','Restablecer mi contraseña'],['en','en','Reset my password'],['de','fr','Réinitialiser mon mot de passe']]){
     r=await scenario({input:{type:'recovery',email:'fake@example.test',locale}});
     assert.equal(r.status,200);
