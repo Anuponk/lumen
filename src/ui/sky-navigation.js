@@ -158,7 +158,7 @@ export function createSkyNavigation({onRanking=null,renderLockedOffer=null,t=cre
    badgeLine.setAttribute('aria-label',badgeLine.textContent+' · '+badgeLine.title)}
   // #974: constellation and adventure rankings of the current selection (read on open).
   const rankingOpen=element('groupRankingOpen');
-  if(rankingOpen){rankingOpen.textContent=t('groupRanking.open');rankingOpen.hidden=!pack?.accessible||!onRanking;rankingOpen.onclick=()=>{const entry=selectedConstellation||current.entries[0];if(entry&&pack)onRanking({constellationId:entry.id,adventureId:pack.id,constellationName:displayName(entry),adventureName:adventureDisplayName(pack,t)||t('sky.adventure'),origin:rankingOpen})}}
+  if(rankingOpen){rankingOpen.textContent=t('groupRanking.open');rankingOpen.hidden=!pack?.accessible||!onRanking;rankingOpen.onclick=()=>{if(pack)onRanking({adventureId:pack.id,adventureName:adventureDisplayName(pack,t)||t('sky.adventure'),origin:rankingOpen})}}
   if(filter){filter.textContent=t('sky.badgeFilter');filter.setAttribute('aria-pressed',String(badgeFilter));filter.hidden=!pack?.accessible;filter.onclick=()=>{badgeFilter=!badgeFilter;render()}}
   element('adventureSummary').textContent=pack?t('sky.summary',{name:adventureDisplayName(pack,t)||t('sky.adventure'),done,total:pack.constellations.length,status:t(state(pack))}):t('sky.allLocked');
   tabs.replaceChildren();

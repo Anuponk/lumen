@@ -1034,6 +1034,17 @@ mocked and asserts the header switches from played to available in the same page
 
 ## Cloud persistence regression matrix
 
+Adventure ranking #974's 27/11 score upgrade is tested with
+`rankings-974-score-bootstrap.sql` (old materialized data), two applications of
+`20261127051221_adventure_ranking_score_974.sql`, then `rankings-974-score.sql`
+and `rankings-score-concurrency.py` on disposable `lumen_test` only. This verifies
+source time preservation, two durable badge authorities, unknown historical
+badges, resets, abandoned/unranked attempts, ties, N=1/large N, 1,000-player
+statement updates and shared adventure totals under concurrency. The #1015 SQL
+recap fixture runs again after the upgrade. The UI/browser contract lives in
+`group-ranking-tests.mjs` and `assistance-browser.mjs`, including FR/EN/ES mobile
+expansion, collapse and cached pagination. Physical mobile acceptance stays separate.
+
 Weekly daily-challenge results (#1015) use the isolated SQL fixture
 `scripts/fixtures/daily-weekly-recaps-1015.sql` for frozen points, ties, friends,
 one recap per account and erasure. `daily-recaps-tests.mjs` checks bounded reads

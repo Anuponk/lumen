@@ -648,3 +648,15 @@ jobs:
           end \$\$"
           # #1015 keeps working once the #974 triggers are installed.
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/daily-weekly-recaps-1015.sql
+      - name: Verify adventure 20/50/30 scoring, durable badges and historical upgrade (#974)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f scripts/fixtures/rankings-974-score-bootstrap.sql \
+            -f supabase/migrations/20261127051221_adventure_ranking_score_974.sql \
+            -f supabase/migrations/20261127051221_adventure_ranking_score_974.sql \
+            -f scripts/fixtures/rankings-974-score.sql
+          python3 scripts/rankings-score-concurrency.py
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/daily-weekly-recaps-1015.sql

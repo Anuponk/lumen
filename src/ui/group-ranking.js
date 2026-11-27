@@ -1,22 +1,36 @@
-// #974: constellation and adventure rankings (owner scale, 24/11/2026). One read
-// per opened tab (top 3 + my position); the full list is paged on demand (10 per
-// page). Nothing is computed here: points and places come from the materialized
-// server aggregates (lumen_group_ranking). Text is always set with textContent.
+// #974: adventure totals are authoritative server aggregates. Fetch only rows
+// after the three podium entries, on explicit expansion. No polling.
 export const RANKING_PAGE = 10;
-export function rankingPoints(place) {
-  if (!Number.isInteger(place) || place < 1) return 0;
-  return [100, 80, 65, 55, 50][place - 1] ?? Math.max(10, 50 - 2 * (place - 5));
+export function rankingPoints(place, participants, { autonomy = false, noError = false } = {}) {
+  if (
+    !Number.isSafeInteger(place) ||
+    !Number.isSafeInteger(participants) ||
+    place < 1 ||
+    participants < place
+  )
+    return 0;
+  return (
+    20 +
+    (participants === 1 ? 50 : Math.round((50 * (participants - place)) / (participants - 1))) +
+    (autonomy ? 15 : 0) +
+    (noError ? 15 : 0)
+  );
 }
-
-export function createGroupRanking({ document, t, rpc, signedIn, onOpen = () => {}, onClose = () => {} }) {
-  const $ = (id) => document.getElementById(id);
-  const modal = $('groupRankingModal');
+export function createGroupRanking({
+  document,
+  t,
+  rpc,
+  signedIn,
+  onOpen = () => {},
+  onClose = () => {},
+}) {
+  const $ = (id) => document.getElementById(id),
+    modal = $('groupRankingModal');
   if (!modal) return { open() {}, close() {} };
   const body = $('groupRankingBody'),
     status = $('groupRankingStatus'),
-    tabs = [...modal.querySelectorAll('[data-ranking-kind]')];
-  let target = null,
-    kind = 'constellation',
+    name = $('groupRankingName');
+  let adventure = null,
     generation = 0,
     opener = null;
   const el = (tag, className, text) => {
@@ -25,8 +39,9 @@ export function createGroupRanking({ document, t, rpc, signedIn, onOpen = () => 
     if (text !== undefined && text !== null) node.textContent = String(text);
     return node;
   };
-  const row = (r) => {
+  const row = (r, position) => {
     const li = el('li', 'group-ranking-row' + (r.mine ? ' ranking-mine' : ''));
+    if (position) li.dataset.position = String(position);
     li.append(
       el('span', 'ranking-place', r.place),
       el('span', 'ranking-name', r.nickname),
@@ -38,50 +53,100 @@ export function createGroupRanking({ document, t, rpc, signedIn, onOpen = () => 
   };
   function render(data) {
     body.replaceChildren();
-    const podium = el('ol', 'group-ranking-podium');
+    const top = data.top || [],
+      podium = el('ol', 'group-ranking-podium');
     podium.setAttribute('aria-label', t('ranking.top'));
-    for (const r of data.top || []) podium.append(row(r));
-    if (!data.top?.length) body.append(el('p', 'ranking-note', t('groupRanking.empty')));
-    else body.append(podium);
-    const me = el('p', 'group-ranking-me');
-    if (data.personal)
-      me.textContent = t('groupRanking.mine', {
-        place: data.personal.place,
-        participants: data.participants,
-        points: data.personal.points,
-        quests: data.personal.quests,
-        total: data.questTotal,
-      });
-    else me.textContent = data.participating ? t('groupRanking.notRanked', { total: data.questTotal }) : t('ranking.account');
-    body.append(me);
-    if (data.participants > 3) {
-      const more = el('button', 'group-ranking-more', t('groupRanking.all', { count: data.participants }));
-      more.type = 'button';
-      const list = el('ol', 'group-ranking-list');
-      let offset = 0;
-      more.onclick = async () => {
-        more.disabled = true;
-        const mine = generation;
-        try {
-          const { data: page, error } = await rpc('lumen_group_ranking', { p_kind: kind, p_id: target[kind], p_offset: offset, p_limit: RANKING_PAGE });
-          if (mine !== generation) return;
-          if (error) throw Error();
-          for (const r of page.rows || []) list.append(row(r));
-          offset += RANKING_PAGE;
-          more.textContent = t('groupRanking.next');
-          more.hidden = !page.more;
-        } catch {
-          if (mine === generation) more.textContent = t('groupRanking.retry');
-        } finally {
-          more.disabled = false;
+    top.forEach((r, index) => podium.append(row(r, index + 1)));
+    body.append(top.length ? podium : el('p', 'ranking-note', t('groupRanking.empty')));
+    const me = el('p', 'group-ranking-me' + (data.personal ? ' ranking-mine' : ''));
+    me.textContent = data.personal
+      ? t('groupRanking.mine', {
+          place: data.personal.place,
+          participants: data.participants,
+          points: data.personal.points,
+          quests: data.personal.quests,
+          total: data.questTotal,
+        })
+      : data.participating
+        ? t('groupRanking.notRanked', { total: data.questTotal })
+        : t('ranking.account');
+    body.append(
+      me,
+      el(
+        'p',
+        'ranking-note',
+        t('groupRanking.cap', { quests: data.questTotal, max: data.maxPoints }),
+      ),
+    );
+    if (data.participants <= 3) return;
+    const toggle = el(
+      'button',
+      'group-ranking-more',
+      t('groupRanking.all', { count: data.participants }),
+    );
+    const list = el('ol', 'group-ranking-list'),
+      next = el('button', 'group-ranking-next', t('groupRanking.next'));
+    toggle.type = next.type = 'button';
+    toggle.setAttribute('aria-expanded', 'false');
+    list.id = 'groupRankingRemainder';
+    toggle.setAttribute('aria-controls', list.id);
+    list.hidden = next.hidden = true;
+    let offset = top.length,
+      expanded = false,
+      loaded = false,
+      loading = false,
+      hasMore = true;
+    const seen = new Set(top.map((r) => r.nickname));
+    async function page() {
+      if (loading || !hasMore) return;
+      loading = true;
+      next.disabled = true;
+      const token = generation,
+        id = adventure;
+      try {
+        const { data: page, error } = await rpc('lumen_group_ranking', {
+          p_kind: 'adventure',
+          p_id: id,
+          p_offset: offset,
+          p_limit: RANKING_PAGE,
+        });
+        if (token !== generation) return;
+        if (error || page?.scoringVersion !== 2) throw Error();
+        for (const r of page.rows || []) {
+          // Names are unique: avoid a visible duplicate if a live rank changed.
+          if (!seen.has(r.nickname)) {
+            list.append(row(r));
+            seen.add(r.nickname);
+          }
         }
-      };
-      body.append(list, more);
+        offset += (page.rows || []).length;
+        hasMore = !!page.more && !!page.rows?.length;
+        loaded = true;
+        next.textContent = t('groupRanking.next');
+      } catch {
+        if (token === generation) next.textContent = t('groupRanking.retry');
+      } finally {
+        loading = false;
+        next.disabled = false;
+        next.hidden = !expanded || !hasMore;
+      }
     }
+    toggle.onclick = async () => {
+      expanded = !expanded;
+      list.hidden = !expanded;
+      toggle.setAttribute('aria-expanded', String(expanded));
+      toggle.textContent = t(expanded ? 'groupRanking.less' : 'groupRanking.all', {
+        count: data.participants,
+      });
+      next.hidden = !expanded || !hasMore;
+      if (expanded && !loaded) await page();
+    };
+    next.onclick = page;
+    body.append(toggle, list, next);
   }
   async function load() {
-    const mine = ++generation;
-    for (const tab of tabs) tab.setAttribute('aria-selected', String(tab.dataset.rankingKind === kind));
+    const token = ++generation,
+      id = adventure;
     body.replaceChildren();
     if (!signedIn()) {
       status.textContent = t('groupRanking.signIn');
@@ -93,26 +158,24 @@ export function createGroupRanking({ document, t, rpc, signedIn, onOpen = () => 
     }
     status.textContent = t('ranking.loading');
     try {
-      const { data, error } = await rpc('lumen_group_ranking', { p_kind: kind, p_id: target[kind] });
-      if (mine !== generation) return;
-      if (error || !data) throw Error();
+      const { data, error } = await rpc('lumen_group_ranking', { p_kind: 'adventure', p_id: id });
+      if (token !== generation) return;
+      if (error || data?.scoringVersion !== 2) throw Error();
       status.textContent = '';
       render(data);
     } catch {
-      if (mine === generation) status.textContent = t('ranking.unavailable');
+      if (token === generation) status.textContent = t('ranking.unavailable');
     }
   }
-  function open({ constellationId, adventureId, constellationName, adventureName, origin, view = 'constellation' } = {}) {
-    if (!constellationId || !adventureId) return;
+  function open({ adventureId, adventureName, origin } = {}) {
+    if (!adventureId) return;
     opener = origin || document.activeElement;
-    target = { constellation: constellationId, adventure: adventureId };
-    kind = view;
-    for (const tab of tabs)
-      tab.textContent = tab.dataset.rankingKind === 'constellation' ? constellationName || t('groupRanking.constellation') : adventureName || t('groupRanking.adventure');
+    adventure = adventureId;
+    name.textContent = adventureName || t('groupRanking.adventure');
     modal.hidden = false;
     onOpen();
     void load();
-    tabs.find((tab) => tab.dataset.rankingKind === kind)?.focus();
+    $('groupRankingClose')?.focus();
   }
   function close() {
     if (modal.hidden) return;
@@ -121,11 +184,6 @@ export function createGroupRanking({ document, t, rpc, signedIn, onOpen = () => 
     onClose();
     if (opener?.isConnected) opener.focus?.();
   }
-  for (const tab of tabs)
-    tab.onclick = () => {
-      kind = tab.dataset.rankingKind;
-      void load();
-    };
   $('groupRankingClose')?.addEventListener('click', close);
   modal.addEventListener('click', (event) => {
     if (event.target === modal) close();

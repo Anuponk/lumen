@@ -1,5 +1,12 @@
 # Dependencies and data flow
 
+Adventure ranking #974: current eligible `ranking_scores` + server durable badge
+projections (`quest_run_authority` / indexed `legacy_authority`, reset first) →
+quest-scoped 20/50/30 points → adventure totals → one adventure read, then pages
+after the cached podium. Source statements coalesce affected quests; adventure
+locks protect shared totals. The new UI never reads constellation aggregates.
+Chronometric quest podiums and Daily Challenge keep their existing pipelines.
+
 Push rehearsal #1034: verified account session → server `daily_push_preview`
 capability → available account settings → explicit device consent → separate
 `push_test_dispatches` ticket → Vault/pg_net → job-authenticated Edge worker →

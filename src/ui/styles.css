@@ -1935,9 +1935,6 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .admin-inbox-reply textarea{flex:1 1 100%;min-height:4em;font:inherit}
 /* #974: constellation and adventure rankings. */
 .group-ranking-card{max-height:min(88vh,640px);overflow:auto}
-.group-ranking-tabs{display:flex;gap:6px;margin:4px 0 8px}
-.group-ranking-tabs button{flex:1 1 0;min-height:40px;border:1px solid #294359;border-radius:999px;background:#0f1d2d;color:#dceaf6;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.group-ranking-tabs button[aria-selected="true"]{background:#16405a;border-color:#68e7ff;color:#fff}
 .group-ranking-podium,.group-ranking-list{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .group-ranking-row{display:grid;grid-template-columns:2.2em 1fr auto;align-items:center;gap:2px 8px;padding:6px 8px;border-radius:8px;background:#0f1d2d;font-size:13px}
 .group-ranking-row .ranking-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1956,3 +1953,11 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .daily-quest-banner[hidden]{display:none}
 .daily-quest-banner small{display:block}
 .daily-quest-banner-go{margin-left:auto;font-size:20px;line-height:1;opacity:.8}
+
+/* #974: preserve podium medals and keep collapsed rows truly hidden. */
+.group-ranking-list[hidden],.group-ranking-next[hidden]{display:none}
+.group-ranking-me.ranking-mine{border-left:3px solid #f4cf78;padding-left:8px}
+.group-ranking-row{grid-template-columns:minmax(2.2em,max-content) minmax(0,1fr) auto}
+.group-ranking-podium [data-position="1"] .ranking-place{color:#f2c96b}
+.group-ranking-podium [data-position="2"] .ranking-place{color:#dceaf6}
+.group-ranking-podium [data-position="3"] .ranking-place{color:#c79564}

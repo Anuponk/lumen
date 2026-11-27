@@ -116,35 +116,129 @@ tap de navigation, badges encore visibles, réduction des mouvements, clavier
 virtuel dans Compte, safe areas, mode paysage, hors-ligne/reconnexion et deux
 comptes concurrents. Consigner version, SHA public, appareil et résultats.
 
-## Classements constellation et aventure (#974)
+<a id="classements-constellation-et-aventure-974"></a>
 
-Le barème a été validé par le propriétaire le 24/11/2026. Migration : `20261126200100_constellation_rankings_974.sql`.
+## Classement général par aventure (#974)
 
-- **Points par quête classée** : 1er 100, 2e 80, 3e 65, 4e 55, 5e 50, puis −2 par place jusqu'à un plancher de 10 (`lumen_commands.ranking_points`).
-  - Les ex aequo ont la même place et les mêmes points ; la place suivante est sautée (`rank()`).
-  - Une quête non jouée vaut 0.
-  - La population est celle du podium par quête : `ranking_scores` sur la révision de grille courante, membres participants, pseudo prêt, sans retrait. Les Échos ne sont jamais notés.
-  - Aucun moteur de qualification parallèle : seuls les temps officiels déjà retenus comptent.
-- **Totaux** : constellation = somme de ses quêtes ; aventure = somme de ses constellations. Le nombre de quêtes classées est affiché sur le total (`questTotal`).
-- **Matérialisation incrémentale** : `ranking_quest_points`, `ranking_constellation_totals`, `ranking_adventure_totals`.
-  - Un changement de score (déclencheurs d'instruction), de visibilité (participation, pseudo, retrait) ou de révision de grille recalcule **cette quête seulement**.
-  - Seuls les totaux des joueurs dont la place change sont ensuite ressommés.
-  - Le calcul est sérialisé par quête (`pg_advisory_xact_lock`) et les écritures sont ordonnées par joueur.
-  - Les totaux sont toujours ressommés, jamais décrémentés : un joueur qui sort n'a que des suppressions, ce qui reste compatible avec les gardes d'effacement.
-- **Regroupement** : `ranking_groups` (quête → constellation → aventure) appartient au catalogue. Il est généré par `scripts/ranking-groups-fixtures.mjs --write-seed`, et `--check` en CI compare le cumul des migrations au catalogue publié.
-- **Lecture** : `lumen_group_ranking(kind, id, offset, limit)` (comptes connectés) renvoie le top 3 et ma position (place = 1 + nombre de totaux supérieurs, par index). La liste complète est lue à la demande, par pages de 10. Aucun recalcul à la consultation.
-- **Reconstruction** : `lumen_commands.ranking_rebuild()` (opérateur ou migration) est idempotente ; un second passage ne change rien. Elle a été exécutée une fois par la migration, à partir des scores qualifiants existants.
-- **Confidentialité** : les trois tables dérivées sont inscrites à `lumen_privacy.policy()` (effacement, export, garde anti-résurrection). Aucun identifiant de compte n'est exposé.
-- **Coût** (mesures du 26/11 : 2 310 scores, 20 joueurs ; le reste est estimé) :
-  - un record = 1 recalcul de quête (participants de cette quête) + au plus 2 × (joueurs déplacés) lignes ressommées ;
-  - une ouverture = 1 RPC indexée de quelques centaines d'octets, + 1 RPC par page de 10 ;
-  - stockage ≈ (scores visibles) + 88 × participants + 9 × participants lignes de quelques dizaines d'octets ;
-  - aucun travail périodique.
-- **Amis et cercles (#928)** : même agrégat, filtré par la liste des amis ou des membres, plus tard. Aucun changement de schéma n'est prévu pour cela.
-- **Rollback** : supprimer les déclencheurs, les fonctions et les quatre tables (données dérivées seulement), puis restaurer `lumen_privacy.policy_before_rankings_974`. Ne jamais rejouer à la main la migration #1015 après #974 : son `create or replace lumen_privacy.policy()` retirerait les règles de #974.
-- **Tests** :
-  - `scripts/fixtures/rankings-974.sql` : barème, ex aequo, nouveau record, retrait, compte supprimé, révision de grille, reconstruction, pagination, privilèges ;
-  - `scripts/rankings-concurrency.py` ;
-  - ordre de la production : l'étape CI #974 s'exécute après celle de #1015 (migration `daily_weekly_recaps_1015`, déjà en production), vérifie que la politique d'effacement de #974 enveloppe celle de #1015 sans perdre ses règles, puis rejoue la fixture #1015 avec les déclencheurs #974 ;
-  - `group-ranking-tests` ;
-  - navigateur `assistance-browser` (dialogue de classement).
+Les arbitrages du propriétaire du **27/11/2026** remplacent le barème et le périmètre
+validés le 24/11. Migration de mise à niveau :
+`20261127051221_adventure_ranking_score_974.sql` après le socle
+`20261126200100_constellation_rankings_974.sql`.
+
+### Score 20/50/30
+
+Chaque quête **officiellement classée** vaut au plus 100 points :
+
+- 20 pour la complétion attestée par le record officiel éligible ;
+- de 0 à 50 pour la performance, k=arrondi(50 × (N − rang)/(N − 1)) ;
+  si N=1, k=50. N compte les joueurs éligibles distincts de cette quête ;
+- 15 pour le badge durable Sans assistance (champ serveur autonomie / `autonomy`) ;
+- 15 pour le badge durable Sans erreur (`noError`).
+
+Les égalités gardent le rang officiel `rank()`, donc les mêmes points de
+performance ; des badges différents peuvent donner des totaux différents.
+Rapidité et Maîtrise n'ajoutent aucun bonus. Une quête sans record officiellement
+classé vaut zéro, même si elle a des badges ou un essai abandonné/non qualifiant.
+Exemples : premier avec les deux badges 100, premier sans badge 70, milieu d'une
+population de 101 avec les deux badges 75, dernier avec les deux badges 50,
+dernier sans badge 20. Pas de gain illimité par rejeu.
+
+### Provenance des badges et resets
+
+Les bonus utilisent les **badges acquis durablement reconnus par le serveur pour
+la même quête**, indépendamment de la tentative du meilleur chrono et du dernier
+essai. Le calcul ne fabrique ni qualification, ni badge, ni temps historique.
+
+- Quêtes canoniques : `quest_run_authority.projection.badges`.
+- Quêtes historiques à index numérique : `legacy_authority.projection.performances[index].badges`,
+  source utilisée par les commandes de victoire historiques.
+- Une projection ayant `reset_info` prend priorité sur l'ancienne projection
+  historique, y compris quand ses badges sont vides. Une ancienne copie ne
+  rétablit donc pas les bonus effacés par un reset.
+- Un ancien chrono sans preuve de badge reçoit zéro bonus ; sa pénalité nulle
+  n'est jamais interprétée comme une preuve de Sans assistance ou Sans erreur.
+- Un nouveau badge durable peut améliorer les points après un essai plus lent,
+  sans modifier le record officiel. Les rejouages identiques, Rapidité et Maîtrise
+  seuls ne changent aucun point et n'entraînent pas de réécriture des agrégats.
+- Le reset suit les projections existantes : effacement des badges = retrait
+  des bonus. Un record ne cesse de fournir complétion/performance que lorsqu'il
+  cesse d'être éligible selon les règles chronométriques existantes (révision de
+  grille, retrait, etc.). Aucun record n'est supprimé par ce changement de barème.
+
+### Agrégats et fraîcheur
+
+`ranking_quest_points` matérialise place et points par quête/joueur, les totaux
+aventure somment ces points. Les 880 regroupements restent ceux du catalogue ;
+le maximum vient de `questTotal × 100` : 10 000 pour 100 quêtes, sans coder en dur
+les tailles d'aventure. Les agrégats constellation et leur RPC historique restent
+compatibles pour les anciens clients ; le nouveau client ne les consulte plus.
+
+Un changement de N ou de rang peut changer tous les points de **cette quête**.
+Les déclencheurs d'instruction coalescent les lignes d'un même changement par
+quête ; une évolution de badge ne rafraîchit que les quêtes classées affectées.
+Seuls les joueurs dont la place ou les points changent sont propagés aux totaux.
+Une instruction sur les badges Rapidité/Maîtrise ne déclenche pas ce recalcul.
+Les mises à jour source distinctes restent des événements distincts, sans job
+ni polling ; aucun regroupement différé n'expose des totaux périmés à la lecture.
+
+Les écritures des quêtes d'une même aventure sont sérialisées par verrou
+transactionnel d'aventure, puis de quête ; les parcours multiples ordonnent
+aventures et quêtes. Cela évite qu'un total perde une modification concurrente
+provenant d'une autre quête. Les totaux sont ressommés, jamais décrémentés à partir
+d'un cache client. Participation, pseudo prêt, retrait, révision courante et
+effacement gardent la population éligible du classement chronométrique existant.
+
+### Interface et lectures Free-first
+
+Seul le **classement par aventure** est exposé, depuis Mon ciel et les résultats.
+Le podium chronométrique et la position personnelle de fin de quête sont conservés,
+sans accès à une liste complète par quête. Le Défi du jour garde ses classements,
+son barème, ses récapitulatifs et ses récompenses.
+
+- Ouverture : une RPC `lumen_group_ranking('adventure', id)`, top 3 et ma position.
+- Dépliage : une page de dix à partir de l'offset 3, puis pages suivantes à la
+  demande. Les lignes du podium ne sont pas ajoutées à nouveau.
+- Une page ne relit ni ne renvoie le podium ou le résumé personnel déjà chargés.
+  Repliage/réouverture des pages chargées : zéro RPC. Aucun polling ou Realtime.
+- Le marqueur `scoringVersion=2` évite d'expliquer le nouveau barème sur un ancien
+  backend. Les réponses initiales exposent aussi le maximum dérivé du catalogue.
+- Les pseudos restent du texte, la surbrillance personnelle et les trois couleurs
+  du podium sont conservées. FR/EN/ES et largeur mobile vérifiés en navigateur simulé.
+
+Coût du recalcul : O(N log N) pour les rangs de la quête modifiée, jointures indexées
+sur les sources de badges et propagation aux seuls totaux modifiés. Pas de lecture
+de profil complet, aucune ligne source modifiée, aucune nouvelle table ou tâche
+planifiée. Une reconstruction globale **unique** intervient à la migration.
+Mesure locale indicative sur PostgreSQL embarqué isolé : instruction de 1 000
+scores, environ 0,17 s avec l'ancien barème et 0,14 s avec le nouveau. Cette mesure
+de développement, sensible aux caches, n'est ni un gain garanti ni une latence
+de production ; la CI journalise aussi le temps du scénario à 1 000 joueurs.
+Prévisualisation production en lecture seule du 27/11 : 2 338 scores éligibles,
+19 joueurs, 802 quêtes ; 1 508 points de quête changeraient, tous entre 20 et 100.
+
+### Migration, validation et retour arrière
+
+Appliquer la migration avant de publier le nouveau client, vérifier la parité des
+points/totaux avec les sources et conserver les règles d'effacement/export du
+socle #974 et de #1015. La migration recalcule les agrégats existants, sans toucher
+aux chronos, badges, reçus, achats, monnaies ou sauvegardes. La rejouer est idempotent.
+Le basculement attend les écritures source en cours puis les bloque brièvement
+pendant la reconstruction, afin qu'un ancien calcul ne réécrive pas le vieux
+barème après le commit. Les lectures restent possibles ; `lock_timeout=5s` fait
+échouer et annuler la migration si elle ne peut pas obtenir ses verrous à temps.
+
+En retour arrière, retirer les nouveaux déclencheurs de badges, restaurer les
+anciennes définitions des fonctions de rafraîchissement et de lecture du socle,
+puis reconstruire les seuls agrégats et revenir au client correspondant. Ne pas
+rejouer une ancienne politique RGPD ni effacer des données source. La fonction
+historique `ranking_points(integer)` reste disponible pour cette compatibilité ;
+elle ne pilote plus les nouveaux agrégats.
+
+Tests : `group-ranking-tests.mjs`, scénario navigateur `assistance-browser.mjs`,
+fixtures `rankings-974-score-bootstrap.sql` et `rankings-974-score.sql`,
+`rankings-score-concurrency.py`. Ils couvrent le passage réel de l'ancien au nouveau
+barème, les historiques inconnus, les deux sources de badges, les resets,
+les essais non classés, les égalités, N=1, grands effectifs, arrivées/retraits,
+les écritures concurrentes sur deux quêtes et les reconstructions répétées.
+Les suites chronométriques et le Défi du jour restent des non-régressions séparées.
+La recette sur téléphone physique reste à faire après publication.
