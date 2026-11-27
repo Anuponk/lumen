@@ -17,6 +17,7 @@ assert.equal(civilDay(new Date('2027-06-30T22:00:00Z')),'2027-07-01');
 for(const d of ['2026-02-30','2026-13-01','2026-12-32','bad',null])assert.equal(validDay(d),false);
 for(const [locale,title] of Object.entries({fr:'Défi de l’Avent',en:'Advent Challenge',es:'Reto de Adviento'})){
  const p=dailyPresentation('2026-12-24',locale);assert.equal(p.title,title);assert.match(p.dayLabel,/24\/24/);
+ assert.equal(seasonalCopy('Daily Challenge complete!','daily.complete','2026-12-24',locale),title);
  assert.equal(seasonalCopy('Défi du jour','daily.title','2026-12-24',locale),title);
  assert.equal(seasonalCopy('Défi du jour','daily.title','2026-12-25',locale),'Défi du jour');
  assert.equal(seasonalCopy('Défi du jour','daily.weekEmpty','2026-12-24',locale),'Défi du jour');

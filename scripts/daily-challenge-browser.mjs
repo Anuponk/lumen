@@ -81,6 +81,36 @@ async function open({send,evaluate},url,options,{width=390,height=844,daily=true
 }
 const solve=`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`;
 const calls=async(evaluate,name)=>(await evaluate('window.__dailyCalls')).filter(c=>c.name===name);
+export async function verifySeasonalVictory({send,evaluate},url){
+ await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
+ const results=[];
+ for(const locale of ['fr','en','es']){
+  let baselineScroll;
+  for(const seasonalDay of ['2026-12-25','2026-12-24']){
+   const themed=seasonalDay==='2026-12-24';
+   await open({send,evaluate},url,{signedIn:true,enabled:true,locale,seasonalDay,beginDay:seasonalDay},{width:360,height:640});
+   await until(evaluate,"!document.getElementById('dailyIntro').hidden",'seasonal intro');
+   const intro=await evaluate("({title:document.getElementById('dailyIntroTitle').textContent,scroll:document.querySelector('#dailyIntro .social-card').scrollHeight-document.querySelector('#dailyIntro .social-card').clientHeight})");
+   assert.equal(/Avent|Advent|Adviento/.test(intro.title),themed);
+   assert.equal(intro.scroll,0,'compact intro');
+   await evaluate("document.getElementById('dailyStart').click()");
+   await until(evaluate,"document.getElementById('dailyIntro').hidden",'seasonal start');
+   await acknowledgeLearningMilestones(evaluate);
+   assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),quest.reg,'same pinned grid under seasonal skin');
+   await evaluate("document.getElementById('attemptMask')?.click()");await evaluate(solve);
+   await until(evaluate,"!document.getElementById('dailyResultModal').hidden",'seasonal result');
+   const result=await evaluate("({title:document.getElementById('dailyResultTitle').textContent,scroll:document.querySelector('#dailyResultModal .social-card').scrollHeight-document.querySelector('#dailyResultModal .social-card').clientHeight})");
+   assert.equal(/Avent|Advent|Adviento/.test(result.title),themed);
+   assert.equal(await evaluate("!!document.getElementById('dailyResultTitle').title"),themed,'Celebration is available without an extra text line');
+   const begin=await calls(evaluate,'lumen_daily_begin'),finish=await calls(evaluate,'lumen_daily_finish');
+   assert.equal(begin.length,1);assert.equal(finish.length,1);assert.equal(finish[0].args.p_day,seasonalDay);
+   if(!themed)baselineScroll=result.scroll;
+   else assert.ok(result.scroll<=baselineScroll,'No extra seasonal victory scroll: '+JSON.stringify({locale,baselineScroll,result}));
+   results.push({locale,day:seasonalDay,scroll:result.scroll});
+  }
+ }
+ return results;
+}
 export async function verifySeasonalDaily({send,evaluate},url){
  await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
  for(const seasonalDay of ['2026-12-01','2026-12-24','2026-12-25']){

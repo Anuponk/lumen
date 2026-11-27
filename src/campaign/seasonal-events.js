@@ -52,6 +52,10 @@ export function seasonalCopy(text, key, day, locale = 'fr') {
   if (!seasonalMessageKey(key)) return text;
   const presentation = dailyPresentation(day, locale);
   if (!presentation.event) return text;
+  // Keep the heading to the event name. A success glyph changes fallback-font
+  // line metrics on some devices; the result note already confirms completion.
+  // The celebration remains available separately without increasing card height.
+  if(key==='daily.complete')return presentation.title;
   const result=text.replace(/Défi du jour|défi du jour|Daily [Cc]hallenge|daily challenge|Reto del día|reto del día|Desafío del día/g, presentation.title);
-  return key==='daily.complete'?result+' '+presentation.celebration:result;
+  return result;
 }

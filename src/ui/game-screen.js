@@ -2698,6 +2698,7 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  const modal=document.getElementById('dailyResultModal'),note=document.getElementById('dailyResultNote');
  const status=run?.status,score=run?.score??official;
  document.getElementById('dailyResultTitle').textContent=t(training?'daily.trainingComplete':status==='abandoned'?'daily.abandoned':'daily.complete');
+ document.getElementById('dailyResultTitle').title=status==='completed'?dailyPresentation(run?.day??socialChallenge?.day??seasonalDay,dailyLocale()).celebration:'';
  document.getElementById('dailyResultTime').textContent=status==='abandoned'?t('daily.unranked'):score!=null?formatDuration(score):'';
  note.textContent=training?t('daily.trainingNote'):pending?t('daily.pendingNote'):status==='completed'?t('daily.officialNote'):'';
  const boards=document.getElementById('dailyBoards');boards.hidden=!board;

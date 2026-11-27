@@ -22,6 +22,10 @@ de découverte existante et l'horloge serveur pilotent la présentation ; un
 contrôle d'horloge local et le retour au premier plan actualisent l'habillage.
 Aucune nouvelle lecture Supabase, aucun stockage joueur ni polling réseau.
 
+Le résultat garde un titre court ; le texte de fête est dans son infobulle pour
+ne pas ajouter de scroll à la victoire sur petit écran. La régression compare
+les résultats ordinaires et saisonniers en FR/EN/ES à 360×640.
+
 `/studio/` prévisualise l'habillage sur une grille de démonstration de campagne.
 Date et langue sont libres. Cette page ne démarre pas le jeu, ne lit pas un
 défi futur et n'enregistre aucune tentative ni statistique. Son export SVG porte
