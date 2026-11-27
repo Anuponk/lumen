@@ -42,14 +42,14 @@ function frDay(day) {
 export function composition(post, { schedule }) {
   const daily = schedule.days.find((e) => e.day === post.day);
   const quest = canonicalQuestAtGridRevision(daily.questId, daily.gridRevision);
+  const presentation = dailyPresentation(post.day);
   return {
     file: 'official-' + post.day + '.jpg',
-    kicker: dailyPresentation(post.day).title + ' · ' + frDay(post.day),
-    hook: 'Une grille, une seule tentative officielle',
-    sub: 'Qui fera le meilleur temps aujourd’hui ?',
-    cta: 'Relever le défi dans LUMEN',
-    board: boardSvg(quest.reg, [], { frame: '#c9a24a' }),
-    gold: !!dailyPresentation(post.day).event,
-    decoration: dailyPresentation(post.day).event?.skin.decoration??'',
+    kicker: presentation.dayLabel || frDay(post.day),
+    hook: presentation.title,
+    sub: presentation.event ? 'Fais briller les étoiles de Noël.' : 'Une nouvelle grille t’attend sous les étoiles.',
+    cta: 'Jouer au défi',
+    board: boardSvg(quest.reg, [], { frame: presentation.event ? '#c9a24a' : '#294c69' }),
+    skin: presentation.event?.skin.id ?? '',
   };
 }

@@ -1,6 +1,6 @@
 const CACHE="lumen-assets-v22";
 const OFFLINE_READY_MARKER="/__lumen_offline_ready_v22__";
-const SHELL=["/manifest.webmanifest","/manifest-en.webmanifest","/manifest-es.webmanifest","/icon.svg","/icon-maskable.svg","/","/src/main.js","/src/ui/game-screen.js","/src/ui/styles.css","/src/ui/first-welcome.css","/src/ui/build-version.js","/src/ui/account-switch-boot.js","/src/vendor/supabase-2.118.0.js","/src/vendor/qrcode-1.0.0.js"];
+const SHELL=["/manifest.webmanifest","/manifest-en.webmanifest","/manifest-es.webmanifest","/icon.svg","/icon-maskable.svg","/","/src/main.js","/src/ui/game-screen.js","/src/ui/styles.css","/src/campaign/winter-stars.css","/src/ui/first-welcome.css","/src/ui/build-version.js","/src/ui/account-switch-boot.js","/src/vendor/supabase-2.118.0.js","/src/vendor/qrcode-1.0.0.js"];
 // Crawl the static ES-module graph before activation, including JSON imports.
 // Only same-origin public application resources are eligible for this cache.
 function staticDependencies(source,base){
@@ -101,8 +101,9 @@ self.addEventListener("fetch",e=>{
   // #1015: in-app views (Défi du jour, Mon ciel) only add these public flags.
   // Offline they reuse the cached query-free shell; they are never cached
   // themselves, and any other parameter (auth return, invitation…) never is.
-  const APP_VIEW_FLAGS=new Set(['daily','training','sky']);
+  const APP_VIEW_FLAGS=new Set(['daily','dailyLink','training','sky']);
   const appView=['/','/index.html'].includes(url.pathname)&&url.search!==''&&!url.hash
+   &&(!url.searchParams.has('dailyLink')||url.searchParams.get('daily')==='1')
    &&[...url.searchParams.keys()].every(key=>APP_VIEW_FLAGS.has(key))&&[...url.searchParams.values()].every(value=>value==='1');
   e.respondWith((async()=>{
    try{

@@ -259,10 +259,10 @@ async function signIn(redirectTo){
  const {error}=await model.lumenSupabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:target}});
  return error?{ok:false,reason:"oauth",error}:{ok:true};
 }
-async function requestLumenAuthMail(type,email,password){
+async function requestLumenAuthMail(type,email,password,dailyGuest){
  return fetch(LUMEN_SUPABASE_URL+"/functions/v1/lumen-auth-mail",{
   method:"POST",headers:{"content-type":"application/json","apikey":LUMEN_SUPABASE_KEY},
-  body:JSON.stringify({type,email,locale:hooks.getLocale?.()??"fr",...(type==="signup"?{password}:{})})
+  body:JSON.stringify({type,email,locale:hooks.getLocale?.()??"fr",...(type==="signup"?{password,...(dailyGuest?{dailyGuest}:{})}:{})})
  });
 }
 async function requestPasswordRecovery(email){
@@ -276,7 +276,7 @@ async function requestPasswordRecovery(email){
  if(!response.ok)return {ok:false,reason:"unavailable"};
  try{return (await response.json())?.ok===true?{ok:true}:{ok:false,reason:"unavailable"}}catch{return {ok:false,reason:"unavailable"}}
 }
-async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}){
+async function emailPasswordAuth(email,password,redirectTo,{createUser=false,dailyGuest=null}={}){
  if(!model.lumenSupabase)return {ok:false,reason:"unavailable"};
  const normalized=String(email||"").trim().toLowerCase();
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))return {ok:false,reason:"email"};
@@ -285,7 +285,7 @@ async function emailPasswordAuth(email,password,redirectTo,{createUser=false}={}
  if(!callback)return {ok:false,reason:"redirect"};
  if(createUser){
   try{
-   const response=await requestLumenAuthMail("signup",normalized,password);
+   const response=await requestLumenAuthMail("signup",normalized,password,dailyGuest);
    if(response.status===429)return {ok:false,reason:"signup_rate_limited"};
    if(!response.ok)return {ok:false,reason:response.status>=500?"signup_unavailable":"signup"};
    return (await response.json())?.ok===true?{ok:true,pendingConfirmation:true}:{ok:false,reason:"signup_unavailable"};

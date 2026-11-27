@@ -20,7 +20,7 @@ const board=(me)=>({day:DAY,final:false,closes_at:'2026-11-23T23:00:00Z',my_run:
  general:{participants:12,top:[{nickname:'Ana',score:95,rank:1,mine:false},{nickname:'Bo',score:95,rank:1,mine:false},{nickname:'Cy',score:120,rank:3,mine:false}],me:me?.status==='completed'?{rank:5,score:me.score}:null},
  friends:{participants:1,top:me?.status==='completed'?[{nickname:'Moi',score:me.score,rank:1,mine:true}]:[],me:me?.status==='completed'?{rank:1,score:me.score}:null}});
 
-function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr',handoff=false,seasonalDay=null}){
+function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr',handoff=false,seasonalDay=null,guestEligible=false}){
  return `
   localStorage.clear();
   sessionStorage.clear();
@@ -45,7 +45,9 @@ function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginR
     window.__allRpc=(window.__allRpc||[]).concat(name);
     if(/^lumen_daily_/.test(name))window.__dailyCalls.push({name,args});
     if(name==='lumen_get_internal_capabilities')return {data:${preview}?['daily_preview']:[]};
-    if(name==='lumen_daily_today')return {data:${enabled}?{enabled:true,day:${JSON.stringify(DAY)},quest_id:${JSON.stringify(quest.id)},grid_revision:${quest.gridRevision},closes_at:closes,server_now:now(),...serverDay}:{enabled:false,day:${JSON.stringify(DAY)},server_now:DAY+'T12:00:00Z'}};
+    if(name==='lumen_daily_today')return {data:${enabled}?{enabled:true,guest_eligible:${guestEligible},day:${JSON.stringify(DAY)},quest_id:${JSON.stringify(quest.id)},grid_revision:${quest.gridRevision},closes_at:closes,server_now:now(),...serverDay}:{enabled:false,day:${JSON.stringify(DAY)},server_now:DAY+'T12:00:00Z'}};
+    if(name==='lumen_daily_guest_begin')return {data:{day:args.p_day,status:'started',eventNumber:0}};
+    if(name==='lumen_daily_guest_event')return {data:{day:args.p_day,status:args.p_action==='finish'?'completed':'started',eventNumber:args.p_number,score:87}};
     if(name==='lumen_daily_week'){const mine=run?.status==='completed';
      return {data:{monday:DAY,days:Array.from({length:7},(_,i)=>i===0?(mine?{day:DAY,state:'completed',final:false,run,general_rank:5,general_total:12,friends_rank:1,friends_total:1}:{day:DAY,state:run?.status||'missed',final:false}):{day:'2026-11-'+(23+i),state:'future'})}}}
     if(name==='lumen_daily_board'){const b=boardOf(run);b.closes_at=closes;return {data:b}}
@@ -81,6 +83,27 @@ async function open({send,evaluate},url,options,{width=390,height=844,daily=true
 }
 const solve=`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`;
 const calls=async(evaluate,name)=>(await evaluate('window.__dailyCalls')).filter(c=>c.name===name);
+export async function verifyGuestAcquisition(cdp,url){
+ const {send,evaluate}=cdp;
+ await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
+ const target=new URL(url);target.searchParams.set('dailyLink','1');
+ await open(cdp,target,{signedIn:false,seasonalDay:'2026-12-01',guestEligible:true});
+ await until(evaluate,'document.body.classList.contains("daily-mode")&&document.querySelectorAll("#board .cell").length>0','marketing grid');
+ assert.equal(await evaluate("document.getElementById('dailyIntro').hidden&&document.getElementById('attemptMask').hidden"),true);
+ assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),quest.reg);
+ assert.equal((await calls(evaluate,'lumen_daily_guest_begin')).length,0,'Clock does not start on loading');
+ await evaluate("document.querySelector('#board .cell').click()");
+ await until(evaluate,"window.__dailyCalls.some(c=>c.name==='lumen_daily_guest_begin')",'first gesture reserves the attempt');
+ await evaluate(solve);
+ await until(evaluate,"!document.getElementById('dailyDiscoverySignup').hidden",'verified result can be saved');
+ const [finish]=await calls(evaluate,'lumen_daily_guest_event');
+ assert.equal(finish.args.p_action,'finish');assert.deepEqual(finish.args.p_columns,quest.sol);
+ assert.equal((await calls(evaluate,'lumen_daily_begin')).length,0,'Guests never write the account attempt directly');
+ await evaluate("document.getElementById('dailyDiscoverySignup').click()");
+ assert.equal(await evaluate("!document.getElementById('accountOptin').hidden"),true);
+ assert.equal(await evaluate("JSON.parse(localStorage.getItem('lumenDailyGuestV1:2026-12-01')).claimRequested"),true);
+ return {realGrid:true,clockOnGesture:true,verifiedReceipt:true,signupAfterVictory:true};
+}
 export async function verifySeasonalVictory({send,evaluate},url){
  await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
  const results=[];

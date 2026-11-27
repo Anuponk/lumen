@@ -505,6 +505,9 @@ jobs:
             -f supabase/migrations/20261122100000_daily_anon_revoke_882.sql \
             -f supabase/migrations/20261122100000_daily_anon_revoke_882.sql \
             -f scripts/fixtures/daily-anon-revoke-882.sql
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261128090001_daily_guest_acquisition.sql \
+            -f scripts/fixtures/daily-guest-acquisition.sql
       - name: Verify challenges stay pinned to the board their sender played (#887)
         env:
           PGPASSWORD: isolated-test-only

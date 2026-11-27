@@ -38,7 +38,7 @@ import {duelFromChallenge,duelFromSentRow,renderDuelCard,renderMyChallenges,rend
 import {createSocialNotifications} from './social-notifications.js';
 import {createRankingView} from './ranking.js';
 import {createVictoryPresentation} from './victory-presentation.js';
-import {createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
+import {CELEBRATION_CONFIG,createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
 import {streakVisual,lostStreak} from "../campaign/streak-visual.js";
 import {DAILY_LIGHT_STREAK_ENABLED} from "../campaign/feature-flags.js";
 import {learningStep, dragLearningStep, learningAllows, territoryNumbersVisible} from "../game/learning.js";
@@ -138,17 +138,18 @@ import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
 import {civilDay, dailyPresentation, seasonalCopy, seasonalMessageKey} from '../campaign/seasonal-events.js';
+import {createDailyGuestClient} from '../acquisition/daily-guest.js';
 import {ACCOUNT_LOCALE_FIELD,createTranslator} from './i18n.js';
 import {guidedConflictCopy} from './guided-conflict-copy.js';
 import {adventureDisplayName} from './adventure-copy.js';
 import {constellationDisplayName} from '../campaign/constellation-facts.js';
 import {learningCopy,learningIntro,lessonText} from './learning-copy.js';
 
-export function startGameScreen({localePreference,t:initialTranslation=localePreference?.translator().t??createTranslator().t}={}){
+export function startGameScreen({localePreference,previewDay=null,t:initialTranslation=localePreference?.translator().t??createTranslator().t}={}){
 let badgeJourney=null;
 let localeWrite=null;
 let translate=initialTranslation;
-let seasonalDay=civilDay(),seasonalClockOffset=0;
+let seasonalDay=previewDay??civilDay(),seasonalClockOffset=0;
 const t=(key,params,options)=>seasonalCopy(translate(key,params,options),key,seasonalDay,localePreference?.locale??'fr');
 function refreshSeasonalSkin(day=seasonalDay){
  seasonalDay=day;
@@ -169,8 +170,10 @@ function refreshSeasonalSkin(day=seasonalDay){
 // Local clock only, no additional daily discovery or Supabase requests. Server
 // discovery below supplies the authoritative day; an active run retains its day.
 let seasonalClockDay=civilDay();
-setInterval(()=>{const day=civilDay(new Date(Date.now()+seasonalClockOffset));if(day!==seasonalClockDay){seasonalClockDay=day;refreshSeasonalSkin(day)}},60000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){seasonalClockDay=civilDay(new Date(Date.now()+seasonalClockOffset));refreshSeasonalSkin(seasonalClockDay)}});
+if(!previewDay){
+ setInterval(()=>{const day=civilDay(new Date(Date.now()+seasonalClockOffset));if(day!==seasonalClockDay){seasonalClockDay=day;refreshSeasonalSkin(day)}},60000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){seasonalClockDay=civilDay(new Date(Date.now()+seasonalClockOffset));refreshSeasonalSkin(seasonalClockDay)}});
+}
 function translateGameCopy(){
  const manifest=document.querySelector('link[rel="manifest"]');
  if(manifest){
@@ -959,7 +962,7 @@ get levelIndex(){return levelIndex},set levelIndex(value){levelIndex=value},
 get navigationLocked(){return !!socialChallenge},
 get usedHintThisGame(){return usedHintThisGame},set usedHintThisGame(value){usedHintThisGame=value}
 };
-const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),getLocale:()=>localePreference?.locale??"fr",isLocaleWriteAck:user=>localeWrite?.owner===user.id&&user.user_metadata?.[ACCOUNT_LOCALE_FIELD]?.at===localeWrite.choice.at&&user.user_metadata?.[ACCOUNT_LOCALE_FIELD]?.mode===localeWrite.choice.mode,onAccountChanged:(event)=>{if(event?.type==="account"||event?.type==="password_recovery")updateLocaleAccount(event.authEvent);queueMicrotask(()=>rankingView.mount());if(event?.type==="account")queueMicrotask(()=>{void refreshCommerce();void dailyRecaps?.wake();void refreshDailyEntry();dailyPushSettings?.ownerChanged()});queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery")openPasswordRecovery()},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
+const {loadLumenProfile,saveLumenNickname,loadEntitlements,loadInternalCapabilities,cloudSavePuzzle,verifyLegacyProgressMirror,cloudMergeProgress,initLumenCloud,cloudSaveDaily,cloudMergeDaily,cloudMergeHistoricalPerformance,signIn,emailPasswordAuth,setAccountPassword,requestPasswordRecovery,signOut,hydrateCloudProfile}=createCloudPersistence(persistenceModel,{activeGameSeconds:(...args)=>activeGameSeconds(...args),campaignQuestCount:()=>playableQuestCount(),exactSkyScoreForSolvedPrefix:(...args)=>exactSkyScoreForSolvedPrefix(...args),saveLumenProgress:(...args)=>saveLumenProgress(...args),refreshJourney:(...args)=>refreshJourney(...args),init:(...args)=>init(...args),getLocale:()=>localePreference?.locale??"fr",isLocaleWriteAck:user=>localeWrite?.owner===user.id&&user.user_metadata?.[ACCOUNT_LOCALE_FIELD]?.at===localeWrite.choice.at&&user.user_metadata?.[ACCOUNT_LOCALE_FIELD]?.mode===localeWrite.choice.mode,onAccountChanged:(event)=>{if(event?.type==="account"||event?.type==="password_recovery")updateLocaleAccount(event.authEvent);queueMicrotask(()=>rankingView.mount());if(event?.type==="account")queueMicrotask(()=>{void refreshCommerce();void dailyRecaps?.wake();void refreshDailyEntry();dailyPushSettings?.ownerChanged()});queueDiagnosticPreferenceRefresh();if(event?.authEvent)recordCloudDiagnostic("auth_state_changed",{authEvent:event.authEvent,signedIn:!!lumenUser});if(["SIGNED_IN","TOKEN_REFRESHED"].includes(event?.authEvent)){const ownerId=lumenUser?.id,client=lumenSupabase;setTimeout(()=>{void resumeCanonicalAfterAuthRefresh(ownerId,client);void resumeLegacyAfterAuthRefresh(ownerId,client);acquisitionRecoveryAttempts=0;void acquisitionRecovery.wake()},0)}if(event?.type==="restore_failed"){cloudProfileFailure={reason:"restore_failed"};if(event.network)queueMicrotask(()=>enterNetworkUnavailable('auth'))}if(event?.type==="profile"){queueMicrotask(()=>void refreshRankingAccount());const input=document.getElementById("nicknameInput");if(input)input.value=lumenNickname}if(event?.type==="password_recovery")sessionStorage.setItem("lumenPasswordRecoveryPending","1");updateAuthUI();if(event?.type==="auth_link")showAuthLinkResult(event.result);if(event?.type==="account"&&lumenUser)void refreshCanonicalOutboxNotice(lumenUser.id);if(event?.type==="account"||event?.type==="profile")setTimeout(()=>void retryGuestClaims(),0);if(event?.type==="account"&&navigator.onLine===false&&offlineQuestAccessContext().verifiedSession)void resumeOfflineAfterAuth(lumenUser?.id,lumenSupabase);if(event?.type==="password_recovery")openPasswordRecovery()},renderDaily:(...args)=>renderDaily(...args),claimWalletDaily:(date,index)=>claimWalletDaily(date,index),afterAuthCloudSync:async()=>{
  if(qaActive||!lumenUser||!lumenSupabase)return;
  const priorAcquisitionRecovery=canonicalRecoveryContext;
  canonicalRecoveryContext=null;canonicalRecovery.cancel();
@@ -1457,7 +1460,7 @@ let lumenSupabase=null,lumenUser=offlineStartupUser(),lumenCloudReady=false,lume
 // Use the SDK's existing persistent store directly: its default write probe can
 // reject a full but readable store and silently hide a valid saved session.
 // Token refresh/rotation, validation and the canonical storage key stay SDK-owned.
-try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:localStorage}})}catch(e){console.warn("LUMEN cloud unavailable",e)}
+try{if(!previewDay)lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:localStorage}})}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
 
 let accountOfferSignInPending=false;
@@ -1501,6 +1504,7 @@ function maybeOfferAccount(){
 function dismissAccountOffer(){
  const box=document.getElementById("accountOptin");if(!box)return;
  box.hidden=true;
+ dailyGuestEmailDay=null;
  accountOfferRevision++;
  trackLumenEvent("account_offer_dismissed",null,{milestone:solvedCount(),source:"quest_milestone",qa:qaActive});
  if(accountOfferResumeNext){accountOfferResumeNext=false;openJourneyMap()}
@@ -1539,7 +1543,8 @@ async function submitAccountPassword(){
  accountOfferSignInPending=!createUser;
  try{if(accountOfferSignInPending)sessionStorage.setItem("lumenAccountOfferSignInPending","1")}catch(_){}
  try{
-  const result=await emailPasswordAuth(email,password,new URL("/",location.origin).toString(),{createUser});
+  const guestReceipt=createUser&&dailyGuestEmailDay?dailyGuest.signupReceipt(dailyGuestEmailDay):null;
+  const result=await emailPasswordAuth(email,password,new URL("/",location.origin).toString(),{createUser,dailyGuest:guestReceipt});
   if(!result.ok){
    accountOfferSignInPending=false;try{sessionStorage.removeItem("lumenAccountOfferSignInPending")}catch(_){}
    if(status&&revision===accountOfferRevision)status.textContent=result.reason==="email"?t('account.invalidEmail')
@@ -2498,6 +2503,81 @@ let socialChallenge=null,lastChallengeOffer=null,pendingChallengeUrl="",pendingC
 // with daily:true): it inherits every campaign/ranking/learning guard of #18.
 // Only the intro, the server submission and the official clock differ.
 const dailyClient=createDailyClient(lumenSupabase),DAILY_PENDING_KEY='lumenDailyPendingV1';
+const dailyGuest=createDailyGuestClient(lumenSupabase,{storage:localStorage,locks:navigator.locks,crypto:window.crypto});
+let claimingDailyGuest=false;
+let dailyGuestEmailDay=null;
+const DAILY_GUEST_SIGNUP='lumenDailyGuestSignupV1';
+if(!previewDay){
+ const url=new URL(location.href), day=url.searchParams.get('daily_signup');
+ if(day&&/^\d{4}-\d{2}-\d{2}$/.test(day)&&url.searchParams.has('lumen_confirm')&&url.searchParams.get('type')==='signup'){
+  try{localStorage.setItem(DAILY_GUEST_SIGNUP,day)}catch{}
+  url.searchParams.delete('daily_signup');
+  history.replaceState(history.state,'',url.pathname+url.search+url.hash);
+ }
+}
+function beginGuestDaily(challenge=socialChallenge){
+ if(!challenge?.guestEligible||challenge.forfeited)return Promise.resolve(null);
+ return challenge.guestRun??=(dailyGuest.begin(challenge.day).then(result=>{
+  if(result?.status==='rollover'&&challenge===socialChallenge)location.reload();
+  return result;
+ }).catch(()=>null));
+}
+async function recordGuestDailyEvent(action,columns=null,challenge=socialChallenge){
+ if(!challenge?.guestEligible||challenge.forfeited)return null;
+ if((await beginGuestDaily(challenge))?.status!=='started')return null;
+ return dailyGuest.event(challenge.day,action,columns);
+}
+function guestDailyAssistance(kind,apply){
+ const challenge=socialChallenge;
+ if(!challenge?.guestEligible||challenge.forfeited)return false;
+ if(challenge.assistancePending)return true;
+ if(!ensureAttemptStarted())return true;
+ challenge.assistancePending=true;
+ const applyIfCurrent=()=>{if(challenge===socialChallenge&&!celebrated)apply()};
+ void recordGuestDailyEvent(kind,null,challenge).then(result=>{
+  if(result?.status!=='started'){challenge.forfeited=true;dailyGuest.forfeit(challenge.day)}
+  applyIfCurrent();
+ }).catch(()=>{
+  challenge.forfeited=true;
+  try{dailyGuest.forfeit(challenge.day)}catch{}
+  applyIfCurrent();
+ }).finally(()=>{challenge.assistancePending=false});
+ return true;
+}
+function guestDailyClock(action){
+ const challenge=socialChallenge;
+ if(!challenge?.guestEligible||challenge.forfeited)return;
+ void recordGuestDailyEvent(action,null,challenge).catch(()=>{
+  // Without an acknowledged pause/resume, the locally displayed time may not
+  // match the verified run. Keep the board available and avoid claiming it.
+  challenge.forfeited=true;
+  try{dailyGuest.forfeit(challenge.day)}catch{}
+ });
+}
+async function retryGuestClaims(){
+ const owner=lumenUser?.id;
+ if(!owner||!cloudProfileReady||authSessionPending||claimingDailyGuest||previewDay)return;
+ const isCurrent=()=>lumenUser?.id===owner&&!authSessionPending&&cloudProfileReady;
+ claimingDailyGuest=true;
+ try{
+  const bound=localStorage.getItem(DAILY_GUEST_SIGNUP);
+  const requested=dailyGuest.requestedClaims();
+  const days=bound?[...new Set([...requested,bound])].sort():requested;
+  for(const day of days){
+   let run=await dailyGuest.claim(day,owner,isCurrent);
+   if(!run&&day===bound&&isCurrent())run=await dailyGuest.claimBound(day);
+   if(!isCurrent())return;
+   if(day===bound&&run)localStorage.removeItem(DAILY_GUEST_SIGNUP);
+   if(run?.status==='completed'){
+    const board=await dailyClient.board(day).catch(()=>null);
+    if(isCurrent())showDailyResult({run,board});
+   }else if(run)showRewardToast(t(run.status==='already_played'?'daily.discoveryAlreadyPlayed':'daily.discoveryUnavailable'));
+  }
+ }catch{
+  // The request and account binding remain available for reconnection or
+  // nickname completion.
+ }finally{claimingDailyGuest=false}
+}
 let dailyRecaps=null;
 let dailyBannerTimer=null,dailyEntryRequest=0,dailyEntryTimer=null;
 // Measurement reuses the existing app_opened envelope (no new event name, no
@@ -2536,6 +2616,7 @@ function discoverDailyToday(owner){
 // 30 s ago, consumed once) may reuse it; any other load reads the server.
 const DAILY_TODAY_KEY='lumenDailyTodayV1',DAILY_HANDOFF_KEY='lumenDailyHandoffV1',DAILY_TODAY_MARGIN_MS=60000,DAILY_HANDOFF_MS=30000;
 function handOffDaily(training=false,archive=null){
+ if(previewDay){location.reload();return}
  try{sessionStorage.setItem(DAILY_HANDOFF_KEY,String(Date.now()))}catch{}
  // #1015 (recette 24/11 : 5-6 s par sens) : recharger la page relançait toute
  // l'hydratation cloud (4-5 RPC de 1 à 2,5 s sur mobile). Le défi s'ouvre désormais
@@ -2560,13 +2641,14 @@ async function enterDailyInPage(training=false,archive=null){
  }finally{dailyTransition=false}
 }
 function stripDailyUrl(){
- const url=new URL(location.href);for(const key of ['daily','training','sky','archive'])url.searchParams.delete(key);
+ const url=new URL(location.href);for(const key of ['daily','dailyLink','training','sky','archive'])url.searchParams.delete(key);
  history.replaceState(null,'',url.pathname+url.search+url.hash);
 }
 // Leaves the daily mode exactly as the page restart used to: no daily state,
 // campaign quest chosen from progress, the stored attempt left to restore().
 function exitDailyMode(){
  for(const id of ['dailyIntro','dailyResultModal','dailyWeekModal']){const el=document.getElementById(id);if(el)el.hidden=true}
+ dailyCelebration?.clear();
  clearInterval(dailyBannerTimer);dailyBannerTimer=null;
  const banner=document.getElementById('dailyBanner');if(banner)banner.hidden=true;
  document.body.classList.remove('daily-mode');
@@ -2687,38 +2769,66 @@ async function refreshDailyEntry(){
 function renderDailyBanner(){
  if(socialChallenge?.daily)refreshSeasonalSkin(socialChallenge.day);
  const banner=document.getElementById('dailyBanner');if(!banner||!socialChallenge?.daily)return;
- banner.hidden=false;document.getElementById('dailyBannerDate').textContent=dailyDate(socialChallenge.day);
+ banner.hidden=false;
+ const presentation=dailyPresentation(socialChallenge.day,dailyLocale());
+ document.getElementById('dailyBannerDate').textContent=presentation.dayLabel||dailyDate(socialChallenge.day);
  const left=Date.parse(socialChallenge.closes_at)-Date.now()-(socialChallenge.clockSkewMs||0);
- document.getElementById('dailyBannerMeta').textContent=socialChallenge.training?t('daily.trainingBanner'):t('daily.officialBanner',{duration:dailyDuration(left)});
+ const direct=socialChallenge.discovery;
+ document.getElementById('dailyBannerMeta').textContent=direct?'':socialChallenge.training?t('daily.trainingBanner'):t('daily.officialBanner',{duration:dailyDuration(left)});
+ const help=document.getElementById('dailyDiscoveryHelp');help.hidden=!direct;
+ help.onclick=()=>document.getElementById('tutorialHelp').click();
 }
 function showDailyBoardTab(board,scope,track=true){
  if(track)trackDaily('board_viewed',{daily_day:board?.day||socialChallenge?.day||null,board_scope:scope,board_final:!!board?.final});
  for(const [id,tab] of [['dailyTabGeneral','general'],['dailyTabFriends','friends']]){const b=document.getElementById(id);b.setAttribute('aria-selected',String(tab===scope))}
  document.getElementById('dailyBoardPanel').innerHTML=renderDailyBoard(board?.[scope],{scope,formatDuration,t});
 }
-function showDailyResult({run=null,board=null,training=false,pending=false,official=null,offerReminders=false}={}){
+let dailyCelebration=null;
+function showDailyResult({run=null,board=null,training=false,pending=false,official=null,offerReminders=false,discovery=false,victory=false,guestRun=null,guestPending=false}={}){
  if(!training&&(pending||['completed','abandoned'].includes(run?.status)))rememberDailyDone(run?.day||socialChallenge?.day);
  const modal=document.getElementById('dailyResultModal'),note=document.getElementById('dailyResultNote');
- const status=run?.status,score=run?.score??official;
- document.getElementById('dailyResultTitle').textContent=t(training?'daily.trainingComplete':status==='abandoned'?'daily.abandoned':'daily.complete');
+ const status=run?.status,score=run?.score??guestRun?.score??official;
+ document.getElementById('dailyResultTitle').textContent=t(discovery?'daily.discoveryVictory':training?'daily.trainingComplete':status==='abandoned'?'daily.abandoned':'daily.complete');
  document.getElementById('dailyResultTitle').title=status==='completed'?dailyPresentation(run?.day??socialChallenge?.day??seasonalDay,dailyLocale()).celebration:'';
  document.getElementById('dailyResultTime').textContent=status==='abandoned'?t('daily.unranked'):score!=null?formatDuration(score):'';
- note.textContent=training?t('daily.trainingNote'):pending?t('daily.pendingNote'):status==='completed'?t('daily.officialNote'):'';
+ const claimable=discovery&&(!!previewDay||guestRun?.status==='completed');
+ note.textContent=discovery?t(claimable?'daily.discoverySave':guestPending?'daily.pendingNote':'daily.discoveryUnavailable'):training?t('daily.trainingNote'):pending?t('daily.pendingNote'):status==='completed'?t('daily.officialNote'):'';
+ const signup=document.getElementById('dailyDiscoverySignup'),login=document.getElementById('dailyDiscoveryLogin');
+ signup.hidden=login.hidden=!claimable;
+ const requestAccount=mode=>{
+  try{
+   if(previewDay||dailyGuest.requestClaim(guestRun.day)){
+    dailyGuestEmailDay=guestRun?.day??null;
+    openEmailAccountOffer(mode);
+   }
+  }
+  catch{showRewardToast(t('daily.submitError'))}
+ };
+ signup.onclick=()=>requestAccount('signup');login.onclick=()=>requestAccount('login');
  const boards=document.getElementById('dailyBoards');boards.hidden=!board;
  if(board){showDailyBoardTab(board,'general',false);document.getElementById('dailyTabGeneral').onclick=()=>showDailyBoardTab(board,'general');document.getElementById('dailyTabFriends').onclick=()=>showDailyBoardTab(board,'friends')}
  const closes=Date.parse(board?.closes_at||socialChallenge?.closes_at||'');
  document.getElementById('dailyNext').textContent=Number.isFinite(closes)?t('daily.nextChallenge',{duration:dailyDuration(closes-Date.now())}):'';
- document.getElementById('dailyRetrySubmit').hidden=!pending;
- document.getElementById('dailyTrainAgain').hidden=pending||(!training&&!['completed','abandoned'].includes(status));
+ document.getElementById('dailyRetrySubmit').hidden=!(pending||guestPending);
+ document.getElementById('dailyTrainAgain').hidden=discovery||pending||(!training&&!['completed','abandoned'].includes(status));
  document.getElementById('dailyTrainAgain').onclick=()=>handOffDaily(true);
  // #1013: the end of the Défi du jour leads to Mon ciel (the same daily for
  // everyone: no daily-specific share), never to a campaign grid.
- document.getElementById('dailyContinue').onclick=()=>leaveDailyToSky();
- document.getElementById('dailyRetrySubmit').onclick=()=>retryPendingDaily(true);
+ const continueButton=document.getElementById('dailyContinue');
+ continueButton.textContent=t(claimable?'daily.discoveryLater':'daily.mySky');
+ continueButton.onclick=()=>leaveDailyToSky();
+ document.getElementById('dailyRetrySubmit').onclick=()=>guestPending?retryGuestFinish(socialChallenge?.day,true):retryPendingDaily(true);
  const weekButton=document.getElementById('dailyWeekFromResult');weekButton.hidden=training||pending||!lumenUser;weekButton.onclick=()=>openDailyWeek(socialChallenge?.day||board?.day,'result');
  if(board)trackDaily('board_viewed',{daily_day:board.day||socialChallenge?.day||null,board_scope:'general',board_final:!!board.final});
  void dailyPushSettings?.presentResult(offerReminders&&status==='completed');
- modal.hidden=false;document.getElementById('dailyContinue').focus({preventScroll:true});
+ modal.hidden=false;(signup.hidden?continueButton:signup).focus({preventScroll:true});
+ if(victory){
+  const season=dailyPresentation(run?.day??socialChallenge?.day??seasonalDay,dailyLocale()).event;
+  const config=season?{...CELEBRATION_CONFIG,special:{extraParticles:12,palette:season.skin.celebrationColors}}:CELEBRATION_CONFIG;
+  dailyCelebration?.clear();dailyCelebration=createCelebration(modal.querySelector('.daily-card-theme'),{config});
+  dailyCelebration.start({level:2,special:season?.id});
+  victorySound();
+ }
 }
 // « Ta semaine dans les étoiles »: own days only, past weeks navigable.
 let dailyWeekRequest=0;
@@ -2785,12 +2895,38 @@ async function retryPendingDaily(show=false){
  catch(e){if(/run_not_found|operation_mismatch|invalid_/.test(e?.message||''))localStorage.removeItem(DAILY_PENDING_KEY);if(show)showRewardToast(t('daily.submitError'))}
 }
 window.addEventListener('online',()=>{void retryPendingDaily()});
+async function retryGuestFinish(day,show=false){
+ if(!day||lumenUser||previewDay)return;
+ try{
+  const receipt=await dailyGuest.begin(day);
+  if(show&&receipt?.status!=='started')showDailyResult({training:true,discovery:true,guestRun:receipt});
+ }catch{if(show)showRewardToast(t('daily.submitError'))}
+}
+window.addEventListener('online',()=>{
+ if(lumenUser)void retryGuestClaims();
+ else if(socialChallenge?.guestEligible&&celebrated)void retryGuestFinish(socialChallenge.day,!document.getElementById('dailyResultModal').hidden);
+});
 async function finishDaily(status){
  const snap=attemptEngine.snapshot(),uses=snap?.helpUses||{},seconds=Math.max(0,Math.floor(attemptEngine.activeMs()/1000));
  const official=rankedTime(seconds,{hint:uses.hint||0,verify:uses.verify||0,guided:uses.guided||0}).score;
- if(socialChallenge.training){showDailyResult({training:true,official});return}
+ if(socialChallenge.training){
+  if(status==='completed'){
+   const challenge=socialChallenge;
+   showDailyResult({training:true,official,discovery:challenge.discovery,victory:true,guestPending:!!challenge.guestEligible&&!challenge.forfeited});
+   if(!challenge.guestEligible||challenge.forfeited)return;
+   let guestRun=null,guestPending=false;
+   try{guestRun=await recordGuestDailyEvent('finish',state.map(row=>row.indexOf(2)),challenge)}catch{guestPending=true}
+   if(challenge===socialChallenge&&!document.getElementById('dailyResultModal').hidden)
+    showDailyResult({training:true,official,discovery:challenge.discovery,guestRun,guestPending});
+  }else if(socialChallenge.discovery){
+   await recordGuestDailyEvent('abandon').catch(()=>null);
+   leaveDailyToSky();
+  }
+  else showDailyResult({training:true,official});
+  return
+ }
  const payload={day:socialChallenge.day,operationId:socialChallenge.operation_id,status,seconds,hint:uses.hint||0,verify:uses.verify||0,guided:uses.guided||0};
- try{const run=await dailyClient.finish(payload);localStorage.removeItem(DAILY_PENDING_KEY);const board=await dailyClient.board(socialChallenge.day).catch(()=>null);showDailyResult({run,board,offerReminders:true})}
+ try{const run=await dailyClient.finish(payload);localStorage.removeItem(DAILY_PENDING_KEY);const board=await dailyClient.board(socialChallenge.day).catch(()=>null);showDailyResult({run,board,offerReminders:true,victory:run?.status==='completed'})}
  catch(e){
   if(/invalid_|operation_mismatch|run_not_found/.test(e?.message||'')){showRewardToast(dailyErrorMessage(e,t));showDailyResult({run:null,board:null,official,training:false});return}
   try{localStorage.setItem(DAILY_PENDING_KEY,JSON.stringify(payload))}catch{}
@@ -2816,10 +2952,15 @@ async function bootstrapDailyArchive(day){
  document.body.classList.add('daily-mode');renderDailyBanner();
  return true;
 }
+function studioDailyToday(){
+ const quest=canonicalQuestForLegacy(0);
+ return {enabled:true,day:previewDay,quest_id:quest.id,grid_revision:quest.gridRevision??0,server_now:new Date().toISOString(),closes_at:new Date(Date.now()+8*3600e3).toISOString()};
+}
 async function bootstrapDailyChallenge(){
- const params=new URL(location.href).searchParams;if(!params.has('daily'))return false;
+ const params=new URL(location.href).searchParams;if(!params.has('daily')&&!previewDay)return false;
+ if(previewDay)params.delete('archive');
  if(params.has('archive'))return bootstrapDailyArchive(params.get('archive'));
- let today=cachedDailyToday();
+ let today=previewDay?studioDailyToday():cachedDailyToday();
  if(!today){try{today=await dailyClient.today();if(today?.enabled)rememberDailyToday(today)}catch{today=null}}
  // The same answer feeds the header chip / Mon ciel entry: no second read.
  if(today)seedDailyToday(today);
@@ -2827,13 +2968,22 @@ async function bootstrapDailyChallenge(){
  let quest;try{quest=dailyQuest({questId:today.quest_id,gridRevision:today.grid_revision})}catch{showRewardToast(dailyErrorMessage('daily_unavailable',t));return false}
  socialChallenge={daily:true,training:true,challenge_id:'daily-'+today.day+'-training',day:today.day,grid_revision:today.grid_revision,closes_at:today.closes_at,clockSkewMs:Date.now()-Date.parse(today.server_now)};
  canonicalActiveQuest=quest;levelIndex=quest.legacyIndex??0;replayMode=false;
+ const candidateDiscovery=(params.get('dailyLink')==='1'||!!previewDay)&&!params.has('training');
+ let signedIn=!!lumenUser;if(!signedIn&&candidateDiscovery&&!previewDay){try{signedIn=!!(await lumenSupabase?.auth?.getSession?.())?.data?.session?.user}catch{}}
+ socialChallenge.discovery=!signedIn&&candidateDiscovery;
+ socialChallenge.guestEligible=socialChallenge.discovery&&!previewDay&&today.guest_eligible===true;
  trackDaily('opened',{daily_day:today.day,daily_training:params.has('training')});
  document.body.classList.add('daily-mode');renderDailyBanner();clearInterval(dailyBannerTimer);dailyBannerTimer=setInterval(renderDailyBanner,60000);
+ if(socialChallenge.discovery){
+  const receipt=socialChallenge.guestEligible&&dailyGuest.read(today.day);
+  if(receipt?.status==='completed')showDailyResult({training:true,discovery:true,guestRun:receipt});
+  return true;
+ }
  // #1015: the intro appears immediately with a discreet loading line.
  {const intro=document.getElementById('dailyIntro'),status=document.getElementById('dailyIntroStatus'),start=document.getElementById('dailyStart');
   document.getElementById('dailyIntroDate').textContent=dailyDate(today.day);status.textContent=t('daily.load');start.hidden=true;
   document.getElementById('dailyTraining').hidden=true;document.getElementById('dailyShowResult').hidden=true;intro.hidden=false}
- let signedIn=!!lumenUser;if(!signedIn){try{signedIn=!!(await lumenSupabase?.auth?.getSession?.())?.data?.session?.user}catch{}}
+ if(!signedIn&&!candidateDiscovery){try{signedIn=!!(await lumenSupabase?.auth?.getSession?.())?.data?.session?.user}catch{}}
  let board=null,blocked=null;
  if(signedIn){try{board=await dailyClient.board(today.day)}catch(e){blocked=e}}else blocked='account_required';
  const run=board?.my_run||null,done=['completed','abandoned'].includes(run?.status);
@@ -3111,7 +3261,7 @@ function updateAttemptUI(){
  const a=attemptEngine.snapshot(),mask=document.getElementById("attemptMask"),pause=document.getElementById("attemptPause"),abandon=document.getElementById("attemptAbandon");
  if(!mask)return;
  const ready=a?.state===ATTEMPT_STATES.READY,paused=a?.state===ATTEMPT_STATES.PAUSED;
- mask.hidden=!(ready||paused)||(ready&&learningQuestActive());
+ mask.hidden=!(ready||paused)||(ready&&(learningQuestActive()||socialChallenge?.discovery));
  // #925: a paused grid is out of reach for touch, keyboard and screen readers.
  const grid=document.getElementById("board");if(grid)grid.inert=paused;
  document.getElementById("attemptMaskTitle").textContent=t(paused?"board.paused":"board.ready");
@@ -3221,6 +3371,7 @@ function ensureAttemptStarted(){
   if(markQualifiedStart(lumenProgress,levelIndex,{day:localCalendarDay(),at:new Date().toISOString()}))saveLumenProgress();
  }
  attemptEngine.start();
+ if(socialChallenge?.guestEligible)void beginGuestDaily();
  const started=attemptEngine.snapshot();
  recordQuotaAttempt(quotaGate,started);
  if(started?.qualifying&&!socialChallenge)recordQualifyingStart(localStorage,qualificationOwner(),activeQuest().id,started.startedAt);
@@ -3642,7 +3793,8 @@ function renderGuidedConflictCopy(){
  document.getElementById('guidedTitle').textContent=title;
  document.getElementById('guidedCopy').textContent=introduceAssist?t('guided.introduction',{explanation}):explanation;
 }
-function showGuidedConflict(r,c,info){
+function showGuidedConflict(r,c,info,guestAcknowledged=false){
+ if(!guestAcknowledged&&guestDailyAssistance('guided',()=>showGuidedConflict(r,c,info,true)))return;
  attemptEngine.markAssistance();
  attemptEngine.recordAssistanceUse('guided',(attemptEngine.snapshot()?.helpUses?.guided||0)+1);
  learningTip=null;document.getElementById("scriptedLearn").hidden=true;
@@ -3855,8 +4007,16 @@ function clock(){
   const copy=document.getElementById("challengeCopy");if(copy&&questFailed)copy.textContent=t('challenge.failed');
  }
 }
-function pauseGameClock(){attemptEngine.pause();clock()}
-function resumeGameClock(){attemptEngine.resume();clock()}
+function pauseGameClock(){
+ const wasRunning=attemptEngine.snapshot()?.state===ATTEMPT_STATES.RUNNING;
+ attemptEngine.pause();clock();
+ if(wasRunning)guestDailyClock('pause');
+}
+function resumeGameClock(){
+ const wasPaused=attemptEngine.snapshot()?.state===ATTEMPT_STATES.PAUSED;
+ attemptEngine.resume();clock();
+ if(wasPaused)guestDailyClock('resume');
+}
 // #925: top menus and in-game dialogs reuse this same pause while they are open.
 // Mon ciel is a navigation destination, not a menu: its behaviour is unchanged.
 const menuPause=createMenuPause({document,
@@ -5223,6 +5383,10 @@ document.getElementById("hint").onclick=()=>{
   if(!celebrated&&!pendingVictoryView)showHintMessage(()=>t("hint.title"),()=>t(authSessionPending?"hint.completePending":"hint.complete"));
   return;
  }
+ if(!guestDailyAssistance('hint',applyHint))applyHint();
+};
+function applyHint(){
+ if(celebrated||guidedPending||verifyPending||guardiansCompleteAndValid())return;
  if(activeQuestOrdinal()===2&&hintUsesThisGame===0)showLearningTip("hint-learning",'tipHint');
  recordHintUse();
  hi=null; hiCells=[];
@@ -5356,7 +5520,7 @@ document.getElementById("hint").onclick=()=>{
  // catalogue is audited (hint-catalogue-audit-tests.mjs); keep a bounded trace.
  recordCloudDiagnostic('hint_unavailable',{questId:String(activeQuest()?.id||'unknown').slice(0,64),placed:state.flat().filter(v=>v===2).length,size:n});
  showHintMessage(()=>t("hint.title"),()=>t("hint.unavailable"));
-};
+}
 
 const testModel={
 get n(){return n},set n(value){n=value},
@@ -6658,6 +6822,17 @@ document.addEventListener("click",handleLearningTap,true);
 setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();setupGameLocaleSetting();
 async function bootGame(){
  if(!(await bootstrapDailyChallenge()))await bootstrapSocialChallenge();restoreCanonicalCampaignAttempt();init();void refreshDailyEntry();void retryPendingDaily();refreshJourney();
+ if(previewDay){
+  window.lumenStudioView=view=>{
+   if(view==='sky'){leaveDailyToSky();return}
+   if(view!=='victory'||!socialChallenge?.discovery||celebrated)return;
+   activeQuest().sol.forEach((column,row)=>{state[row][column]=2});
+   render();
+   if(!celebrated)celebrateSocialChallengeSuccess();
+  };
+  window.lumenStudioView(new URL(location.href).searchParams.get('studioView'));
+  return;
+ }
  try{
   const first=canonicalQuestList()[0],entry=CONTENT_CONSTELLATIONS.find(c=>c.id===first.constellationId);
   const figureSvg=astronomicalReferenceSvg(entry);
@@ -6694,8 +6869,13 @@ bootGame();
 setupBetaFeedback();
 const manualCrossTipOk=document.getElementById("manualCrossTipOk");if(manualCrossTipOk)manualCrossTipOk.onclick=closeManualCrossTip;
 const guidedAck=document.getElementById("guidedAck");if(guidedAck)guidedAck.onclick=closeGuidedConflict;
-const originalHintHandler=document.getElementById("hint").onclick;
-const verifyBtn=document.getElementById("verify");if(verifyBtn)verifyBtn.onclick=runVerification;const verifyFix=document.getElementById("verifyFix");if(verifyFix)verifyFix.onclick=fixVerificationErrors;
+const originalHintHandler=applyHint;
+const verifyBtn=document.getElementById("verify");
+if(verifyBtn)verifyBtn.onclick=()=>{
+ if(celebrated||guidedPending||verifyPending||scriptedLearningActive())return;
+ if(!guestDailyAssistance('verify',runVerification))runVerification();
+};
+const verifyFix=document.getElementById("verifyFix");if(verifyFix)verifyFix.onclick=fixVerificationErrors;
 const nicknameSave=document.getElementById("nicknameSave");if(nicknameSave)nicknameSave.onclick=async()=>{const input=document.getElementById("nicknameInput"),result=await saveLumenNickname(input?.value);if(result.ok)showRewardToast("Pseudo enregistré ✦");else showRewardToast(result.reason==="length"?"Pseudo : 3 à 20 caractères":result.reason==="unavailable"?"Ce pseudo est déjà utilisé":"Ce pseudo n’est pas valide")};
 const guidedErrors=document.getElementById("guidedErrors");if(guidedErrors)guidedErrors.onchange=()=>{if(questLearningRules(activeQuestOrdinal()).forcedGuided&&!replayMode){guidedErrors.checked=true;return}localStorage.setItem("lumenGuidedErrors",guidedErrors.checked?"on":"off")};
 const accountOptinEnable=document.getElementById("accountOptinEnable"),accountOptinLater=document.getElementById("accountOptinLater");if(accountOptinEnable)accountOptinEnable.onclick=acceptAccountOffer;if(accountOptinLater)accountOptinLater.onclick=dismissAccountOffer;const passwordSubmit=document.getElementById("accountPasswordSubmit");
@@ -6884,7 +7064,8 @@ dailyRecaps=setupDailyRecaps({document,t,locale:dailyLocale,formatDuration,
 new MutationObserver(()=>void dailyRecaps.wake()).observe(document.getElementById('mapModal'),{attributes:true,attributeFilter:['hidden']});
 document.addEventListener('visibilitychange',()=>void dailyRecaps.wake());
 void dailyRecaps.wake();
-void initializeAccountSession();
+if(!previewDay)void initializeAccountSession().then(()=>retryGuestClaims());
+else{authSessionPending=false;updateAuthUI()}
 
 function canReloadForAppUpdate(){
  if(authSessionPending||accountSwitchPending()||passwordRecoveryPending()||
@@ -6894,7 +7075,7 @@ function canReloadForAppUpdate(){
  return !Array.from(document.querySelectorAll('[role="dialog"]:not([hidden]), #successOverlay.show'))
   .some(dialog=>dialog.getClientRects().length>0);
 }
-setupAppUpdates({window,document,navigator,location,caches:window.caches,console,appVersion,canReload:canReloadForAppUpdate});
+if(!previewDay)setupAppUpdates({window,document,navigator,location,caches:window.caches,console,appVersion,canReload:canReloadForAppUpdate});
 
 // Preserve the public browser testing entry points.
 wireLumenErasureControls();

@@ -6,4 +6,5 @@ try { storage=window.localStorage; } catch { /* The current session can still us
 try { tabStorage=window.sessionStorage; } catch { /* The launch hint still works. */ }
 startGameScreen({
  localePreference:browserLocalePreference({storage,navigator,location,sessionStorage:tabStorage}),
+ previewDay:window.lumenSeasonalPreview,
 });
