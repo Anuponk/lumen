@@ -84,7 +84,7 @@ def env_config(environ=os.environ) -> dict:
         "max_attempts": int(environ.get("LUMEN_SOCIAL_MAX_ATTEMPTS", "3")),
         "page_id": environ.get("META_PAGE_ID", ""),
         "token": environ.get("META_PAGE_TOKEN", ""),
-        "graph_version": environ.get("META_GRAPH_VERSION", "v23.0"),
+        "graph_version": environ.get("META_GRAPH_VERSION", "v27.0"),
     }
 
 

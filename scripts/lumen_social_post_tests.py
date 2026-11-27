@@ -270,7 +270,7 @@ calls = []
 
 def opener(url, timeout=20):
     calls.append(url)
-    path = url.split("?")[0].split("/v23.0")[1]
+    path = url.split("?")[0].split("/v27.0")[1]
     if path == "/oauth/access_token":
         return Response({"access_token": "LONG-USER"})
     if path == "/me/permissions":
