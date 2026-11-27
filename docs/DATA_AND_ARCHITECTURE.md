@@ -2580,3 +2580,5 @@ reads the public switches with a 6 h cache and the account state only when the
 commercial model or the QA preview applies. A failed read never revokes a confirmed
 right. Player tables are erased with the account. Contract, offline compromises,
 costs and activation/rollback: [PREMIUM_1030](PREMIUM_1030.md).
+
+#974 hotfix: `20261127230000_ranking_page_fix_974.sql` replaces `lumen_commands.group_ranking` with the same read-only body using scalar variables, so a ranking page never reads an unassigned record. See [HIGHSCORE_ROLLOUT](HIGHSCORE_ROLLOUT.md).

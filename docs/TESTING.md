@@ -2899,3 +2899,5 @@ Run node scripts/seasonal-events-tests.mjs, node scripts/organic-acquisition-tes
   creation with free joining, archives limited to past days, paginated statistics,
   calibration access and erasure. The step then replays the #929 and #865 fixtures.
 - Recette: [PREMIUM_1030 § 10](PREMIUM_1030.md#10-recette).
+
+#974 hotfix: `scripts/fixtures/ranking-page-fix-974.sql` (canonical-ledger CI, own psql session) calls an adventure ranking page as the first call of a fresh connection, then checks the last page, ties and that every rank appears once.
