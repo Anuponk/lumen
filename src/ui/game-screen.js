@@ -2987,6 +2987,8 @@ async function bootstrapDailyChallenge(){
  if(params.has('training')&&(blocked||done)){document.getElementById('dailyIntro').hidden=true;renderDailyBanner();return true}
  if(done){document.getElementById('dailyIntro').hidden=true;renderDailyBanner();showDailyResult({run,board});return true}
  const intro=document.getElementById('dailyIntro'),status=document.getElementById('dailyIntroStatus'),start=document.getElementById('dailyStart'),training=document.getElementById('dailyTraining');
+ // #1015: « Ma semaine » lives in the Défi du jour space, before and after playing (signed-in only, no extra read).
+ {const week=document.getElementById('dailyWeekFromIntro');if(week){week.hidden=!signedIn;week.onclick=()=>void openDailyWeek(today.day,'intro')}}
  document.getElementById('dailyIntroDate').textContent=dailyDate(today.day);
  document.getElementById('dailyIntroRemaining').textContent=t('daily.endsIn',{duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
  status.textContent=blocked?dailyErrorMessage(blocked,t):run?.status==='started'?t('daily.resumeNote'):'';
@@ -4438,7 +4440,7 @@ function setupBetaFeedback(){
  myReports=createMyReports({document,storage:localStorage,t,
   rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{offline:true}}),
   identity:()=>({userId:qaActive?null:lumenUser?.id||null,anonymousId:lumenAnonymousId,client:qaActive?null:lumenSupabase})});
- groupRanking=createGroupRanking({document,t,signedIn:()=>!!lumenUser&&!qaActive,nickname:()=>lumenNickname||'',
+ groupRanking=createGroupRanking({document,t,signedIn:()=>!!lumenUser&&!qaActive,nickname:()=>lumenNickname||'',locale:()=>localePreference?.locale??'fr',
   rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{offline:true}})});
  // #1030 lot 2: advanced statistics (Premium, or offered once the feature is met).
  premiumStats=createPremiumStats({document,t,owner:()=>lumenUser?.id,rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:new Error('cloud_unavailable')}),

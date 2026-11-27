@@ -139,6 +139,8 @@ assert.equal(unknownPlay.unitPrice,'Prix indisponible');assert.equal(unknownPlay
   assert.equal(m.skyProduct,id);assert.equal(m.skyUpgrade,true);assert.equal(m.skyPurchased,n);
   assert.equal(m.skyPrice,formatEuros(100*(5-n)),'web price = server catalogue price of this tier');
   assert.equal(toPlayProductId(id),'real_sky_upgrade_'+n);
+  // #1030: the Premium SKU reaches Google Play with its underscore identifier.
+  assert.equal(toPlayProductId('lumen-premium'),'lumen_premium');
   // In the Play app only Google's price for that exact SKU is shown.
   const play=offer(second,{},{skyProgress:state(n,{sky_offer:id,sky_offer_price_cents:100,sky_offer_currency:'EUR'}),pricesRequired:true,prices:{[id]:'2,49 €',[SKY_PRODUCT_ID]:'5,99 €'}});
   assert.equal(play.skyPrice,'2,49 €');assert.equal(play.skyPriceKnown,true);

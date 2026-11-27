@@ -1,4 +1,5 @@
 // #929 (EPIC #928, V1): private circles, invitations and private rankings.
+import { htmlDocument, createPodium, createMyPosition, createEmptyRanking } from './podium.js';
 // Presentation and RPC adapter only: the server owns membership, roles,
 // limits, links and the ranking (official scores, public tie rule). Only
 // nicknames are ever displayed; tokens are shown once and never stored here.
@@ -117,37 +118,24 @@ const esc = (value) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   );
 
+// #974: the private ranking uses the shared LUMEN podium and cyan position line.
 export function renderCircleBoard(board, { t, formatDuration }) {
   const model = circleBoardModel(board);
-  if (!model.ranked) return '<p class="circles-empty">' + esc(t('circles.boardEmpty')) + '</p>';
-  const line = (row) =>
-    '<li class="circles-rank' +
-    (row.mine ? ' circles-mine' : '') +
-    '"><span class="circles-place">' +
-    esc(t('circles.place', { place: row.place })) +
-    '</span><span class="circles-nick">' +
-    esc(row.nickname) +
-    (row.mine ? ' <small>' + esc(t('circles.you')) + '</small>' : '') +
-    '</span><span class="circles-time">' +
-    esc(formatDuration(row.seconds)) +
-    '</span></li>';
+  const doc = htmlDocument();
+  if (!model.ranked) return createEmptyRanking(doc, t('circles.boardEmpty')).outerHTML;
+  const value = (row) => formatDuration(row.seconds);
+  const rows = model.rows.slice(0, 3).map((row, i) => ({
+    ...row,
+    position: i + 1,
+    nickname: row.mine ? row.nickname + ' ' + t('circles.you') : row.nickname,
+  }));
   return (
-    '<ol class="circles-board" aria-label="' +
-    esc(t('circles.top3')) +
-    '">' +
-    model.rows.map(line).join('') +
-    '</ol>' +
+    createPodium(doc, rows, { value, t, label: t('circles.top3') }).outerHTML +
     (model.personal && !model.personalShown
-      ? '<p class="circles-personal">' +
-        esc(
-          t('circles.yourPlace', {
-            place: model.personal.place,
-            time: formatDuration(model.personal.seconds),
-          }),
-        ) +
-        '</p>'
+      ? createMyPosition(doc, model.personal, { value, t, label: t('groupRanking.yourPosition') })
+          .outerHTML
       : '') +
-    (model.personal ? '' : '<p class="circles-personal">' + esc(t('circles.noTimeYet')) + '</p>') +
+    (model.personal ? '' : '<p class="lumen-rank-note">' + esc(t('circles.noTimeYet')) + '</p>') +
     (model.withoutTime
       ? '<p class="circles-note">' +
         esc(t('circles.withoutTime', { count: model.withoutTime })) +

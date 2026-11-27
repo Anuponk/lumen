@@ -127,4 +127,14 @@ export default Object.freeze({
   'premium.archiveReplay': "Replay this challenge (training)",
   'premium.archiveUnavailable': "This challenge is no longer available.",
   'premium.archiveRequired': "Replaying past challenges is part of LUMEN Premium.",
+  // #1029 compact Premium offer.
+  'premiumShop.title': "Explore the whole sky",
+  'premiumShop.subtitle': "LUMEN Premium — Play without limits.",
+  'premiumShop.benefitSky': "Every adventure in the main sky and its extensions",
+  'premiumShop.benefitLimit': "No daily limit",
+  'premiumShop.pay': "Confirm and pay · {price}",
+  'premiumShop.unavailable': "Payment is not available right now.",
+  'premiumShop.free': "Or unlock it for free by mastering “{name}” to 100%.",
+  'premiumShop.freeGeneric': "Or unlock it for free by mastering the previous adventure to 100%.",
+  'premiumShop.progress': "See my progress",
 });
