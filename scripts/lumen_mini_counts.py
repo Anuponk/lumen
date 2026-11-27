@@ -13,8 +13,6 @@ Environment:
   LUMEN_COUNTS_DIR    output directory (default ~/lumen-private/acquisition)
   LUMEN_COUNTS_DAY    AAAA-MM-JJ to aggregate (default: yesterday in Paris)
 """
-from __future__ import annotations
-
 import glob
 import gzip
 import json
@@ -25,9 +23,10 @@ import urllib.parse
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
-PARIS = ZoneInfo("Europe/Paris")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lumen_social_post import paris_local  # noqa: E402
+
 LINE = re.compile(r'^\S+ \S+ \S+ \[(?P<at>[^\]]+)\] "(?P<method>GET|HEAD) (?P<target>\S+) [^"]*" (?P<status>\d{3}) \S+(?: "[^"]*" "(?P<ua>[^"]*)")?')
 EVENTS = {"view", "win", "cta_discover", "cta_install", "cta_official", "share"}
 SOURCES = {"facebook_daily", "facebook", "instagram", "mini_share", "mini_puzzle", "direct"}
@@ -36,14 +35,14 @@ BOT = re.compile(r"bot|crawl|spider|slurp|facebookexternalhit|facebookcatalog|me
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
-def parse_time(text: str) -> datetime | None:
+def parse_time(text):
     try:
         return datetime.strptime(text, "%d/%b/%Y:%H:%M:%S %z")
     except ValueError:
         return None
 
 
-def classify(target: str) -> tuple[str, str, str, str] | None:
+def classify(target):
     """(metric, day, source, language) for a counted request, else None."""
     parts = urllib.parse.urlsplit(target)
     query = urllib.parse.parse_qs(parts.query)
@@ -76,7 +75,7 @@ def aggregate(lines, day: str) -> dict:
         if BOT.search(match["ua"] or ""):
             continue
         at = parse_time(match["at"])
-        if not at or at.astimezone(PARIS).strftime("%Y-%m-%d") != day:
+        if not at or paris_local(at).strftime("%Y-%m-%d") != day:
             continue
         found = classify(match["target"])
         if found:
@@ -98,7 +97,7 @@ def read_lines(pattern: str):
 
 
 def main(environ=os.environ) -> int:
-    day = environ.get("LUMEN_COUNTS_DAY") or (datetime.now(timezone.utc).astimezone(PARIS) - timedelta(days=1)).strftime("%Y-%m-%d")
+    day = environ.get("LUMEN_COUNTS_DAY") or (paris_local(datetime.now(timezone.utc)) - timedelta(days=1)).strftime("%Y-%m-%d")
     if not DAY.match(day):
         print("Lumen counts: invalid day", file=sys.stderr)
         return 2
