@@ -21,7 +21,7 @@ import {
 import { MINI_LOCALES, miniLocale, miniTranslator } from '../src/acquisition/locales.js';
 import { calendarView } from '../src/acquisition/mini-calendar-page.js';
 import { TERRITORY_COLORS, ctaLinks, hitUrl } from '../src/acquisition/mini-game.js';
-import { buildPost, metricoolCsv, postKind } from '../src/acquisition/social-posts.js';
+import { METRICOOL_COLUMNS, buildPost, metricoolCsv, postKind } from '../src/acquisition/social-posts.js';
 import { campaignUrl, playerShareUrlFor, readDiscoveryCampaign } from '../src/analytics/acquisition.js';
 import { buildPlan } from './marketing/social-posts.mjs';
 import { boardSvg } from './marketing/social-visuals.mjs';
@@ -176,7 +176,57 @@ assert.equal(postKind('2026-12-27', { miniDays: new Set(), officialDays: new Set
 assert.equal(buildPost('2026-12-25', { mini: null, official: null }), null);
 const fallback = buildPost('2026-12-02', { mini: { day: '2026-12-02', missing: 1 }, official: null, imageExists: () => false });
 assert.equal(fallback.image, null, 'Without a visual: a plain link post');
-assert.ok(metricoolCsv([{ ...fallback, message: 'a "b"\nc' }]).includes('"a ""b""\nc"'));
+// Metricool calendar import: exact template columns, one Facebook photo post per row.
+const parseCsv = (text) => {
+  const rows = [[]];
+  let cell = '',
+    quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ',') {
+      rows.at(-1).push(cell);
+      cell = '';
+    } else if (ch === '\n') {
+      rows.at(-1).push(cell);
+      cell = '';
+      rows.push([]);
+    } else cell += ch;
+  }
+  return rows.filter((r) => r.length > 1);
+};
+assert.equal(METRICOOL_COLUMNS.length, 102);
+assert.deepEqual(METRICOOL_COLUMNS.slice(0, 5), ['Text', 'Date', 'Time', 'Draft', 'Facebook']);
+const december = plan.posts.filter((p) => p.day.startsWith('2026-12'));
+const csvText = metricoolCsv([...december, { ...fallback, message: 'a "b"\nc' }]);
+assert.ok(csvText.startsWith('﻿Text,Date,Time,Draft,Facebook,'), 'UTF-8 BOM and template header');
+assert.ok(!csvText.includes('\r'));
+const [head, ...rows] = parseCsv(csvText.slice(1));
+assert.deepEqual(head, [...METRICOOL_COLUMNS]);
+assert.equal(rows.length, 32);
+const col = (row, name) => row[METRICOOL_COLUMNS.indexOf(name)];
+for (const [index, row] of rows.slice(0, 31).entries()) {
+  const post = december[index];
+  assert.equal(row.length, 102);
+  assert.deepEqual([col(row, 'Text'), col(row, 'Date'), col(row, 'Time')], [post.message, post.day, '08:00:00']);
+  assert.deepEqual(
+    ['Draft', 'Facebook', 'Instagram', 'Twitter/X', 'TikTok', 'Shortener'].map((n) => col(row, n)),
+    ['false', 'true', 'false', 'false', 'false', 'false'],
+  );
+  assert.equal(col(row, 'Picture Url 1'), post.image);
+  assert.ok(col(row, 'Alt text picture 1').length > 10);
+  assert.equal(col(row, 'Facebook Post Type'), 'POST');
+}
+assert.equal(col(rows[31], 'Text'), 'a "b"\nc', 'Quotes and line breaks survive');
+assert.equal(col(rows[31], 'Picture Url 1'), '', 'No visual: no picture');
+const [, draftRow] = parseCsv(metricoolCsv(december.slice(0, 1), { draft: true }).slice(1));
+assert.equal(col(draftRow, 'Draft'), 'true', 'Rehearsal rows are drafts');
 
 // Visuals: the official board shows territories only, the mini board the given Guardians only.
 assert.ok(!boardSvg(reg0, []).includes('✦'));
