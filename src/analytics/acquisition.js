@@ -29,17 +29,26 @@ const campaignMedia = new Map([
   ['youtube_shorts', 'social'],
   ['instagram_reels', 'social'],
   ['tiktok', 'social'],
+  // #1056 / #1057: daily Facebook post and the public mini-puzzle's call to action.
+  ['facebook_daily', 'social'],
+  ['mini_puzzle', 'referral'],
 ]);
 
 // Partager (result) and Inviter (discovery) keep distinct public campaign codes
 // so the funnel can tell them apart (#881 Lot 1). Copy keeps the canonical URL.
 // The campaign always replaces any query: one utm_source, one utm_medium.
-export function campaignUrl(page, source) {
+// `keep` preserves reviewed public flags of the destination (e.g. install=1, daily=1);
+// `campaign` adds an optional utm_campaign (e.g. avent_2026, mini_2026-12-01).
+export function campaignUrl(page, source, { campaign = null, keep = [] } = {}) {
+  if (!campaignMedia.has(source)) throw Error('Unknown acquisition source ' + source);
   const url = new URL(page);
+  const kept = keep.filter((name) => url.searchParams.has(name)).map((name) => [name, url.searchParams.get(name)]);
   url.search = '';
   url.hash = '';
+  for (const [name, value] of kept) url.searchParams.set(name, value);
   url.searchParams.set('utm_source', source);
   url.searchParams.set('utm_medium', campaignMedia.get(source));
+  if (campaign) url.searchParams.set('utm_campaign', String(campaign).replace(/[^A-Za-z0-9_.-]/g, '_').slice(0, 60));
   return url.href;
 }
 export const playerShareUrlFor = locale => campaignUrl(discoveryUrlFor(locale), 'player_share');
