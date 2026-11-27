@@ -24,6 +24,12 @@ h2{font-size:clamp(21px,4vw,28px);margin:40px 0 12px}
 .install-qr figcaption{max-width:220px;color:var(--muted);font-size:14px}
 @media (min-width:900px) and (hover:hover) and (pointer:fine){.install-mobile{display:none}.install-qr{display:flex}}
 .cta-note{color:var(--muted);font-size:14px;margin:8px 0 0}
+#daily-link{min-height:100svh;display:grid;place-items:center;padding-block:24px}
+.daily-landing-card{position:relative;width:min(100%,620px);overflow:hidden;text-align:center;padding:clamp(32px,8vw,76px) clamp(16px,5vw,56px);border:1px solid var(--line);border-radius:24px;background:var(--winter-sky,linear-gradient(155deg,#16385b,var(--card)));box-shadow:0 22px 65px #0007}
+.daily-landing-card .play{position:relative}
+.daily-landing-day{margin:0 0 10px;color:var(--gold);font-weight:700}
+.daily-landing-day:empty{display:none}
+#daily-link[data-seasonal='winter-stars'] .daily-landing-card{border-color:#ba9b597a}
 .shots{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:24px 0}
 .shots figure{margin:0;width:min(260px,44vw);min-width:200px;text-align:center}
 .shots img{width:100%;height:auto;border-radius:22px;border:1px solid var(--line);box-shadow:0 18px 50px rgba(0,0,0,.45);background:var(--card)}

@@ -1963,11 +1963,22 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .group-ranking-podium [data-position="3"] .ranking-place{color:#c79564}
 
 /* Seasonal presentation: inset decoration never changes layout or board colors. */
-body[data-seasonal="winter-stars"] #dailyIntro,
-body[data-seasonal="winter-stars"] #dailyBanner,
-body[data-seasonal="winter-stars"] #dailyQuestBanner { box-shadow: inset 0 0 0 1px var(--seasonal-accent); }
-body[data-seasonal="winter-stars"] #dailyChip { box-shadow: inset 0 0 0 1px var(--seasonal-accent); }
-body[data-seasonal="winter-stars"] #dailyIntro h2::after { content: var(--seasonal-decoration); color: var(--seasonal-accent); margin-inline-start: .35em; }
+body[data-seasonal="winter-stars"].daily-mode { background: var(--winter-sky); }
+body[data-seasonal="winter-stars"] :is(#dailyBanner,#dailyQuestBanner,#socialDaily,#openDaily,#dailyChip,.daily-card-theme) {
+  background-image: var(--winter-lights), linear-gradient(110deg,#34233a,#173e3b);
+  background-repeat: repeat-x,repeat-x,repeat-x,repeat-x,repeat-x,no-repeat;
+  background-size: 72px 16px,72px 16px,72px 16px,72px 16px,72px 16px,100% 100%;
+  background-position: 0 -7px,0 -7px,0 -7px,0 -7px,0 -7px,0 0;
+  border-color: #b7a16a;
+}
+body[data-seasonal="winter-stars"] .daily-card-theme {
+  background-position: 0 0;
+  background-image: var(--winter-lights), var(--winter-sky);
+  background-size: 72px 16px,72px 16px,72px 16px,72px 16px,72px 16px,100% 100%,100% 100%,100% 100%;
+  background-repeat: repeat-x,repeat-x,repeat-x,repeat-x,repeat-x,no-repeat,no-repeat,no-repeat;
+}
+#dailyDiscoveryHelp { margin-inline-start: auto; padding: 3px 9px; font-size: inherit; }
+#dailyBannerMeta:empty { display:none; }
 
 /* #1030 discreet Premium profile badge (hidden until the commercial launch). */
 .premium-badge{margin-left:.45em;padding:.05em .5em;border:1px solid color-mix(in srgb,var(--gold,#e8c46a) 70%,transparent);border-radius:999px;color:var(--gold,#e8c46a);font-size:.72em;font-weight:600;letter-spacing:.02em;line-height:1.5;vertical-align:middle;white-space:nowrap}

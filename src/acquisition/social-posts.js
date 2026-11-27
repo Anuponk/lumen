@@ -10,23 +10,42 @@ export function officialLink(day){
 }
 // Compatibility for old tooling: acquisition now always leads to the real daily.
 export const miniLink=officialLink;
-export function buildPost(day,{official,imageExists=()=>true}){
+const ADVENT_HOOKS = [
+ '24 jours, 24 défis pour faire briller les étoiles !',
+ 'Une nouvelle nuit étoilée, une nouvelle grille à résoudre.',
+ 'Offre-toi une pause au milieu des étoiles.',
+ 'Les Gardiens se cachent sous le ciel de Noël. Sauras-tu tous les trouver ?',
+ 'Allume les étoiles une à une et relève le défi du jour.',
+ 'Un casse-tête sous les guirlandes, ça te dit ?',
+];
+const DAILY_HOOKS = [
+ 'Une nouvelle grille t’attend. Sauras-tu trouver tous les Gardiens ?',
+ 'Une pause sous les étoiles ? À toi de résoudre la grille du jour.',
+ 'À chaque territoire son Gardien. Trouveras-tu leur place ?',
+ 'Les étoiles sont prêtes à briller. À toi de jouer !',
+ 'Quelques minutes, une grille et des Gardiens à retrouver.',
+];
+export function buildPost(day,{official,imageExists=()=>true,privateMedia=false}){
  if(!official||official.day!==day)return null;
  const p=dailyPresentation(day);
- const date=new Intl.DateTimeFormat('fr',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(day+'T12:00:00Z'));
- const link=officialLink(day),image='content/social/official-'+day+'.jpg',hasImage=imageExists(image);
+ const hooks=p.event?ADVENT_HOOKS:DAILY_HOOKS;
+ const index=(Number(day.slice(-2))-1)%hooks.length;
+ const link=officialLink(day),file='official-'+day+'.jpg',image='content/social/'+file;
+ const hasImage=!privateMedia&&imageExists(image);
  return {key:CHANNEL+':'+day,channel:CHANNEL,day,publishAt:PUBLISH_AT,kind:'official',eventId:p.event?.id??null,
-  message:[p.title+' LUMEN · '+date,
-   'Une grille '+official.size+'×'+official.size+', une seule tentative officielle et un classement commun. Qui fera le meilleur temps aujourd’hui ?',
-   '👉 '+link,'Sans compte, joue en entraînement sur la vraie grille du jour (non classé), sans installation.',p.hashtags].join('\n\n'),
-  link,image:hasImage?SITE+'/'+image:null,imageAlt:hasImage?p.title+' LUMEN : grille initiale complète, territoires de couleur, aucun Gardien placé':null};
+  message:[(p.event?'🎄 ':'✨ ')+p.title+' LUMEN'+(p.dayLabel?' · '+p.dayLabel:''),
+   hooks[index]+' Une grille '+official.size+'×'+official.size+' à découvrir.',
+   '🏆 Joue gratuitement, sans inscription, et tente de rejoindre le classement !',
+   '👉 À toi de jouer : '+link,p.hashtags].join('\n\n'),
+  link,image:hasImage?SITE+'/'+image:null,privateImage:privateMedia?file:null,
+  imageAlt:hasImage||privateMedia?p.title+' LUMEN : grille initiale complète, territoires de couleur, aucun Gardien placé':null};
 }
-export function planPosts({from,to,schedule,addDays,sizeOf,imageExists}){
+export function planPosts({from,to,schedule,addDays,sizeOf,imageExists,privateMedia=false}){
  const days=new Map(schedule.days.map(entry=>[entry.day,entry]));
  const posts=[];
  for(let day=from;day<=to;day=addDays(day,1)){
   const entry=days.get(day);if(!entry)continue;
-  posts.push(buildPost(day,{official:{day,size:sizeOf(entry)},imageExists}));
+  posts.push(buildPost(day,{official:{day,size:sizeOf(entry)},imageExists,privateMedia}));
  }
  return posts;
 }
@@ -151,10 +170,10 @@ export function metricoolRow(post, { draft = false } = {}) {
     Draft: draft,
     Facebook: true,
     'Picture Url 1': post.image || '',
-    'Alt text picture 1': post.image ? post.imageAlt || '' : '',
+    'Alt text picture 1': post.imageAlt || '',
     Shortener: false,
     'Facebook Post Type': 'POST',
-    Tags: 'Lumen,' + (post.kind === 'official' ? 'DefiDuJour' : 'MiniPuzzle'),
+    Tags: 'Lumen,' + (post.eventId ? 'DefiDeLAvent' : post.kind === 'official' ? 'DefiDuJour' : 'MiniPuzzle'),
   });
   for (const network of METRICOOL_NETWORKS) row[network] = false;
   return row;

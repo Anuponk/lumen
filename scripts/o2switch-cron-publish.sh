@@ -152,6 +152,7 @@ if [[ ! -d "$RELEASE" ]]; then
  for dir in mini d studio; do
    if git cat-file -e "$SHA:$dir" 2>/dev/null; then git archive "$SHA" "$dir" | tar -xf - -C "$TMP"; fi
  done
+ rm -f -- "$TMP/content/generated/daily-schedule.json" "$TMP/content/social/"official-????-??-??.jpg
  # Stamp the immutable release version in the staged HTML only.
  # Narrow administration rewrite, independent of the root hosting configuration.
  if git cat-file -e "$SHA:admin/.htaccess" 2>/dev/null; then

@@ -13,18 +13,31 @@ export async function verifyMini({send,evaluate},baseUrl){
    assert.equal(result.state,state);assert.equal(result.locale,locale);
    assert.equal(result.board,0);assert.equal(result.unchanged,true);assert.equal(result.scrollX,false);
    const target=new URL(result.href,baseUrl);assert.equal(target.searchParams.get('daily'),'1');
+   assert.equal(target.searchParams.get('dailyLink'),'1');
    assert.equal(target.searchParams.get('utm_campaign'),'avent_2026');
    assert.equal(target.searchParams.has('day'),false);
   }
  }
  await send('Page.navigate',{url:new URL('/studio/',baseUrl).href});
- for(let i=0;i<100;i++){
-  try{if(await evaluate('document.querySelector("#board svg")!==null'))break}catch{}
-  await new Promise(r=>setTimeout(r,50));
- }
- assert.equal(await evaluate('!!document.querySelector("#board svg")'),true,'Studio rendered demo');
- assert.equal(await evaluate('typeof window.lumenDiagnostics'),'undefined','Studio never boots the game');
+ const waitFor=async expression=>{
+  for(let i=0;i<120;i++){
+   try{if(await evaluate(expression))return}catch{}
+   await new Promise(r=>setTimeout(r,100));
+  }
+  assert.fail('Studio did not reach '+expression);
+ };
+ const preview=`document.getElementById('seasonal-preview').contentWindow`;
+ const ready=day=>`${preview}.lumenSeasonalPreview==='${day}'&&typeof ${preview}.lumenStudioView==='function'`;
+ await waitFor(ready('2026-12-01'));
+ assert.equal(await evaluate(`${preview}.document.querySelector('#board').children.length`),25,'Real game renders the fixture grid');
+ assert.equal(await evaluate(`${preview}.localStorage===localStorage||typeof ${preview}.indexedDB!=='undefined'`),false);
+ assert.match(await evaluate(`${preview}.document.getElementById('dailyBanner').innerText`),/Jour 1\/24/);
+ await evaluate(`${preview}.lumenStudioView('victory')`);
+ await waitFor(`!${preview}.document.getElementById('dailyResultModal').hidden`);
+ assert.equal(await evaluate(`${preview}.document.getElementById('dailyBoards').hidden`),true,'Demo does not show real ranks');
+ assert.equal(await evaluate(`${preview}.document.getElementById('dailyDiscoverySignup').hidden`),false,'Demo conversion is visible');
  await evaluate("document.getElementById('date').value='2026-12-25';document.getElementById('date').dispatchEvent(new Event('change'))");
- assert.doesNotMatch(await evaluate("document.getElementById('event').textContent"),/Avent/);
+ await waitFor(ready('2026-12-25'));
+ assert.equal(await evaluate(`${preview}.document.body.dataset.seasonal`),'');
  return {realDailyLinks:true,legacy:true,locales:3,dateStates:3,noSeparateGame:true,safeStudio:true};
 }

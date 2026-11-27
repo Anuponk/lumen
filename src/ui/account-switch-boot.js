@@ -2,6 +2,28 @@
 // needs restoring. Storage and URL hints only affect presentation.
 try{
  const query=new URLSearchParams(location.search),fragment=new URLSearchParams(location.hash.slice(1));
+ const previewDay=query.get('studioPreview');
+ if(/^\d{4}-\d{2}-\d{2}$/.test(previewDay??'')&&window.frameElement?.id==='seasonal-preview'){
+  const policy=document.createElement('meta');
+  policy.httpEquiv='Content-Security-Policy';
+  const directives = [['connect-src',"'self'"],['form-action',"'none'"],['worker-src',"'none'"]];
+  policy.content=directives.map(words=>words.join(' ')).join('; ');
+  document.head.append(policy);
+  const memoryStorage=()=>{
+   const values=new Map();
+   return {
+    get length(){return values.size}, key:index=>[...values.keys()][index]??null,
+    getItem:key=>values.get(String(key))??null, setItem:(key,value)=>values.set(String(key),String(value)),
+    removeItem:key=>values.delete(String(key)), clear:()=>values.clear(),
+   };
+  };
+  Object.defineProperties(window,{
+   localStorage:{value:memoryStorage()},sessionStorage:{value:memoryStorage()},
+   indexedDB:{value:undefined},lumenSeasonalPreview:{value:previewDay},
+  });
+  document.addEventListener('click',event=>{if(event.target.closest?.('a[href]'))event.preventDefault()},true);
+  document.addEventListener('submit',event=>event.preventDefault(),true);
+ }else{
  const authReturn=query.has('lumen_confirm')||query.has('code')||query.has('token_hash')||fragment.has('access_token');
  const storedSession=localStorage.getItem('sb-tjdjlavmusmncuszhsuw-auth-token');
  if(query.get('qa')!=='new'&&(authReturn||storedSession||sessionStorage.getItem('lumenAccountSwitchHoldV1')==='1')){
@@ -21,5 +43,6 @@ try{
   // A pending identity change cannot use the prior owner's offline cache.
   const storedOwner=storedSession?JSON.parse(storedSession)?.user?.id:null;
   if(authReturn||storedOwner&&storedOwner!==localStorage.getItem('lumenCloudOwnerId'))hold.dataset.unverifiedOwner='true';
+ }
  }
 }catch{}

@@ -78,6 +78,7 @@ if [[ "$MODE" != "--rollback" ]]; then
   for dir in mini d studio; do
     if [[ -d "$dir" ]]; then cp -R "$dir" "$TMP/$dir"; fi
   done
+  rm -f -- "$TMP/content/generated/daily-schedule.json" "$TMP/content/social/"official-????-??-??.jpg
   printf '%s\n' "$SHA" > "$TMP/.lumen-release-sha"
   find "$TMP" -type d -exec chmod 755 {} +
   find "$TMP" -type f -exec chmod 644 {} +

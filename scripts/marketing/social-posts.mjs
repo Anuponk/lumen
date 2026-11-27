@@ -23,7 +23,7 @@ export function buildPlan({from='2026-12-01',to='2027-01-31'}={}) {
     schedule,
     addDays,
     sizeOf: (entry) => canonicalQuestAtGridRevision(entry.questId, entry.gridRevision).size,
-    imageExists: (file) => fs.existsSync(path.join(root, file)),
+    privateMedia: true,
   });
   return { schema: 'lumen-social-posts-v1', timeZone: 'Europe/Paris', channel: 'facebook', from, to, posts };
 }

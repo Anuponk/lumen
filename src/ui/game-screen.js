@@ -38,7 +38,7 @@ import {duelFromChallenge,duelFromSentRow,renderDuelCard,renderMyChallenges,rend
 import {createSocialNotifications} from './social-notifications.js';
 import {createRankingView} from './ranking.js';
 import {createVictoryPresentation} from './victory-presentation.js';
-import {createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
+import {CELEBRATION_CONFIG,createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
 import {streakVisual,lostStreak} from "../campaign/streak-visual.js";
 import {DAILY_LIGHT_STREAK_ENABLED} from "../campaign/feature-flags.js";
 import {learningStep, dragLearningStep, learningAllows, territoryNumbersVisible} from "../game/learning.js";
@@ -144,11 +144,11 @@ import {adventureDisplayName} from './adventure-copy.js';
 import {constellationDisplayName} from '../campaign/constellation-facts.js';
 import {learningCopy,learningIntro,lessonText} from './learning-copy.js';
 
-export function startGameScreen({localePreference,t:initialTranslation=localePreference?.translator().t??createTranslator().t}={}){
+export function startGameScreen({localePreference,previewDay=null,t:initialTranslation=localePreference?.translator().t??createTranslator().t}={}){
 let badgeJourney=null;
 let localeWrite=null;
 let translate=initialTranslation;
-let seasonalDay=civilDay(),seasonalClockOffset=0;
+let seasonalDay=previewDay??civilDay(),seasonalClockOffset=0;
 const t=(key,params,options)=>seasonalCopy(translate(key,params,options),key,seasonalDay,localePreference?.locale??'fr');
 function refreshSeasonalSkin(day=seasonalDay){
  seasonalDay=day;
@@ -169,8 +169,10 @@ function refreshSeasonalSkin(day=seasonalDay){
 // Local clock only, no additional daily discovery or Supabase requests. Server
 // discovery below supplies the authoritative day; an active run retains its day.
 let seasonalClockDay=civilDay();
-setInterval(()=>{const day=civilDay(new Date(Date.now()+seasonalClockOffset));if(day!==seasonalClockDay){seasonalClockDay=day;refreshSeasonalSkin(day)}},60000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){seasonalClockDay=civilDay(new Date(Date.now()+seasonalClockOffset));refreshSeasonalSkin(seasonalClockDay)}});
+if(!previewDay){
+ setInterval(()=>{const day=civilDay(new Date(Date.now()+seasonalClockOffset));if(day!==seasonalClockDay){seasonalClockDay=day;refreshSeasonalSkin(day)}},60000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){seasonalClockDay=civilDay(new Date(Date.now()+seasonalClockOffset));refreshSeasonalSkin(seasonalClockDay)}});
+}
 function translateGameCopy(){
  const manifest=document.querySelector('link[rel="manifest"]');
  if(manifest){
@@ -1457,7 +1459,7 @@ let lumenSupabase=null,lumenUser=offlineStartupUser(),lumenCloudReady=false,lume
 // Use the SDK's existing persistent store directly: its default write probe can
 // reject a full but readable store and silently hide a valid saved session.
 // Token refresh/rotation, validation and the canonical storage key stay SDK-owned.
-try{lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:localStorage}})}catch(e){console.warn("LUMEN cloud unavailable",e)}
+try{if(!previewDay)lumenSupabase=window.supabase.createClient(LUMEN_SUPABASE_URL,LUMEN_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:localStorage}})}catch(e){console.warn("LUMEN cloud unavailable",e)}
 let lumenNickname="";
 
 let accountOfferSignInPending=false;
@@ -2536,6 +2538,7 @@ function discoverDailyToday(owner){
 // 30 s ago, consumed once) may reuse it; any other load reads the server.
 const DAILY_TODAY_KEY='lumenDailyTodayV1',DAILY_HANDOFF_KEY='lumenDailyHandoffV1',DAILY_TODAY_MARGIN_MS=60000,DAILY_HANDOFF_MS=30000;
 function handOffDaily(training=false,archive=null){
+ if(previewDay){location.reload();return}
  try{sessionStorage.setItem(DAILY_HANDOFF_KEY,String(Date.now()))}catch{}
  // #1015 (recette 24/11 : 5-6 s par sens) : recharger la page relançait toute
  // l'hydratation cloud (4-5 RPC de 1 à 2,5 s sur mobile). Le défi s'ouvre désormais
@@ -2560,13 +2563,14 @@ async function enterDailyInPage(training=false,archive=null){
  }finally{dailyTransition=false}
 }
 function stripDailyUrl(){
- const url=new URL(location.href);for(const key of ['daily','training','sky','archive'])url.searchParams.delete(key);
+ const url=new URL(location.href);for(const key of ['daily','dailyLink','training','sky','archive'])url.searchParams.delete(key);
  history.replaceState(null,'',url.pathname+url.search+url.hash);
 }
 // Leaves the daily mode exactly as the page restart used to: no daily state,
 // campaign quest chosen from progress, the stored attempt left to restore().
 function exitDailyMode(){
  for(const id of ['dailyIntro','dailyResultModal','dailyWeekModal']){const el=document.getElementById(id);if(el)el.hidden=true}
+ dailyCelebration?.clear();
  clearInterval(dailyBannerTimer);dailyBannerTimer=null;
  const banner=document.getElementById('dailyBanner');if(banner)banner.hidden=true;
  document.body.classList.remove('daily-mode');
@@ -2687,38 +2691,56 @@ async function refreshDailyEntry(){
 function renderDailyBanner(){
  if(socialChallenge?.daily)refreshSeasonalSkin(socialChallenge.day);
  const banner=document.getElementById('dailyBanner');if(!banner||!socialChallenge?.daily)return;
- banner.hidden=false;document.getElementById('dailyBannerDate').textContent=dailyDate(socialChallenge.day);
+ banner.hidden=false;
+ const presentation=dailyPresentation(socialChallenge.day,dailyLocale());
+ document.getElementById('dailyBannerDate').textContent=presentation.dayLabel||dailyDate(socialChallenge.day);
  const left=Date.parse(socialChallenge.closes_at)-Date.now()-(socialChallenge.clockSkewMs||0);
- document.getElementById('dailyBannerMeta').textContent=socialChallenge.training?t('daily.trainingBanner'):t('daily.officialBanner',{duration:dailyDuration(left)});
+ const direct=socialChallenge.discovery;
+ document.getElementById('dailyBannerMeta').textContent=direct?'':socialChallenge.training?t('daily.trainingBanner'):t('daily.officialBanner',{duration:dailyDuration(left)});
+ const help=document.getElementById('dailyDiscoveryHelp');help.hidden=!direct;
+ help.onclick=()=>document.getElementById('tutorialHelp').click();
 }
 function showDailyBoardTab(board,scope,track=true){
  if(track)trackDaily('board_viewed',{daily_day:board?.day||socialChallenge?.day||null,board_scope:scope,board_final:!!board?.final});
  for(const [id,tab] of [['dailyTabGeneral','general'],['dailyTabFriends','friends']]){const b=document.getElementById(id);b.setAttribute('aria-selected',String(tab===scope))}
  document.getElementById('dailyBoardPanel').innerHTML=renderDailyBoard(board?.[scope],{scope,formatDuration,t});
 }
-function showDailyResult({run=null,board=null,training=false,pending=false,official=null,offerReminders=false}={}){
+let dailyCelebration=null;
+function showDailyResult({run=null,board=null,training=false,pending=false,official=null,offerReminders=false,discovery=false,victory=false}={}){
  if(!training&&(pending||['completed','abandoned'].includes(run?.status)))rememberDailyDone(run?.day||socialChallenge?.day);
  const modal=document.getElementById('dailyResultModal'),note=document.getElementById('dailyResultNote');
  const status=run?.status,score=run?.score??official;
- document.getElementById('dailyResultTitle').textContent=t(training?'daily.trainingComplete':status==='abandoned'?'daily.abandoned':'daily.complete');
+ document.getElementById('dailyResultTitle').textContent=t(discovery?'daily.discoveryVictory':training?'daily.trainingComplete':status==='abandoned'?'daily.abandoned':'daily.complete');
  document.getElementById('dailyResultTitle').title=status==='completed'?dailyPresentation(run?.day??socialChallenge?.day??seasonalDay,dailyLocale()).celebration:'';
  document.getElementById('dailyResultTime').textContent=status==='abandoned'?t('daily.unranked'):score!=null?formatDuration(score):'';
- note.textContent=training?t('daily.trainingNote'):pending?t('daily.pendingNote'):status==='completed'?t('daily.officialNote'):'';
+ note.textContent=discovery?t(previewDay?'daily.discoverySave':'daily.discoveryUnavailable'):training?t('daily.trainingNote'):pending?t('daily.pendingNote'):status==='completed'?t('daily.officialNote'):'';
+ const signup=document.getElementById('dailyDiscoverySignup'),login=document.getElementById('dailyDiscoveryLogin');
+ signup.hidden=login.hidden=!(discovery&&previewDay);
+ signup.onclick=()=>openEmailAccountOffer('signup');login.onclick=()=>openEmailAccountOffer('login');
  const boards=document.getElementById('dailyBoards');boards.hidden=!board;
  if(board){showDailyBoardTab(board,'general',false);document.getElementById('dailyTabGeneral').onclick=()=>showDailyBoardTab(board,'general');document.getElementById('dailyTabFriends').onclick=()=>showDailyBoardTab(board,'friends')}
  const closes=Date.parse(board?.closes_at||socialChallenge?.closes_at||'');
  document.getElementById('dailyNext').textContent=Number.isFinite(closes)?t('daily.nextChallenge',{duration:dailyDuration(closes-Date.now())}):'';
  document.getElementById('dailyRetrySubmit').hidden=!pending;
- document.getElementById('dailyTrainAgain').hidden=pending||(!training&&!['completed','abandoned'].includes(status));
+ document.getElementById('dailyTrainAgain').hidden=discovery||pending||(!training&&!['completed','abandoned'].includes(status));
  document.getElementById('dailyTrainAgain').onclick=()=>handOffDaily(true);
  // #1013: the end of the Défi du jour leads to Mon ciel (the same daily for
  // everyone: no daily-specific share), never to a campaign grid.
- document.getElementById('dailyContinue').onclick=()=>leaveDailyToSky();
+ const continueButton=document.getElementById('dailyContinue');
+ continueButton.textContent=t(discovery&&previewDay?'daily.discoveryLater':'daily.mySky');
+ continueButton.onclick=()=>leaveDailyToSky();
  document.getElementById('dailyRetrySubmit').onclick=()=>retryPendingDaily(true);
  const weekButton=document.getElementById('dailyWeekFromResult');weekButton.hidden=training||pending||!lumenUser;weekButton.onclick=()=>openDailyWeek(socialChallenge?.day||board?.day,'result');
  if(board)trackDaily('board_viewed',{daily_day:board.day||socialChallenge?.day||null,board_scope:'general',board_final:!!board.final});
  void dailyPushSettings?.presentResult(offerReminders&&status==='completed');
- modal.hidden=false;document.getElementById('dailyContinue').focus({preventScroll:true});
+ modal.hidden=false;(signup.hidden?continueButton:signup).focus({preventScroll:true});
+ if(victory){
+  const season=dailyPresentation(run?.day??socialChallenge?.day??seasonalDay,dailyLocale()).event;
+  const config=season?{...CELEBRATION_CONFIG,special:{extraParticles:12,palette:season.skin.celebrationColors}}:CELEBRATION_CONFIG;
+  dailyCelebration?.clear();dailyCelebration=createCelebration(modal.querySelector('.daily-card-theme'),{config});
+  dailyCelebration.start({level:2,special:season?.id});
+  victorySound();
+ }
 }
 // « Ta semaine dans les étoiles »: own days only, past weeks navigable.
 let dailyWeekRequest=0;
@@ -2788,9 +2810,14 @@ window.addEventListener('online',()=>{void retryPendingDaily()});
 async function finishDaily(status){
  const snap=attemptEngine.snapshot(),uses=snap?.helpUses||{},seconds=Math.max(0,Math.floor(attemptEngine.activeMs()/1000));
  const official=rankedTime(seconds,{hint:uses.hint||0,verify:uses.verify||0,guided:uses.guided||0}).score;
- if(socialChallenge.training){showDailyResult({training:true,official});return}
+ if(socialChallenge.training){
+  if(status==='completed')showDailyResult({training:true,official,discovery:socialChallenge.discovery,victory:true});
+  else if(socialChallenge.discovery)leaveDailyToSky();
+  else showDailyResult({training:true,official});
+  return
+ }
  const payload={day:socialChallenge.day,operationId:socialChallenge.operation_id,status,seconds,hint:uses.hint||0,verify:uses.verify||0,guided:uses.guided||0};
- try{const run=await dailyClient.finish(payload);localStorage.removeItem(DAILY_PENDING_KEY);const board=await dailyClient.board(socialChallenge.day).catch(()=>null);showDailyResult({run,board,offerReminders:true})}
+ try{const run=await dailyClient.finish(payload);localStorage.removeItem(DAILY_PENDING_KEY);const board=await dailyClient.board(socialChallenge.day).catch(()=>null);showDailyResult({run,board,offerReminders:true,victory:run?.status==='completed'})}
  catch(e){
   if(/invalid_|operation_mismatch|run_not_found/.test(e?.message||'')){showRewardToast(dailyErrorMessage(e,t));showDailyResult({run:null,board:null,official,training:false});return}
   try{localStorage.setItem(DAILY_PENDING_KEY,JSON.stringify(payload))}catch{}
@@ -2816,10 +2843,14 @@ async function bootstrapDailyArchive(day){
  document.body.classList.add('daily-mode');renderDailyBanner();
  return true;
 }
+function studioDailyToday(){
+ const quest=canonicalQuestForLegacy(0);
+ return {enabled:true,day:previewDay,quest_id:quest.id,grid_revision:quest.gridRevision??0,server_now:new Date().toISOString(),closes_at:new Date(Date.now()+8*3600e3).toISOString()};
+}
 async function bootstrapDailyChallenge(){
- const params=new URL(location.href).searchParams;if(!params.has('daily'))return false;
- if(params.has('archive'))return bootstrapDailyArchive(params.get('archive'));
- let today=cachedDailyToday();
+ const params=new URL(location.href).searchParams;if(!params.has('daily')&&!previewDay)return false;
+ if(!previewDay&&params.has('archive'))return bootstrapDailyArchive(params.get('archive'));
+ let today=previewDay?studioDailyToday():cachedDailyToday();
  if(!today){try{today=await dailyClient.today();if(today?.enabled)rememberDailyToday(today)}catch{today=null}}
  // The same answer feeds the header chip / Mon ciel entry: no second read.
  if(today)seedDailyToday(today);
@@ -2827,13 +2858,15 @@ async function bootstrapDailyChallenge(){
  let quest;try{quest=dailyQuest({questId:today.quest_id,gridRevision:today.grid_revision})}catch{showRewardToast(dailyErrorMessage('daily_unavailable',t));return false}
  socialChallenge={daily:true,training:true,challenge_id:'daily-'+today.day+'-training',day:today.day,grid_revision:today.grid_revision,closes_at:today.closes_at,clockSkewMs:Date.now()-Date.parse(today.server_now)};
  canonicalActiveQuest=quest;levelIndex=quest.legacyIndex??0;replayMode=false;
+ let signedIn=!!lumenUser;if(!signedIn&&!previewDay){try{signedIn=!!(await lumenSupabase?.auth?.getSession?.())?.data?.session?.user}catch{}}
+ socialChallenge.discovery=!signedIn&&(params.get('dailyLink')==='1'||!!previewDay)&&!params.has('training');
  trackDaily('opened',{daily_day:today.day,daily_training:params.has('training')});
  document.body.classList.add('daily-mode');renderDailyBanner();clearInterval(dailyBannerTimer);dailyBannerTimer=setInterval(renderDailyBanner,60000);
+ if(socialChallenge.discovery)return true;
  // #1015: the intro appears immediately with a discreet loading line.
  {const intro=document.getElementById('dailyIntro'),status=document.getElementById('dailyIntroStatus'),start=document.getElementById('dailyStart');
   document.getElementById('dailyIntroDate').textContent=dailyDate(today.day);status.textContent=t('daily.load');start.hidden=true;
   document.getElementById('dailyTraining').hidden=true;document.getElementById('dailyShowResult').hidden=true;intro.hidden=false}
- let signedIn=!!lumenUser;if(!signedIn){try{signedIn=!!(await lumenSupabase?.auth?.getSession?.())?.data?.session?.user}catch{}}
  let board=null,blocked=null;
  if(signedIn){try{board=await dailyClient.board(today.day)}catch(e){blocked=e}}else blocked='account_required';
  const run=board?.my_run||null,done=['completed','abandoned'].includes(run?.status);
@@ -3109,7 +3142,7 @@ function updateAttemptUI(){
  const a=attemptEngine.snapshot(),mask=document.getElementById("attemptMask"),pause=document.getElementById("attemptPause"),abandon=document.getElementById("attemptAbandon");
  if(!mask)return;
  const ready=a?.state===ATTEMPT_STATES.READY,paused=a?.state===ATTEMPT_STATES.PAUSED;
- mask.hidden=!(ready||paused)||(ready&&learningQuestActive());
+ mask.hidden=!(ready||paused)||(ready&&(learningQuestActive()||socialChallenge?.discovery));
  // #925: a paused grid is out of reach for touch, keyboard and screen readers.
  const grid=document.getElementById("board");if(grid)grid.inert=paused;
  document.getElementById("attemptMaskTitle").textContent=t(paused?"board.paused":"board.ready");
@@ -6656,6 +6689,17 @@ document.addEventListener("click",handleLearningTap,true);
 setupMobileAuth();setupTutorial();setupOutsideDefaults();setupQaMode();setupGameLocaleSetting();
 async function bootGame(){
  if(!(await bootstrapDailyChallenge()))await bootstrapSocialChallenge();restoreCanonicalCampaignAttempt();init();void refreshDailyEntry();void retryPendingDaily();refreshJourney();
+ if(previewDay){
+  window.lumenStudioView=view=>{
+   if(view==='sky'){leaveDailyToSky();return}
+   if(view!=='victory'||!socialChallenge?.discovery||celebrated)return;
+   activeQuest().sol.forEach((column,row)=>{state[row][column]=2});
+   render();
+   if(!celebrated)celebrateSocialChallengeSuccess();
+  };
+  window.lumenStudioView(new URL(location.href).searchParams.get('studioView'));
+  return;
+ }
  try{
   const first=canonicalQuestList()[0],entry=CONTENT_CONSTELLATIONS.find(c=>c.id===first.constellationId);
   const figureSvg=astronomicalReferenceSvg(entry);
@@ -6882,7 +6926,8 @@ dailyRecaps=setupDailyRecaps({document,t,locale:dailyLocale,formatDuration,
 new MutationObserver(()=>void dailyRecaps.wake()).observe(document.getElementById('mapModal'),{attributes:true,attributeFilter:['hidden']});
 document.addEventListener('visibilitychange',()=>void dailyRecaps.wake());
 void dailyRecaps.wake();
-void initializeAccountSession();
+if(!previewDay)void initializeAccountSession();
+else{authSessionPending=false;updateAuthUI()}
 
 function canReloadForAppUpdate(){
  if(authSessionPending||accountSwitchPending()||passwordRecoveryPending()||
@@ -6892,7 +6937,7 @@ function canReloadForAppUpdate(){
  return !Array.from(document.querySelectorAll('[role="dialog"]:not([hidden]), #successOverlay.show'))
   .some(dialog=>dialog.getClientRects().length>0);
 }
-setupAppUpdates({window,document,navigator,location,caches:window.caches,console,appVersion,canReload:canReloadForAppUpdate});
+if(!previewDay)setupAppUpdates({window,document,navigator,location,caches:window.caches,console,appVersion,canReload:canReloadForAppUpdate});
 
 // Preserve the public browser testing entry points.
 wireLumenErasureControls();

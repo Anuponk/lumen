@@ -1,0 +1,34 @@
+[data-seasonal='winter-stars'] {
+  --winter-lights:
+    radial-gradient(circle at 12px 4px, #ffbf90 1px, #e56577 2px, #e5657755 4px, transparent 7px),
+    radial-gradient(circle at 29px 10px, #fff8c9 1px, #ffd370 2px, #ffd37055 4px, transparent 7px),
+    radial-gradient(circle at 48px 10px, #dcffe0 1px, #7cdbac 2px, #7cdbac55 4px, transparent 7px),
+    radial-gradient(circle at 64px 4px, #fff8c9 1px, #ffd370 2px, #ffd37055 4px, transparent 7px),
+    radial-gradient(ellipse 36px 14px at 36px -4px, transparent 92%, #879c7f 95%, transparent 100%);
+  --winter-sky:
+    radial-gradient(ellipse at 5% 98%, #54283f 0, transparent 42%),
+    radial-gradient(ellipse at 93% 5%, #195447 0, transparent 55%),
+    linear-gradient(150deg, #101b38, #090e1e 75%);
+}
+
+[data-seasonal='winter-stars'] .winter-garland {
+  background: var(--winter-lights);
+  background-size: 72px 16px;
+  position: absolute;
+  inset: 0 0 auto;
+  height: 16px;
+  pointer-events: none;
+}
+
+[data-seasonal='winter-stars'] .winter-starlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 10% 23%, #ffe9ad, transparent 2px),
+    radial-gradient(circle at 89% 17%, #ffe9ad, transparent 3px),
+    radial-gradient(circle at 93% 36%, #d8edff, transparent 2px),
+    radial-gradient(circle at 5% 53%, #d8edff, transparent 2px),
+    radial-gradient(circle at 95% 77%, #ffe9ad, transparent 3px),
+    radial-gradient(circle at 10% 86%, #d8edff, transparent 2px);
+}
