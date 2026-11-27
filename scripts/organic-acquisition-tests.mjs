@@ -155,7 +155,9 @@ for (const post of plan.posts) {
   assert.equal(url.searchParams.get('utm_source'), 'facebook_daily');
   assert.ok(post.message.includes(post.link));
   assert.ok(!/(ligne|colonne|row|column)\s*\d/i.test(post.message), 'No coordinates: ' + post.day);
-  assert.ok(post.image && fs.existsSync(post.image.replace('https://lumen.nopuna.fr/', '')), 'Visual exists: ' + post.day);
+  assert.equal(post.image,null,'The campaign never points at a public future grid');
+  assert.equal(post.privateImage,'official-'+post.day+'.jpg','Date-matched private visual');
+  assert.doesNotMatch(post.message,/entraînement|non classé|tentative officielle|pénalité/i);
   if (post.kind === 'official') {
     const daily = schedule.days.find((d) => d.day === post.day);
     assert.ok(daily, 'Official post on a scheduled day');
@@ -210,7 +212,7 @@ for (const [index, row] of rows.slice(0, 31).entries()) {
     ['Draft', 'Facebook', 'Instagram', 'Twitter/X', 'TikTok', 'Shortener'].map((n) => col(row, n)),
     ['false', 'true', 'false', 'false', 'false', 'false'],
   );
-  assert.equal(col(row, 'Picture Url 1'), post.image);
+  assert.equal(col(row, 'Picture Url 1'), '');
   assert.ok(col(row, 'Alt text picture 1').length > 10);
   assert.equal(col(row, 'Facebook Post Type'), 'POST');
 }

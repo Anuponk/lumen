@@ -83,9 +83,27 @@ Deno.serve(async req=>{
  const parsed=new URL(action);
  const hashedToken=parsed.searchParams.get("token")||"";
  const confirmationType=parsed.searchParams.get("type")||"";
- const brandedLink=Deno.env.get("LUMEN_BRANDED_LINKS_ENABLED")==="true" && /^[a-f0-9]{64}$/i.test(hashedToken)&&
-  ["signup","recovery"].includes(confirmationType)
-  ? HOST+"/?lumen_confirm="+encodeURIComponent(hashedToken)+"&type="+encodeURIComponent(confirmationType)
+ const useBrandedLink=Deno.env.get("LUMEN_BRANDED_LINKS_ENABLED")==="true" && /^[a-f0-9]{64}$/i.test(hashedToken)&&
+  ["signup","recovery"].includes(confirmationType);
+ let dailySignupDay="";
+ const guest=input.dailyGuest&&typeof input.dailyGuest==="object"?input.dailyGuest as Record<string,unknown>:null;
+ const createdUser=generated.user&&typeof generated.user==="object"?generated.user as Record<string,unknown>:generated;
+ if(type==="signup"&&useBrandedLink&&guest&&typeof guest.day==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(guest.day)&&
+    typeof guest.key==="string"&&/^[a-f0-9]{64}$/.test(guest.key)&&
+    typeof createdUser.id==="string"&&/^[a-f0-9-]{36}$/.test(createdUser.id)){
+  try{
+   const binding=await fetch(base.replace(/\/$/,"")+"/rest/v1/rpc/lumen_daily_guest_bind_signup",{
+    method:"POST",headers:{"apikey":service,"authorization":"Bearer "+service,"content-type":"application/json"},
+    body:JSON.stringify({p_day:guest.day,p_key:guest.key,p_owner:createdUser.id})
+   });
+   if(binding.ok&&(await binding.json())===true)dailySignupDay=guest.day;
+  }catch{
+   // Email confirmation still works, and the original browser keeps the receipt.
+  }
+ }
+ const brandedLink=useBrandedLink
+  ? HOST+"/?lumen_confirm="+encodeURIComponent(hashedToken)+"&type="+encodeURIComponent(confirmationType)+
+    (dailySignupDay?"&daily_signup="+encodeURIComponent(dailySignupDay):"")
   : action;
  const escapeHtml=(value:string)=>value.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]||c));
  const locale=input.locale==="en"||input.locale==="es"?input.locale:"fr";

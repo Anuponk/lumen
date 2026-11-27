@@ -8,7 +8,9 @@ ordinaire revient automatiquement, sans configuration ni livraison.
 
 Le catalogue ne change ni identifiants, grilles, tentatives, aides, chronomètres,
 badges, récompenses ou classements. Le serveur garde l'autorité du vrai défi
-quotidien. Les invités jouent sur cette même grille en entraînement non classé.
+quotidien. Les liens datés ouvrent cette grille directement pour les invités.
+Une victoire vérifiée peut rejoindre le même classement après authentification.
+Le contrat du rattachement est décrit dans [Défi du jour](../DAILY_CHALLENGE.md#tentative-invitée-depuis-un-lien-daté).
 L'événement ne dépend ni de Facebook ni de Metricool. Aucun autre événement
 n'est implémenté dans ce chantier.
 
@@ -16,31 +18,32 @@ n'est implémenté dans ce chantier.
 
 Le contrôleur applique les libellés aux surfaces quotidiennes existantes (menu,
 Mon ciel, Social, bandeaux, jeu, résultat, classements). Il préserve les états
-calculés comme « déjà joué ». La décoration utilise un contour intérieur et
-une étoile discrète, sans nouvelle section ni réduction de la grille. La date
+calculés comme « déjà joué ». Les guirlandes, les points lumineux et le fond
+de Noël sont des couches CSS sans modification des dimensions de la grille. La date
 de découverte existante et l'horloge serveur pilotent la présentation ; un
 contrôle d'horloge local et le retour au premier plan actualisent l'habillage.
 Aucune nouvelle lecture Supabase, aucun stockage joueur ni polling réseau.
 
-Le résultat garde un titre court ; le texte de fête est dans son infobulle pour
-ne pas ajouter de scroll à la victoire sur petit écran. La régression compare
-les résultats ordinaires et saisonniers en FR/EN/ES à 360×640.
+Le résultat réutilise les particules de victoire LUMEN avec la palette de
+l’événement et respecte `prefers-reduced-motion`. La régression compare les
+résultats ordinaires et saisonniers en FR/EN/ES à 360×640.
 
-`/studio/` prévisualise l'habillage sur une grille de démonstration de campagne.
-Date et langue sont libres. Cette page ne démarre pas le jeu, ne lit pas un
-défi futur et n'enregistre aucune tentative ni statistique. Son export SVG porte
-la mention démonstration. Le véritable Lumen Video Studio du dépôt marketing
-importe le même module depuis une copie propre et épinglée de LUMEN.
+`/studio/` charge les composants natifs dans un cadre avec une grille
+d’initiation et un stockage en mémoire. On peut afficher le jeu, Mon ciel,
+la victoire et le formulaire d’inscription en FR/EN/ES. Les formats mobile,
+paysage et ordinateur et la date sont configurables. Le Studio ne crée pas
+de client Supabase et bloque les connexions externes. Le Video Studio utilise
+ce même écran pour capturer des gestes et la victoire saisonnière.
 
 ## Publications et liens
 
 `dailyPresentation(day)` fournit nom, campagne et hashtags. `daily-creative.js`
-compose la vraie grille initiale du planning canonique pour les visuels officiels
+compose la vraie grille initiale du planning privé pour les visuels officiels
 (territoires complets, aucun Gardien, aucune solution). Le dépôt marketing ne
 possède aucun calendrier saisonnier de substitution.
 
 Chaque lien `/d/AAAA-MM-JJ/` possède son titre et son aperçu Open Graph statiques.
-À cette date de Paris, il mène à `/?daily=1`, avec seulement les trois UTM publics
+À cette date de Paris, il mène à `/?daily=1&dailyLink=1`, avec les trois UTM publics
 validés. Avant la date, il annonce que le défi n'est pas ouvert. Après la date,
 il annonce sa clôture et propose le défi actuel. Il ne prétend jamais rejouer
 une ancienne grille. Les anciennes pages `/mini/AAAA-MM-JJ.html` emploient ce
@@ -50,8 +53,31 @@ conduisent au diagnostic du répertoire `/d/` sur Apache.
 Un post Facebook à 08:00 Europe/Paris par jour, clé `facebook:date` : 31 en
 décembre et 31 en janvier. Le 25 décembre et janvier utilisent le défi ordinaire.
 Les CSV dérivés au format Metricool comptent 102 colonnes (UTF-8 BOM, textes
-multilignes conservés, Facebook uniquement). Aucun import automatique, nouvel
-abonnement, API payante ou nouveau cron. Le publieur Meta reste désactivé.
+multilignes conservés, Facebook uniquement). Le plan associe à chaque date
+`official-AAAA-MM-JJ.jpg` dans le lot privé. Les CSV laissent `Picture Url 1`
+vide, car Metricool exige une URL publique pour importer un média par CSV.
+Après validation du propriétaire, joindre le fichier daté depuis l’appareil,
+sans modifier les publications éditoriales. Les aperçus Open Graph publics
+emploient un visuel de marque sans grille. Le publieur Meta reste désactivé.
+
+### Préparation et activation du calendrier privé
+
+1. Dans un répertoire local privé hors du dépôt et de la racine Web, exécuter
+   `node scripts/marketing/private-daily-plan.mjs --from AAAA-MM-JJ --to AAAA-MM-JJ --output CHEMIN/calendrier.json`.
+   Le générateur tire des grilles du catalogue existant, conserve taille et
+   difficulté par date, et évite les répétitions dans le lot et les dates déjà
+   ouvertes dans le calendrier de référence. Traiter le fichier comme privé.
+2. Rendre les JPEG sur boucle locale avec
+   `node scripts/marketing/social-visuals.mjs --private-plan=CHEMIN/calendrier.json --output=CHEMIN/visuels`.
+   Vérifier le contenu et la liste de dates avant remise au propriétaire.
+3. Générer la transaction par `node scripts/marketing/private-daily-plan.mjs --activate CHEMIN/calendrier.json --output CHEMIN/activation.sql`.
+   Après autorisation et migration SQL, appliquer la transaction via un canal
+   administrateur privé. Elle annule le lot entier si une date est ouverte,
+   possède une tentative ou a changé depuis l’instantané de référence.
+4. Vérifier que les nombres et les empreintes attendues concordent dans une
+   connexion privée. Garder les fichiers hors des PR, journaux et assets de
+   déploiement. Les anciennes associations présentes dans l’historique Git
+   restent publiques et sont remplacées en base par ces nouvelles associations.
 
 ## Vérification et recette
 
@@ -59,7 +85,7 @@ abonnement, API payante ou nouveau cron. Le publieur Meta reste désactivé.
 trois langues, 62 liens/OG et absence de Gardiens dans les visuels. Le parcours
 navigateur quotidien conserve les régressions de reprise et de tentative unique.
 Les cas saisonniers vérifient invités et comptes aux 1er/24/25 décembre.
-`mini-browser.mjs` couvre liens hérités, trois états de date et aperçu sans jeu.
+`mini-browser.mjs` couvre liens hérités, trois états de date et aperçu natif isolé.
 
 Chrome local et comptes simulés ne prouvent pas la recette physique. Restent à
 valider sur Android installé, PWA iPhone et navigateur intégré Facebook : liens,

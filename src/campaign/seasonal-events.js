@@ -10,7 +10,7 @@ export const SEASONAL_EVENTS = Object.freeze([
       en: { title: 'Advent Challenge', celebration: 'A new star for the holidays!', day: 'Day {day}/24', preview: 'Demonstration' },
       es: { title: 'Reto de Adviento', celebration: '¡Una nueva estrella para las fiestas!', day: 'Día {day}/24', preview: 'Demostración' },
     },
-    skin: { id: 'winter-stars', accent: '#e8cd8d', decoration: '✧', background: '#163c3a' },
+    skin: { id: 'winter-stars', accent: '#e8cd8d', decoration: '✧', background: '#163c3a', celebrationColors: ['#e56577','#7cdbac','#ffd370','#f0f7ff'] },
     marketing: { campaign: 'avent_2026', hashtags: '#Lumen #DefiDeLAvent #JeuDeLogique #Puzzle' },
   }),
 ]);

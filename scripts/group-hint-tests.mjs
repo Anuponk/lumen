@@ -15,6 +15,7 @@ function present(h,lesson=false,engine=null,locale='fr'){
  const context={localePreference:{locale},t:createTranslator({locale}).t,document:{getElementById:()=>button},scriptedLearningActive:()=>lesson,activeQuestOrdinal:()=>91,levelIndex:70,
   celebrated:false,guidedPending:null,verifyPending:null,recordHintUse:()=>grants.push(true),playerError:()=>engine?.playerError()??null,directMissingCross:()=>engine?.directMissingCross()??null,
   simpleForcedPlacement:()=>engine?.simpleForcedPlacement()??null,proofEngine:()=>h,proofs:{},hi:null,hiCells:[],hintStage:0,hintFocus:null,
+  guestDailyAssistance:()=>false,
   showHintMessage:(_title,body)=>messages.push(body()),render(){}};
  vm.createContext(withNetworkContext(context));vm.runInContext(hintFormatters+handler,context);
  return {context,messages,grants,click:()=>button.onclick()};

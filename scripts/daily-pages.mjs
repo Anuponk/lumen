@@ -8,13 +8,13 @@ const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 export function renderDailyLinkPage(day){
  const p=dailyPresentation(day),title=p.title+' LUMEN'+(validDay(day)?' · '+day:'');
  const url='https://lumen.nopuna.fr/d/'+(validDay(day)?day+'/':'');
- const image=validDay(day)?'https://lumen.nopuna.fr/content/social/official-'+day+'.jpg':'https://lumen.nopuna.fr/src/landing/og.jpg';
- const description='La vraie grille du jour, une tentative officielle et un classement commun. Sans compte : entraînement non classé.';
+ const image='https://lumen.nopuna.fr/src/landing/'+(p.event?'advent-og.jpg':'og.jpg');
+ const description='Une nouvelle grille LUMEN à résoudre. Joue gratuitement, sans compte ni installation.';
  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escape(title)}</title><meta name="description" content="${description}"><link rel="canonical" href="${url}">
-<meta property="og:type" content="website"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${description}"><meta property="og:url" content="${url}"><meta property="og:image" content="${image}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${escape(p.title)} : grille initiale, aucun Gardien placé">
-<link rel="stylesheet" href="/src/landing/landing.css"><script type="module" src="/src/acquisition/daily-link.js"></script></head>
-<body><main id="daily-link" data-day="${validDay(day)?day:''}" class="wrap"><p>✦ LUMEN · ${validDay(day)?day:''}</p><h1>${escape(p.title)}</h1><p data-status>Le défi est disponible à sa date, heure de Paris. Un lien ancien ouvre le défi actuel.</p><p><a data-play href="/?daily=1">Jouer au défi d’aujourd’hui</a></p><p data-guest>${description}</p><noscript>JavaScript est nécessaire pour jouer. Le bouton ouvre le défi actuel.</noscript></main></body></html>\n`;
+<meta property="og:type" content="website"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${description}"><meta property="og:url" content="${url}"><meta property="og:image" content="${image}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${escape(p.title)} LUMEN">
+<link rel="stylesheet" href="/src/landing/landing.css"><link rel="stylesheet" href="/src/campaign/winter-stars.css"><script type="module" src="/src/acquisition/daily-link.js"></script></head>
+<body><main id="daily-link" data-day="${validDay(day)?day:''}" data-seasonal="${p.event?.skin.id??''}"><section class="daily-landing-card" aria-labelledby="daily-link-title"><div class="winter-garland" aria-hidden="true"></div><div class="winter-starlight" aria-hidden="true"></div><p class="brand">✦ LUMEN</p><p class="daily-landing-day" data-day-label>${escape(p.dayLabel)}</p><h1 id="daily-link-title">${escape(p.title)}</h1><p class="lead" data-status>Le défi ouvre à sa date, heure de Paris.</p><p class="cta"><a class="play" data-play href="/?daily=1&amp;dailyLink=1">Relever le défi d’aujourd’hui</a></p><p class="cta-note" data-guest>Joue gratuitement, sans compte ni installation.</p></section></main></body></html>\n`;
 }
 export function dailyPages(){
  const schedule=JSON.parse(fs.readFileSync(path.join(root,'content/generated/daily-schedule.json'),'utf8'));

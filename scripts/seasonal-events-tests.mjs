@@ -33,7 +33,8 @@ for(const post of plan.posts){
  assert.equal(u.searchParams.get('utm_campaign'),p.campaign);
  assert.ok(post.message.includes(p.title));assert.ok(post.message.includes(p.hashtags));
  const html=pages.get('d/'+post.day+'/index.html');assert.ok(html.includes(p.title));
- assert.ok(html.includes('official-'+post.day+'.jpg'));
+ assert.ok(html.includes(p.event?'advent-og.jpg':'/src/landing/og.jpg'));
+ assert.ok(!html.includes('official-'+post.day+'.jpg'),'No future grid in the Open Graph image');
  assert.doesNotMatch(html,/"(reg|sol|given|questId)"/,'No future grid or solution in landing pages');
  const entry=schedule.days.find(e=>e.day===post.day),quest=canonicalQuestAtGridRevision(entry.questId,entry.gridRevision);
  const before=JSON.stringify(quest),spec=composition(post,{schedule});

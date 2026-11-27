@@ -571,6 +571,14 @@ desired choice.
 
 ## Cloud persistence contract
 
+The dated acquisition flow keeps its guest challenge receipt outside the
+cloud profile and adventure progress. The existing authentication hydration
+still verifies the destination owner before trying a claim. A branded signup
+may resume through a server-side binding to the new confirmed account.
+The guest receipt can write only the daily ranking row, after verification
+and under its account and date locks. See
+[guest Daily Challenge attempts](DAILY_CHALLENGE.md#tentative-invitée-depuis-un-lien-daté).
+
 Adventure ranking #974 uses the owner-approved 20/50/30 scale. Derived quest
 points read the existing official time and durable badge authorities, including
 reset precedence; no snapshot, receipt, badge, currency or entitlement is rewritten.

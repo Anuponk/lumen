@@ -1,12 +1,15 @@
 import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { basename } from "node:path";
 const sha = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
 if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error("Invalid release commit SHA");
 const count = Number(execFileSync("git",["rev-list","--first-parent","--count",sha],{encoding:"utf8"}).trim());
 if (!Number.isSafeInteger(count) || count<1) throw new Error("Invalid commit count");
 const version = `1.11.1+${count}`;
 mkdirSync("dist",{recursive:true});
-for (const item of ["src","content","mini","d","studio","sw.js","manifest.webmanifest","icon.svg","icon-maskable.svg"]) cpSync(item,`dist/${item}`,{recursive:true});
+for (const item of ["src","content","mini","d","studio","sw.js","manifest.webmanifest","icon.svg","icon-maskable.svg"]) {
+ cpSync(item,`dist/${item}`,{recursive:true,filter:source=>!(/^(daily-schedule\.json|official-\d{4}-\d{2}-\d{2}\.jpg)$/.test(basename(source)))});
+}
 let html=readFileSync("index.html","utf8");
 html=html.replace(/(<meta name="lumen-build" content=")[^"]*(")/, `$1${version} · ${sha.slice(0,7)}$2`);
 writeFileSync("dist/index.html",html);

@@ -1,4 +1,32 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>LUMEN - Apercu saisonnier — Habillage saisonnier</title>
-<style>body{margin:0;background:#07111d;color:#eef7ff;font:16px system-ui}main{max-width:1050px;margin:auto;padding:16px}label,button{display:inline-block;margin:8px}input,select,button{font:inherit;padding:8px}#creative{aspect-ratio:1200/630;background:radial-gradient(ellipse at 70% 25%,#1f4f80,#081a30);display:flex;align-items:center;gap:4%;padding:5%;box-sizing:border-box;border-radius:16px}#copy{width:54%}#board{width:42%}#board svg{width:100%;height:auto}h2{font-size:clamp(16px,3vw,34px)}#event{color:var(--accent,#9be8f4)}a{color:#9be8f4}</style>
-<script type="module" src="/src/acquisition/seasonal-studio.js"></script></head><body><main><h1>LUMEN - Apercu saisonnier</h1><p>Prévisualisation de l’habillage sur une grille de démonstration, sans tentative ni statistiques. Aucune grille officielle future n’est utilisée.</p><label>Date de l’habillage <input id="date" type="date" value="2026-12-01"></label><label>Langue <select id="locale"><option>fr</option><option>en</option><option>es</option></select></label><button id="download">Exporter le visuel SVG</button><section id="creative" aria-label="Aperçu"><div id="copy"><p>✦ LUMEN · DÉMONSTRATION</p><h2 id="event"></h2><p id="day"></p><p id="celebration"></p></div><div id="board"></div></section><p id="campaign"></p><p><a href="/?daily=1">Ouvrir le vrai défi actuel</a></p></main></body></html>
+<html lang="fr">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <meta name="robots" content="noindex">
+ <title>LUMEN · Aperçu saisonnier</title>
+ <style>
+  :root{color-scheme:dark}body{margin:0;background:#07111d;color:#eef7ff;font:16px system-ui}
+  main{max-width:1180px;margin:auto;padding:16px}h1{margin:0 0 8px}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+  label{display:grid;gap:5px;font-weight:600}input,select{font:inherit;padding:7px}
+  iframe{display:block;width:100%;height:800px;margin:auto;border:1px solid #304d67;border-radius:14px;background:#0b1726}
+  iframe[data-format="mobile"]{width:min(100%,390px);height:720px}
+  iframe[data-format="landscape"]{width:min(100%,740px);height:390px}
+ </style>
+ <script type="module" src="/src/acquisition/seasonal-studio.js"></script>
+</head>
+<body>
+ <main>
+  <h1>LUMEN · Aperçu saisonnier</h1>
+  <p>Démonstration sur une grille d’initiation. Les résultats affichés sont fictifs.</p>
+  <div class="controls">
+   <label>Date <input id="date" type="date" value="2026-12-01"></label>
+   <label>Langue <select id="locale"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option></select></label>
+   <label>Écran <select id="view"><option value="play">Jeu</option><option value="sky">Mon ciel</option><option value="victory">Victoire et inscription</option></select></label>
+   <label>Format <select id="format"><option value="mobile">Mobile</option><option value="landscape">Paysage</option><option value="desktop">Ordinateur</option></select></label>
+  </div>
+  <iframe id="seasonal-preview" title="Aperçu de démonstration LUMEN" data-format="mobile" sandbox="allow-scripts allow-same-origin"></iframe>
+ </main>
+</body>
+</html>
