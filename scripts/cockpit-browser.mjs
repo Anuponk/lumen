@@ -18,13 +18,13 @@ export async function verifyCockpit({send,evaluate,url}){
   const render=scope=>renderPlayerSessions(sessions,data,{scope,authorized:()=>allowed});
   render('admin:player');
   const directory=registeredPlayers([{player_key:'a:guest',display_name:'Joueur 3E8B',player_type:'anonymous'},{player_key:'u:actor',display_name:'Compte 1234',player_type:'authenticated',last_seen:'2026-10-25T05:00:00Z',sessions:20,current_quest:91}],[{user_id:'actor',nickname:' ',email:'sans.pseudo@example.invalid'}]);
-  renderPlayerDirectory(players,directory,{players:{'u:actor':{auth_at:'2026-10-23T05:00:00Z',domains:{wallet:'2026-10-24T05:00:00Z'},state:'pending'}}},{authorized:()=>allowed,onSelect:key=>chosen.push(key)});
+  renderPlayerDirectory(players,directory,{players:{'u:actor':{auth_at:'2026-10-23T05:00:00Z',game_at:'2026-10-24T05:00:00Z',domains:{wallet:'2026-10-24T05:00:00Z'},devices:[{state:'pending',pending:1,observed_at:'2026-10-24T05:00:00Z',version:'1.11.1+101'}]}}},{authorized:()=>allowed,onSelect:key=>chosen.push(key)});
   const unknown=document.createElement('div');
   renderPlayerDirectory(unknown,[{player_key:'u:unknown',player_type:'authenticated'}],{}, {authorized:()=>true});
-  if(!unknown.textContent.includes('Point le plus avancé : Q—'))throw Error('Missing progression must stay unknown');
+  if(unknown.querySelector('tbody tr').children[3].textContent!=='—'||!unknown.querySelector('tbody tr').textContent.includes('Non évalué'))throw Error('Missing progression and health must stay unknown');
   const cards=[...sessions.querySelectorAll('details[data-session-key]')];cards[0].querySelector('summary').focus();
   window.cockpitFixture={host,players,sessions,cards,data,render,chosen,navigation,deny:()=>{allowed=false;render('admin:player')}};
-  return {furthestLabel:players.textContent.includes('Point le plus avancé : Q91'),count:cards.length,closed:cards.every(c=>!c.open),name:document.activeElement.tagName,emailFallback:players.querySelector('button').textContent==='sans.pseudo@example.invalid',allSectionsCollapsible:[...host.querySelectorAll('h3')].every(h=>h.parentElement.tagName==='SUMMARY'&&!!h.closest('details.admin-section')),sectionCount:host.querySelectorAll('details.admin-section').length,anonymousHidden:!players.textContent.includes('Joueur 3E8B')&&players.querySelectorAll('.admin-player').length===1,stableOrdinal:sessions.textContent.includes('Q91'),sharedDateHelp:players.querySelectorAll('details[data-date-sources]').length===1&&players.querySelectorAll('.admin-player-dates small').length===0,overflow:document.documentElement.scrollWidth>innerWidth};
+  return {furthestLabel:players.querySelector('tbody tr').children[3].textContent==='Q91',count:cards.length,closed:cards.every(c=>!c.open),name:document.activeElement.tagName,emailFallback:players.querySelector('tbody th').textContent==='sans.pseudo@example.invalid',allSectionsCollapsible:[...host.querySelectorAll('h3')].every(h=>h.parentElement.tagName==='SUMMARY'&&!!h.closest('details.admin-section')),sectionCount:host.querySelectorAll('details.admin-section').length,anonymousHidden:!players.textContent.includes('Joueur 3E8B')&&players.querySelectorAll('tbody tr').length===1,stableOrdinal:sessions.textContent.includes('Q91'),sharedDateHelp:players.querySelectorAll('details[data-date-sources]').length===1&&players.querySelectorAll('.admin-player-dates small').length===0,overflow:document.documentElement.scrollWidth>innerWidth};
  })()`,true);
  assert.equal(initial.furthestLabel,true);assert.equal(initial.emailFallback,true);assert.equal(initial.allSectionsCollapsible,true);assert.equal(initial.sectionCount,12)/* +1: « Outils de test » (#705 admin preview) */;assert.equal(initial.anonymousHidden,true);assert.equal(initial.sharedDateHelp,true);assert.equal(initial.stableOrdinal,true);assert.equal(initial.count,20);assert.equal(initial.closed,true);assert.equal(initial.name,'SUMMARY');assert.equal(initial.overflow,false);
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',text:'\r',unmodifiedText:'\r',windowsVirtualKeyCode:13,nativeVirtualKeyCode:13});
@@ -38,11 +38,11 @@ export async function verifyCockpit({send,evaluate,url}){
   const filtered=f.sessions.querySelectorAll('details[data-session-key]').length;
   filter.value='all';filter.dispatchEvent(new Event('change'));
   const stillOpen=f.sessions.querySelector('details[data-session-key]').open;
-  f.players.querySelector('button').click();
-  const search=f.players.querySelector('input');search.value='absent';search.dispatchEvent(new Event('input'));
-  const empty=f.players.textContent.includes('Aucun joueur');
+  f.players.querySelector('tbody button[aria-controls="adminTimeline"]').click();
+  const search=f.players.querySelector('input[type=search]');search.value='absent';search.dispatchEvent(new Event('input'));
+  const empty=f.players.querySelectorAll('tbody tr').length===0&&[...f.players.querySelectorAll('p')].some(p=>!p.hidden&&p.textContent.includes('Aucun joueur'));
   search.value='  SANS.PSEUDO@EXAMPLE.INVALID ';search.dispatchEvent(new Event('input'));
-  const emailSearch=f.players.querySelectorAll('.admin-player').length===1;
+  const emailSearch=f.players.querySelectorAll('tbody tr').length===1;
   f.render('admin:other-player');const reset=[...f.sessions.querySelectorAll('details[data-session-key]')].every(c=>!c.open);
   const date=f.players.querySelector('time');f.deny();
   return {preserved,filtered,stillOpen,chosen:f.chosen,empty,emailSearch,reset,denied:f.sessions.children.length===0};
@@ -54,7 +54,7 @@ export async function verifyCockpit({send,evaluate,url}){
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
  const sections=await evaluate(`(()=>{const f=window.cockpitFixture,friction=f.host.querySelector('#adminFriction').closest('details');
   const keyboardClosed=!friction.open;f.render('refresh');const refreshPreserved=!friction.open;
-  const emailRetained=f.players.querySelector('input').value==='  SANS.PSEUDO@EXAMPLE.INVALID ';
+  const emailRetained=f.players.querySelector('input[type=search]').value==='  SANS.PSEUDO@EXAMPLE.INVALID ';
   const groups=[...f.host.querySelectorAll('details.admin-section')];
   for(const section of groups){if(section.open)section.querySelector('summary').click()}
   const allClosed=groups.every(s=>!s.open);for(const section of groups)section.querySelector('summary').click();
@@ -71,25 +71,46 @@ export async function verifyCockpit({send,evaluate,url}){
   });
  })()`,true);
  assert.deepEqual(nested,{sessionClosed:true,episodeClosed:true,report:true,reviewRequired:true,draftHidden:true});
+ // #708 (recette 24/11): health is the last known state; freshness is apart. An old
+ // healthy device stays « Sain », an old failure stays « En difficulté ».
  const badges=await evaluate(`(async()=>{
   const {renderPlayerDirectory}=await import('/src/ui/cockpit-sessions.js'),f=window.cockpitFixture;
-  const now=Date.parse('2026-10-25T12:00:00Z'),states=['confirmed','pending','failure','unknown','stale'];
-  const players=states.map(state=>({player_key:'u:'+state,player_type:'authenticated',display_name:state+'@example.invalid',current_quest:48,sessions:8}));
-  const proof={players:Object.fromEntries(states.map(state=>['u:'+state,{state:state==='stale'?'confirmed':state,observed_at:state==='stale'?'2026-10-25T10:00:00Z':'2026-10-25T11:59:00Z'}]))};
-  renderPlayerDirectory(f.players,players,proof,{authorized:()=>true,now});
-  const cards=[...f.players.querySelectorAll('.admin-player')],labels=cards.map(c=>c.querySelector('.admin-sync-badge').textContent);
-  const collapsed=cards.every(c=>!c.querySelector('details.admin-player-proof').open);
-  const compact=cards.every(c=>!c.querySelector('p').textContent.includes('authenticated'));
-  const card=cards[0],details=card.querySelector('details.admin-player-proof');details.querySelector('summary').click();
-  const evidence=details.open&&details.textContent.includes('Dernière connexion Auth')&&details.textContent.includes('Portefeuille');
-  const filter=f.players.querySelectorAll('select')[1];filter.value='confirmed';filter.dispatchEvent(new Event('change'));
-  const green=f.players.querySelectorAll('.admin-player').length===1&&f.players.querySelector('.admin-player').dataset.syncState==='confirmed';
-  filter.value='unknown';filter.dispatchEvent(new Event('change'));const unknown=f.players.querySelectorAll('.admin-player').length;
-  filter.value='all';filter.dispatchEvent(new Event('change'));
-  return {labels,collapsed,compact,evidence,green,unknown,overflow:document.documentElement.scrollWidth>innerWidth};
+  const now=Date.parse('2026-10-25T12:00:00Z');
+  const devices={healthy:[{state:'confirmed',pending:0,observed_at:'2026-10-25T11:59:00Z',version:'1.11.1+101 abcdef0',native_version:'1.0.1+2',native_observed_at:'2026-10-25T11:59:00Z'}],
+   inactive:[{state:'confirmed',pending:0,observed_at:'2026-10-10T10:00:00Z',version:'1.11.1+90'}],
+   pending:[{state:'pending',pending:3,failures:1,observed_at:'2026-10-25T11:59:00Z'}],
+   oldfailure:[{state:'critical',pending:2,observed_at:'2026-10-01T10:00:00Z'}],
+   silent:[]};
+  const keys=Object.keys(devices);
+  const players=keys.map(state=>({player_key:'u:'+state,player_type:'authenticated',display_name:state+'@example.invalid',current_quest:48}));
+  const facts={players:Object.fromEntries(keys.map(state=>['u:'+state,{devices:devices[state],game_at:state==='silent'?null:'2026-10-24T10:00:00Z',reports:state==='pending'?{open:1,total:2}:{open:0,total:0}}]))};
+  let reports=null;
+  renderPlayerDirectory(f.players,players,facts,{authorized:()=>true,now,onReports:(key)=>{reports=key}});
+  const rows=()=>[...f.players.querySelectorAll('tbody tr')];
+  // The search typed earlier is kept across refreshes on purpose; clear it here.
+  const box=f.players.querySelector('input[type=search]');const kept=box.value.trim()!=='';box.value='';box.dispatchEvent(new Event('input'));
+  const labels=Object.fromEntries(rows().map(r=>[r.dataset.playerKey,r.querySelector('.admin-health-badge').textContent]));
+  const first=rows()[0].dataset.playerKey;
+  const chip=v=>f.players.querySelector('[data-health-filter="'+v+'"]');
+  const counts=['all','trouble','pending','unknown','healthy'].map(v=>chip(v).textContent);
+  chip('trouble').click();const trouble=rows().map(r=>r.dataset.playerKey);
+  chip('healthy').click();const healthy=rows().map(r=>r.dataset.playerKey).sort();
+  chip('all').click();
+  const android=f.players.querySelector('tr[data-player-key="u:healthy"]').children[6].textContent;
+  const web=f.players.querySelector('tr[data-player-key="u:healthy"]').children[5].textContent;
+  const silentGame=f.players.querySelector('tr[data-player-key="u:silent"]').children[2].textContent;
+  f.players.querySelector('tr[data-player-key="u:pending"] td:nth-child(9) button').click();
+  const sort=f.players.querySelector('thead button[data-sort="name"]');sort.click();const byName=rows()[0].dataset.playerKey;
+  const sorted=sort.closest('th').getAttribute('aria-sort');
+  return {kept,labels,first,counts,trouble,healthy,android,web,silentGame,reports,byName,sorted,overflow:document.documentElement.scrollWidth>innerWidth};
  })()`,true);
- assert.deepEqual([...badges.labels].sort(),['✓ Sans attente observée','… En attente','! Problème signalé','? État inconnu','? Signal ancien'].sort());
- assert.equal(badges.collapsed,true);assert.equal(badges.compact,true);assert.equal(badges.evidence,true);assert.equal(badges.green,true);assert.equal(badges.unknown,2);assert.equal(badges.overflow,false);
+ assert.deepEqual(badges.labels,{'u:healthy':'✓ Sain','u:inactive':'✓ Sain','u:pending':'… En attente','u:oldfailure':'▲ En difficulté','u:silent':'? Non évalué'});
+ assert.equal(badges.kept,true,'the search survived the refresh');assert.equal(badges.first,'u:oldfailure','players in difficulty come first');
+ assert.deepEqual(badges.counts,['Tous 5','En difficulté 1','En attente 1','Non évalués 1','Sains 2']);
+ assert.deepEqual(badges.trouble,['u:oldfailure']);assert.deepEqual(badges.healthy,['u:healthy','u:inactive']);
+ assert.equal(badges.android,'1.0.1+2');assert.equal(badges.web,'1.11.1+101');assert.equal(badges.silentGame,'Aucune observée');
+ assert.equal(badges.reports,'u:pending','reports link to the player');assert.equal(badges.byName,'u:healthy');assert.equal(badges.sorted,'ascending');
+ assert.equal(badges.overflow,false,'the table scrolls inside its own box only');
  const ax=await send('Accessibility.getFullAXTree');
  assert(ax.nodes.some(n=>n.role?.value==='DisclosureTriangle'),'Native session disclosure appears in accessibility tree');
  return {initial,state,refreshed,sections,nested,badges,nativeKeyboard:true,accessibilityTree:true,liveRPC:false,physicalDevice:false};

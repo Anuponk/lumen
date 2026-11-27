@@ -61,7 +61,7 @@ export function swipeConstellationTarget(current,selected,delta){
  return {pack:next,entry,changedAdventure:true,locked:!next.accessible||!entry.accessible};
 }
 
-export function createSkyNavigation({renderLockedOffer=null,t=createTranslator().t,locale=()=> "fr",document,getModel,getQuest,getSolved,getLit,getShape,getMastered,getMastery=()=>null,getAdventureMastery=()=>null,takeMasteryPulse=()=>null,getBadgeCounts=()=>({}),getCanonicalQuests=()=>[],getCanonicalPackQuests=()=>[],getCanonicalSolved=()=>false,getCanonicalAvailable=()=>false,onConstellation}){
+export function createSkyNavigation({onRanking=null,renderLockedOffer=null,t=createTranslator().t,locale=()=> "fr",document,getModel,getQuest,getSolved,getLit,getShape,getMastered,getMastery=()=>null,getAdventureMastery=()=>null,takeMasteryPulse=()=>null,getBadgeCounts=()=>({}),getCanonicalQuests=()=>[],getCanonicalPackQuests=()=>[],getCanonicalSolved=()=>false,getCanonicalAvailable=()=>false,onConstellation}){
  const sheet=document.querySelector('#mapModal .map-sheet'),tabs=document.getElementById('sectorTabs');
  const heading=sheet.querySelector('h2');heading.textContent=t('sky.title');heading.dataset.gameText='sky.title';heading.id='monCielTitle';
  const modal=document.getElementById('mapModal');modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','monCielTitle');
@@ -69,7 +69,7 @@ export function createSkyNavigation({renderLockedOffer=null,t=createTranslator()
  const displayName=entry=>locale()==="fr"?entry.label:constellationDisplayName(entry.id,t,entry.label);
  modal.addEventListener('keydown',e=>{if(e.defaultPrevented)return;if(e.key==='Escape'){e.preventDefault();element('closeMap').click()}if(e.key==='Tab'){const controls=[...modal.querySelectorAll('button,select,[tabindex]')].filter(c=>!c.disabled&&c.tabIndex>=0&&c.getClientRects().length);if(!controls.length)return;const first=controls[0],last=controls.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
  const context=document.createElement('div');context.id='skyNavigation';context.className='sky-navigation';
- context.innerHTML='<div id="adventureRail" class="adventure-rail" role="group" data-game-label="sky.adventures"></div><div id="adventureSummary" class="adventure-summary"></div><div class="adventure-badges"><span id="adventureBadges" class="adventure-badges-count"></span><button id="badgeFilter" class="badge-filter" type="button" aria-pressed="false"></button></div>';
+ context.innerHTML='<div id="adventureRail" class="adventure-rail" role="group" data-game-label="sky.adventures"></div><div id="adventureSummary" class="adventure-summary"></div><div class="adventure-badges"><span id="adventureBadges" class="adventure-badges-count"></span><button id="badgeFilter" class="badge-filter" type="button" aria-pressed="false"></button><button id="groupRankingOpen" class="badge-filter" type="button" hidden></button></div>';
  tabs.before(context);
  const pages=document.createElement('div');pages.id='constellationPages';pages.className='constellation-pages';
  pages.innerHTML='<button id="constellationPrevious" data-game-label="sky.previousConstellations">‹</button><span id="constellationPage" aria-live="polite"></span><button id="constellationNext" data-game-label="sky.nextConstellations">›</button>';
@@ -156,6 +156,9 @@ export function createSkyNavigation({renderLockedOffer=null,t=createTranslator()
   if(badgeLine){badgeLine.textContent=here?.possible?t('sky.adventureBadges',{earned:here.earned,possible:here.possible,percentage:percent(here.earned,here.possible)}):'';
    badgeLine.title=t('sky.badgeTotals',{earned:open.earned,possible:open.possible,percentage:percent(open.earned,open.possible),catalogueEarned:catalogue.earned,cataloguePossible:catalogue.possible,cataloguePercentage:percent(catalogue.earned,catalogue.possible)});
    badgeLine.setAttribute('aria-label',badgeLine.textContent+' · '+badgeLine.title)}
+  // #974: constellation and adventure rankings of the current selection (read on open).
+  const rankingOpen=element('groupRankingOpen');
+  if(rankingOpen){rankingOpen.textContent=t('groupRanking.open');rankingOpen.hidden=!pack?.accessible||!onRanking;rankingOpen.onclick=()=>{const entry=selectedConstellation||current.entries[0];if(entry&&pack)onRanking({constellationId:entry.id,adventureId:pack.id,constellationName:displayName(entry),adventureName:adventureDisplayName(pack,t)||t('sky.adventure'),origin:rankingOpen})}}
   if(filter){filter.textContent=t('sky.badgeFilter');filter.setAttribute('aria-pressed',String(badgeFilter));filter.hidden=!pack?.accessible;filter.onclick=()=>{badgeFilter=!badgeFilter;render()}}
   element('adventureSummary').textContent=pack?t('sky.summary',{name:adventureDisplayName(pack,t)||t('sky.adventure'),done,total:pack.constellations.length,status:t(state(pack))}):t('sky.allLocked');
   tabs.replaceChildren();

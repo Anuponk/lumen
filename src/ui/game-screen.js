@@ -92,7 +92,13 @@ import {rememberVerifiedOfflineOwner,clearVerifiedOfflineOwner,isVerifiedOffline
 import {gridCellsAlongSegment} from './drag-grid-path.js';
 import {replayWalletCommand} from '../persistence/coordinated-command-adapters.js';
 import {gameplayDomainState} from '../persistence/gameplay-sync.js';
-import {createOutboxHealthReporter} from "../persistence/outbox-health.js";
+import {createOutboxHealthReporter,LOCAL_STORAGE_LIMIT_BYTES} from "../persistence/outbox-health.js";
+import {buildReportSnapshot} from './report-snapshot.js';
+import {createMyReports} from './my-reports.js';
+import {createGroupRanking} from './group-ranking.js';
+import {mountFeedbackInbox} from './feedback-inbox.js';
+import {appendPlayerDates} from './cockpit-dates.js';
+import {playerHealth} from './player-health.js';
 import {createDiagnosticReporter,mapCloudDiagnostic,installDiagnosticListeners,diagnosticErrorKind} from '../persistence/diagnostic-reporter.js';
 import {createSyncPresentation} from "../persistence/sync-presentation.js";
 import {walletCommandsSupported,recoverWalletCacheDurably} from "../persistence/wallet-command.js";
@@ -116,6 +122,7 @@ import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAd
 import {purchaseThanksModel,showPurchaseThanks} from './purchase-thanks.js';
 import {createLumenDialog} from './lumen-dialog.js';
 import {createSupportQuickSend} from './support-quick-send.js';
+import {captureNativeVersion} from '../persistence/native-version.js';
 import {playMasteryPrelude} from './mastery-prelude.js';
 import {createMenuPause} from './menu-pause.js';
 import {PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,createForegroundRecovery,createPlayPriceLoader,getPlayPurchaseService,verifyPlayPurchase,buyWithPlay,restorePlayPurchases,toPlayProductId,findOwnedPlayPurchase,playOwnershipMessage,playOwnershipSummary} from '../persistence/play-billing.js';
@@ -168,6 +175,8 @@ const lumenInstallRequested=consumeInstallRequest(window);
 // #820: read a native e-mail link verdict before the Auth SDK consumes the URL.
 // A failed link's error parameters are removed; a verified recovery link opens
 // the password editor even if the SDK event arrives late.
+// #848: the Android launcher's native version (fragment), read once and removed from the URL.
+const LUMEN_NATIVE_VERSION=captureNativeVersion({location,history,storage:sessionStorage});
 const bootAuthLink=(()=>{try{
  const result=readNativeAuthLinkResult(location.href);
  if(result?.status==='error')scrubNativeAuthLinkError(window);
@@ -350,7 +359,7 @@ function navigationProgress(){return pendingNavigationProfile(lumenProgress,pend
 // quota/storage category only). A local write failure re-sends the last observation.
 let localStorageError=null,lastOutboxObservation=null;
 function outboxDeviceHealth(){const m=measureLocalStorage(localStorage);return {bytes:m.available?m.bytes:undefined,error:localStorageError}}
-function reportOutboxHealth(observation){lastOutboxObservation=observation;return outboxHealthReporter.report({...observation,device:outboxDeviceHealth()})}
+function reportOutboxHealth(observation){lastOutboxObservation=observation;return outboxHealthReporter.report({...observation,device:outboxDeviceHealth(),nativeVersion:LUMEN_NATIVE_VERSION})}
 function noteLocalStorageError(kind){
  if(kind!=='quota'&&kind!=='storage')return;
  localStorageError=kind;
@@ -359,7 +368,10 @@ function noteLocalStorageError(kind){
 window.addEventListener('error',event=>{try{noteLocalStorageError(diagnosticErrorKind(event.error))}catch{}},true);
 window.addEventListener('unhandledrejection',event=>{try{noteLocalStorageError(diagnosticErrorKind(event.reason))}catch{}});
 const outboxHealthReporter=createOutboxHealthReporter({storage:localStorage,send:async(client,payload)=>{
- const result=await client.rpc('lumen_record_outbox_health',payload);if(result.error)throw Error('Observation unavailable');
+ let result=await client.rpc('lumen_record_outbox_health',payload);
+ // #848: a server without the native-version overload keeps the 14-argument observation.
+ if(result.error?.code==='PGRST202'&&'p_native_version' in payload){const {p_native_version,...rest}=payload;result=await client.rpc('lumen_record_outbox_health',rest)}
+ if(result.error)throw Error('Observation unavailable');
 }});
 const syncPresentation=createSyncPresentation({onChange:view=>{
  renderSyncStatus(view);
@@ -1955,7 +1967,7 @@ function setupDailyInfo(){
 function setupMobileAuth(){
  const menu=document.getElementById("mobileAuthPopover"),account=document.getElementById("mobileAccount"),action=document.getElementById("mobileAuthAction");
  if(!menu||!account||!action)return;
- account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden;account.setAttribute("aria-expanded",String(!menu.hidden));if(!menu.hidden)dailyPushSettings?.accountOpened()};
+ account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden;account.setAttribute("aria-expanded",String(!menu.hidden));if(!menu.hidden){dailyPushSettings?.accountOpened();void myReports?.check()}};
  menu.onclick=(e)=>{if(e.target.closest("[data-closes-menu]")){menu.hidden=true;account.setAttribute("aria-expanded","false")}e.stopPropagation()};
  // #959: Escape closes Mon espace (after any open tip) and returns focus to its button.
  menu.addEventListener("keydown",e=>{if(e.key!=="Escape"||menu.hidden)return;menu.hidden=true;account.setAttribute("aria-expanded","false");account.focus()});
@@ -2577,7 +2589,28 @@ function dailyChipState(day,owner){
  const pending=readPendingDaily();if(pending?.day===day)return 'done';
  return 'open';
 }
-function rememberDailyDone(day){try{if(day)localStorage.setItem(DAILY_DONE_KEY,JSON.stringify({day,owner:lumenUser?.id||'guest'}))}catch{}}
+function rememberDailyDone(day){try{if(day)localStorage.setItem(DAILY_DONE_KEY,JSON.stringify({day,owner:lumenUser?.id||'guest'}))}catch{}renderDailyQuestBanner()}
+// #1049: the Mon ciel « Défi du jour » entry also sits under the quest actions while
+// today's challenge is not done. Same memoized lumen_daily_today read and the same
+// « already played » state as the header chip: no extra request. It never shrinks
+// the board nor scrolls: it shows only when it fits entirely below the actions.
+let dailyQuestToday=null;
+function renderDailyQuestBanner(){
+ const banner=document.getElementById('dailyQuestBanner');if(!banner)return;
+ const today=dailyQuestToday,owner=lumenUser?.id;
+ const show=!!today?.enabled&&!socialChallenge&&!qaActive&&!learningReplayActive()&&dailyChipState(today.day,owner)!=='done';
+ banner.hidden=!show;delete banner.dataset.fits;if(!show)return;
+ document.getElementById('dailyQuestBannerState').textContent=t('daily.entryDate',{date:dailyDate(today.day),duration:dailyDuration(Date.parse(today.closes_at)-Date.parse(today.server_now))});
+ banner.setAttribute('aria-label',t('daily.chipOpenLabel',{date:dailyDate(today.day)}));
+ banner.onclick=()=>{trackDaily('quest_banner_opened');handOffDaily()};
+ fitDailyQuestBanner();
+}
+function fitDailyQuestBanner(){
+ const banner=document.getElementById('dailyQuestBanner');if(!banner||(banner.hidden&&banner.dataset.fits!=='no'))return;
+ banner.hidden=false;const fits=banner.getBoundingClientRect().bottom<=(window.visualViewport?.height??innerHeight)+0.5;
+ banner.hidden=!fits;banner.dataset.fits=fits?'yes':'no';
+}
+window.addEventListener('resize',()=>{if(document.getElementById('dailyQuestBanner')?.dataset.fits)fitDailyQuestBanner()});
 function renderDailyChip(today,owner){
  const chip=document.getElementById('dailyChip');if(!chip)return;
  const enabled=!!today?.enabled&&!socialChallenge;chip.hidden=!enabled;if(!enabled)return;
@@ -2597,7 +2630,7 @@ async function refreshDailyEntry(){
  clearTimeout(dailyEntryTimer);dailyEntryTimer=null;
  const entry=document.getElementById('openDaily'),week=document.getElementById('openDailyWeek'),chip=document.getElementById('dailyChip');
  const request=++dailyEntryRequest,owner=lumenUser?.id;
- if(!entry||socialChallenge){if(chip)chip.hidden=true;return}
+ if(!entry||socialChallenge){if(chip)chip.hidden=true;dailyQuestToday=null;renderDailyQuestBanner();return}
  const current=()=>request===dailyEntryRequest&&owner===lumenUser?.id&&!socialChallenge;
  entry.onclick=()=>handOffDaily();
  try{
@@ -2612,7 +2645,8 @@ async function refreshDailyEntry(){
   if(week){week.hidden=!today?.enabled||!lumenUser;week.onclick=()=>openDailyWeek(today.day,'quests')}
   renderDailyChip(today,owner);
   void dailyRecaps?.wake();
- }catch{if(current()){entry.hidden=true;if(week)week.hidden=true;if(chip)chip.hidden=true}}
+  dailyQuestToday=today;renderDailyQuestBanner();
+ }catch{if(current()){entry.hidden=true;if(week)week.hidden=true;if(chip)chip.hidden=true;dailyQuestToday=null;renderDailyQuestBanner()}}
  finally{
   if(current()){
    const expiry=dailyTodayMemo?.until??Date.now()+60_000;
@@ -2893,7 +2927,14 @@ const attemptEngine=createAttemptEngine({onChange:attempt=>{updateAttemptUI();co
 function capturedTiming(){return qaActive||officialTimingSupported(lumenSupabase)?{timing:attemptTiming(attemptEngine.snapshot()??{})}:{}}
 const rankingContext=()=>({owner:lumenUser?.id,client:lumenSupabase,nickname:lumenNickname,qa:qaActive});
 const rankingClient=createRankingClient({storage:localStorage,getContext:rankingContext,currentGridRevision:id=>{const q=canonicalQuestById(id);return q?q.gridRevision??0:null}});
-const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds),onUpdate:update=>renderVictoryRank(update),t});
+const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds),onUpdate:update=>renderVictoryRank(update),onGroups:(quest,origin)=>openGroupRanking(quest,origin),t});
+// #974: constellation and adventure rankings (materialized server aggregates, read on open).
+let groupRanking=null;
+function openGroupRanking(quest,origin){
+ if(!quest?.constellationId||!quest?.packId)return;
+ const entry=CONTENT_CONSTELLATIONS.find(c=>c.id===quest.constellationId),pack=CONTENT_PACKS.find(p=>p.id===quest.packId);
+ groupRanking?.open({constellationId:quest.constellationId,adventureId:quest.packId,constellationName:entry?skyNavigation.displayName(entry):null,adventureName:pack?adventureDisplayName(pack,t):null,origin});
+}
 let nicknameOnboardingOwner=null;
 let nicknameOnboardingBusy=false;
 function showMandatoryNickname(required,owner=lumenUser?.id){
@@ -3694,7 +3735,7 @@ function resumeGameClock(){attemptEngine.resume();clock()}
 // #925: top menus and in-game dialogs reuse this same pause while they are open.
 // Mon ciel is a navigation destination, not a menu: its behaviour is unchanged.
 const menuPause=createMenuPause({document,
- ids:['socialHub','friendsModal','friendPickerModal','myChallengesModal','circlesModal','mobileAuthPopover','dailyInfoPopover','rulesModal','feedbackModal','lumenShareDialog','lumenConfirm','abandonConfirm'],
+ ids:['socialHub','friendsModal','friendPickerModal','myChallengesModal','circlesModal','mobileAuthPopover','dailyInfoPopover','rulesModal','feedbackModal','myReportsModal','groupRankingModal','lumenShareDialog','lumenConfirm','abandonConfirm'],
  running:()=>attemptEngine.snapshot()?.state===ATTEMPT_STATES.RUNNING,
  paused:()=>attemptEngine.snapshot()?.state===ATTEMPT_STATES.PAUSED,
  attemptId:()=>attemptEngine.snapshot()?.attemptId??null,
@@ -3715,35 +3756,48 @@ function displayedCellState(r,c){
 }
 
 const LUMEN_APP_VERSION=appVersion();
-let betaFeedback=null;
+let betaFeedback=null,myReports=null;
 function openBetaFeedback(options={}){betaFeedback?.open(options)}
 // #960: a « Report this problem » action for blocking errors, prefilled with the error code.
 function reportProblemButton(errorCode,surface='error'){const b=document.createElement('button');b.type='button';b.className='report-problem';b.textContent=t('feedback.reportThis');b.onclick=()=>openBetaFeedback({kind:'bug',surface,errorCode,origin:b});return b}
-// #960: admin report rows (v2 adds status and the allowlisted context) and triage.
-const FEEDBACK_KIND_KEYS={bug:'admin.feedback.kind.bug',question:'admin.feedback.kind.question',idea:'admin.feedback.kind.idea',rule:'admin.feedback.kind.rule',difficulty:'admin.feedback.kind.difficulty',other:'admin.feedback.kind.other'};
-const FEEDBACK_STATUS_KEYS={new:'admin.feedback.status.new',reviewed:'admin.feedback.status.reviewed',fixed:'admin.feedback.status.fixed',closed:'admin.feedback.status.closed'};
-function adminFeedbackRow(x){
- const c=x.context&&typeof x.context==='object'?x.context:{};
- const facts=[c.platform,c.browser,c.screen,c.locale,c.quest_ordinal?'Q'+c.quest_ordinal:(x.puzzle_id?'Q'+x.puzzle_id:null),c.surface,c.error_code,c.offline?t('admin.feedback.offline'):null,c.session_id].filter(Boolean).map(adminEsc).join(' · ');
- const status=x.status&&FEEDBACK_STATUS_KEYS[x.status]?'<select data-feedback-status="'+adminEsc(x.id)+'" aria-label="'+adminEsc(t('admin.feedback.statusLabel',{id:String(x.id)}))+'">'+Object.entries(FEEDBACK_STATUS_KEYS).map(([v,k])=>'<option value="'+v+'"'+(v===x.status?' selected':'')+'>'+adminEsc(t(k))+'</option>').join('')+'</select>':'';
- return '<div class="admin-feedback"><strong>'+(x.id?'n° '+adminEsc(x.id)+' · ':'')+adminEsc(FEEDBACK_KIND_KEYS[x.kind]?t(FEEDBACK_KIND_KEYS[x.kind]):x.kind)+' · '+adminEsc(x.player_label)+'</strong>'+status+'<p>'+adminEsc(x.message||"Sans commentaire")+'</p><small>'+new Date(x.created_at).toLocaleString("fr-FR")+(x.app_version?" · "+adminEsc(x.app_version):"")+(facts?' · '+facts:'')+'</small>'+(x.id?'<details class="admin-feedback-journal" data-feedback-journal="'+adminEsc(x.id)+'"><summary>'+adminEsc(t('admin.feedback.journal'))+'</summary><pre></pre></details>':'')+'</div>';
+// #1020/#960: the reports inbox (feedback-inbox.js) and the facts of the player table
+// (one bounded lumen_admin_player_health read), kept for the player's summary card.
+let adminInbox=null,adminHealth=null,adminPlayerNames=new Map();
+function adminFeedbackInbox(owner,client){
+ if(adminInbox?.owner===owner&&adminInbox.client===client)return adminInbox;
+ const authorized=()=>lumenUser?.id===owner&&lumenSupabase===client&&hasInternalCapability('analytics_cockpit');
+ const inbox=mountFeedbackInbox(document.getElementById('adminFeedbacks'),{rpc:(name,args)=>client.rpc(name,args),authorized,
+  days:()=>Math.max(30,Number(document.getElementById('adminCockpitDays')?.value||30)),
+  onPlayer:key=>{adminAnalytics?.navigate('players');void loadAdminTimeline(key);document.getElementById('adminTimeline')?.scrollIntoView({block:'nearest'})},
+  onDossier:(host,{target,reference})=>mountSupportDossier(host,{client,owner,target,reference,authorized}),t});
+ adminInbox={...inbox,owner,client};return adminInbox;
 }
-function bindAdminFeedbackTriage(root){
- if(!root||root.dataset.triageBound)return;root.dataset.triageBound='1';
- // #1010: the sync journal attached to a report, read on demand (administrators only).
- root.addEventListener('toggle',async e=>{
-  const box=e.target.closest?.('details[data-feedback-journal]');if(!box||!box.open||box.dataset.loaded||!lumenSupabase)return;
-  const pre=box.querySelector('pre');box.dataset.loaded='1';pre.textContent='…';
-  const {data,error}=await lumenSupabase.rpc('lumen_admin_feedback_journal',{p_id:Number(box.dataset.feedbackJournal)});
-  if(error){delete box.dataset.loaded;pre.textContent=t('admin.feedback.journalError');return}
-  pre.textContent=Array.isArray(data)&&data.length?JSON.stringify(data,null,1):t('admin.feedback.journalEmpty');
- },true);
- root.addEventListener('change',async e=>{
-  const select=e.target.closest('select[data-feedback-status]');if(!select||!lumenSupabase)return;
-  select.disabled=true;
-  const {error}=await lumenSupabase.rpc('lumen_admin_feedback_set_status',{p_id:Number(select.dataset.feedbackStatus),p_status:select.value});
-  select.disabled=false;select.classList.toggle('admin-error',!!error);if(error)select.title=t('admin.feedback.statusError');
- });
+function showPlayerReports(key,label){
+ adminAnalytics?.navigate('support');
+ void adminInbox?.filterPlayer(key,label||adminPlayerNames.get(key)||key);
+ document.getElementById('adminFeedbacks')?.closest('details')?.setAttribute('open','');
+}
+// #708: compact summary first (health, last quest, versions, check), details folded.
+function renderAdminPlayerSummary(box,key){
+ const facts=adminHealth?.players?.[key];if(!box)return;
+ const model=playerHealth(facts,{t}),doc=box.ownerDocument,card=doc.createElement('section');card.className='admin-player-summary';card.dataset.health=model.state;
+ const title=doc.createElement('h4');title.textContent=(adminPlayerNames.get(key)||t('admin.summary.player'))+' — '+model.icon+' '+model.label;card.append(title);
+ const list=doc.createElement('ul');
+ const line=(label,value)=>{const li=doc.createElement('li');const strong=doc.createElement('strong');strong.textContent=t(label)+' : ';li.append(strong,value);list.append(li)};
+ const date=v=>v?new Date(v).toLocaleString(t('admin.dateLocale')):null;
+ line('admin.summary.state',model.reasons.join(' · '));
+ line('admin.summary.lastQuest',date(model.gameAt)||t('admin.summary.noQuest'));
+ line('admin.summary.sync',model.devices?(model.pending?t('admin.summary.pending',{count:model.pending}):t('admin.summary.noPending')):t('admin.summary.notObserved'));
+ line('admin.summary.web',model.web?t('admin.summary.seen',{version:model.web.version,date:date(model.web.at)}):t('admin.summary.unknown'));
+ line('admin.summary.android',model.android?t('admin.summary.seen',{version:model.android.version,date:date(model.android.at)}):t('admin.summary.noNative'));
+ line('admin.summary.check',model.observedAt?t('admin.summary.checkValue',{date:date(model.observedAt),freshness:model.freshness}):t('admin.summary.none'));
+ line('admin.summary.lastSignIn',date(facts?.auth_at)||t('admin.summary.unknown'));
+ card.append(list);
+ if(model.reports.total){const b=doc.createElement('button');b.type='button';b.textContent=t('admin.summary.reports',{open:model.reports.open,total:model.reports.total});b.onclick=()=>showPlayerReports(key);card.append(b)}
+ const details=doc.createElement('details');const summary=doc.createElement('summary');summary.textContent=t('admin.summary.details');details.append(summary);
+ const dates=doc.createElement('div');dates.className='admin-player-dates';appendPlayerDates(dates,{},facts||undefined);details.append(dates);
+ const devices=doc.createElement('pre');devices.textContent=JSON.stringify(facts?.devices||[],null,1);details.append(devices);card.append(details);
+ box.prepend(card);
 }
 function adminEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function adminNumber(v){return new Intl.NumberFormat("fr-FR").format(Number(v)||0)}
@@ -3761,6 +3815,7 @@ async function loadAdminTimeline(key){
  const {data,error}=response;
  if(error){box.innerHTML="<p>Timeline indisponible.</p>";return}
  renderPlayerSessions(box,data,{authorized,scope:owner+':'+key});
+ renderAdminPlayerSummary(box,key);
  void mountSupportDossier(box,{client,owner,target:key.slice(2),authorized});
  void mountAdventureAccess(box,{client,owner,target:key.slice(2),authorized,packs:CONTENT_PACKS});
 }
@@ -3934,10 +3989,9 @@ async function loadAdminCockpit(){
  mountSupportLookup(supportLookup,{client:requestClient,owner:requestUser,authorized});
  const status=document.getElementById("adminCockpitStatus"),days=Number(document.getElementById("adminCockpitDays")?.value||7);
  status.textContent="Actualisation…";
- const [cockpit,accounts,feedbacks,playerSnapshot,syncHealth,questMetrics,engagement,versionHealth,criticalIncidents,healthSnapshot]=await Promise.all([
+ const [cockpit,accounts,playerSnapshot,syncHealth,questMetrics,engagement,versionHealth,criticalIncidents,healthSnapshot]=await Promise.all([
    lumenSupabase.rpc("lumen_admin_cockpit",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_accounts",{p_limit:250}),
-   lumenSupabase.rpc("lumen_admin_feedback_v2",{p_days:days}).then(r=>r.error?lumenSupabase.rpc("lumen_admin_feedback",{p_days:days}):r),
    lumenSupabase.rpc("lumen_admin_recent_players",{p_limit:250}),
    lumenSupabase.rpc("lumen_admin_sync_health",{p_days:days}),
    lumenSupabase.rpc("lumen_admin_quest_metrics",{p_days:days}),
@@ -3962,9 +4016,10 @@ async function loadAdminCockpit(){
  const receivedPlayers=new Map((cockpit.data?.service_activity?.players||[]).map(p=>[p.player_key,p]));
  const players=analyticsPlayers(playerSnapshot.error?[]:playerSnapshot.data,accounts.error?[]:accounts.data).map(x=>({...x,current_quest:Math.max(questMetrics.data?.current_players?.[x.player_key]||0,receivedPlayers.get(x.player_key)?.furthest_confirmed_quest||0)||null}));
  const playerError=playerSnapshot.error&&accounts.error;
- let observations;try{observations=await requestClient.rpc('lumen_admin_player_observations',{p_player_keys:players.map(p=>p.player_key)})}catch(_){observations={error:true}}
+ // #708: one bounded read gives the facts of the whole player table (replaces observations).
+ let observations;try{observations=await requestClient.rpc('lumen_admin_player_health',{p_player_keys:players.map(p=>p.player_key)})}catch(_){observations={error:true}}
  if(!authorized())return;
- const realFeedbacks=feedbacks.data||[];
+ adminHealth=observations.error?null:observations.data;adminPlayerNames=new Map(players.map(p=>[p.player_key,String(p.display_name||p.player_label||'Joueur')]));
  const d={...cockpit.data,friction:questMetrics.data?.friction||[],funnel:questMetrics.data?.funnel||[]},m=d.summary||{};
  document.getElementById("adminCockpitKpis").innerHTML=[
   ["Joueurs uniques",null],["Nouveaux",null],["Revenants",null],["DAU",null],["WAU",null],["Sessions",null],["Quêtes commencées",null],["Quêtes terminées",null],["Feedbacks reçus",m.feedback_count]
@@ -3983,7 +4038,7 @@ async function loadAdminCockpit(){
  const alerts=[...syncAlerts,...outboxAlerts.map(a=>'Sauvegarde '+a.state+' · '+a.pending+' opération(s) · '+a.platform+' · '+a.version),...detailAlerts.map(a=>a.text)];document.getElementById("adminAlerts").innerHTML=alerts.map(x=>'<div class="admin-alert"><strong>⚠</strong><span>'+adminEsc(x)+'</span></div>').join("")||"<p>Pas d’alerte dans les sources disponibles. La couverture reste partielle.</p>";
  const directory=document.getElementById('adminPlayers');
  if(playerError){directory.replaceChildren();const note=document.createElement('p');note.textContent='Activité récente indisponible.';directory.append(note)}
- else renderPlayerDirectory(directory,players,observations.error?undefined:observations.data,{authorized,onSelect:loadAdminTimeline});
+ else renderPlayerDirectory(directory,players,observations.error?undefined:observations.data,{authorized,onSelect:loadAdminTimeline,onReports:showPlayerReports,t});
  const timeline=document.getElementById('adminTimeline');
  if(timeline?.cockpitPlayer){
   if(players.some(p=>p.player_key===timeline.cockpitPlayer))loadAdminTimeline(timeline.cockpitPlayer);
@@ -3991,8 +4046,8 @@ async function loadAdminCockpit(){
  }
  const accountRows=document.getElementById("adminAccounts");
  if(accountRows)accountRows.innerHTML=accounts.error?'<tr><td colspan="6">Comptes indisponibles.</td></tr>':(accounts.data||[]).map(x=>'<tr><td>'+adminEsc(x.email||"—")+'</td><td>'+adminEsc(x.nickname||"—")+'</td><td>'+new Date(x.created_at).toLocaleString("fr-FR")+'</td><td>'+(x.last_sign_in_at?new Date(x.last_sign_in_at).toLocaleString("fr-FR"):"—")+'</td><td>'+(x.last_activity?new Date(x.last_activity).toLocaleString("fr-FR"):"—")+'</td><td>'+(questMetrics.data?.current_players?.['u:'+x.user_id]||"—")+'</td></tr>').join("")||'<tr><td colspan="6">Aucun compte.</td></tr>';
- document.getElementById("adminFeedbacks").innerHTML=feedbacks.error?"<p>Feedbacks indisponibles.</p>":realFeedbacks.map(adminFeedbackRow).join("");
- bindAdminFeedbackTriage(document.getElementById("adminFeedbacks"));
+ // #1020: the inbox reads its own page (filters and counters kept across refreshes).
+ void adminFeedbackInbox(requestUser,requestClient).load();
  renderAnalyticsDashboard({overview:document.getElementById('analyticsOverview'),journeys:document.getElementById('analyticsJourneys'),technical:document.getElementById('analyticsTechnical')},
   buildAnalyticsDashboard({product:cockpit.error?null:cockpit.data,quests:questMetrics.error?null:questMetrics.data,health,players,observations:observations.error?null:observations.data,catalogue:adminCanonicalCatalogueTree(),days}),
   {authorized,scope:requestUser,onAction:action=>{
@@ -4002,9 +4057,9 @@ async function loadAdminCockpit(){
    adminAnalytics?.navigate(section);
    if(action.type==='quest')revealAnalyticsQuest(document.getElementById('analyticsJourneys'),action.key);
    if(['player','players'].includes(action.type)){
-    const directory=document.getElementById('adminPlayers'),search=directory.querySelector('input'),filter=directory.querySelector('[aria-label="Filtrer l’état observé"]');
+    const directory=document.getElementById('adminPlayers'),search=directory.querySelector('input[type=search]');
     if(search){search.value='';search.dispatchEvent(new Event('input'))}
-    if(filter){filter.value=action.state||'all';filter.dispatchEvent(new Event('change'))}
+    directory.querySelector('[data-health-filter="'+(action.state||'all')+'"]')?.click();
     if(action.type==='player')void loadAdminTimeline(action.key);
     reveal(document.getElementById(action.type==='player'?'adminTimeline':'adminPlayers'));
    }
@@ -4049,12 +4104,15 @@ function setupBetaFeedback(){
    return buildFeedbackContext({appVersion:LUMEN_APP_VERSION,locale:document.documentElement.lang,platform:feedbackPlatform(),
     userAgent:navigator.userAgent,screen:innerWidth+'x'+innerHeight,standalone:lumenIsStandalone(),online:navigator.onLine,
     quest:q?{id:q.id,ordinal:q.ordinal,puzzleId:q.legacyIndex===null?undefined:q.legacyIndex+1,inProgress:!!state&&!celebrated}:null,
-    adventure:pack?adventureDisplayName(pack,t):null,surface,errorCode,sessionId:feedbackSessionId(sessionStorage)});
+    adventure:pack?adventureDisplayName(pack,t):null,surface,errorCode,sessionId:feedbackSessionId(sessionStorage),androidVersion:LUMEN_NATIVE_VERSION});
  };
  // #1010: the report carries the sync journal (v3); an older server keeps v2.
- const sendFeedback=async({kind,message,context,clientRef,journal})=>{
+ const sendFeedback=async({kind,message,context,clientRef,journal,snapshot=null,support=null})=>{
   if(!lumenSupabase)throw Error('offline');
-  let {data,error,status}=await lumenSupabase.rpc("lumen_send_feedback_v3",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef,p_journal:journal?.length?journal:null});
+  // #960: v4 also keeps the snapshot of the moment and the support references (bugs).
+  let {data,error,status}=await lumenSupabase.rpc("lumen_send_feedback_v4",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef,p_journal:journal?.length?journal:null,
+   p_snapshot:snapshot||null,p_support_case_id:support?.caseId||null,p_support_capture_id:support?.captureId||null});
+  if(error?.code==='PGRST202'&&status===404)({data,error,status}=await lumenSupabase.rpc("lumen_send_feedback_v3",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef,p_journal:journal?.length?journal:null}));
   if(error?.code==='PGRST202'&&status===404)({data,error}=await lumenSupabase.rpc("lumen_send_feedback_v2",{p_anonymous_id:lumenAnonymousId,p_kind:kind,p_message:message,p_context:context,p_client_ref:clientRef}));
   if(error){console.warn("LUMEN feedback",error);throw Error(error.message||'failed')}
   return data;
@@ -4065,15 +4123,48 @@ function setupBetaFeedback(){
  autoIncidentReporter=createAutoIncidentReporter({storage:localStorage,
   enabled:()=>!!lumenUser&&!!lumenSupabase&&!qaActive&&diagnosticEnabled&&diagnosticOwner===lumenUser?.id,
   send:({code,count,journal})=>sendFeedback({kind:'bug',message:'[auto] '+code+' x'+count,context:feedbackContext({surface:'auto',errorCode:code}),clientRef:newClientRef(),journal})});
+ // #960: the state at the moment of the report, from memory and local storage only.
+ const openSurface=()=>['rulesModal','socialHub','friendsModal','myChallengesModal','circlesModal','dailyInfoPopover','mobileAuthPopover','lumenShareDialog','myReportsModal']
+  .find(id=>{const node=document.getElementById(id);return node&&!node.hidden})||null;
+ const reportSnapshot=({surface}={})=>{
+  let outbox=null;
+  try{const summary=typeof lastOutboxDiagnosticFingerprint==='string'?JSON.parse(lastOutboxDiagnosticFingerprint):null;
+   if(summary&&lastOutboxDiagnosticOwner===lumenUser?.id)outbox={state:lastOutboxObservation?.state,canonical:summary.canonical?.pending,legacy:summary.legacy?.pending,wallet:summary.wallet?.pending}}catch{}
+  const q=activeQuest(),pack=q?CONTENT_PACKS.find(item=>item.id===q.packId):null,attempt=attemptEngine.snapshot(),device=outboxDeviceHealth();
+  return buildReportSnapshot({surface,menu:openSurface(),online:navigator.onLine,
+   hydration:{state:!lumenUser?'guest':cloudProfileReady?'ready':cloudProfileFailure?'failed':'pending',error:cloudProfileFailure?.reason},
+   outbox,journal:buildFeedbackJournal(localStorage),
+   storage:{ratio:Number.isFinite(device.bytes)?Math.round(device.bytes/LOCAL_STORAGE_LIMIT_BYTES*100):null,error:device.error},
+   quest:q?{id:q.id,adventure:pack?.id,ordinal:q.ordinal}:null,attempt:q&&attempt?attempt:null,
+   board:q&&Array.isArray(state)?state.map((row,r)=>row.map((_,c)=>displayedCellState(r,c))):null});
+ };
  betaFeedback=createBetaFeedback({document,storage:localStorage,t,
   context:feedbackContext,
   journal:()=>buildFeedbackJournal(localStorage),
+  snapshot:reportSnapshot,
+  guest:()=>!lumenUser,
+  // #959: the complete account copy is never pre-ticked; it can be previewed here.
   fullCopy:{available:()=>!!lumenUser&&!!lumenSupabase&&!qaActive&&!!supportSession,
-   suggested:()=>!!cloudProfileFailure||canonicalOutboxNotice==='attention'||!cloudProfileReady,
-   send:()=>supportQuickSend.run()},
+   prepare:()=>supportQuickSend.prepare(),
+   send:copy=>supportQuickSend.send(copy),
+   preview:()=>lumenUser?captureSupportCopy({storage:localStorage,owner:lumenUser.id,code:'manual',version:appVersion()}):null},
   send:sendFeedback,
-  onSent:()=>trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,analyticsContext())
+  onSent:(receipt,{background}={})=>{
+   trackLumenEvent("feedback_submitted",activeQuest().legacyIndex===null?null:activeQuest().legacyIndex+1,analyticsContext());
+   myReports?.noteSent();
+   if(background)showRewardToast(t('feedback.sentLater',{id:String(receipt?.id??'—')}));
+  }
  });
+ // #1020: « Mes signalements » (own reports, answers, one complementary reply).
+ myReports=createMyReports({document,storage:localStorage,t,
+  rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{offline:true}}),
+  identity:()=>({userId:qaActive?null:lumenUser?.id||null,anonymousId:lumenAnonymousId,client:qaActive?null:lumenSupabase})});
+ groupRanking=createGroupRanking({document,t,signedIn:()=>!!lumenUser&&!qaActive,
+  rpc:(name,args)=>lumenSupabase?lumenSupabase.rpc(name,args):Promise.resolve({error:{offline:true}})});
+ const reportsButton=document.getElementById('myReportsBtn');
+ if(reportsButton)reportsButton.onclick=()=>myReports.open({origin:document.getElementById('mobileAccount')});
+ // One summary per session (count only), so a new answer shows as a discreet dot.
+ setTimeout(()=>{void myReports.check()},8000);
  document.getElementById("betaFeedbackBtn").onclick=e=>openBetaFeedback({surface:'menu',origin:document.getElementById('mobileAccount')});
  const fromHelp=document.getElementById("helpReportProblem");
  if(fromHelp)fromHelp.onclick=()=>{document.getElementById("rulesModal").hidden=true;openBetaFeedback({kind:'bug',surface:'help',origin:document.getElementById('mobileAccount')})};
@@ -5919,7 +6010,7 @@ window.addEventListener('offline',()=>{
 window.addEventListener('online',()=>{
  if(!document.getElementById('mapModal').hidden)void refreshPlayReviewMap();
 });
-const skyNavigation=createSkyNavigation({renderLockedOffer:renderAdventureOffer,t,locale:()=>localePreference?.locale??"fr",document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()}),getQuest:()=>currentQuestPosition(),
+const skyNavigation=createSkyNavigation({onRanking:options=>groupRanking?.open(options),renderLockedOffer:renderAdventureOffer,t,locale:()=>localePreference?.locale??"fr",document,getModel:()=>mapCatalogueOverride||contentMapModel(adventureAccessEntitlements(),{progress:lumenProgress,attempt:attemptEngine.snapshot(),entitlementsState:adventureEntitlementsState()}),getQuest:()=>currentQuestPosition(),
  getSolved:i=>!!lumenProgress.solved[i],
  getCanonicalQuests:id=>canonicalQuestList().filter(q=>q.constellationId===id),
  getCanonicalSolved:q=>questIsCompleted(lumenProgress,q.id),

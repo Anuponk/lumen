@@ -2846,3 +2846,17 @@ The `health-cockpit.yml` PostgreSQL job runs `scripts/fixtures/health-cockpit.sq
 Run `python -B scripts/lumen_critical_monitor_tests.py` and `python -B scripts/lumen_activity_mail_tests.py` with their synthetic RPCs and transport. When changing `.github/workflows/lumen-external-monitor.yml`, verify that a manual run with the default input executes only the public probe without secrets. The observation job requires `main` and its activation flag and runs from the schedule or an explicit `record_observation=true` manual dispatch. Check both manual modes and the next schedule after deployment. The job shares the web release's `Production` environment and uses its secrets without creating a deployment record. Verify the environment's main-only policy before adding operational secrets. A real receipt test still requires approved access to SoldeZen and Brevo and a test mailbox.
 
 `lumen-mail-receipt.yml` exercises the four scenarios and replay in disposable PostgreSQL on PRs and manual runs using a simulated transport. The o2switch receipt command checks the SoldeZen API schema read-only and submits four synthetic previews to Brevo. Verify provider acceptance and mailbox receipt separately. The monitor uses the observation RPCs without Brevo or mail claiming. Worker tests assert that the o2switch cron queues the previous local day at or after 08:15 and continues processing ordinary notices if the digest RPC fails.
+
+## Chantier E and transverse UX (#959 #960 #1020 #708 #848 #974 #1049)
+
+- SQL (canonical-ledger CI, migrations applied twice):
+  - `scripts/fixtures/assistance-loop-chantier-e.sql`;
+  - `scripts/fixtures/rankings-974.sql`, `scripts/rankings-concurrency.py`;
+  - `node scripts/ranking-groups-fixtures.mjs --check`.
+- Unit suites: `native-version-tests`, `report-snapshot-tests`, `player-health-tests`, `group-ranking-tests`, `beta-feedback-tests`, `cockpit-dates-tests`, `analytics-dashboard-tests`, `admin-recent-players-tests`.
+- Browser suites:
+  - `beta-feedback-browser-tests`: required diagnostic, never pre-ticked copy, offline queue, snapshot;
+  - `incident-investigation-browser-tests`, through `cockpit-browser` (dense health table), `support-browser` and `assistance-browser` (reports inbox, « Mes signalements », rankings dialog);
+  - `daily-challenge-browser` (#1049 banner fit, board size unchanged, hidden once played).
+- Android: `NativeVersionTest`.
+- Real-device acceptance still required: TWA with the new AAB, Safari iPhone, offline PWA.

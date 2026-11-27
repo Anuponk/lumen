@@ -115,3 +115,35 @@ complète puis tap sur son fond et sur une commande (premier tap consommé), sec
 tap de navigation, badges encore visibles, réduction des mouvements, clavier
 virtuel dans Compte, safe areas, mode paysage, hors-ligne/reconnexion et deux
 comptes concurrents. Consigner version, SHA public, appareil et résultats.
+
+## Classements constellation et aventure (#974)
+
+Le barème a été validé par le propriétaire le 24/11/2026. Migration : `20261126200100_constellation_rankings_974.sql`.
+
+- **Points par quête classée** : 1er 100, 2e 80, 3e 65, 4e 55, 5e 50, puis −2 par place jusqu'à un plancher de 10 (`lumen_commands.ranking_points`).
+  - Les ex aequo ont la même place et les mêmes points ; la place suivante est sautée (`rank()`).
+  - Une quête non jouée vaut 0.
+  - La population est celle du podium par quête : `ranking_scores` sur la révision de grille courante, membres participants, pseudo prêt, sans retrait. Les Échos ne sont jamais notés.
+  - Aucun moteur de qualification parallèle : seuls les temps officiels déjà retenus comptent.
+- **Totaux** : constellation = somme de ses quêtes ; aventure = somme de ses constellations. Le nombre de quêtes classées est affiché sur le total (`questTotal`).
+- **Matérialisation incrémentale** : `ranking_quest_points`, `ranking_constellation_totals`, `ranking_adventure_totals`.
+  - Un changement de score (déclencheurs d'instruction), de visibilité (participation, pseudo, retrait) ou de révision de grille recalcule **cette quête seulement**.
+  - Seuls les totaux des joueurs dont la place change sont ensuite ressommés.
+  - Le calcul est sérialisé par quête (`pg_advisory_xact_lock`) et les écritures sont ordonnées par joueur.
+  - Les totaux sont toujours ressommés, jamais décrémentés : un joueur qui sort n'a que des suppressions, ce qui reste compatible avec les gardes d'effacement.
+- **Regroupement** : `ranking_groups` (quête → constellation → aventure) appartient au catalogue. Il est généré par `scripts/ranking-groups-fixtures.mjs --write-seed`, et `--check` en CI compare le cumul des migrations au catalogue publié.
+- **Lecture** : `lumen_group_ranking(kind, id, offset, limit)` (comptes connectés) renvoie le top 3 et ma position (place = 1 + nombre de totaux supérieurs, par index). La liste complète est lue à la demande, par pages de 10. Aucun recalcul à la consultation.
+- **Reconstruction** : `lumen_commands.ranking_rebuild()` (opérateur ou migration) est idempotente ; un second passage ne change rien. Elle a été exécutée une fois par la migration, à partir des scores qualifiants existants.
+- **Confidentialité** : les trois tables dérivées sont inscrites à `lumen_privacy.policy()` (effacement, export, garde anti-résurrection). Aucun identifiant de compte n'est exposé.
+- **Coût** (mesures du 26/11 : 2 310 scores, 20 joueurs ; le reste est estimé) :
+  - un record = 1 recalcul de quête (participants de cette quête) + au plus 2 × (joueurs déplacés) lignes ressommées ;
+  - une ouverture = 1 RPC indexée de quelques centaines d'octets, + 1 RPC par page de 10 ;
+  - stockage ≈ (scores visibles) + 88 × participants + 9 × participants lignes de quelques dizaines d'octets ;
+  - aucun travail périodique.
+- **Amis et cercles (#928)** : même agrégat, filtré par la liste des amis ou des membres, plus tard. Aucun changement de schéma n'est prévu pour cela.
+- **Rollback** : supprimer les déclencheurs, les fonctions et les quatre tables (données dérivées seulement), puis restaurer `lumen_privacy.policy_before_rankings_974`.
+- **Tests** :
+  - `scripts/fixtures/rankings-974.sql` : barème, ex aequo, nouveau record, retrait, compte supprimé, révision de grille, reconstruction, pagination, privilèges ;
+  - `scripts/rankings-concurrency.py` ;
+  - `group-ranking-tests` ;
+  - navigateur `assistance-browser` (dialogue de classement).

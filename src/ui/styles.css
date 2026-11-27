@@ -1844,6 +1844,39 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .beta-full-copy input{width:20px;height:20px;flex:0 0 auto}
 .beta-full-copy-note{margin:0 0 4px;font-size:12.5px;line-height:1.4;color:#9fb3c8}
 .beta-full-copy[hidden],.beta-full-copy-note[hidden]{display:none}
+/* #959/#960: minimal diagnostic (required for a bug) and the complete copy preview. */
+.beta-diagnostic{display:flex;flex-wrap:wrap;align-items:center;column-gap:6px}
+.beta-diagnostic .beta-diagnostic-what{flex-basis:100%}
+.beta-diagnostic label{flex:1 1 0;min-width:0;display:inline-flex;align-items:center;gap:10px;min-height:44px;font-size:14px;color:#dceaf6;cursor:pointer}
+.beta-diagnostic input{width:20px;height:20px;flex:0 0 auto}
+.beta-diagnostic-what{margin:0 0 4px;font-size:12.5px;line-height:1.4;color:#9fb3c8}
+.beta-diagnostic[hidden],.beta-guest-note[hidden]{display:none}
+.beta-guest-note{margin:0;font-size:12.5px;color:#bcd2e3}
+.beta-status[data-state="diagnosticRequired"],.beta-status[data-state="queued"]{color:#ffd28a}
+#feedbackFullCopyPreview summary{min-height:36px;display:flex;align-items:center;cursor:pointer;font-size:12.5px;color:#bcd2e3}
+#feedbackFullCopyPreviewText{max-height:10rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;color:#9fb3c8}
+/* #1020: « Mes signalements », compact and without nested scroll on the page. */
+.my-reports-card{max-height:min(88vh,640px);overflow:auto}
+.my-reports-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.my-report{border:1px solid #1d3047;border-radius:10px;background:rgba(255,255,255,.02)}
+.my-report-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;min-height:44px;padding:8px 10px;background:none;border:0;color:#dceaf6;font-size:13px;text-align:left;cursor:pointer}
+.my-report-head:focus-visible{outline:3px solid #68e7ff;outline-offset:-3px}
+.my-report-status{padding:1px 8px;border-radius:999px;background:#1d3047;font-size:12px;color:#bcd2e3}
+.my-report[data-status="answered"] .my-report-status{background:#16405a;color:#9fe8ff}
+.my-report[data-status="closed"] .my-report-status,.my-report[data-status="fixed"] .my-report-status{background:#173a2a;color:#9fe3bf}
+.my-report-new{padding:1px 8px;border-radius:999px;background:#f4cf78;color:#1a1300;font-size:11px;font-weight:800}
+.my-report-body{padding:0 10px 10px;font-size:13px;color:#cfe0ee}
+.my-report-body[hidden]{display:none}
+.my-report-message{margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere;color:#9fb3c8}
+.my-report-thread{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:6px}
+.my-report-msg{padding:6px 8px;border-radius:8px;background:#0f1d2d}
+.my-report-msg[data-by="admin"]{background:#12304a}
+.my-report-msg p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.my-report-reply{display:grid;gap:6px}
+.my-report-reply textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14px}
+.my-reports-badge{margin-left:auto;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#f4cf78;color:#1a1300;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.my-reports-badge[hidden]{display:none}
+#mobileAccount[data-reports-unread]::after{content:"";position:absolute;top:4px;left:4px;width:8px;height:8px;border-radius:50%;background:#f4cf78;box-shadow:0 0 0 2px #071321}
 /* #985: badge completion line and « À compléter » filter, one compact row under the Adventure summary. */
 .adventure-badges{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 6px;font-size:12px;color:#9fb6cc}.adventure-badges-count{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.badge-filter{flex:0 0 auto;min-height:32px;padding:4px 10px;border-radius:16px;border:1px solid #28415b;background:#101d2e;color:#b9cee1;font:inherit;font-size:12px;font-weight:800}.badge-filter[aria-pressed=true]{border-color:#68e7ff;color:#eafaff}.badge-filter[hidden]{display:none}.constellation-card-slot[hidden]{display:none}.badge-filter-empty{grid-column:1/-1;margin:8px 0;text-align:center;font-size:13px;color:#9fb6cc}
 
@@ -1853,3 +1886,73 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 #puzzleGrid.is-badge-filtered .performance-slot:not(.earned)>span{visibility:visible;opacity:.34}
 #puzzleGrid.is-badge-filtered .puzzle-card:is(.done,.locked)::before{content:attr(data-quest-number);display:block;font-size:10px;line-height:12px;color:#c9dcea}
 #puzzleGrid.is-badge-filtered .puzzle-card.done .performance-grid{height:calc(100% - 12px)}
+/* #708: dense, sortable player table (horizontal scroll inside its own box only). */
+.admin-health-filters,.admin-inbox-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.admin-health-filters button,.admin-inbox-filters button{min-height:36px;padding:4px 10px;border:1px solid #294359;border-radius:999px;background:#0f1d2d;color:#dceaf6;font-size:12.5px}
+.admin-health-filters button[aria-pressed="true"],.admin-inbox-filters button[aria-pressed="true"]{background:#16405a;border-color:#68e7ff;color:#fff}
+.admin-health-reports{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+.admin-player-table-wrap{max-width:100%;max-height:70vh;overflow:auto;border:1px solid #1d3047;border-radius:8px}
+.admin-player-table{width:100%;min-width:860px;border-collapse:collapse;font-size:12.5px}
+.admin-player-table th,.admin-player-table td{padding:6px 8px;border-bottom:1px solid #1d3047;text-align:left;vertical-align:top}
+.admin-player-table thead th{position:sticky;top:0;background:#0b1828;z-index:1}
+.admin-player-table thead button{background:none;border:0;padding:0;color:#bcd2e3;font:inherit;font-weight:800;cursor:pointer;min-height:32px}
+.admin-player-table thead th[aria-sort="ascending"] button::after{content:" ▲"}
+.admin-player-table thead th[aria-sort="descending"] button::after{content:" ▼"}
+.admin-player-table td small{display:block;color:#9fb3c8;font-size:11px}
+.admin-player-table td button{min-height:32px;font-size:12px}
+.admin-player-table tr[data-health="trouble"]{background:rgba(255,120,120,.07)}
+.admin-player-table tr[data-health="trouble"] .admin-health-badge{color:#ff9d9d;font-weight:800}
+.admin-player-table tr[data-health="pending"] .admin-health-badge{color:#f4cf78;font-weight:700}
+.admin-player-table tr[data-health="healthy"] .admin-health-badge{color:#73e8b0}
+.admin-player-table tr[data-health="unknown"] .admin-health-badge{color:#9fb3c8}
+.admin-cell-muted{color:#7f94ad}
+.admin-player-summary{margin:0 0 10px;padding:10px;border:1px solid #294359;border-radius:10px}
+.admin-player-summary[data-health="trouble"]{border-left:4px solid #ff9d9d}
+.admin-player-summary[data-health="pending"]{border-left:4px solid #f4cf78}
+.admin-player-summary[data-health="healthy"]{border-left:4px solid #73e8b0}
+.admin-player-summary h4{margin:0 0 6px}
+.admin-player-summary ul{margin:0 0 6px;padding-left:18px;font-size:12.5px;line-height:1.6}
+.admin-player-summary pre,.admin-inbox-body pre{max-height:14rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}
+/* #1020: reports inbox. */
+.admin-inbox-list{display:grid;gap:6px}
+.admin-inbox-item{border:1px solid #1d3047;border-radius:8px;padding:6px 8px}
+.admin-inbox-item>summary{cursor:pointer;list-style:revert}
+.admin-inbox-item small{display:block;color:#9fb3c8}
+.admin-inbox-message{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.admin-inbox-status{padding:1px 8px;border-radius:999px;background:#1d3047;font-size:12px}
+.admin-inbox-item[data-status="answered"] .admin-inbox-status{background:#16405a}
+.admin-inbox-item[data-status="closed"] .admin-inbox-status,.admin-inbox-item[data-status="fixed"] .admin-inbox-status{background:#173a2a}
+.admin-inbox-action{padding:1px 8px;border-radius:999px;background:#f4cf78;color:#1a1300;font-size:11px;font-weight:800}
+.admin-inbox-synthesis{display:grid;grid-template-columns:minmax(110px,max-content) 1fr;gap:2px 10px;margin:8px 0;font-size:12.5px}
+.admin-inbox-synthesis dt{color:#9fb3c8}.admin-inbox-synthesis dd{margin:0;overflow-wrap:anywhere}
+.admin-inbox-links{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.admin-inbox-board{font-family:ui-monospace,monospace;line-height:1.3}
+.admin-inbox-thread{list-style:none;padding:0;display:grid;gap:6px}
+.admin-inbox-thread li{padding:6px 8px;border-radius:6px;background:#0f1d2d}
+.admin-inbox-thread li[data-by="admin"]{background:#12304a}
+.admin-inbox-thread p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.admin-inbox-reply{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
+.admin-inbox-reply textarea{flex:1 1 100%;min-height:4em;font:inherit}
+/* #974: constellation and adventure rankings. */
+.group-ranking-card{max-height:min(88vh,640px);overflow:auto}
+.group-ranking-tabs{display:flex;gap:6px;margin:4px 0 8px}
+.group-ranking-tabs button{flex:1 1 0;min-height:40px;border:1px solid #294359;border-radius:999px;background:#0f1d2d;color:#dceaf6;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group-ranking-tabs button[aria-selected="true"]{background:#16405a;border-color:#68e7ff;color:#fff}
+.group-ranking-podium,.group-ranking-list{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.group-ranking-row{display:grid;grid-template-columns:2.2em 1fr auto;align-items:center;gap:2px 8px;padding:6px 8px;border-radius:8px;background:#0f1d2d;font-size:13px}
+.group-ranking-row .ranking-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group-ranking-row small{grid-column:2/4;color:#9fb3c8;font-size:11px}
+.group-ranking-podium .group-ranking-row:first-child{background:#2a2410}
+.group-ranking-row.ranking-mine{outline:2px solid #f4cf78}
+.group-ranking-points{font-weight:800;color:#f4cf78}
+.group-ranking-me{margin:8px 0;font-size:13px;color:#dceaf6}
+.group-ranking-more{min-height:40px;margin-top:6px}
+.ranking-personal:has(.ranking-groups){position:relative;padding-right:34px}
+.ranking-groups{position:absolute;top:50%;right:4px;transform:translateY(-50%);width:28px;height:28px;margin:0;padding:0;display:grid;place-items:center;background:none;border:1px solid #294359;border-radius:50%;color:#f4cf78;font-size:14px;line-height:1}
+.ranking-groups::after{content:"";position:absolute;inset:-8px}
+
+/* #1049: the Défi du jour entry under the quest actions (only when it fits). */
+.daily-quest-banner{display:flex;align-items:center;gap:10px;width:100%;max-width:520px;margin:8px auto 0;min-height:44px;box-sizing:border-box}
+.daily-quest-banner[hidden]{display:none}
+.daily-quest-banner small{display:block}
+.daily-quest-banner-go{margin-left:auto;font-size:20px;line-height:1;opacity:.8}

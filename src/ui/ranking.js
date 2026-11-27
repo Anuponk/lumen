@@ -20,7 +20,7 @@ export function rankingVerdict(reason,excluded,t=fr){
 // view's capture; one early retry (RANKING_QUICK_RETRY_MS) shortens a blip, the
 // existing 30 s wake and the online event do the rest (no new polling).
 export const RANKING_FAILED_AFTER=3,RANKING_QUICK_RETRY_MS=5000;
-export function createRankingView({client,getContext,format,document=globalThis.document,onUpdate=()=>{},t=fr,setTimer=(fn,ms)=>setTimeout(fn,ms)}={}){
+export function createRankingView({client,getContext,format,document=globalThis.document,onUpdate=()=>{},onGroups=null,t=fr,setTimer=(fn,ms)=>setTimeout(fn,ms)}={}){
  const root=document.createElement('section');root.className='ranking';root.hidden=true;root.setAttribute('aria-label',t('ranking.board'));
  let generation=0,quest=null,owner=null,connection=null,operation=null,improvedForView=false,excludedForView=false,reasonForView=null,personalBest=null,animated=false,review=false,failures=0;
  const reduced=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -56,6 +56,9 @@ export function createRankingView({client,getContext,format,document=globalThis.
    const third=top.find(r=>r.position===3);if(third&&mine.score>third.score)card.append(element('small','',t('ranking.toPodium',{time:format(mine.score-third.score)})));
   }else if(!mine)card.append(element('span','',t('ranking.noCompetitiveTime')));
   // #761: a victory the server refused is never shown as if the podium were its result.
+  // #974: one tap from the quest podium to its constellation and adventure rankings:
+  // a small icon inside the personal card, outside the swipe area, no extra height.
+  if(onGroups&&quest?.constellationId&&quest?.packId){const q=quest,b=element('button','ranking-groups','🏆');b.type='button';b.setAttribute('aria-label',t('groupRanking.title'));b.title=t('groupRanking.title');b.onclick=()=>onGroups(q,b);card.append(b)}
   if(card.childNodes.length)root.append(card);
   // #851: the private record and the best ranked time are different facts.
   if(Number.isSafeInteger(personalBest)&&mine&&Number.isSafeInteger(mine.score)&&personalBest!==mine.score){

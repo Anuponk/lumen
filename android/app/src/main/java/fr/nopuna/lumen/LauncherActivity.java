@@ -497,6 +497,14 @@ public final class LauncherActivity extends com.google.androidbrowserhelper.trus
     protected Uri getLaunchingUrl() {
         Uri url = super.getLaunchingUrl();
         if (url.getFragment() != null || !"/".equals(url.getPath())) return url;
+        // #1021 language, then #848 native version (see NativeVersion), in one fragment.
+        String fragment = "lumen-app-language=" + appLanguage();
+        String nativeVersion = nativeVersionFragment();
+        if (nativeVersion != null) fragment += "&" + nativeVersion;
+        return url.buildUpon().encodedFragment(fragment).build();
+    }
+
+    private String appLanguage() {
         LocaleList preferred = LocaleList.getDefault();
         if (Build.VERSION.SDK_INT >= 33) {
             LocaleManager manager = getSystemService(LocaleManager.class);
@@ -507,11 +515,20 @@ public final class LauncherActivity extends com.google.androidbrowserhelper.trus
         }
         for (int i = 0; i < preferred.size(); i++) {
             String language = preferred.get(i).getLanguage();
-            if ("fr".equals(language) || "en".equals(language) || "es".equals(language)) {
-                return url.buildUpon().encodedFragment("lumen-app-language=" + language).build();
-            }
+            if ("fr".equals(language) || "en".equals(language) || "es".equals(language)) return language;
         }
-        return url.buildUpon().encodedFragment("lumen-app-language=auto").build();
+        return "auto";
+    }
+
+    @SuppressWarnings("deprecation")
+    private String nativeVersionFragment() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            long code = Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode;
+            return NativeVersion.fragment(info.versionName, code);
+        } catch (PackageManager.NameNotFoundException | RuntimeException error) {
+            return null;
+        }
     }
 
     private void log(String event) {

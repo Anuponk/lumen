@@ -44,18 +44,21 @@ test('stable catalogue identity wins; inconsistent rows and duplicate identities
  assert.equal(model.rejectedQuests,2);assert.equal(model.journey.length,1);assert.equal(model.journey[0].ordinal,92);assert.equal(model.journey[0].started,5);
 });
 
-test('operational evidence remains available without product analytics; stale queue signals do not become live incidents',()=>{
- const players=['recent','stale','failed'].map(id=>({player_key:'u:'+id,player_type:'authenticated',display_name:'Compte '+id}));
+test('operational evidence remains available without product analytics; health is the last known state, freshness apart',()=>{
+ const players=['recent','stale','failed','silent'].map(id=>({player_key:'u:'+id,player_type:'authenticated',display_name:'Compte '+id}));
+ // #708 (24/11): an old persistent failure stays visible; an old healthy device is not « unknown ».
  const observations={players:{
-  'u:recent':{state:'pending',observed_at:'2026-11-15T10:00:00Z'},
-  'u:stale':{state:'failure',observed_at:'2026-11-15T08:00:00Z'},
-  'u:failed':{state:'failure',observed_at:'2026-11-15T10:00:00Z'},
+  'u:recent':{devices:[{state:'pending',pending:2,observed_at:'2026-11-15T10:00:00Z'}]},
+  'u:stale':{devices:[{state:'critical',observed_at:'2026-11-10T08:00:00Z'}]},
+  'u:failed':{devices:[{state:'review',observed_at:'2026-11-15T10:00:00Z'}]},
+  'u:silent':{devices:[]},
  }};
  const model=buildAnalyticsDashboard({players,observations,now,health:{affected_players:2,stalled_players:1,outbox:{pending_players:3,critical_players:1,alerts:[{state:'pending',pending:2}]},by_reason:[{reason:'storage_quota',count:2}],by_version:[{version:'Version 1.11.1+615 · abcdef0',count:2}]}});
  assert.equal(model.productAvailable,false);assert.equal(model.healthAvailable,true);
  assert.equal(model.technical.pending,3);assert.equal(model.technical.unknownPlayers,1);
- assert.deepEqual(model.technical.priority.map(p=>p.key),['u:failed','u:recent']);
- assert.equal(model.technical.priority[0].label,'Compte failed');assert.equal(model.technical.priority[0].statusLabel,'Problème signalé');
+ assert.deepEqual(model.technical.priority.map(p=>p.key),['u:stale','u:failed','u:recent']);
+ assert.equal(model.technical.priority[0].label,'Compte stale');assert.equal(model.technical.priority[0].statusLabel,'En difficulté');
+ assert.match(model.technical.priority[0].freshness,/il y a \d+ j/);
  assert.equal(model.technical.reasons[0].label,'Stockage saturé');assert.equal(model.technical.versions[0].label,'1.11.1+615');
  assert.equal(model.technical.alerts.length,1);
 });

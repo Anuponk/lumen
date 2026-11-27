@@ -17,16 +17,16 @@ assert.match(body,/playerSnapshot\.error/);
 assert.match(body,/adminPlayers/);
 console.log('Admin recent players use live activity RPC and expose failures');
 
-const nodes=new Map(),calls=[];let directoryRows,timelineData,supportOptions,lookupOptions,adventureOptions,dashboardInput;
+const nodes=new Map(),calls=[];let directoryRows,directoryFacts,directoryOptions,inboxLoads=[],summaries=[],timelineData,supportOptions,lookupOptions,adventureOptions,dashboardInput;
 const document={getElementById(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:7,insertAdjacentHTML(){}});return nodes.get(id)},querySelectorAll(){return []}};
 const context={document,t:key=>key,renderAnalyticsEngagement:()=>{},renderVersionHealth:()=>{},renderCriticalIncidents:()=>{},renderHealthCockpit:(host,data)=>{host.snapshot=data},Date,Intl,Math,Number,String,adminEsc:String,adminNumber:String,registeredPlayers,analyticsPlayers,
  buildAnalyticsDashboard:input=>{dashboardInput=input;return input},renderAnalyticsDashboard:()=>{},adminCanonicalCatalogueTree:()=>[],
  mountSupportDossier:(_host,options)=>{supportOptions=options},
  mountSupportLookup:(_host,options)=>{lookupOptions=options},
  mountAdventureAccess:(_host,options)=>{adventureOptions=options},CONTENT_PACKS:[{id:'base-real-sky',access:'included'},{id:'real-adventure-02',access:'locked'}],
- // Feedback rendering is outside the recent-players fixture; its RPC returns no rows.
- adminFeedbackRow:()=>assert.fail("Unexpected feedback row in the recent-players fixture"),bindAdminFeedbackTriage:()=>{},
- rememberSessionExpansion:()=>{},renderPlayerDirectory:(_host,rows)=>{directoryRows=rows},renderPlayerSessions:(_host,data)=>{timelineData=data},
+ rememberSessionExpansion:()=>{},renderPlayerDirectory:(_host,rows,facts,options)=>{directoryRows=rows;directoryFacts=facts;directoryOptions=options},
+ // #1020/#708: the inbox reads its own page; the player summary uses the health facts.
+ adminFeedbackInbox:(owner)=>({load(){inboxLoads.push(owner)}}),showPlayerReports:()=>{},renderAdminPlayerSummary:(_box,key)=>{summaries.push(key)},renderPlayerSessions:(_host,data)=>{timelineData=data},
  lumenUser:{id:'fixture-admin'},hasInternalCapability:()=>true,buildIncidentInvestigation,incidentAlerts,renderIncidentInvestigation:()=>{},
  lumenSupabase:{async rpc(name,args){calls.push(name);if(name==='lumen_admin_quest_metrics')return {data:{friction:[{stable_quest_id:'new-grid',quest_ordinal:91,started:4,completed:1}],funnel:[],current_players:{'u:actor':91}}};if(name==='lumen_admin_health_snapshot'){assert.equal(args.p_days,7);return {data:{purchase_count:2}}}if(name==='lumen_admin_accounts')return {data:[{user_id:'actor',current_quest:1,nickname:' ',email:'sans.pseudo@example.invalid'}]};if(name==='lumen_admin_recent_players')return {data:[{player_key:'a:guest',player_type:'anonymous',display_name:'Joueur 3E8B'},{player_key:'u:actor',player_type:'authenticated',current_quest:1}]};if(name==='lumen_admin_player_observations'){assert.deepEqual(Array.from(args.p_player_keys),['u:actor']);return {data:{players:{}}}}if(name==='lumen_admin_player_sessions')return {data:{analytics:[{event_name:'attempt_started',quest_ordinal:91,puzzle_id:null}],diagnostics:[]}};return {data:name==='lumen_admin_cockpit'?{}:[]}}}};
 vm.createContext(context);
@@ -67,3 +67,10 @@ await context.loadAdminCockpit();
 assert.equal(renderedHealth?.sample,'technical evidence','Technical diagnostics remain usable when the product aggregate fails');
 context.lumenUser={id:'different-admin'};
 assert.equal(lookupOptions.authorized(),false,'#776: an account switch revokes existing reference lookup actions');
+// #708: one bounded health read feeds the table (not the former observations), and
+// #1020: the reports inbox loads its own page instead of a 250-row feedback dump.
+assert(calls.includes('lumen_admin_player_health'),'player health read');
+assert(!calls.includes('lumen_admin_player_observations')&&!calls.includes('lumen_admin_feedback_v2'),'no superseded reads');
+assert(inboxLoads.length>=1&&inboxLoads.every(owner=>owner==='fixture-admin'),'one inbox page per cockpit load, for the current admin');
+assert.equal(typeof directoryOptions.onReports,'function','player rows link to their reports');
+console.log('Cockpit uses the player-health read and the paged reports inbox');
