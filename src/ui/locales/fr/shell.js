@@ -214,6 +214,7 @@ export default Object.freeze({
   'groupRanking.notRanked': "Pas encore classé : termine une des {total} quêtes avec un temps officiel.",
   'groupRanking.empty': "Personne n’est encore classé ici.",
   'groupRanking.all': "Voir tout le classement ({count})",
+  'groupRanking.more': "Voir plus ({count} restant(s))",
   'groupRanking.next': "Voir la suite",
   'groupRanking.retry': "Réessayer",
   'groupRanking.signIn': "Connecte-toi pour voir les classements et y participer.",

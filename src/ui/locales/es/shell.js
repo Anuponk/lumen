@@ -215,6 +215,7 @@ export default Object.freeze({
   'groupRanking.notRanked': "Aún sin clasificar: termina una de las {total} misiones con un tiempo oficial.",
   'groupRanking.empty': "Todavía no hay nadie clasificado aquí.",
   'groupRanking.all': "Ver toda la clasificación ({count})",
+  'groupRanking.more': "Ver más (quedan {count})",
   'groupRanking.next': "Ver más",
   'groupRanking.retry': "Reintentar",
   'groupRanking.signIn': "Inicia sesión para ver las clasificaciones y participar.",

@@ -1968,3 +1968,6 @@ body[data-seasonal="winter-stars"] #dailyBanner,
 body[data-seasonal="winter-stars"] #dailyQuestBanner { box-shadow: inset 0 0 0 1px var(--seasonal-accent); }
 body[data-seasonal="winter-stars"] #dailyChip { box-shadow: inset 0 0 0 1px var(--seasonal-accent); }
 body[data-seasonal="winter-stars"] #dailyIntro h2::after { content: var(--seasonal-decoration); color: var(--seasonal-accent); margin-inline-start: .35em; }
+/* #974 recette 27/11: my off-podium line uses the ranking row look after a discreet separator. */
+.group-ranking-personal{list-style:none;margin:6px 0 0;padding:6px 0 0;border-top:1px dashed rgba(159,179,200,.35);display:grid}
+.group-ranking-personal[hidden]{display:none}
