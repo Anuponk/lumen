@@ -145,6 +145,16 @@ export function createDailyPushClient({win,storage=win.localStorage,getOwner,rpc
    });
    if(device?.owner===owner)await stopLocalDelivery();
   },
+  async sendTest(state){
+   const owner=getOwner(),device=readDevice();
+   if(!owner||state?.owner!==owner||!state.preview||!state.available||!state.dailyEnabled||
+      !state.deviceRegistered||device?.owner!==owner||permission()!=='granted')throw new Error('daily_push_test_unavailable');
+   const {data,error}=await rpc('lumen_daily_push_test_v1',{
+    p_expected_user_id:owner,p_device_id:device.id,p_action:'send'
+   });
+   if(error||owner!==getOwner()||typeof data?.status!=='string')throw new Error('daily_push_test_unavailable');
+   return data.status;
+  },
   async ownerChanged(){
    const device=readDevice();
    if(device&&device.owner!==getOwner())await stopLocalDelivery();
@@ -162,6 +172,7 @@ export function setupDailyPushSettings({client,document,t}){
  const element=id=>document.getElementById(id);
  const settings=element('dailyPushSettings'),offer=element('dailyPushOffer');
  const enable=element('dailyPushEnable'),disable=element('dailyPushDisable');
+ const test=element('dailyPushTest');
  const offerEnable=element('dailyPushOfferEnable'),later=element('dailyPushOfferLater');
  const status=element('dailyPushStatus'),offerStatus=element('dailyPushOfferStatus');
  let state=null,requestId=0,working=false;
@@ -171,6 +182,8 @@ export function setupDailyPushSettings({client,document,t}){
   const currentDevice=state?.deviceRegistered&&permission==='granted';
   enable.hidden=!state?.available||permission==='unsupported'||permission==='denied'||!!(state?.dailyEnabled&&currentDevice);
   disable.hidden=!state?.dailyEnabled;
+  test.hidden=!(state?.preview&&state?.available&&state?.dailyEnabled&&currentDevice);
+  test.disabled=working;
   enable.disabled=disable.disabled=offerEnable.disabled=later.disabled=working;
   status.textContent=t(permission==='unsupported'?'daily.pushUnsupported':permission==='denied'?'daily.pushDenied':
    state?.dailyEnabled&&currentDevice?'daily.pushOn':state?.dailyEnabled?'daily.pushOtherDevice':
@@ -198,6 +211,16 @@ export function setupDailyPushSettings({client,document,t}){
  settings.ontoggle=()=>{if(settings.open)void refresh()};
  enable.onclick=()=>change('enable');
  disable.onclick=()=>change('disable');
+ test.onclick=async()=>{
+  if(working||test.hidden)return;
+  const owner=state?.owner;
+  working=true;render();
+  let outcome='Error';
+  try{outcome=await client.sendTest(state)}catch{}
+  working=false;render();
+  if(state?.owner===owner)status.textContent=t(outcome==='sent'?'daily.pushTestSent':
+   outcome==='reserved'||outcome==='dispatching'?'daily.pushTestPending':outcome==='Error'?'daily.pushError':'daily.pushTestFailed');
+ };
  offerEnable.onclick=()=>change('enable',true);
  later.onclick=()=>{client.dismiss();offer.hidden=true};
  return {

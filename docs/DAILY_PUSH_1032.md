@@ -6,6 +6,54 @@ L’heure de Paris continue de déterminer la date officielle du défi.
 
 ## État audité le 24 novembre 2026
 
+### Recette privée du 27 novembre 2026 (#1034)
+
+Le menu **Compte → Notifications** était absent car `daily_push=false` masquait
+les réglages pour tous les comptes. Le serveur accepte désormais soit ce drapeau
+public, soit la capacité privée `daily_push_preview`, valide et non expirée pour
+le compte courant. La migration n'accorde cette capacité à personne. L'opération
+de recette l'accorde séparément aux seuls comptes nommément autorisés, dont le
+propriétaire. Le drapeau public reste désactivé. Le lot de 18 h revalide cette même
+autorisation pour chaque destinataire avant d'envoyer.
+
+Après une mise à jour de Lumen, se connecter au compte autorisé, ouvrir **Mon espace →
+À propos → Notifications**, puis choisir **Activer sur cet appareil** et accepter la permission
+du navigateur. Sur iPhone, ouvrir la PWA installée sur l'écran d'accueil avec un
+système compatible Web Push. Une permission refusée se rétablit dans les réglages
+du navigateur ou du système. Le menu indique les appareils non compatibles.
+
+Le bouton **Envoyer ou vérifier le test** apparaît après l'inscription de cet
+appareil. Un clic demande un test immédiat, même hors de la fenêtre de 18 h et
+après avoir terminé le défi. Recliquer quelques secondes après consulte le résultat
+sans nouvel envoi. Une seule tentative par appareil, endpoint et jour de Paris
+est autorisée. Le succès affiché signifie que le fournisseur a accepté le message,
+pas que l'appareil l'a reçu. Vérifier la notification « Test · Défi du jour »
+(FR/EN/ES), puis son ouverture dans le défi. La réception réelle reste à constater.
+
+`lumen_daily_push_test_v1` vérifie la session réelle, le propriétaire, la capacité,
+le consentement et l'appareil avant de réserver puis de mettre en file un appel
+au worker. Aucun secret ne sort de SQL/Vault. Le worker n'accepte que le secret
+du job et une réservation UUID bornée. `lumen_authorize_test_push_v1` est réservé
+au service et revalide le consentement, la capacité et la souscription avant une
+autorisation unique. `push_test_dispatches` est privé, sous RLS, avec effacement
+par compte et rétention de sept jours. Ses tickets et tags sont distincts de ceux
+du rappel quotidien. Les issues restent en cours tant que la réception du test
+par le propriétaire n'est pas démontrée.
+
+Impact Free-first de la recette, par appareil et par jour : au plus un appel Edge
+et un appel fournisseur ; un RPC par clic explicite, sans polling ni Realtime.
+Les consultations répétées ne relancent aucun HTTP. Le job quotidien conserve
+son contrôle SQL de travail dû avant HTTP. Révoquer `daily_push_preview` suspend
+la recette privée ; couper seulement le drapeau public ne révoque pas cette
+autorisation dédiée. Ne pas accorder cette capacité publiquement et ne pas
+activer `daily_push` avant la décision distincte du propriétaire.
+
+Les tests JS couvrent le menu, le consentement, l'isolation de compte, les tags
+et le dispatch distinct. `scripts/fixtures/private-push-rehearsal-1034.sql`
+vérifie les droits, l'inscription, la révocation et la déduplication avec un
+transport synthétique. La CI réapplique deux fois la migration et rejoue les
+contrats historiques de préférences et de dispatch.
+
 - La réception Web Push existe dans le service worker de Lumen. Le client public
   historique enregistre une permission appareil et envoie ses choix à la
   fonction Supabase lumen-push, absente du dépôt.
@@ -80,7 +128,8 @@ Le worker de la page principale conserve le traitement historique.
 
 Quatre RPC sont réservées au rôle serveur. Elles utilisent l’horloge de la base.
 La réserve découvre au plus 50 appareils par appel entre 18 h et 18 h 15
-dans leur fuseau IANA. Elle exige les deux drapeaux de disponibilité, une
+dans leur fuseau IANA. Elle exige `daily_challenge` et l'autorisation push du compte
+(`daily_push` ou capacité privée de recette), une
 clé publique configurée, une grille publiée pour la date de Paris, le
 consentement en cours et un appareil actif. Une partie terminée dans
 `daily_runs` exclut tous les appareils du compte. Le ticket de réserve dure
@@ -155,8 +204,10 @@ isolé et une recette réelle avant l’activation. La PR n’installe aucun job
    d’événements autorisée de #708 pour la mesure agrégée dans [#1036](https://github.com/Anuponk/lumen/issues/1036).
 
 La migration et le code sont des opérations séparées du passage en production.
-Le lot de livraison nécessite des secrets fournis hors Git et le feu vert actif
-du propriétaire après la recette. Pour suspendre le service V1, couper le drapeau
+Le lot public nécessite des secrets fournis hors Git et le feu vert actif
+du propriétaire après la recette ; la recette privée suit l'autorisation du
+26 novembre décrite plus haut. Pour suspendre le service V1, révoquer les capacités
+de recette, couper le drapeau
 et arrêter le job de livraison une fois qu’il existe. Conserver les retraits
 d’accord et les abonnements sous leur contrat de stockage.
 

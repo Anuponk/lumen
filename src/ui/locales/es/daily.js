@@ -1,5 +1,9 @@
 // #945 Español · Reto del día y semana.
 export default Object.freeze({
+  'daily.pushTest': "Enviar o comprobar prueba",
+  'daily.pushTestPending': "Prueba solicitada. Pulsa de nuevo en unos segundos para comprobar el envío. Una prueba por dispositivo al día.",
+  'daily.pushTestSent': "El proveedor aceptó la prueba. Comprueba su recepción en este dispositivo. Una prueba al día.",
+  'daily.pushTestFailed': "Prueba no enviada o resultado incierto. Comprueba los permisos y la conexión del dispositivo.",
   'daily.weekRanking': "Clasificación semanal",
   'daily.weekPoints': "{count} puntos",
   'daily.weekOwnPoints': "Tus puntos: {points} · fuera de la clasificación general",

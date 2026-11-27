@@ -19,11 +19,12 @@ self.addEventListener('push',event=>{
   if(!await cache.match(STATE_URL))return;
   let data;
   try{data=event.data?.json()}catch{return}
-  if(data?.type!=='daily-challenge'||!/^\d{4}-\d{2}-\d{2}$/.test(data.day)||
+  const test=data?.type==='daily-challenge-test';
+  if((data?.type!=='daily-challenge'&&!test)||(test&&!/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(data.testId))||!/^\d{4}-\d{2}-\d{2}$/.test(data.day)||
      !Number.isFinite(data.expiresAt)||data.expiresAt<=Date.now()||
      typeof data.title!=='string'||typeof data.body!=='string')return;
   await self.registration.showNotification(data.title,{
-   body:data.body,icon:'/icon.svg',tag:'lumen-daily-'+data.day,
+   body:data.body,icon:'/icon.svg',tag:test?'lumen-daily-test-'+data.testId:'lumen-daily-'+data.day,
    data:{expiresAt:data.expiresAt}
   });
  })());

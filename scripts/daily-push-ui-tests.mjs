@@ -6,7 +6,7 @@ import {createDailyPushClient,setupDailyPushSettings} from '../src/ui/daily-push
 
 const scope='https://lumen.example/src/ui/notifications/';
 const key=Buffer.alloc(65,4).toString('base64url');
-function fixture({permission='granted',available=true}={}){
+function fixture({permission='granted',available=true,preview=false}={}){
  const data=new Map(),calls=[],local=[],owner={id:'account-a'},clock={zone:'Europe/Paris',now:Date.now()};
  let registered=false,sub=null,promptCount=0,permissionState=permission;
  const registration={scope,active:{state:'activated',postMessage(message,[port]){local.push(message.enabled);port.postMessage(true);port.close()}},
@@ -28,11 +28,17 @@ function fixture({permission='granted',available=true}={}){
  const client=createDailyPushClient({win,getOwner:()=>owner.id,locale:()=> 'fr',timeZone:()=>clock.zone,now:()=>clock.now,
   storage:{getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)},
   rpc:async(name,args)=>{
+   if(name==='lumen_daily_push_test_v1'){
+    calls.push(args);
+    assert.equal(args.p_expected_user_id,owner.id);
+    assert.equal(args.p_device_id,'00000000-0000-4000-8000-000000000001');
+    return {data:{status:'sent'}};
+   }
    assert.equal(name,'lumen_daily_push_v1');assert.equal(args.p_expected_user_id,owner.id);
    calls.push(args);
    if(args.p_action==='enable'){enabled=deviceRegistered=true;revision++}
    if(args.p_action==='disable'){enabled=deviceRegistered=false;revision++}
-   return {data:{version:1,available,dailyEnabled:enabled,revision,reminderHour:18,deviceRegistered,vapidPublicKey:available?key:null}};
+   return {data:{version:1,available,preview,dailyEnabled:enabled,revision,reminderHour:18,deviceRegistered,vapidPublicKey:available?key:null}};
   }
  });
  return {client,local,calls,owner,clock,promptCount:()=>promptCount};
@@ -120,6 +126,33 @@ test('result invitation is contextual, deferrable and silent by default',async()
  assert.equal(f.calls.length,1);
 });
 
+test('private menu is visible before consent and test requires this account and enrolled device',async()=>{
+ const f=fixture({preview:true}),elements=new Map();
+ const settings=setupDailyPushSettings({client:f.client,t:k=>k,document:{getElementById(id){
+  if(!elements.has(id))elements.set(id,{hidden:false});return elements.get(id);
+ }}});
+ await settings.presentResult(true);
+ assert.equal(elements.get('dailyPushSettings').hidden,false);
+ assert.equal(elements.get('dailyPushEnable').hidden,false);
+ assert.equal(elements.get('dailyPushTest').hidden,true);
+ await assert.rejects(f.client.sendTest(await f.client.read()));
+ await elements.get('dailyPushEnable').onclick();
+ assert.equal(elements.get('dailyPushTest').hidden,false);
+ assert.equal(f.calls.filter(c=>c.p_action==='send').length,0,'enrollment never sends a test implicitly');
+ await elements.get('dailyPushTest').onclick();
+ assert.equal(elements.get('dailyPushStatus').textContent,'daily.pushTestSent');
+ const previous=await f.client.read();f.owner.id='account-b';
+ await assert.rejects(f.client.sendTest(previous));
+ const ordinary=fixture();await ordinary.client.enable(await ordinary.client.read());
+ await assert.rejects(ordinary.client.sendTest(await ordinary.client.read()));
+ const unavailable=fixture({available:false}),hidden=new Map();
+ const closed=setupDailyPushSettings({client:unavailable.client,t:k=>k,document:{getElementById(id){
+  if(!hidden.has(id))hidden.set(id,{});return hidden.get(id);
+ }}});
+ await closed.presentResult(true);
+ assert.equal(hidden.get('dailyPushSettings').hidden,true);
+});
+
 test('dedicated service worker fails closed and opens only the current daily route',async()=>{
  const handlers={},events=[],entries=new Map();
  const context={
@@ -140,5 +173,8 @@ test('dedicated service worker fails closed and opens only the current daily rou
  await push(payload);assert.equal(events[0][1].tag,'lumen-daily-2026-11-25');
  await send('notificationclick',{notification:{close(){},data:events[0][1].data}});
  assert.equal(events[1],'https://lumen.example/?daily=1');
- await mark(false);await push(payload);assert.equal(events.length,2);
+ await push({...payload,type:'daily-challenge-test',testId:'invalid'});assert.equal(events.length,2);
+ await push({...payload,type:'daily-challenge-test',testId:'00000000-0000-4000-8000-000000000001'});
+ assert.equal(events[2][1].tag,'lumen-daily-test-00000000-0000-4000-8000-000000000001');
+ await mark(false);await push(payload);assert.equal(events.length,3);
 });

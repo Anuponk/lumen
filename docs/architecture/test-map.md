@@ -1,5 +1,13 @@
 # Existing verification map
 
+Push rehearsal #1034: `daily-push-ui-tests.mjs` covers private menu discovery,
+explicit device consent, account changes and distinct service-worker tags;
+`daily-push-dispatch-tests.mjs` covers isolated job-authenticated test delivery.
+`fixtures/private-push-rehearsal-1034.sql` verifies hosted grants, capability expiry,
+enrollment, revocation and one-time test tickets with a synthetic HTTP transport.
+CI replays both historical push fixtures after the additive migration. Physical
+Android/iPhone/desktop receipt and provider delivery remain manual acceptance.
+
 Play review #796: `play-review-navigation-tests.mjs` for catalogue, stale
 proof and attempt storage, `play-review-navigation-browser-tests.mjs` for
 the real map and a synthetic account switch/victory, and

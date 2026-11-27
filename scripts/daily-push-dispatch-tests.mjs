@@ -7,6 +7,23 @@ const token='fixture'.repeat(6);
 const valid={challengeDay:'2026-11-25',expiresAt:'2026-11-25T17:08:00Z',locale:'es',vapidPublicKey:'test-key',
  subscription:{endpoint:'https://fcm.googleapis.com/fixture'}};
 const req=(query='',authorization='Bearer '+token,method='POST')=>new Request('https://edge.example/dispatch'+query,{method,headers:{Authorization:authorization}});
+test('private test delivery uses isolated authorization and never reserves a daily reminder',async()=>{
+ const calls=[],sent=[];
+ const id='00000000-0000-4000-8000-000000000001';
+ const dispatcher=dailyPushDispatcher({secret:token,configured:true,publicKey:'test-key',now:()=>time,
+  reserve:async()=>{throw Error('daily reservation must not run')},start:async()=>{throw Error('daily start must not run')},
+  settle:async()=>{throw Error('daily settlement must not run')},
+  startTest:async claim=>{calls.push(claim);return valid},settleTest:async(claim,outcome)=>calls.push(outcome),
+  send:async(...args)=>{sent.push(args);return 201},cleanup:async()=>{}});
+ const request=()=>new Request('https://edge.example/dispatch?action=test',{method:'POST',headers:{Authorization:'Bearer '+token},body:JSON.stringify({reservationId:id})});
+ assert.equal((await dispatcher(request())).status,200);
+ assert.deepEqual(calls,[{reservationId:id},'sent']);
+ assert.equal(sent[0][1].type,'daily-challenge-test');
+ assert.equal(sent[0][1].testId,id);
+ assert.equal(sent[0][1].title,'Prueba · Desafío del día');
+ assert.equal((await dispatcher(req('?action=test'))).status,400);
+ assert.equal((await dispatcher(new Request('https://edge.example/dispatch?action=test',{method:'POST',body:JSON.stringify({reservationId:id})}))).status,401);
+});
 function setup({deliveries={a:valid},provider=async()=>201,configured=true,onlyFirst=true}={}){
  const called=[],settled=[],sent=[],used=new Set();
  const dispatch=dailyPushDispatcher({
