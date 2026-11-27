@@ -266,7 +266,7 @@ for(const backupFailed of [false,true]){
  f.ctx.saveLumenProgress=()=>f.storage.setItem('lumenProgressV1',JSON.stringify(f.ctx.lumenProgress));
  f.ctx.trackAttemptEvent=()=>{};f.ctx.attemptMode=()=>attempt.mode;
  // #908: the first move of a qualifying run also records its start (window from start).
- f.ctx.qualificationOwner=()=>'guest';f.ctx.activeQuest=()=>({id:'base-q001'});f.ctx.recordQualifyingStart=recordQualifyingStart;f.ctx.markQualifiedStart=markQualifiedStart;f.ctx.localStorage=f.storage;
+ f.ctx.qualificationOwner=()=>'guest';f.ctx.activeQuest=()=>({id:'base-q001'});f.ctx.recordQualifyingStart=recordQualifyingStart;f.ctx.premiumQuotaGate=()=>null;f.ctx.recordQuotaAttempt=()=>{};f.ctx.markQualifiedStart=markQualifiedStart;f.ctx.localStorage=f.storage;
  f.ctx.attemptEngine={storageKey:key,snapshot:()=>attempt,start:()=>{attempt.state='RUNNING';f.storage.setItem(key,JSON.stringify(attempt))}};
  const begin=vm.runInContext('('+functionSource(source,'ensureAttemptStarted')+')',f.ctx);begin();
  const raw=f.storage.getItem('lumenProgressV1'),attemptRaw=f.storage.getItem(key);

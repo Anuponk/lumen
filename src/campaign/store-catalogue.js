@@ -7,7 +7,11 @@ export const SKY_PRODUCT_ID='real-sky-all';
 // #865: « Tout débloquer » after N=1..4 confirmed unit purchases. The server picks the
 // tier (lumen_get_main_sky_purchase_progress.sky_offer) and owns its price and activation.
 export const SKY_UPGRADE_PRODUCT_IDS=Object.freeze([1,2,3,4].map(n=>'real-sky-upgrade-'+n));
-export function isMainSkyProduct(id){return id===SKY_PRODUCT_ID||SKY_UPGRADE_PRODUCT_IDS.includes(id)}
+// #1030: LUMEN Premium (4,99 €, one-time). The server seed ships it inactive; it owns
+// the whole main sky like real-sky-all and grants the Premium right.
+export const PREMIUM_PRODUCT_ID='lumen-premium';
+export const PREMIUM_PRICE_CENTS=499;
+export function isMainSkyProduct(id){return id===SKY_PRODUCT_ID||id===PREMIUM_PRODUCT_ID||SKY_UPGRADE_PRODUCT_IDS.includes(id)}
 export function formatEuros(cents){
  const value=Number(cents)/100;
  return (Number.isInteger(value)?String(value):value.toFixed(2).replace('.',','))+' €';

@@ -660,3 +660,17 @@ jobs:
             -f scripts/fixtures/rankings-974-score.sql
           python3 scripts/rankings-score-concurrency.py
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/daily-weekly-recaps-1015.sql
+      - name: Verify the Premium foundation, quota ledger and historical rights, all off by default (#1030)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          # Same hosted-default grants as #929, so explicit revokes are exercised.
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -c "alter default privileges in schema public grant execute on functions to anon,authenticated" \
+            -f supabase/migrations/20261127200000_premium_foundation_1030.sql \
+            -f supabase/migrations/20261127200000_premium_foundation_1030.sql \
+            -c "alter default privileges in schema public revoke execute on functions from anon,authenticated" \
+            -f scripts/fixtures/premium-foundation-1030.sql \
+            -f scripts/fixtures/private-circles-929.sql \
+            -f scripts/fixtures/sky-upgrade-offers.sql

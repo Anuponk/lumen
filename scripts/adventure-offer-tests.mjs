@@ -162,9 +162,9 @@ assert.equal(unknownPlay.unitPrice,'Prix indisponible');assert.equal(unknownPlay
  assert(sql.includes('on conflict (product_id) do nothing;'),'owner prices are never overwritten');
  // Edge and Android wrapper accept exactly the same SKUs.
  const edge=fs.readFileSync('supabase/functions/lumen-play-purchase/index.ts','utf8');
- assert(edge.includes('const playSkuPattern = /^(real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4])$/;'));
+ assert(edge.includes('const playSkuPattern = /^(real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4]|lumen_premium)$/;'));
  assert.match(edge,/lumen_sky_upgrade_eligible/);
- assert(fs.readFileSync('android/billing/src/main/java/PaymentActivity.java','utf8').includes('"real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4]"'));
+ assert(fs.readFileSync('android/billing/src/main/java/PaymentActivity.java','utf8').includes('"real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4]|lumen_premium"'));
  console.log('adventure-offer-tests #865: five commercial states, single personalised offer, SKU parity OK');
 }
 

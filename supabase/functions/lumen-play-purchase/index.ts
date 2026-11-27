@@ -19,7 +19,7 @@ const PLAY_CAP_REGION = 'FR';
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 const bindingPattern = /^[0-9a-f]{64}$/;
 // #865: Play SKUs sold by Lumen (Play Console forbids hyphens; the ledger keeps hyphens).
-const playSkuPattern = /^(real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4])$/;
+const playSkuPattern = /^(real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4]|lumen_premium)$/;
 
 function parseNotification(data) {
   if (typeof data !== 'string' || data.length > 16384) return null;

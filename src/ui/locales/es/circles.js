@@ -66,6 +66,7 @@ export default Object.freeze({
   'circles.join': "Unirme al círculo",
   'circles.notNow': "Ahora no",
   'circles.myCircles': "Ver mis círculos",
+  'circles.error.circle_premium_required': "Crear un círculo forma parte de LUMEN Premium. Unirse a un círculo sigue siendo gratis.",
   'circles.error.account_required': "Inicia sesión en tu cuenta de Lumen para usar los círculos.",
   'circles.error.nickname_required': "Primero elige un apodo en tu cuenta.",
   'circles.error.circle_not_found': "Este círculo ya no existe o no formas parte de él.",

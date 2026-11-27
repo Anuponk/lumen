@@ -92,7 +92,7 @@ test('#783 an initial stale cache, thrown transport error and client change cann
 test('#783 purchase Explore targets the purchased constellation only after rights finish loading',()=>{
  const source=readFileSync(new URL('../src/ui/game-screen.js',import.meta.url),'utf8'),calls=[];
  const ctx={t:createTranslator().t,qaActive:false,lumenEntitlementsState:'loading',canonicalQuestList,CONTENT_PACKS,document:{},purchaseThanksModel:x=>x,
- showPurchaseThanks:(_d,_m,{onExplore})=>onExplore(),openJourneyMap:(focus,options)=>calls.push({focus,options})};
+ showPurchaseThanks:(_d,_m,{onExplore})=>onExplore(),refreshCommerce(){},openJourneyMap:(focus,options)=>calls.push({focus,options})};
  vm.createContext(ctx);vm.runInContext(functionSource(source,'thankForPurchase'),ctx);
  ctx.thankForPurchase('real-adventure-04');assert.equal(calls.length,0);
  ctx.lumenEntitlementsState='error';ctx.thankForPurchase('real-adventure-04');assert.equal(calls.length,0);

@@ -4,6 +4,8 @@
 // nicknames are ever displayed; tokens are shown once and never stored here.
 
 const CODES = [
+  // #1030: creation is Premium once the commercial model is on (server gate).
+  'circle_premium_required',
   'account_required',
   'nickname_required',
   'circle_not_found',

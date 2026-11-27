@@ -13,6 +13,9 @@ const text = (v) => (typeof v === 'string' ? v : Object.values(v).join(' '));
 const placeholders = (v) => [...new Set(text(v).match(/\{\w+\}/g) || [])].sort().join(',');
 // Units, symbols and words spelled the same in both languages.
 const SAME_AS_FRENCH = new Set([
+  // #1030: product names.
+  'premium.badge',
+  'premium.productTitle',
   // Chantier E / #974: product names, units and a pure placeholder layout.
   'admin.players.column.web',
   'admin.players.column.android',

@@ -6,7 +6,7 @@ import {playProviderReason,PLAY_CHECKOUT_AVAILABLE,PLAY_TEST_CAPABILITY,playChec
 import {CONTENT_PACKS} from '../src/campaign/content.js';
 import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,mainSkyOffer} from '../src/ui/adventure-offer.js';
-import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct} from '../src/campaign/store-catalogue.js';
+import {SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,PREMIUM_PRODUCT_ID,isMainSkyProduct} from '../src/campaign/store-catalogue.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {stripeCheckoutAvailable,isPlayDistributedApp} from '../src/persistence/stripe-checkout.js';
@@ -200,7 +200,7 @@ let resolveDetails,failDetails=true,verifications=0,marker=probeMarker;
 const delayedWin={...win,document:{referrer:'android-app://com.nopuna.lumen'},getDigitalGoodsService:async()=>({getDetails:requested=>requested[0]===PLAY_BINDING_PROBE
  ?Promise.resolve(marker):new Promise((resolve,reject)=>{resolveDetails=()=>failDetails?reject(Error('offline')):resolve(rows)})})};
 const host=new Node('div'),savedProgress={solved:{0:1}},saved=structuredClone(savedProgress);
-const context=vm.createContext({t:createTranslator().t,adventureDisplayName,localePreference:undefined,PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,lumenCapabilities:[],window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,isMainSkyProduct,mainSkyOffer,mainSkyProgress:{owner:null,data:null},
+const context=vm.createContext({t:createTranslator().t,adventureDisplayName,localePreference:undefined,PLAY_CHECKOUT_AVAILABLE,playCheckoutOpen,lumenCapabilities:[],window:delayedWin,console,createPlayPriceLoader,isPlayDistributedApp,CONTENT_PACKS,SKY_PRODUCT_ID,SKY_UPGRADE_PRODUCT_IDS,PREMIUM_PRODUCT_ID,premiumOfferAvailable:()=>false,commerce:{state:{premium:false,config:{premiumPriceCents:499}}},isMainSkyProduct,mainSkyOffer,mainSkyProgress:{owner:null,data:null},
  adventureOfferModel,mountAdventureOffer,purchaseProgressMessage,updateAdventureOfferMastery,canonicalQuestList,contentMapModel:()=>({skies:[{packs}]}),adventureAccessEntitlements:()=>[],adventureEntitlementsState:()=> 'ready',
  attemptEngine:{snapshot:()=>({})},lumenProgress:savedProgress,lumenUser:{id:'synthetic'},lumenEntitlements:[],qaActive:false,mapCatalogueOverride:null,refreshAdventureOffer:null,authSessionPending:false,cloudProfileReady:true,cloudProfileFailure:null,lumenEntitlementsState:'ready',navigator:{onLine:true},
  localStorage:{getItem:key=>key==='lumenCloudOwnerId'?'synthetic':null},

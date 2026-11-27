@@ -2566,3 +2566,17 @@ challenges keep their historical per-reset id. The client keeps the
 `cooldown` (begin refused, the only begin refusal), `not_qualifying`,
 `not_better` (confirmed, ranked best unchanged), `unknown` otherwise. No SQL
 change and no historical ranking modification.
+
+## LUMEN Premium foundation (#1030)
+
+Migration `20261127200000_premium_foundation_1030.sql`, additive and idempotent, all
+switches off. Premium is a server right derived from the confirmed purchase ledger
+(`lumen_commands.premium_status`) or a traced grant (`premium_grants`), distinct from
+`lumen.entitlements` and mastery; a paid `lumen-premium` owns the main sky through the
+existing entitlement path. Daily quotas keep a local per-owner ledger
+(`src/campaign/premium-quota.js`) reconciled in batches with `quota_attempts`
+(dedup by attempt identity, imputed to the local start day); `src/persistence/commerce.js`
+reads the public switches with a 6 h cache and the account state only when the
+commercial model or the QA preview applies. A failed read never revokes a confirmed
+right. Player tables are erased with the account. Contract, offline compromises,
+costs and activation/rollback: [PREMIUM_1030](PREMIUM_1030.md).
