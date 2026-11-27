@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """#1056 · Tests of the daily Facebook publisher with a fake transport (no network)."""
 import json
+import os
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -223,4 +224,62 @@ with tempfile.TemporaryDirectory() as tmp:
     written = json.loads((Path(tmp) / "out/2026-12-01.json").read_text(encoding="utf-8"))
     check("counts file written", code == 0 and written["metrics"] == metrics)
 
-print("lumen_social_post_tests: mode, stop, Paris window, idempotence, ambiguity, retries, dry-run, validation and access-log counts OK")
+# Owner helper: token exchange, page choice, private file, check without publishing.
+import importlib.util  # noqa: E402
+
+spec = importlib.util.spec_from_file_location("meta_page_token", Path(__file__).resolve().parent / "meta-page-token.py")
+helper = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(helper)
+
+
+class Response:
+    def __init__(self, payload):
+        self.payload = json.dumps(payload).encode()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def read(self):
+        return self.payload
+
+
+calls = []
+
+
+def opener(url, timeout=20):
+    calls.append(url)
+    path = url.split("?")[0].split("/v23.0")[1]
+    if path == "/oauth/access_token":
+        return Response({"access_token": "LONG-USER"})
+    if path == "/me/permissions":
+        return Response({"data": [{"permission": p, "status": "granted"} for p in ("pages_manage_posts", "pages_read_engagement", "pages_show_list")]})
+    if path == "/me/accounts":
+        return Response({"data": [{"id": "111", "name": "Autre", "access_token": "T1", "tasks": ["ANALYZE"]},
+                                  {"id": "222", "name": "LUMEN", "access_token": "PAGE-TOKEN", "tasks": ["CREATE_CONTENT", "MANAGE"]}]})
+    if path == "/222":
+        return Response({"id": "222", "name": "LUMEN"})
+    if path == "/222/feed":
+        return Response({"data": []})
+    raise AssertionError(path)
+
+
+answers = iter(["123456", "1"])
+secrets = iter(["app-secret", "short-token"])
+shown = []
+with tempfile.TemporaryDirectory() as tmp:
+    helper.ENV_FILE = Path(tmp) / "lumen-private/social-post.env"
+    values = helper.setup(ask=lambda _: next(answers), secret=lambda _: next(secrets), opener=opener, out=shown.append)
+    check("only publishable pages listed", shown == ["  1. LUMEN (222)"])
+    check("page token chosen", values["META_PAGE_ID"] == "222" and values["META_PAGE_TOKEN"] == "PAGE-TOKEN")
+    check("dry-run by default", values["LUMEN_SOCIAL_MODE"] == "dry-run")
+    helper.write_env(values, helper.ENV_FILE)
+    check("env readable back", helper.read_env(helper.ENV_FILE)["META_PAGE_ID"] == "222")
+    if os.name == "posix":
+        check("env mode 600", (helper.ENV_FILE.stat().st_mode & 0o777) == 0o600)
+    check("check reads, never posts", helper.check(values, opener) == "LUMEN" and all("/feed?" not in c or "limit=1" in c for c in calls))
+    check("secrets only sent to Meta", all(c.startswith("https://graph.facebook.com/") for c in calls))
+
+print("lumen_social_post_tests: mode, stop, Paris window, idempotence, ambiguity, retries, dry-run, validation, access-log counts and token helper OK")

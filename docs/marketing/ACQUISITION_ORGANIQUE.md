@@ -9,7 +9,7 @@ Chantier du 27/11/2026, coordonné avec le studio vidéo [#1046](https://github.
 | Rythme de 08h00 | Du 1er au 24 décembre, chaque post est une case du calendrier de l'Avent (mini-puzzle), avec un rappel du Défi du jour officiel. Ensuite, alternance : jour impair = Défi officiel, jour pair = mini-puzzle. | Un seul post par jour. Les 15 publications éditoriales de 18h30 restent sur Metricool. |
 | Visuel du Défi officiel | La grille initiale est visible : seulement les territoires, aucun Gardien. | **Risque accepté** : un joueur peut étudier la grille avant de lancer son chrono. Le visuel ne montre jamais de Gardien, d'indice ni de solution. |
 | Mesure | Compteurs agrégés à partir du journal d'accès o2switch. | Aucune écriture Supabase, aucun identifiant conservé. |
-| Canal de publication | **À confirmer.** Deux options : API Meta directe (gratuite) ou Metricool payant. | Le code gère les deux : publieur Meta, ou export CSV pour Metricool. La publication réelle reste **désactivée**. |
+| Canal de publication | API Meta directe, sans frais (décision du 27/11/2026). | Publieur `lumen_social_post.py` sur le cron o2switch. Metricool reste réservé aux posts éditoriaux de 18h30. La publication réelle reste **désactivée** jusqu'à l'accord après la simulation. |
 
 ## Ce qui est livré
 
@@ -63,21 +63,36 @@ Chantier du 27/11/2026, coordonné avec le studio vidéo [#1046](https://github.
 
 ## Activation (après accord du propriétaire)
 
-1. **Page Meta** : créer une app de type Business sur developers.facebook.com, en mode Développement, avec ton compte comme administrateur. Générer un jeton utilisateur longue durée avec `pages_manage_posts` et `pages_read_engagement`, puis en tirer le jeton de Page, qui n'expire pas tant que l'accès n'est pas révoqué.
-2. **Configuration privée** : créer `~/lumen-private/social-post.env` en mode 600, sans jamais le coller dans Git ni dans un chat :
+Le jeton de Page ne doit jamais passer par un chat, un e-mail ni Git. Le script `scripts/meta-page-token.py` le récupère et l'écrit directement dans le fichier privé, sur o2switch.
+
+1. **App Meta** :
+   - sur [developers.facebook.com](https://developers.facebook.com/apps), avec le compte Facebook administrateur de la Page LUMEN, choisir **Créer une app** ;
+   - comme cas d'usage, prendre « Autre », puis le type **Entreprise** ;
+   - laisser l'app en mode **Développement**, sans App Review ni vérification d'entreprise ;
+   - noter l'**App ID** et la **clé secrète**, dans Paramètres → Général.
+2. **Jeton court** :
+   - ouvrir le [Graph API Explorer](https://developers.facebook.com/tools/explorer/) ;
+   - choisir cette app, puis « Obtenir un token d'accès utilisateur » ;
+   - cocher `pages_show_list`, `pages_read_engagement` et `pages_manage_posts`, puis autoriser la Page LUMEN ;
+   - copier le jeton affiché, valable environ une heure.
+3. **Configuration privée**, dans le Terminal cPanel :
    ```
-   LUMEN_SOCIAL_MODE=dry-run
-   META_PAGE_ID=…
-   META_PAGE_TOKEN=…
+   cd ~/lumen-staging && git pull --ff-only origin main
+   python3 ~/lumen-staging/scripts/meta-page-token.py
    ```
-3. **Cron o2switch** (cPanel → Tâches cron), avec `MAILTO` réglé sur l'adresse d'alerte :
+   Le script demande l'App ID, la clé secrète et le jeton court ; les deux derniers sont masqués à la saisie. Il échange le jeton court contre un jeton longue durée, vérifie les trois permissions, liste les Pages où tu peux publier et te laisse choisir LUMEN. Il écrit ensuite `~/lumen-private/social-post.env` en mode 600, avec `LUMEN_SOCIAL_MODE=dry-run`, et vérifie l'accès sans rien publier.
+4. **Contrôle facultatif** : coller le jeton de Page dans le [débogueur de jetons](https://developers.facebook.com/tools/debug/accesstoken/), dans ton propre navigateur. Il doit indiquer « Expire : jamais ». `python3 ~/lumen-staging/scripts/meta-page-token.py --check` revérifie l'accès à tout moment.
+5. **Cron o2switch** (cPanel → Tâches cron) :
+   - renseigner l'adresse e-mail des tâches cron : elle reçoit les alertes ;
+   - ajouter ces deux tâches :
    ```
    */10 7-12 * * *  bash ~/lumen-staging/scripts/o2switch-social-post.sh
    20 1 * * *       bash ~/lumen-staging/scripts/o2switch-social-post.sh --counts
    ```
-4. **Simulation** : laisser `dry-run` quelques jours et vérifier le registre (`dry-run:facebook:…`).
-5. **Publication réelle** : passer à `LUMEN_SOCIAL_MODE=live` seulement après validation. Le premier post est à vérifier sur la Page, côté aperçu et lien.
-6. **Arrêt** : `touch ~/lumen-private/social-post.stop`. Supprimer le fichier relance la publication.
+6. **Simulation** : le premier passage après 08h00 écrit l'entrée `dry-run:facebook:AAAA-MM-JJ` dans `~/lumen-private/social-post-ledger.json`, sans appeler Meta. La laisser tourner au moins deux jours, à partir du 1er décembre puisque le plan commence ce jour-là.
+7. **Publication réelle** : après validation, remplacer `dry-run` par `live` dans `~/lumen-private/social-post.env`. Le lendemain à 08h00, vérifier le post sur la Page : texte, lien, aperçu et absence de doublon.
+8. **Arrêt d'urgence** : `touch ~/lumen-private/social-post.stop`. Supprimer le fichier relance la publication.
+9. **Jeton révoqué** (changement de mot de passe, retrait de l'app, perte du rôle sur la Page) : Meta répond par une erreur 4xx. Le post du jour échoue sans nouvel essai et une alerte part par e-mail. Il suffit de refaire les étapes 2 et 3.
 
 Le mini-puzzle n'a pas de drapeau serveur. Il se coupe en passant `"enabled": false` dans `content/generated/mini-calendar.json`, puis en régénérant les pages, ce qui demande un déploiement. Le calendrier ne peut qu'être allongé : un jour publié n'est jamais modifié.
 
