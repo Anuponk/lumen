@@ -4,9 +4,16 @@
 import assert from 'node:assert/strict';
 export async function verifyAssistance({ send, evaluate, url }) {
   const previous = await evaluate('performance.timeOrigin');
-  await send('Page.navigate', { url: new URL('/scripts/fixtures/incident-investigation.html', url).href });
+  await send('Page.navigate', {
+    url: new URL('/scripts/fixtures/incident-investigation.html', url).href,
+  });
   for (let i = 0; i < 100; i++) {
-    if (await evaluate(`performance.timeOrigin!==${previous}&&document.readyState==='complete'&&!!document.getElementById('incidentFixtureReady')`).catch(() => false)) break;
+    if (
+      await evaluate(
+        `performance.timeOrigin!==${previous}&&document.readyState==='complete'&&!!document.getElementById('incidentFixtureReady')`,
+      ).catch(() => false)
+    )
+      break;
     await new Promise((r) => setTimeout(r, 50));
   }
   const admin = await evaluate(
@@ -55,14 +62,25 @@ export async function verifyAssistance({ send, evaluate, url }) {
  })()`,
     true,
   );
-  assert.deepEqual(admin.chips, ['À traiter 2', 'Tous 3', 'Reçus 2', 'En cours 0', 'Réponse disponible 1', 'Résolus 0']);
+  assert.deepEqual(admin.chips, [
+    'À traiter 2',
+    'Tous 3',
+    'Reçus 2',
+    'En cours 0',
+    'Réponse disponible 1',
+    'Résolus 0',
+  ]);
   assert.equal(admin.xss, true, 'player text is never HTML');
   assert.equal(admin.listHasNoHeavy, true, 'the list never loads diagnostics');
   assert.equal(admin.paged, true, 'older reports page in on demand');
   assert.equal(admin.synthesis, true, 'readable synthesis: capture, attempt, quest, last success');
   assert.equal(admin.board, true, 'board of the moment');
   assert.deepEqual(admin.opened, ['u:p3'], 'report → player');
-  assert.deepEqual(admin.dossiers, ['00000000-0000-4000-8000-000000000960'], 'report → its exact support dossier');
+  assert.deepEqual(
+    admin.dossiers,
+    ['00000000-0000-4000-8000-000000000960'],
+    'report → its exact support dossier',
+  );
   assert.equal(admin.failedKept, true, 'a failed answer keeps the draft');
   assert.equal(admin.sameRef, true, 'the retry reuses the reference (no duplicate)');
   assert.equal(admin.status, 'Réponse disponible');
@@ -108,57 +126,101 @@ export async function verifyAssistance({ send, evaluate, url }) {
   assert.equal(player.throttled, true, 'one summary per 10 minutes, no polling');
   assert.equal(player.unreadShown && player.expanded, true, 'the new answer is open');
   assert.equal(player.answer, '&lt;b&gt;Corrigé&lt;/b&gt; en 1.11.2', 'answers are text');
-  assert.deepEqual(player.guestRefs, ['rGuestSecretReference0001'], 'guests read with their secret references only');
-  assert.deepEqual(player.reply, { id: 11, anon: 'guest-device-0001', refs: ['rGuestSecretReference0001'], ref: true });
+  assert.deepEqual(
+    player.guestRefs,
+    ['rGuestSecretReference0001'],
+    'guests read with their secret references only',
+  );
+  assert.deepEqual(player.reply, {
+    id: 11,
+    anon: 'guest-device-0001',
+    refs: ['rGuestSecretReference0001'],
+    ref: true,
+  });
   assert.equal(player.reopened, true, 'a reply reopens the report');
   assert.equal(player.badgeCleared, true);
   assert.equal(player.fits && !player.overflow, true);
-  // #974: constellation / adventure rankings — podium, my place, pages on demand.
+  // #974: adventure only, podium + personal summary, cached expansion from row 4.
   const ranking = await evaluate(
     `(async()=>{
-  const {createGroupRanking}=await import('/src/ui/group-ranking.js');
-  const markup=new DOMParser().parseFromString(await(await fetch('/index.html')).text(),'text/html');
-  document.body.append(document.importNode(markup.getElementById('groupRankingModal'),true));
-  const calls=[];let signed=false;
-  const row=(i,mine=false)=>({nickname:'<i>Étoile '+i+'</i>',points:400-i*10,quests:3,place:i,mine});
-  const rpc=async(name,args)=>{calls.push(args);
-   if(args.p_limit)return {data:{rows:Array.from({length:args.p_offset?2:10},(_,i)=>row(args.p_offset+i+1,args.p_offset+i+1===12)),more:!args.p_offset}};
-   return {data:{kind:args.p_kind,questTotal:args.p_kind==='adventure'?100:10,participants:12,participating:true,top:[row(1),row(2),row(3)],personal:{place:14,points:120,quests:2},rows:[]}}};
-  const view=createGroupRanking({document,t:(k,p)=>k+(p?JSON.stringify(p):''),rpc,signedIn:()=>signed});
-  view.open({constellationId:'real-01',adventureId:'base-real-sky',constellationName:'Grande Ourse',adventureName:'Ciel réel'});
-  await new Promise(r=>setTimeout(r,30));
-  const guest=document.getElementById('groupRankingStatus').textContent==='groupRanking.signIn'&&calls.length===0;
-  view.close();signed=true;
-  view.open({constellationId:'real-01',adventureId:'base-real-sky',constellationName:'Grande Ourse',adventureName:'Ciel réel'});
-  for(let i=0;i<40&&!document.querySelector('.group-ranking-podium');i++)await new Promise(r=>setTimeout(r,25));
-  const podium=document.querySelectorAll('.group-ranking-podium li').length;
-  const text=!document.querySelector('#groupRankingBody i')&&document.getElementById('groupRankingBody').textContent.includes('<i>Étoile 1</i>');
-  const me=document.querySelector('.group-ranking-me').textContent;
-  const tabs=[...document.querySelectorAll('[data-ranking-kind]')].map(b=>b.textContent);
-  const first=calls.length===1&&!calls[0].p_limit;
-  const more=document.querySelector('.group-ranking-more');more.click();
-  for(let i=0;i<40&&document.querySelectorAll('.group-ranking-list li').length<10;i++)await new Promise(r=>setTimeout(r,25));
-  more.click();for(let i=0;i<40&&document.querySelectorAll('.group-ranking-list li').length<12;i++)await new Promise(r=>setTimeout(r,25));
-  const paged=document.querySelectorAll('.group-ranking-list li').length===12&&more.hidden&&calls[1].p_offset===0&&calls[2].p_offset===10;
-  const mineHighlighted=!!document.querySelector('.group-ranking-list .ranking-mine');
-  document.querySelector('[data-ranking-kind="adventure"]').click();
-  for(let i=0;i<40&&calls.at(-1).p_kind!=='adventure';i++)await new Promise(r=>setTimeout(r,25));
-  const adventure=calls.at(-1).p_kind==='adventure'&&calls.at(-1).p_id==='base-real-sky'&&document.querySelector('[data-ranking-kind="adventure"]').getAttribute('aria-selected')==='true';
-  const fits=document.querySelector('.group-ranking-card').getBoundingClientRect().right<=innerWidth+1&&document.documentElement.scrollWidth<=innerWidth;
-  view.close();
-  return {guest,podium,text,me,tabs,first,paged,mineHighlighted,adventure,fits};
- })()`,
+   const {createGroupRanking}=await import('/src/ui/group-ranking.js');
+   const markup=new DOMParser().parseFromString(await(await fetch('/index.html')).text(),'text/html');
+   document.body.append(document.importNode(markup.getElementById('groupRankingModal'),true));
+   const calls=[];let signed=false;
+   const row=i=>({nickname:'<i>Étoile '+i+'</i>',points:400-i*10,quests:3,place:i,mine:i===14});
+   const rows=Array.from({length:18},(_,i)=>row(i+1));
+   const rpc=async(name,args)=>{calls.push(args);return {data:{scoringVersion:2,maxPoints:10000,kind:'adventure',questTotal:100,
+    participants:18,participating:true,top:rows.slice(0,3),personal:{place:14,points:120,quests:2},
+    rows:args.p_limit?rows.slice(args.p_offset,args.p_offset+args.p_limit):[],more:args.p_offset+args.p_limit<rows.length}}};
+   const view=createGroupRanking({document,t:(k,p)=>k+(p?JSON.stringify(p):''),rpc,signedIn:()=>signed});
+   const options={adventureId:'base-real-sky',adventureName:'Ciel réel'};
+   view.open(options);await new Promise(r=>setTimeout(r,30));
+   const guest=document.getElementById('groupRankingStatus').textContent==='groupRanking.signIn'&&calls.length===0;
+   view.close();signed=true;view.open(options);
+   for(let i=0;i<40&&!document.querySelector('.group-ranking-podium');i++)await new Promise(r=>setTimeout(r,25));
+   const podium=document.querySelectorAll('.group-ranking-podium li').length;
+   const text=!document.querySelector('#groupRankingBody i')&&document.getElementById('groupRankingBody').textContent.includes('<i>Étoile 1</i>');
+   const me=document.querySelector('.group-ranking-me').textContent;
+   const adventure=document.querySelectorAll('[data-ranking-kind]').length===0&&document.getElementById('groupRankingName').textContent==='Ciel réel'&&calls[0].p_kind==='adventure';
+   const first=calls.length===1&&!calls[0].p_limit;
+   const toggle=document.querySelector('.group-ranking-more'),list=document.querySelector('.group-ranking-list');
+   toggle.click();for(let i=0;i<40&&list.children.length<10;i++)await new Promise(r=>setTimeout(r,25));
+   document.querySelector('.group-ranking-next').click();for(let i=0;i<40&&list.children.length<15;i++)await new Promise(r=>setTimeout(r,25));
+   const names=[...document.querySelectorAll('.group-ranking-row .ranking-name')].map(n=>n.textContent);
+   const paged=list.children.length===15&&new Set(names).size===18&&calls[1].p_offset===3&&calls[2].p_offset===13;
+   const mineHighlighted=!!list.querySelector('.ranking-mine');
+   toggle.click();const collapsed=list.hidden&&getComputedStyle(list).display==='none'&&document.querySelectorAll('.group-ranking-podium li').length===3;
+   toggle.click();const cached=!list.hidden&&calls.length===3;
+   const fits=document.querySelector('.group-ranking-card').getBoundingClientRect().right<=innerWidth+1&&document.documentElement.scrollWidth<=innerWidth;
+   view.close();document.getElementById('groupRankingModal').remove();
+   const {createTranslator}=await import('/src/ui/i18n.js');const languages=[];
+   for(const locale of ['fr','en','es']){
+    document.body.append(document.importNode(markup.getElementById('groupRankingModal'),true));
+    const modal=document.getElementById('groupRankingModal'),{t}=createTranslator({locale});
+    for(const node of modal.querySelectorAll('[data-game-text]'))node.textContent=t(node.dataset.gameText);
+    const translated=createGroupRanking({document,t,rpc,signedIn:()=>true});translated.open(options);
+    for(let i=0;i<40&&!modal.querySelector('.group-ranking-podium');i++)await new Promise(r=>setTimeout(r,25));
+    const label=modal.querySelector('.group-ranking-more');label.click();
+    for(let i=0;i<40&&modal.querySelectorAll('.group-ranking-list li').length<10;i++)await new Promise(r=>setTimeout(r,25));
+    const placeColors=[...modal.querySelectorAll('.group-ranking-podium .ranking-place')].map(node=>getComputedStyle(node).color);
+    languages.push({locale,translated:!modal.textContent.includes('groupRanking.'),
+     distinctPodiumColors:new Set(placeColors).size===3,fits:modal.querySelector('.group-ranking-card').getBoundingClientRect().right<=innerWidth+1&&document.documentElement.scrollWidth<=innerWidth});
+    translated.close();modal.remove();
+   }
+   return {guest,podium,text,me,first,paged,mineHighlighted,adventure,collapsed,cached,fits,languages};
+  })()`,
     true,
   );
-  assert.equal(ranking.guest, true, 'guests are invited to sign in, nothing is read');
+  assert.equal(ranking.guest, true, 'guests do not trigger RPC reads');
   assert.equal(ranking.podium, 3);
-  assert.equal(ranking.text, true, 'nicknames are text');
-  assert.match(ranking.me, /groupRanking\.mine.*"place":14.*"points":120.*"quests":2.*"total":10/, 'my place, points and ranked quests off the podium');
-  assert.deepEqual(ranking.tabs, ['Grande Ourse', 'Ciel réel']);
-  assert.equal(ranking.first, true, 'one read: top 3 + my position, no page');
-  assert.equal(ranking.paged, true, 'pages of 10 on demand');
-  assert.equal(ranking.mineHighlighted, true);
-  assert.equal(ranking.adventure, true);
-  assert.equal(ranking.fits, true);
-  return { adminInbox: true, linkedDiagnostic: true, idempotentAnswer: true, playerReports: true, guestDeviceOnly: true, textOnly: true, groupRanking: true };
+  assert.equal(ranking.text, true, 'nicknames remain plain text');
+  assert.match(ranking.me, /groupRanking\.mine.*"place":14.*"points":120.*"quests":2.*"total":100/);
+  for (const key of [
+    'first',
+    'paged',
+    'mineHighlighted',
+    'adventure',
+    'collapsed',
+    'cached',
+    'fits',
+  ])
+    assert.equal(ranking[key], true, key);
+  assert.deepEqual(
+    ranking.languages.map((row) => row.locale),
+    ['fr', 'en', 'es'],
+  );
+  for (const row of ranking.languages)
+    assert(
+      row.translated && row.distinctPodiumColors && row.fits,
+      row.locale + ' translated mobile layout and podium colors',
+    );
+  return {
+    adminInbox: true,
+    linkedDiagnostic: true,
+    idempotentAnswer: true,
+    playerReports: true,
+    guestDeviceOnly: true,
+    textOnly: true,
+    groupRanking: true,
+  };
 }

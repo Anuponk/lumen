@@ -1,5 +1,13 @@
 # Verified historical causes
 
+#974 mobile expansion: the full-list request started at offset 0 after rendering
+the first three entries as a podium, so those entries appeared twice. Regression
+tests fail against the previous controller and pass when expansion starts after
+the cached podium. Collapsing/reopening keeps loaded pages without new reads;
+real-DOM mobile coverage retains personal highlighting and three podium colors.
+The concurrent owner decision changes general rankings to adventure-only and
+20/50/30; that is a product evolution, separate from the duplicated-row defect.
+
 Analytics #708, reproduced at `d4d914b`: the collector permission defaults off
 and the UI supplies no provider, so a successful empty RPC was rendered as zero
 player activity. Receipt-only activity is independent evidence. Node regressions

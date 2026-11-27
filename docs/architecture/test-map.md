@@ -1,5 +1,15 @@
 # Existing verification map
 
+Adventure ranking #974 (27/11): `group-ranking-tests.mjs` checks 20/50/30, an
+adventure-only entry, cached expansion after row three, small populations and
+stale/error responses. `assistance-browser.mjs` checks actual mobile layout,
+personal highlighting and podium colors in FR/EN/ES. SQL score upgrade fixtures
+`rankings-974-score-bootstrap.sql` / `rankings-974-score.sql` preserve chronometric
+sources, verify canonical/legacy badge provenance and resets, and exercise 1,000
+participants. `rankings-score-concurrency.py` covers concurrent records, badges
+and population changes on two quests of the same adventure. See the
+[score contract](../HIGHSCORE_ROLLOUT.md#classement-général-par-aventure-974).
+
 Push rehearsal #1034: `daily-push-ui-tests.mjs` covers private menu discovery,
 pending permission feedback and button recovery after a rejected request.
 Android `tools/packaging.test.mjs` checks the permission activity declaration;

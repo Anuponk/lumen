@@ -2928,12 +2928,12 @@ function capturedTiming(){return qaActive||officialTimingSupported(lumenSupabase
 const rankingContext=()=>({owner:lumenUser?.id,client:lumenSupabase,nickname:lumenNickname,qa:qaActive});
 const rankingClient=createRankingClient({storage:localStorage,getContext:rankingContext,currentGridRevision:id=>{const q=canonicalQuestById(id);return q?q.gridRevision??0:null}});
 const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds),onUpdate:update=>renderVictoryRank(update),onGroups:(quest,origin)=>openGroupRanking(quest,origin),t});
-// #974: constellation and adventure rankings (materialized server aggregates, read on open).
+// #974: the only general ranking exposed is the adventure ranking.
 let groupRanking=null;
 function openGroupRanking(quest,origin){
- if(!quest?.constellationId||!quest?.packId)return;
- const entry=CONTENT_CONSTELLATIONS.find(c=>c.id===quest.constellationId),pack=CONTENT_PACKS.find(p=>p.id===quest.packId);
- groupRanking?.open({constellationId:quest.constellationId,adventureId:quest.packId,constellationName:entry?skyNavigation.displayName(entry):null,adventureName:pack?adventureDisplayName(pack,t):null,origin});
+ if(!quest?.packId)return;
+ const pack=CONTENT_PACKS.find(p=>p.id===quest.packId);
+ groupRanking?.open({adventureId:quest.packId,adventureName:pack?adventureDisplayName(pack,t):null,origin});
 }
 let nicknameOnboardingOwner=null;
 let nicknameOnboardingBusy=false;
