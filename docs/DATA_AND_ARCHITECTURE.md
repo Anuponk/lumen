@@ -2582,3 +2582,5 @@ right. Player tables are erased with the account. Contract, offline compromises,
 costs and activation/rollback: [PREMIUM_1030](PREMIUM_1030.md).
 
 #974 hotfix: `20261127230000_ranking_page_fix_974.sql` replaces `lumen_commands.group_ranking` with the same read-only body using scalar variables, so a ranking page never reads an unassigned record. See [HIGHSCORE_ROLLOUT](HIGHSCORE_ROLLOUT.md).
+
+#1030 lot 2: `20261128090000_premium_mixed_sky_1030.sql` adds the `admin_mixed_full_sky` grant source (owner decision 27/11: whole main sky from administrative grants plus confirmed unit purchases, no mastery) to the traced backfill; nothing is granted by the migration. Advanced statistics (`src/ui/premium-stats.js`) and playable archives read `lumen_premium_stats` / `lumen_daily_archive` on demand only; an archive replay is a training run and writes no daily run, standing or ranking. See [PREMIUM_1030](PREMIUM_1030.md).

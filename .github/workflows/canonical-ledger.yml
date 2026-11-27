@@ -684,3 +684,12 @@ jobs:
             -f supabase/migrations/20261127230000_ranking_page_fix_974.sql
           # Separate session: the page is the first ranking call (fresh plan), as in production.
           psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/ranking-page-fix-974.sql
+      - name: Verify the owner rule for mixed administrative whole skies (#1030)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261128090000_premium_mixed_sky_1030.sql \
+            -f supabase/migrations/20261128090000_premium_mixed_sky_1030.sql \
+            -f scripts/fixtures/premium-mixed-sky-1030.sql

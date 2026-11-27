@@ -2901,3 +2901,5 @@ Run node scripts/seasonal-events-tests.mjs, node scripts/organic-acquisition-tes
 - Recette: [PREMIUM_1030 § 10](PREMIUM_1030.md#10-recette).
 
 #974 hotfix: `scripts/fixtures/ranking-page-fix-974.sql` (canonical-ledger CI, own psql session) calls an adventure ranking page as the first call of a fresh connection, then checks the last page, ties and that every rank appears once.
+
+#1030 lot 2: `premium-quota-tests.mjs` also covers the advanced statistics model and chart and the archive wiring (past days only, training run); `scripts/fixtures/premium-mixed-sky-1030.sql` covers the owner rule for mixed administrative whole skies (mastery excluded, idempotent, traced).

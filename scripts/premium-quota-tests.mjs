@@ -270,3 +270,40 @@ test('shop: the single Premium offer uses the catalogue price on the web and Goo
   assert.equal(missing.premium.priceKnown,false,'never a fixed price in the Play app');
   assert.ok(missing.mastery!==undefined,'mastery unlock path is kept');
 });
+
+// ---- Lot 2: advanced statistics and playable archives ---------------------------
+test('advanced statistics: bounded model, difficulty from the catalogue, accessible chart', async () => {
+  const {premiumStatsModel, renderSeriesChart, STATS_PAGE} = await import('../src/ui/premium-stats.js');
+  const quests = new Map(canonicalQuestList().map((q) => [q.id, q]));
+  const easy = canonicalQuestList().find((q) => q.difficulty?.label === 'Facile');
+  const data = {
+    series: [{day: '2026-11-25', attempts: 4, wins: 2, medianSeconds: 60}, {day: '2026-11-26', attempts: 6, wins: 4, medianSeconds: 90}],
+    records: [{questId: easy.id, score: 50}, {questId: 'unknown', score: 10}],
+    history: [{at: '2026-11-26T10:00:00Z', questId: easy.id, status: 'confirmed', seconds: 42, improved: true}],
+  };
+  const m = premiumStatsModel(data, {questById: (id) => quests.get(id)});
+  assert.equal(m.summary.attempts, 10);
+  assert.equal(m.summary.winRate, 60);
+  assert.equal(m.summary.medianSeconds, 75);
+  assert.deepEqual(m.byDifficulty, [{label: 'Facile', count: 1, best: 50, median: 50}], 'unknown quests are ignored');
+  assert.equal(m.history[0].quest.id, easy.id);
+  assert.deepEqual(premiumStatsModel({}).summary, {attempts: 0, wins: 0, winRate: null, medianSeconds: null, records: 0, bestScore: null});
+  const svg = renderSeriesChart(m.series, {t: (k) => k});
+  assert.match(svg, /role="img" aria-label="premiumStats.chartLabel"/);
+  assert.equal((svg.match(/<rect /g) || []).length, 2);
+  assert.equal(renderSeriesChart([]), '');
+  assert.ok(STATS_PAGE <= 50, 'server page bound');
+});
+
+test('wiring: archives replay past days only as training, stats behind Premium surfaces', () => {
+  const src = fs.readFileSync(new URL('../src/ui/game-screen.js', import.meta.url), 'utf8');
+  const archive = src.slice(src.indexOf('async function bootstrapDailyArchive('), src.indexOf('async function bootstrapDailyChallenge('));
+  assert.match(archive, /lumen_daily_archive/);
+  assert.match(archive, /training:true,archive:true/, 'never an official attempt');
+  assert.doesNotMatch(archive, /dailyClient\.begin|lumen_daily_begin/);
+  assert.match(src, /day<dailyWeekToday&&premiumSurfaceVisible\(\{state:commerce\.state,feature:'archives'/, 'only past days, only Premium surfaces');
+  assert.match(src, /if\(params\.has\('archive'\)\)return bootstrapDailyArchive/);
+  assert.match(src, /stats\.hidden=!lumenUser\|\|qaActive\|\|!premiumSurfaceVisible\(\{state:commerce\.state,feature:'stats'/);
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /id="premiumStatsBtn"[^>]*hidden/, 'hidden by default');
+});
