@@ -129,9 +129,13 @@ test('the private ranking shows real performances only, with ties and members wi
   assert.equal(model.withoutTime, 2);
   assert.equal(model.personalShown, true);
   const html = renderCircleBoard(board, { t: fr, formatDuration: (s) => s + ' s' });
-  assert.match(html, /Place 1.*Ben.*80 s.*Place 1.*Ana.*\(toi\).*Place 3.*Cléo/s);
+  // #974 shared podium: order 2 – 1 – 3, shared rank for ties.
+  assert.match(
+    html,
+    /ranking-step-2.*>1<.*Ana \(toi\).*80 s.*ranking-step-1.*>1<.*Ben.*80 s.*ranking-step-3.*>3<.*Cléo/s,
+  );
   assert.match(html, /2 membres sans temps sur cette quête/);
-  assert.doesNotMatch(html, /Ta place/, 'personal row already in the podium');
+  assert.doesNotMatch(html, /lumen-my-position/, 'personal row already in the podium');
   const outside = renderCircleBoard(
     {
       ...board,
@@ -140,7 +144,7 @@ test('the private ranking shows real performances only, with ties and members wi
     },
     { t: en, formatDuration: (s) => s + ' s' },
   );
-  assert.match(outside, /Your place: #4 · 120 s/);
+  assert.match(outside, /lumen-my-position.*Your position.*>4<.*Ana.*120 s/s);
   assert.match(
     renderCircleBoard({ members: 2, ranked: 0, top: [] }, { t: fr, formatDuration: String }),
     /Personne n(?:'|&#39;)a encore de temps officiel/,

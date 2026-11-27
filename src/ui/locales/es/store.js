@@ -128,4 +128,14 @@ export default Object.freeze({
   'premium.archiveReplay': "Repetir este reto (entrenamiento)",
   'premium.archiveUnavailable': "Este reto ya no está disponible.",
   'premium.archiveRequired': "Repetir retos anteriores forma parte de LUMEN Premium.",
+  // #1029 compact Premium offer.
+  'premiumShop.title': "Explora todo el cielo",
+  'premiumShop.subtitle': "LUMEN Premium — Juega sin límites.",
+  'premiumShop.benefitSky': "Todas las aventuras del cielo principal y sus ampliaciones",
+  'premiumShop.benefitLimit': "Sin límite diario",
+  'premiumShop.pay': "Confirmar y pagar · {price}",
+  'premiumShop.unavailable': "El pago no está disponible en este momento.",
+  'premiumShop.free': "O desbloquéala gratis dominando «{name}» al 100 %.",
+  'premiumShop.freeGeneric': "O desbloquéala gratis dominando la aventura anterior al 100 %.",
+  'premiumShop.progress': "Ver mi progreso",
 });

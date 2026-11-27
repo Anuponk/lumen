@@ -327,7 +327,7 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   const finish=await calls(evaluate,'lumen_daily_finish');
   assert.equal(finish.length,1);assert.equal(finish[0].args.p_status,'completed');assert.equal(finish[0].args.p_day,DAY);
   assert.deepEqual(['p_hint','p_verify','p_guided'].map(k=>typeof finish[0].args[k]),['number','number','number'],'aid counts sent for official penalties');
-  assert.match(await evaluate(`document.getElementById('dailyBoardPanel').textContent`),locale==='en'?/1stAna.*1stBo.*3rdCy.*Your rank: 5th.*12 participants/s:/1erAna.*1erBo.*3eCy.*Ta position : 5e.*12 participants/s,'general top 3 with ties + my position');
+  assert.match(await evaluate(`document.getElementById('dailyBoardPanel').textContent`),locale==='en'?/11Bo.*11Ana.*33Cy.*Your position5.*12 participants/s:/11Bo.*11Ana.*33Cy.*Ta position5.*12 participants/s,'general top 3 with ties (podium 2 – 1 – 3, shared rank) + my position');
   await evaluate(`document.getElementById('dailyTabFriends').click()`);
   assert.equal(await evaluate(`document.getElementById('dailyTabFriends').getAttribute('aria-selected')`),'true');
   assert.match(await evaluate(`document.getElementById('dailyBoardPanel').textContent`),locale==='en'?/Moi \(you\).*None of your friends has played today/s:/Moi \(toi\).*Aucun de tes amis n’a encore joué/s,'explicit empty friends state');
@@ -358,12 +358,12 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   // #1015 history: a day opens its board in place of the stats, one read per tap.
   const boardReads=(await calls(evaluate,'lumen_daily_board')).length;
   await evaluate(`document.querySelector('#dailyWeekBody [data-daily-day]').click()`);
-  await until(evaluate,`!document.getElementById('dailyWeekBoard').hidden&&document.querySelectorAll('#dailyWeekBoardPanel .daily-board-row').length>0`,'day board');
+  await until(evaluate,`!document.getElementById('dailyWeekBoard').hidden&&document.querySelectorAll('#dailyWeekBoardPanel .lumen-podium li').length>0`,'day board');
   assert.equal((await calls(evaluate,'lumen_daily_board')).length,boardReads+1,'one board read for the tapped day');
   assert.equal((await calls(evaluate,'lumen_daily_board')).at(-1).args.p_day,DAY);
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('#dailyWeekBody .daily-week-stats')).display`),'none','the board replaces the stats');
-  const dayLayout=await evaluate(`(()=>{const c=document.getElementById('dailyWeekClose').getBoundingClientRect();return c.top>=0&&c.bottom<=innerHeight&&document.documentElement.scrollWidth<=innerWidth})()`);
-  assert.equal(dayLayout,true,'day board fits at '+width+'x'+height);
+  const dayLayout=await evaluate(`(()=>{const c=document.getElementById('dailyWeekClose').getBoundingClientRect();return {fits:c.top>=0&&c.bottom<=innerHeight&&document.documentElement.scrollWidth<=innerWidth,top:Math.round(c.top),bottom:Math.round(c.bottom),height:innerHeight}})()`);
+  assert.equal(dayLayout.fits,true,'day board fits at '+width+'x'+height+' '+JSON.stringify(dayLayout));
   if(captureDir&&width!==360)fs.writeFileSync(captureDir+'/daily-history-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
   await evaluate(`document.querySelector('#dailyWeekBody [data-daily-day]').click()`);
   assert.equal(await evaluate(`document.getElementById('dailyWeekBoard').hidden`),true,'tapping the day again closes it');

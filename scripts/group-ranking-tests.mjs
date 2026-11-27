@@ -49,13 +49,14 @@ test('translated adventure-only copy explains the new score in all languages', (
       'title',
       'open',
       'scale',
-      'mine',
+      'yourPosition',
       'notRanked',
       'empty',
-      'all',
-      'next',
+      'around',
+      'rest',
+      'before',
+      'after',
       'less',
-      'cap',
       'signIn',
     ])
       assert(messages['groupRanking.' + key], lang + ' ' + key);
@@ -118,8 +119,8 @@ function find(node, selector) {
   ]);
 }
 function fixture({
-  participants = 18,
-  own = 14,
+  participants = 30,
+  own = 20,
   version = 2,
   delayPage = false,
   failPage = false,
@@ -190,96 +191,100 @@ function fixture({
   const nodes = (selector) => find(ids.get('groupRankingBody'), selector);
   return { view, ids, calls, open, nodes, owner, delayed };
 }
-test('adventure opens without a constellation and only reads top three plus my position', async () => {
+const places = (nodes) => nodes.map((li) => Number(li.dataset.place));
+const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+const open4 = async (f) => {
+  await f.open();
+  return {
+    toggle: f.nodes('.group-ranking-more')[0],
+    before: f.nodes('.group-ranking-before')[0],
+    after: f.nodes('.group-ranking-next')[0],
+    fold: f.nodes('.lumen-rank-fold')[0],
+    list: f.nodes('.lumen-rank-list')[0],
+  };
+};
+
+test('mock-up state 1: podium 2–1–3 and my cyan position only, no quota of text', async () => {
   const f = fixture();
   await f.open({ constellationId: null });
   assert.equal(f.calls.length, 1);
   assert.equal(f.calls[0].p_kind, 'adventure');
-  assert(!f.calls[0].p_limit);
-  assert.equal(f.nodes('.group-ranking-podium .group-ranking-row').length, 3);
-  // #974 recette 27/11: off the podium, my line is a ranking row (place, name,
-  // points), after a discreet separator, never a separate text block.
-  const mine = f.nodes('.group-ranking-personal .group-ranking-row');
+  assert(!f.calls[0].p_limit, 'the opening read never fetches rows');
+  const steps = f.nodes('.lumen-step');
+  assert.deepEqual(steps.map((s) => s.dataset.position), ['2', '1', '3'], 'podium order 2 – 1 – 3');
+  assert.equal(f.nodes('.lumen-medal').length, 3, 'celestial medallions');
+  const mine = f.nodes('.lumen-my-position');
   assert.equal(mine.length, 1);
-  assert.equal(mine[0].className, 'group-ranking-row ranking-mine');
-  assert.equal(mine[0].children[0].textContent, '14');
-  assert.equal(mine[0].children[1].textContent, 'Moi');
-  assert.equal(f.nodes('.group-ranking-me').length, 0);
-  assert.equal(f.nodes('.group-ranking-list')[0].hidden, true);
+  assert.match(mine[0].textContent, /groupRanking\.yourPosition.*20.*Moi/);
+  assert.equal(f.nodes('.lumen-rank-row').length, 0);
+  const text = f.ids.get('groupRankingBody').textContent;
+  assert.doesNotMatch(text, /groupRanking\.cap|questsShort|maxPoints/, 'no « 100 quêtes · 10 000 points » line');
+  assert.match(f.nodes('.group-ranking-more')[0].textContent, /groupRanking\.around/);
   assert.equal(f.ids.get('groupRankingName').textContent, 'Ciel réel');
 });
-test('expansion starts at offset three, pages without duplicate podium rows and collapses without reads', async () => {
+
+test('mock-up state 2: 20th opens on ranks 15–25, then blocks of 10 before/after to the bounds', async () => {
   const f = fixture();
-  await f.open();
-  const toggle = f.nodes('.group-ranking-more')[0],
-    list = f.nodes('.group-ranking-list')[0],
-    next = f.nodes('.group-ranking-next')[0];
-  await toggle.onclick();
-  assert.equal(f.calls[1].p_offset, 3);
-  assert.equal(f.calls[1].p_limit, 10);
-  assert.equal(list.children.length, 10);
-  assert.equal(f.nodes('.group-ranking-list .group-ranking-row').length, 10);
-  assert.equal(next.hidden, false, 'an explicit button while players remain');
-  assert.match(next.textContent, /groupRanking\.more\{"count":5\}/);
-  assert.equal(f.nodes('.group-ranking-personal')[0].hidden, false, 'rank 14 not loaded yet');
-  assert.equal(list.children[0].children[1].textContent, 'Player 4');
-  await next.onclick();
-  assert.equal(f.calls[2].p_offset, 13);
-  assert.equal(list.children.length, 15);
-  assert.equal(next.hidden, true);
-  assert.equal(f.nodes('.group-ranking-podium .group-ranking-row').length + list.children.length, 18);
-  assert.equal(find(list, '.ranking-mine').length, 1);
-  assert.equal(f.nodes('.group-ranking-personal')[0].hidden, true, 'no repeated personal line');
-  await toggle.onclick();
-  assert.equal(list.hidden, true);
-  assert.equal(f.nodes('.group-ranking-personal')[0].hidden, false, 'found again after collapsing');
-  assert.equal(toggle.attrs['aria-expanded'], 'false');
-  await toggle.onclick();
-  assert.equal(list.hidden, false);
-  assert.equal(f.calls.length, 3, 'cached pages reopen without requests');
+  const ui = await open4(f);
+  await ui.toggle.onclick();
+  assert.deepEqual([f.calls[1].p_offset, f.calls[1].p_limit], [14, 11]);
+  assert.deepEqual(places(ui.list.children), range(15, 25), 'exactly ranks 15 to 25');
+  assert.equal(find(ui.list, '.is-mine').length, 1);
+  assert.equal(f.nodes('.lumen-my-position')[0].hidden, true, 'no second personal card');
+  assert.equal(ui.before.hidden, false);
+  assert.equal(ui.after.hidden, false);
+  await ui.before.onclick();
+  assert.deepEqual([f.calls[2].p_offset, f.calls[2].p_limit], [4, 10]);
+  assert.deepEqual(places(ui.list.children).slice(0, 2), [5, 6], 'previous rows added above');
+  await ui.before.onclick();
+  assert.deepEqual([f.calls[3].p_offset, f.calls[3].p_limit], [3, 1]);
+  assert.equal(ui.before.hidden, true, 'rank 4 reached: no « Voir avant »');
+  await ui.after.onclick();
+  assert.deepEqual([f.calls[4].p_offset, f.calls[4].p_limit], [25, 10]);
+  assert.equal(ui.after.hidden, true, 'last rank reached: no « Voir après »');
+  assert.deepEqual(places(ui.list.children), range(4, 30), 'contiguous, no gap, no duplicate');
+  const names = [...f.nodes('.lumen-step .ranking-name'), ...find(ui.list, '.lumen-rank-name')].map((n) => n.textContent);
+  assert.equal(new Set(names).size, 30);
+  await ui.fold.onclick();
+  assert.equal(ui.list.hidden, true);
+  assert.equal(f.nodes('.lumen-my-position')[0].hidden, false, 'found again after folding');
+  await ui.toggle.onclick();
+  assert.equal(f.calls.length, 5, 'folding and reopening never re-read');
 });
-test('zero, one and three participants need no expansion; own podium row stays highlighted', async () => {
-  for (const participants of [0, 1, 3]) {
+
+test('podium player and unranked player explore from rank 4; near the end the window adapts', async () => {
+  for (const own of [1, 2, 3, 99]) {
+    const f = fixture({ own });
+    const ui = await open4(f);
+    assert.equal(f.nodes('.lumen-my-position').length, 0, 'never repeat a podium line');
+    assert.match(ui.toggle.textContent, /groupRanking\.rest/);
+    if (own === 99) assert.equal(f.nodes('.lumen-rank-note').length, 1, 'unranked is explained once');
+    await ui.toggle.onclick();
+    assert.deepEqual(places(ui.list.children), range(4, 13));
+    assert.equal(ui.before.hidden, true);
+  }
+  const last = fixture({ own: 29 });
+  const ui = await open4(last);
+  await ui.toggle.onclick();
+  assert.deepEqual(places(ui.list.children), range(20, 30), 'window shifted up at the end, no fictional row');
+  assert.equal(ui.after.hidden, true);
+  const fourth = fixture({ own: 4 });
+  const ui4 = await open4(fourth);
+  await ui4.toggle.onclick();
+  assert.deepEqual(places(ui4.list.children), range(4, 14));
+});
+
+test('small, empty and old-backend boards stay honest', async () => {
+  for (const participants of [1, 3]) {
     const f = fixture({ participants, own: 1 });
     await f.open();
-    assert.equal(f.nodes('.group-ranking-row').length, participants);
+    assert.equal(f.nodes('.lumen-step').length, participants, 'no fictional podium step');
     assert.equal(f.nodes('.group-ranking-more').length, 0);
     assert.equal(f.calls.length, 1);
-    if (participants) {
-      assert.equal(f.nodes('.ranking-mine').length, 1, 'on the podium, my podium line is enough');
-      assert.equal(f.nodes('.group-ranking-personal').length, 0);
-    }
   }
-});
-test('a pending page stays collapsed, stale pages do not replace another adventure, and failures retry', async () => {
-  const f = fixture({ delayPage: true });
-  await f.open();
-  const toggle = f.nodes('.group-ranking-more')[0],
-    list = f.nodes('.group-ranking-list')[0];
-  const pending = toggle.onclick();
-  await toggle.onclick();
-  f.delayed.shift()();
-  await pending;
-  assert.equal(list.hidden, true);
-  await toggle.onclick();
-  assert.equal(f.calls.length, 2);
-  const more = f.nodes('.group-ranking-next')[0];
-  const stale = more.onclick();
-  f.view.close();
-  await f.open();
-  f.delayed.shift()();
-  await stale;
-  assert.equal(f.nodes('.group-ranking-podium .group-ranking-row').length, 3);
-  assert.equal(f.nodes('.group-ranking-list .group-ranking-row').length, 0, 'the stale page was dropped');
-  const retry = fixture({ failPage: true });
-  await retry.open();
-  await retry.nodes('.group-ranking-more')[0].onclick();
-  const next = retry.nodes('.group-ranking-next')[0];
-  assert.equal(next.textContent, 'groupRanking.retry');
-  await next.onclick();
-  assert.equal(retry.nodes('.group-ranking-list')[0].children.length, 10);
-});
-test('guests and old scoring backends cannot show a misleading new scale', async () => {
+  const empty = fixture({ participants: 0, own: 1 });
+  await empty.open();
+  assert.equal(empty.nodes('.lumen-ranking-empty').length, 1);
   const guest = fixture();
   guest.owner.signed = false;
   await guest.open();
@@ -287,34 +292,24 @@ test('guests and old scoring backends cannot show a misleading new scale', async
   assert.equal(guest.ids.get('groupRankingStatus').textContent, 'groupRanking.signIn');
   const legacy = fixture({ version: 1 });
   await legacy.open();
-  assert.equal(legacy.nodes('.group-ranking-row').length, 0);
+  assert.equal(legacy.nodes('.lumen-step').length, 0);
   assert.equal(legacy.ids.get('groupRankingStatus').textContent, 'ranking.unavailable');
 });
 
-test('recette 27/11: 6 and 14 participants show every rank once, ties and the last page', async () => {
-  for (const [participants, own] of [[6, 5], [14, 2], [13, 13]]) {
-    const f = fixture({ participants, own });
-    await f.open();
-    const toggle = f.nodes('.group-ranking-more')[0],
-      list = f.nodes('.group-ranking-list')[0],
-      next = f.nodes('.group-ranking-next')[0];
-    await toggle.onclick();
-    while (!next.hidden) await next.onclick();
-    const names = [
-      ...f.nodes('.group-ranking-podium .ranking-name'),
-      ...find(list, '.ranking-name'),
-    ].map((n) => n.textContent);
-    assert.equal(names.length, participants, participants + ' rows, none omitted');
-    assert.equal(new Set(names).size, participants, 'no duplicate');
-    assert.equal(find(list, '.ranking-mine').length + f.nodes('.group-ranking-podium .ranking-mine').length, 1);
-    if (own > 3) assert.equal(f.nodes('.group-ranking-personal')[0].hidden, true);
-  }
-});
-test('no medal off the podium and nobody unranked gets a fake line', async () => {
-  const f = fixture({ participants: 8, own: 99 });
+test('failures offer a retry and a late page never lands in another adventure', async () => {
+  const retry = fixture({ failPage: true });
+  const ui = await open4(retry);
+  await ui.toggle.onclick();
+  assert.equal(ui.after.hidden, false);
+  assert.match(ui.after.textContent, /groupRanking\.retry/);
+  await ui.after.onclick();
+  assert.deepEqual(places(ui.list.children), range(15, 25));
+  const f = fixture({ delayPage: true });
+  const ui2 = await open4(f);
+  const pending = ui2.toggle.onclick();
+  f.view.close();
   await f.open();
-  assert.equal(f.nodes('.group-ranking-personal').length, 0);
-  assert.equal(f.nodes('.group-ranking-me').length, 1, 'not ranked yet is still explained');
-  await f.nodes('.group-ranking-more')[0].onclick();
-  assert.ok(f.nodes('.group-ranking-list .group-ranking-row').every((li) => li.dataset?.position === undefined));
+  f.delayed.shift()();
+  await pending;
+  assert.equal(f.nodes('.lumen-rank-row').length, 0, 'the stale page was dropped');
 });

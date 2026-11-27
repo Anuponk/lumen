@@ -1990,3 +1990,129 @@ body[data-seasonal="winter-stars"] #dailyIntro h2::after { content: var(--season
 .premium-stats-run small{grid-column:2/4;color:#f4cf78}
 .premium-stats-quest{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .daily-archive-replay{margin-top:8px;min-height:40px}
+
+/* ===== #974 LUMEN podium — shared by every leaderboard (owner mock-up 27/11/2026) ===== */
+:root{--lumen-gold:#f2c96b;--lumen-silver:#c9d6e6;--lumen-bronze:#e0976a;--lumen-cyan:#7fe3f2;--lumen-night:#0b1730;--lumen-night-2:#102244}
+.lumen-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.lumen-podium{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:8px;list-style:none;margin:6px 0 10px;padding:34px 0 0}
+.lumen-podium .lumen-step{position:relative;display:flex!important;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;min-width:0;padding:34px 4px 10px!important;border-radius:12px 12px 6px 6px;border:1px solid rgba(201,214,230,.35)!important;background:linear-gradient(180deg,#2c4266,#16253f)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 18px rgba(0,0,0,.35);color:#fff;text-align:center}
+.lumen-podium .lumen-step.ranking-step-1{order:2;min-height:118px!important;border-color:rgba(242,201,107,.7)!important;background:linear-gradient(180deg,#6a5420,#2e2410)!important}
+.lumen-podium .lumen-step.ranking-step-2{order:1;min-height:98px!important}
+.lumen-podium .lumen-step.ranking-step-3{order:3;min-height:90px!important;border-color:rgba(224,151,106,.55)!important;background:linear-gradient(180deg,#5a3424,#26160f)!important}
+.lumen-podium .ranking-name{max-width:100%;font-size:13.5px;line-height:1.15;font-weight:700;color:#fff;overflow:hidden;overflow-wrap:anywhere;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.lumen-podium .lumen-value{font-size:14px;font-weight:800;color:var(--lumen-gold);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lumen-podium .lumen-step.is-mine{box-shadow:0 0 0 2px var(--lumen-cyan),0 0 16px rgba(127,227,242,.35)!important}
+.lumen-medal{position:absolute;top:-30px;left:50%;width:58px;height:58px;margin-left:-29px;border-radius:50%;border:3px solid var(--lumen-silver);box-shadow:0 0 14px rgba(160,200,255,.35);background:center/cover no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Cdefs%3E%3CradialGradient id='s' cx='.5' cy='.35' r='.8'%3E%3Cstop offset='0' stop-color='%23365a9a'/%3E%3Cstop offset='1' stop-color='%23081430'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='60' height='60' fill='url(%23s)'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='14' cy='16' r='1.1'/%3E%3Ccircle cx='40' cy='11' r='.9'/%3E%3Ccircle cx='30' cy='22' r='1.4'/%3E%3Ccircle cx='47' cy='26' r='.8'/%3E%3Ccircle cx='21' cy='30' r='.7'/%3E%3C/g%3E%3Cpath d='M0 48 14 34 24 42 34 30 46 40 60 32V60H0Z' fill='%230b1832'/%3E%3C/svg%3E")}
+.ranking-step-1 .lumen-medal{top:-38px;width:66px;height:66px;margin-left:-33px;border-color:var(--lumen-gold);box-shadow:0 0 18px rgba(242,201,107,.55);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.5' cy='.9' r='.9'%3E%3Cstop offset='0' stop-color='%23f7c56a'/%3E%3Cstop offset='.35' stop-color='%23334f86'/%3E%3Cstop offset='1' stop-color='%23081430'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='60' height='60' fill='url(%23g)'/%3E%3Cpath d='M38 13a8 8 0 1 0 6 12 6.5 6.5 0 1 1-6-12Z' fill='%23fbe6a6'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='15' cy='14' r='1'/%3E%3Ccircle cx='24' cy='24' r='.8'/%3E%3C/g%3E%3Cpath d='M0 50 16 36 26 44 36 34 48 42 60 36V60H0Z' fill='%23111d33'/%3E%3C/svg%3E")}
+.ranking-step-1 .lumen-medal::before{content:"";position:absolute;inset:-14px -20px -2px;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 90'%3E%3Cg fill='%23f2c96b'%3E%3Cpath d='M22 78C8 64 6 40 18 22c-4 20 0 40 10 52Z'/%3E%3Cpath d='M78 78c14-14 16-38 4-56 4 20 0 40-10 52Z'/%3E%3Cellipse cx='14' cy='60' rx='6' ry='3' transform='rotate(-55 14 60)'/%3E%3Cellipse cx='12' cy='46' rx='6' ry='3' transform='rotate(-75 12 46)'/%3E%3Cellipse cx='14' cy='32' rx='6' ry='3' transform='rotate(-100 14 32)'/%3E%3Cellipse cx='86' cy='60' rx='6' ry='3' transform='rotate(55 86 60)'/%3E%3Cellipse cx='88' cy='46' rx='6' ry='3' transform='rotate(75 88 46)'/%3E%3Cellipse cx='86' cy='32' rx='6' ry='3' transform='rotate(100 86 32)'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+.ranking-step-3 .lumen-medal{border-color:var(--lumen-bronze);box-shadow:0 0 14px rgba(224,151,106,.4);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Cdefs%3E%3ClinearGradient id='d' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23243a74'/%3E%3Cstop offset='.6' stop-color='%23a45a7a'/%3E%3Cstop offset='1' stop-color='%23f0a35e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='60' height='60' fill='url(%23d)'/%3E%3Ccircle cx='30' cy='20' r='1.4' fill='%23fff'/%3E%3Ccircle cx='44' cy='14' r='.9' fill='%23fff'/%3E%3Cpath d='M0 50 18 36 28 44 40 34 60 46V60H0Z' fill='%231d1428'/%3E%3C/svg%3E")}
+.lumen-medal-rank{position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:linear-gradient(180deg,#e9f0f8,#8ea4bf);color:#0b1730;font-size:13px;font-weight:900;border:2px solid #0b1730}
+.ranking-step-1 .lumen-medal-rank{width:28px;height:28px;background:linear-gradient(180deg,#ffe7a3,#c99536);font-size:15px}
+.ranking-step-3 .lumen-medal-rank{background:linear-gradient(180deg,#ffc9a3,#b3683e)}
+.lumen-my-position{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:"icon label label label" "icon rank name value";align-items:center;gap:0 12px;margin:10px 0;padding:8px 14px;border:2px solid var(--lumen-cyan);border-radius:14px;background:linear-gradient(90deg,rgba(127,227,242,.12),rgba(16,34,68,.6));box-shadow:0 0 14px rgba(127,227,242,.25)}
+.lumen-my-position[hidden]{display:none}
+.lumen-my-icon{grid-area:icon;width:30px;height:30px;border-radius:50%;background:rgba(127,227,242,.18) center/18px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%237fe3f2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7Z'/%3E%3C/svg%3E")}
+.lumen-my-label{grid-area:label;font-size:12px;color:var(--lumen-cyan)}
+.lumen-my-position .lumen-rank{grid-area:rank;font-size:22px;font-weight:800;color:#fff}
+.lumen-my-position .lumen-rank-name{grid-area:name;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lumen-my-position .lumen-rank-value{grid-area:value;font-size:16px;font-weight:800;color:var(--lumen-gold);white-space:nowrap}
+.lumen-rank-list{list-style:none;margin:6px 0;padding:0;display:grid;border:1px solid rgba(120,160,220,.22);border-radius:10px;overflow:hidden;background:rgba(9,20,44,.55)}
+.lumen-rank-list[hidden]{display:none}
+.lumen-rank-row{position:relative;display:grid;grid-template-columns:2.4em minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid rgba(120,160,220,.14);font-size:14px;color:#e8f0fb}
+.lumen-rank-row:first-child{border-top:0}
+.lumen-rank-row .lumen-rank{font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
+.lumen-rank-row .lumen-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lumen-rank-row .lumen-rank-value{font-weight:800;color:var(--lumen-gold);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lumen-rank-row.is-mine{margin:2px 0;border:2px solid var(--lumen-cyan)!important;border-radius:10px;background:linear-gradient(90deg,rgba(127,227,242,.14),rgba(16,34,68,.7));box-shadow:0 0 12px rgba(127,227,242,.3);padding-left:34px}
+.lumen-rank-row.is-mine::before{content:"";position:absolute;left:10px;width:16px;height:16px;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%237fe3f2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7Z'/%3E%3C/svg%3E")}
+.lumen-rank-button{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:42px;margin:6px 0;border:1.5px solid var(--lumen-gold);border-radius:999px;background:linear-gradient(180deg,#1a2a4a,#0e1a33);color:#fff;font-size:15px;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.lumen-rank-button[hidden],.lumen-rank-fold[hidden]{display:none}
+.lumen-rank-button:disabled{opacity:.6}
+.lumen-chevron{width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg)}
+.lumen-chevron-up{transform:translateY(2px) rotate(-135deg)}
+.lumen-rank-fold{display:block;margin:2px auto 0;padding:6px 12px;border:0;background:none;color:#9fb3c8;font-size:13px;text-decoration:underline;text-underline-offset:3px}
+.lumen-rank-note{margin:8px 0;text-align:center;font-size:13px;color:#9fb3c8}
+.lumen-ranking-empty{display:grid;justify-items:center;gap:6px;padding:18px 8px;text-align:center;color:#c9d6e6}
+.lumen-ranking-empty p{margin:0}
+.lumen-ranking-empty-sky{width:84px;height:44px;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 84 44'%3E%3Cpath d='M6 34 24 14 44 24 62 8 78 20' fill='none' stroke='%23f2c96b' stroke-width='1' opacity='.7'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='6' cy='34' r='2'/%3E%3Ccircle cx='24' cy='14' r='2.4'/%3E%3Ccircle cx='44' cy='24' r='1.8'/%3E%3Ccircle cx='62' cy='8' r='2.6'/%3E%3Ccircle cx='78' cy='20' r='2'/%3E%3C/g%3E%3C/svg%3E")}
+/* Adventure ranking modal: starry night card, centred adventure name with a constellation. */
+#groupRankingModal .group-ranking-card{border:1px solid rgba(120,170,240,.35);border-radius:22px;background:radial-gradient(1px 1px at 12% 18%,#ffffff88,transparent),radial-gradient(1px 1px at 72% 9%,#ffffff99,transparent),radial-gradient(1.5px 1.5px at 88% 36%,#ffffffaa,transparent),radial-gradient(1px 1px at 30% 62%,#ffffff66,transparent),linear-gradient(180deg,var(--lumen-night-2),var(--lumen-night))}
+#groupRankingName{position:relative;margin:2px 0 4px;text-align:center;font-size:18px;color:#fff}
+#groupRankingName::before{content:"";position:absolute;left:2%;top:-6px;width:64px;height:24px;opacity:.75;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 26'%3E%3Cpath d='M2 22 18 12 34 16 52 4 68 10' fill='none' stroke='%23c9d6e6' stroke-width='.8'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='2' cy='22' r='1.4'/%3E%3Ccircle cx='18' cy='12' r='1.8'/%3E%3Ccircle cx='34' cy='16' r='1.2'/%3E%3Ccircle cx='52' cy='4' r='1.8'/%3E%3Ccircle cx='68' cy='10' r='1.3'/%3E%3C/g%3E%3C/svg%3E")}
+/* Victory screen: same identity, compact medallions, no extra height. */
+.sky-reveal .lumen-podium{padding-top:16px;margin:0}
+.sky-reveal .lumen-podium .lumen-step{padding:16px 3px 5px!important}
+.sky-reveal .lumen-medal{top:-14px;width:28px;height:28px;margin-left:-14px;border-width:2px}
+.sky-reveal .ranking-step-1 .lumen-medal{top:-18px;width:34px;height:34px;margin-left:-17px}
+.sky-reveal .ranking-step-1 .lumen-medal::before{inset:-7px -8px -2px}
+.sky-reveal .lumen-medal-rank{width:16px;height:16px;bottom:-7px;font-size:10px;border-width:1px}
+.sky-reveal .lumen-podium .ranking-name,.sky-reveal .lumen-podium .lumen-value{font-size:11px}
+@media (max-width:360px){.lumen-podium{gap:5px}.lumen-medal{width:48px;height:48px;margin-left:-24px;top:-26px}.ranking-step-1 .lumen-medal{width:54px;height:54px;margin-left:-27px;top:-30px}.lumen-podium .ranking-name,.lumen-podium .lumen-value{font-size:12px}}
+@media (prefers-reduced-motion: reduce){.lumen-podium *{animation:none!important;transition:none!important}}
+
+/* ===== #1029 compact LUMEN Premium offer (owner target 27/11/2026) ===== */
+.premium-shop{display:grid;justify-items:center;gap:8px;text-align:center}
+.premium-shop-art{width:100%;max-width:280px;height:74px;border-radius:14px;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 280 74'%3E%3Cdefs%3E%3CradialGradient id='h' cx='.5' cy='1.1' r='.9'%3E%3Cstop offset='0' stop-color='%23f2c96b' stop-opacity='.55'/%3E%3Cstop offset='1' stop-color='%23f2c96b' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='280' height='74' fill='url(%23h)'/%3E%3Cpath d='M30 52 70 30 110 40 150 14 190 34 232 22 258 44' fill='none' stroke='%23f2c96b' stroke-width='1.2' opacity='.75'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='30' cy='52' r='2.4'/%3E%3Ccircle cx='70' cy='30' r='3'/%3E%3Ccircle cx='110' cy='40' r='2.2'/%3E%3Ccircle cx='150' cy='14' r='3.6'/%3E%3Ccircle cx='190' cy='34' r='2.6'/%3E%3Ccircle cx='232' cy='22' r='3'/%3E%3Ccircle cx='258' cy='44' r='2.2'/%3E%3Ccircle cx='16' cy='14' r='.9'/%3E%3Ccircle cx='96' cy='10' r='.8'/%3E%3Ccircle cx='212' cy='60' r='.9'/%3E%3Ccircle cx='268' cy='12' r='.8'/%3E%3C/g%3E%3C/svg%3E")}
+.premium-shop-kicker{margin:0;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#9fb3c8}
+.premium-shop-kicker::before{content:"🔒 ";filter:grayscale(1)}
+.premium-shop-sub{margin:0;font-size:16px;font-weight:700;color:var(--lumen-gold,#f2c96b)}
+.premium-shop-benefits{display:grid;gap:4px;margin:2px 0;padding:0;list-style:none;text-align:left;font-size:14px;color:#e8f0fb}
+.premium-shop-benefits li{position:relative;padding-left:22px}
+.premium-shop-benefits li::before{content:"✦";position:absolute;left:2px;color:var(--lumen-gold,#f2c96b)}
+.premium-shop-cta{width:100%;min-height:46px;border:0;border-radius:999px;background:linear-gradient(180deg,#ffe29a,#d6a23e);color:#1a1405;font-size:16px;font-weight:800;box-shadow:0 6px 18px rgba(242,201,107,.3)}
+.premium-shop-cta[hidden],.premium-shop-consent[hidden]{display:none}
+.premium-shop-cta:disabled{opacity:.6}
+.premium-shop-consent{display:grid;gap:8px;width:100%;text-align:left}
+.premium-shop-mentions{margin:0;font-size:12px;color:#c9d6e6}
+.premium-shop-unavailable{margin:2px 0;font-size:13px;color:#ffd7a0}
+.premium-shop-retry{min-height:36px;padding:0 16px;border-radius:999px;border:1px solid rgba(242,201,107,.6);background:transparent;color:#fff}
+.premium-shop-free{display:grid;justify-items:center;gap:2px;width:100%;margin-top:4px;padding-top:8px;border-top:1px solid rgba(159,179,200,.18);font-size:13px;color:#c9d6e6}
+.premium-shop-free p{margin:0}
+.premium-shop-link{padding:4px 8px;border:0;background:none;color:var(--lumen-cyan,#7fe3f2);font-size:13px;text-decoration:underline;text-underline-offset:3px}
+.premium-shop-free .adventure-offer-mastery[hidden]{display:none}
+.premium-shop-foot{margin:2px 0 0;font-size:11px;color:#8ea4bf}
+.premium-shop-foot a,.premium-shop-foot button{color:#8ea4bf;font-size:11px;background:none;border:0;padding:0;text-decoration:underline}
+#adventureNotice:has([data-premium-offer]) #adventureNoticeTitle{display:block;text-align:center;font-size:20px;margin-bottom:4px}
+#adventureNotice:has([data-premium-offer]) #adventureNoticeClose{display:block;width:100%;min-height:42px;margin-top:6px}
+.premium-shop p.premium-shop-sub{color:var(--lumen-gold,#f2c96b)}
+.premium-shop p.premium-shop-kicker{color:#9fb3c8}
+
+/* #1015 (owner 27/11): « Ma semaine » moved into the Défi du jour space. The Mon ciel
+   element stays as the hidden shared trigger of the Social shortcut (no duplicate entry). */
+#openDailyWeek{display:none!important}
+#dailyWeekFromIntro{margin:4px auto 0}
+
+/* Victory screen keeps its validated geometry (#695/#851 layout tests): the shared
+   podium uses the historical step heights there, medallions sit inside the steps. */
+.sky-reveal .lumen-podium{padding-top:0;margin:0;padding-bottom:10px}
+.sky-reveal .lumen-podium .lumen-step{padding:5px 3px!important;justify-content:flex-end}
+.sky-reveal .lumen-podium .lumen-step.ranking-step-1{min-height:112px!important}
+.sky-reveal .lumen-podium .lumen-step.ranking-step-2{min-height:96px!important}
+.sky-reveal .lumen-podium .lumen-step.ranking-step-3{min-height:84px!important}
+.sky-reveal .lumen-medal,.sky-reveal .ranking-step-1 .lumen-medal{position:relative;top:auto;left:auto;margin:0 auto 4px;flex:none}
+@media(max-height:700px){.sky-reveal .lumen-podium .lumen-step.ranking-step-1{min-height:100px!important}.sky-reveal .lumen-podium .lumen-step.ranking-step-2{min-height:88px!important}.sky-reveal .lumen-podium .lumen-step.ranking-step-3{min-height:78px!important}.sky-reveal .lumen-medal{width:24px;height:24px}.sky-reveal .ranking-step-1 .lumen-medal{width:28px;height:28px}}
+
+/* Défi du jour boards (result, history day, week, recaps): compact podium, same identity,
+   so the daily modals keep fitting 360×640 without scrolling. */
+.daily-theme .lumen-podium{padding-top:22px;gap:6px;margin:4px 0 6px}
+.daily-theme .lumen-podium .lumen-step{padding:24px 3px 6px!important}
+.daily-theme .lumen-podium .lumen-step.ranking-step-1{min-height:84px!important}
+.daily-theme .lumen-podium .lumen-step.ranking-step-2{min-height:72px!important}
+.daily-theme .lumen-podium .lumen-step.ranking-step-3{min-height:66px!important}
+.daily-theme .lumen-medal{top:-20px;width:40px;height:40px;margin-left:-20px;border-width:2px}
+.daily-theme .ranking-step-1 .lumen-medal{top:-24px;width:46px;height:46px;margin-left:-23px}
+.daily-theme .ranking-step-1 .lumen-medal::before{inset:-9px -13px -1px}
+.daily-theme .lumen-medal-rank{width:18px;height:18px;bottom:-8px;font-size:11px}
+.daily-theme .lumen-podium .ranking-name,.daily-theme .lumen-podium .lumen-value{font-size:12px}
+.daily-theme .lumen-my-position{margin:6px 0;padding:5px 12px}
+.daily-theme .lumen-my-position .lumen-rank{font-size:18px}
+.daily-theme .lumen-podium{padding-top:18px}
+.daily-theme .lumen-podium .lumen-step{padding:20px 3px 5px!important}
+.daily-theme .lumen-podium .lumen-step.ranking-step-1{min-height:74px!important}
+.daily-theme .lumen-podium .lumen-step.ranking-step-2{min-height:64px!important}
+.daily-theme .lumen-podium .lumen-step.ranking-step-3{min-height:58px!important}
+.daily-theme .lumen-medal{top:-18px;width:36px;height:36px;margin-left:-18px}
+.daily-theme .ranking-step-1 .lumen-medal{top:-21px;width:42px;height:42px;margin-left:-21px}
+.daily-theme .lumen-my-position{grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:"icon rank name value";padding:4px 12px}
+.daily-theme .lumen-my-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.daily-theme .lumen-my-icon{width:24px;height:24px;background-size:14px}

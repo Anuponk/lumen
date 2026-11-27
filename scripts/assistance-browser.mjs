@@ -157,21 +157,22 @@ export async function verifyAssistance({ send, evaluate, url }) {
    view.open(options);await new Promise(r=>setTimeout(r,30));
    const guest=document.getElementById('groupRankingStatus').textContent==='groupRanking.signIn'&&calls.length===0;
    view.close();signed=true;view.open(options);
-   for(let i=0;i<40&&!document.querySelector('.group-ranking-podium');i++)await new Promise(r=>setTimeout(r,25));
-   const podium=document.querySelectorAll('.group-ranking-podium li').length;
+   for(let i=0;i<40&&!document.querySelector('.lumen-podium');i++)await new Promise(r=>setTimeout(r,25));
+   const podium=document.querySelectorAll('.lumen-podium li').length;
    const text=!document.querySelector('#groupRankingBody i')&&document.getElementById('groupRankingBody').textContent.includes('<i>Étoile 1</i>');
-   const mine=document.querySelector('.group-ranking-personal .group-ranking-row.ranking-mine');
+   const mine=document.querySelector('.lumen-my-position');
    const me=mine?[...mine.children].map(n=>n.textContent).join('|'):'';
    const adventure=document.querySelectorAll('[data-ranking-kind]').length===0&&document.getElementById('groupRankingName').textContent==='Ciel réel'&&calls[0].p_kind==='adventure';
    const first=calls.length===1&&!calls[0].p_limit;
    const toggle=document.querySelector('.group-ranking-more'),list=document.querySelector('.group-ranking-list');
-   toggle.click();for(let i=0;i<40&&list.children.length<10;i++)await new Promise(r=>setTimeout(r,25));
-   document.querySelector('.group-ranking-next').click();for(let i=0;i<40&&list.children.length<15;i++)await new Promise(r=>setTimeout(r,25));
-   const names=[...document.querySelectorAll('.group-ranking-podium .ranking-name,.group-ranking-list .ranking-name')].map(n=>n.textContent);
-   const personalHidden=document.querySelector('.group-ranking-personal').hidden&&getComputedStyle(document.querySelector('.group-ranking-personal')).display==='none';
-   const paged=list.children.length===15&&new Set(names).size===18&&names.length===18&&calls[1].p_offset===3&&calls[2].p_offset===13&&personalHidden;
-   const mineHighlighted=!!list.querySelector('.ranking-mine');
-   toggle.click();const collapsed=list.hidden&&getComputedStyle(list).display==='none'&&document.querySelectorAll('.group-ranking-podium li').length===3;
+   toggle.click();for(let i=0;i<40&&list.children.length<11;i++)await new Promise(r=>setTimeout(r,25));
+   const windowed=[...list.children].map(li=>Number(li.dataset.place)).join(',')==='8,9,10,11,12,13,14,15,16,17,18'&&calls[1].p_offset===7&&calls[1].p_limit===11;
+   document.querySelector('.group-ranking-before').click();for(let i=0;i<40&&list.children.length<15;i++)await new Promise(r=>setTimeout(r,25));
+   const names=[...document.querySelectorAll('.lumen-podium .ranking-name,.lumen-rank-list .lumen-rank-name')].map(n=>n.textContent);
+   const personalHidden=mine.hidden&&getComputedStyle(mine).display==='none';
+   const paged=windowed&&list.children.length===15&&new Set(names).size===18&&names.length===18&&calls[2].p_offset===3&&calls[2].p_limit===4&&personalHidden&&document.querySelector('.group-ranking-before').hidden;
+   const mineHighlighted=!!list.querySelector('.is-mine');
+   document.querySelector('.lumen-rank-fold').click();const collapsed=list.hidden&&getComputedStyle(list).display==='none'&&document.querySelectorAll('.lumen-podium li').length===3&&!mine.hidden;
    toggle.click();const cached=!list.hidden&&calls.length===3;
    const fits=document.querySelector('.group-ranking-card').getBoundingClientRect().right<=innerWidth+1&&document.documentElement.scrollWidth<=innerWidth;
    view.close();document.getElementById('groupRankingModal').remove();
@@ -181,10 +182,10 @@ export async function verifyAssistance({ send, evaluate, url }) {
     const modal=document.getElementById('groupRankingModal'),{t}=createTranslator({locale});
     for(const node of modal.querySelectorAll('[data-game-text]'))node.textContent=t(node.dataset.gameText);
     const translated=createGroupRanking({document,t,rpc,signedIn:()=>true});translated.open(options);
-    for(let i=0;i<40&&!modal.querySelector('.group-ranking-podium');i++)await new Promise(r=>setTimeout(r,25));
+    for(let i=0;i<40&&!modal.querySelector('.lumen-podium');i++)await new Promise(r=>setTimeout(r,25));
     const label=modal.querySelector('.group-ranking-more');label.click();
     for(let i=0;i<40&&modal.querySelectorAll('.group-ranking-list li').length<10;i++)await new Promise(r=>setTimeout(r,25));
-    const placeColors=[...modal.querySelectorAll('.group-ranking-podium .ranking-place')].map(node=>getComputedStyle(node).color);
+    const placeColors=[...modal.querySelectorAll('.lumen-podium .lumen-medal')].map(node=>getComputedStyle(node).borderTopColor);
     languages.push({locale,translated:!modal.textContent.includes('groupRanking.'),
      distinctPodiumColors:new Set(placeColors).size===3,fits:modal.querySelector('.group-ranking-card').getBoundingClientRect().right<=innerWidth+1&&document.documentElement.scrollWidth<=innerWidth});
     translated.close();modal.remove();
@@ -197,7 +198,7 @@ export async function verifyAssistance({ send, evaluate, url }) {
   assert.equal(ranking.podium, 3);
   assert.equal(ranking.text, true, 'nicknames remain plain text');
   // #974 recette 27/11: my off-podium line has the same look as the other lines.
-  assert.match(ranking.me, /^14\|<i>Étoile 14<\/i>\|groupRanking\.points\{"points":120\}\|groupRanking\.questsShort\{"count":2\}\|ranking\.you$/);
+  assert.match(ranking.me, /^\|groupRanking\.yourPosition\|14\|<i>Étoile 14<\/i>\|groupRanking\.points\{"points":"120"\}$/);
   for (const key of [
     'first',
     'paged',
