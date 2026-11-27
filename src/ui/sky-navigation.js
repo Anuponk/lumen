@@ -61,7 +61,7 @@ export function swipeConstellationTarget(current,selected,delta){
  return {pack:next,entry,changedAdventure:true,locked:!next.accessible||!entry.accessible};
 }
 
-export function createSkyNavigation({onRanking=null,renderLockedOffer=null,t=createTranslator().t,locale=()=> "fr",document,getModel,getQuest,getSolved,getLit,getShape,getMastered,getMastery=()=>null,getAdventureMastery=()=>null,takeMasteryPulse=()=>null,getBadgeCounts=()=>({}),getCanonicalQuests=()=>[],getCanonicalPackQuests=()=>[],getCanonicalSolved=()=>false,getCanonicalAvailable=()=>false,onConstellation}){
+export function createSkyNavigation({onRanking=null,renderLockedOffer=null,onOfferOpen=()=>{},onOfferClose=()=>{},t=createTranslator().t,locale=()=> "fr",document,getModel,getQuest,getSolved,getLit,getShape,getMastered,getMastery=()=>null,getAdventureMastery=()=>null,takeMasteryPulse=()=>null,getBadgeCounts=()=>({}),getCanonicalQuests=()=>[],getCanonicalPackQuests=()=>[],getCanonicalSolved=()=>false,getCanonicalAvailable=()=>false,onConstellation}){
  const sheet=document.querySelector('#mapModal .map-sheet'),tabs=document.getElementById('sectorTabs');
  const heading=sheet.querySelector('h2');heading.textContent=t('sky.title');heading.dataset.gameText='sky.title';heading.id='monCielTitle';
  const modal=document.getElementById('mapModal');modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','monCielTitle');
@@ -84,7 +84,7 @@ export function createSkyNavigation({onRanking=null,renderLockedOffer=null,t=cre
  const notice=document.createElement('div');notice.id='adventureNotice';notice.className='adventure-notice';notice.hidden=true;notice.setAttribute('role','dialog');notice.setAttribute('aria-modal','true');notice.setAttribute('aria-label',t('sky.lockedTitle'));notice.dataset.gameLabel='sky.lockedTitle';
  notice.innerHTML='<div><strong id="adventureNoticeTitle"></strong><p id="adventureNoticeCopy"></p><div id="adventureNoticeOffer" hidden></div><button id="adventureNext" hidden data-game-text="sky.discoverNext">'+t('sky.discoverNext')+'</button><button id="adventureNoticeClose">'+t('sky.understood')+'</button></div>';sheet.appendChild(notice);
  for(const node of sheet.querySelectorAll('[data-game-label]'))node.setAttribute('aria-label',t(node.dataset.gameLabel));
- let selection={},view='overview',selectedConstellation=null,noticeOrigin=null;
+ let selection={},view='overview',selectedConstellation=null,noticeOrigin=null,offerOpen=false,offerVisits=0;
  let badgeFilter=false;
  const element=id=>document.getElementById(id);
  function revealAdventure(button){
@@ -121,11 +121,13 @@ export function createSkyNavigation({onRanking=null,renderLockedOffer=null,t=cre
   emptyQuests.textContent=emptyQuests.hidden?'':t('sky.badgeFilterQuestsEmpty');
  }
  function setView(next){view=next;tabs.hidden=next==='detail';pages.hidden=next==='detail'||current.pages<=1;detail.hidden=next!=='detail';if(next==='detail')refreshQuestBadgeFilter()}
- function showLocked(pack,origin){noticeOrigin=origin||document.activeElement;element('adventureNext').hidden=true;element('adventureNoticeClose').textContent=t('sky.understood');element('adventureNoticeTitle').textContent=adventureDisplayName(pack,t)||t('sky.adventure');const offer=element('adventureNoticeOffer');offer.replaceChildren();offer.hidden=true;
+ function showLocked(pack,origin,source){if(offerOpen){offerOpen=false;onOfferClose()}noticeOrigin=origin||document.activeElement;element('adventureNext').hidden=true;element('adventureNoticeClose').textContent=t('sky.understood');element('adventureNoticeTitle').textContent=adventureDisplayName(pack,t)||t('sky.adventure');const offer=element('adventureNoticeOffer');offer.replaceChildren();offer.hidden=true;
  // #731: a catalogue Adventure shows its offer (paid and free paths); other locks keep their reason.
  const offered=!pack.lockReason&&!pack.lockReasonKey&&!!pack.id&&typeof renderLockedOffer==='function'&&renderLockedOffer(offer,pack,{close:closeNotice})===true;
  offer.hidden=!offered;element('adventureNoticeCopy').hidden=offered;
  if(offered){const closeButton=element('adventureNoticeClose');closeButton.textContent=t('store.continueFree')}
+ // #1044: one shop visit per display (re-renders of the open offer do not pass here).
+ if(offered){offerOpen=true;notice.dataset.offerVisits=String(++offerVisits);onOfferOpen({pack,source:source||'locked_adventure',premium:!!offer.querySelector?.('[data-premium-offer]')})}
  element('adventureNoticeCopy').textContent=pack.lockReasonKey?t(pack.lockReasonKey):pack.lockReason?(pack.accessStatus==='loading'?t('sky.accessLoadingCopy'):pack.accessStatus==='error'?t('sky.accessErrorCopy'):pack.lockReason):t('sky.lockedCopy');
  notice.hidden=false;
  // #1029: the Premium offer has its own title; the adventure name becomes its kicker.
@@ -133,7 +135,7 @@ export function createSkyNavigation({onRanking=null,renderLockedOffer=null,t=cre
  else element('adventureNoticeClose').focus()
  }
  function showCompletion(pack){const quests=getCanonicalPackQuests(pack.id);if(quests.length===0||!quests.every(getCanonicalSolved))return;const badges=getBadgeCounts(pack);const sky=getModel().skies.find(s=>s.id===pack.skyId),entry=sky?.packs.find(p=>p.id===pack.id);if(!entry)return;const next=sky.packs[sky.packs.indexOf(entry)+1];element('adventureNoticeTitle').textContent=t('sky.completedTitle');element('adventureNoticeCopy').textContent=t('sky.completion',{name:adventureDisplayName(entry,t),constellations:entry.constellations.length,stars:entry.constellations.reduce((sum,c)=>sum+(getShape(c)?.count||0),0),autonomy:badges.autonomy||0,speed:badges.speed||0,noError:badges.noError||0,mastery:badges.mastery||0});element('adventureNoticeClose').textContent=t('sky.back');const button=element('adventureNext');button.hidden=!next;button.onclick=()=>{closeNotice();if(!next.accessible){showLocked(next,button);return}selection={skyId:sky.id,packId:next.id,page:0};selectedConstellation=null;view='overview';render()};noticeOrigin=document.activeElement;notice.hidden=false;(next?button:element('adventureNoticeClose')).focus()}
- function closeNotice(){notice.hidden=true;const origin=noticeOrigin?.isConnected&&!noticeOrigin.hidden&&noticeOrigin.getClientRects().length?noticeOrigin:element('adventureRail').querySelector('.selected');origin?.focus?.()}
+ function closeNotice(){notice.hidden=true;if(offerOpen){offerOpen=false;onOfferClose()}const origin=noticeOrigin?.isConnected&&!noticeOrigin.hidden&&noticeOrigin.getClientRects().length?noticeOrigin:element('adventureRail').querySelector('.selected');origin?.focus?.()}
  function render(){
   const model=getModel();current=skySelection(model,selection,getQuest());selection={skyId:current.sky?.id,packId:current.adventure?.id,page:current.page};
   // Never leave an empty picker and blank constellation area without an explanation.
@@ -231,6 +233,6 @@ export function createSkyNavigation({onRanking=null,renderLockedOffer=null,t=cre
   if(e.key==='ArrowRight'||e.key==='ArrowLeft'){if(turnDetail(e.key==='ArrowRight'?1:-1))e.preventDefault()}
  });
  // #1030: « Découvrir Premium » opens the shop itself on the first locked Adventure.
- function showPremiumOffer(origin){const pack=(getModel().skies||[]).flatMap(sky=>sky.packs||[]).find(p=>!p.accessible&&!p.lockReason&&!p.lockReasonKey&&p.id);if(!pack)return false;showLocked(pack,origin);return true}
+ function showPremiumOffer(origin,source){const pack=(getModel().skies||[]).flatMap(sky=>sky.packs||[]).find(p=>!p.accessible&&!p.lockReason&&!p.lockReasonKey&&p.id);if(!pack)return false;showLocked(pack,origin,source);return true}
  return {render,setView,badgeFilterActive:()=>badgeFilter,refreshQuestBadgeFilter,showLocked,showPremiumOffer,showCompletion,createFactButton,displayName,selectedConstellation:()=>selectedConstellation,open({detail:showDetail=false,questIndex=null,constellationId=null}={}){const index=Number.isInteger(questIndex)?questIndex:getQuest();const model=getModel();const target=skyQuestTarget(model,index,constellationId);selection=target?{skyId:target.sky.id,packId:target.pack.id}:{};current=skySelection(model,selection,index);const entry=(target?.pack.id===current.adventure?.id?target.entry:null)||current.adventure?.constellations.find(c=>c.id===constellationId)||current.adventure?.constellations.find(c=>c.questIndices?.includes(index)||index>=c.questStart&&index<c.questStart+c.questCount)||current.adventure?.constellations[0];if(entry){selection.page=Math.floor(current.adventure.constellations.indexOf(entry)/CONSTELLATIONS_PER_PAGE);selectedConstellation=entry;onConstellation(entry)}view=showDetail?'detail':'overview';notice.hidden=true;render();element('adventureRail').querySelector('.selected')?.scrollIntoView({block:'nearest',inline:'center'})},snapshot:()=>({view,selection:{...selection},activeAdventure:current.active?.id,viewedAdventure:current.adventure?.id,page:current.page,pages:current.pages})};
 }

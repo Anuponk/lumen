@@ -462,6 +462,8 @@ Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the 
 | Mail receipt rehearsal (#946) | `.github/workflows/lumen-mail-receipt.yml`, `scripts/lumen_activity_mail_receipt.py` | Disposable PostgreSQL and replay, plus manual o2switch transport and mailbox verification |
 | Analytics release comparison (#708 D) | `analytics-versions-tests.mjs`, `fixtures/admin-version-health-708.sql` (ledger CI), `analytics-admin-browser-tests.mjs` | Full gate |
 | Analytics acquisition & engagement (#708 C) | `analytics-engagement-tests.mjs`, `fixtures/admin-engagement-708.sql` (ledger CI), `analytics-admin-browser-tests.mjs` | Full gate |
+| Analytics activity, Premium limits and conversion (#1044) | `analytics-activity-tests.mjs`, `commerce-journal-tests.mjs`, `fixtures/admin-activity-1044.sql` (ledger CI), `sky-navigation-browser-tests.mjs` (visits) | Full gate |
+| Clear-mind hint feedback (#1052) | `clear-mind-hint-browser.mjs` in `browser-tests.mjs` | Full gate |
 | Friend duels (#896) | `duel-view-tests.mjs`, `duel-browser.mjs` in the canonical replay suite | Full gate |
 | Espace social (#898) | `social-hub-tests.mjs` (badge sum, ids kept once, order), `social-notifications-tests.mjs` (derivation, read state, baseline, expiry, offline), `social-hub-browser.mjs` in the canonical replay suite (guest 360×640, signed-in 390/1440, keyboard, focus trap, Escape, counters, rankings split, daily route, captures) | Full gate |
 | Daily push consent (#1032) | `scripts/fixtures/daily-push-1032.sql` in canonical ledger SQL | Hosted grants, disabled flag, session ownership, strict consent, separate devices, revocation, erasure guard and redacted export |

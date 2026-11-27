@@ -13,6 +13,7 @@ export default Object.freeze({
   'hint.rows': "rows",
   'hint.columns': "columns",
   'hint.complete': "Your constellation is complete.",
+  'hint.clearMindBlocked': "Hints are not available during the Clear-mind challenge. You must solve this quest without a hint.",
   'hint.completePending': "Your constellation is complete. Your victory will be confirmed once your account has been restored.",
   'hint.markTarget': "{reason} You can rule out the highlighted cell.",
   'hint.testCell': "Think through what would happen if you placed a Guardian in {cell}. Check its row, column, territory and neighbouring cells.",

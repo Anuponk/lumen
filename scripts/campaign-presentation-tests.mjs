@@ -167,7 +167,7 @@ test('actual sky adapter counts completed canonical-only quests instead of absen
  const quests=all.filter(q=>q.constellationId===entry.id),progress=complete(quests);
  const context={t:createTranslator().t,...canonical,document:{},CONSTELLATIONS,lumenProgress:progress,celestialScope,takeMasteryPulse:()=>null,
   questIsCompleted,astronomicalDisplayShape:shape=>shape,constellationLitAt:()=>0,
-  createSkyNavigation:options=>options,renderAdventureOffer:()=>false};
+  createSkyNavigation:options=>options,renderAdventureOffer:()=>false,onShopOpen:()=>{}};
  vm.createContext(context);
  const start=source.indexOf('const skyNavigation=createSkyNavigation('),end=source.indexOf('const SKY_TOUR_STEPS',start);
  vm.runInContext(functionSource(source,'constellationMastery')+'\n'+source.slice(start,end)+'\nglobalThis.options=skyNavigation;',context);

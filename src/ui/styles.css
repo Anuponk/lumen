@@ -2127,3 +2127,20 @@ body[data-seasonal="winter-stars"] .daily-card-theme {
 .daily-theme .lumen-my-position{grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:"icon rank name value";padding:4px 12px}
 .daily-theme .lumen-my-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .daily-theme .lumen-my-icon{width:24px;height:24px;background-size:14px}
+/* #1044 Analytics › Activité & Premium: one value axis per chart, today hatched, unmeasured days apart. */
+.analytics-activity .act-filters{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:0 0 6px}.analytics-activity .act-filters label{display:flex;gap:6px;align-items:center;font-size:13px;color:#b9cddd}.analytics-activity .act-filters select{max-width:150px}
+.analytics-activity .act-scope{margin:0 0 12px;font-size:12px;color:#9fb1c8}.analytics-activity .act-section>summary{cursor:pointer;list-style:none}.analytics-activity .act-section>summary h3{display:inline;margin:0}.analytics-activity .act-section h4{margin:16px 0 8px;font-size:14px}
+.analytics-activity .act-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px;margin-top:10px}
+.act-chart,.act-funnel,.act-dist{margin:0;min-width:0;padding:10px;border:1px solid #1d455e;border-radius:12px;background:#0d1c2b}
+.act-chart figcaption,.act-funnel figcaption,.act-dist figcaption{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:4px}.act-chart figcaption small{color:#8aa3b8}
+.act-chart svg{display:block;width:100%;height:120px;overflow:visible}.act-axis{stroke:#2b4a61;stroke-width:1}.act-hit{fill:transparent}.act-bar:focus{outline:none}.act-bar:focus .act-hit,.act-bar:hover .act-hit{fill:rgba(255,255,255,.06)}
+.act-a,.act-legend i.act-a{fill:#3987e5;background:#3987e5}.act-b,.act-legend i.act-b{fill:#d95926;background:#d95926}.act-partial{opacity:.55}.act-unmeasured rect{fill:#4b5d6c}
+.act-legend{display:flex;gap:12px;margin:0 0 4px;font-size:12px;color:#b9cddd}.act-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.act-x{display:flex;justify-content:space-between;margin:2px 0 0;font-size:11px;color:#8aa3b8}.act-table summary{font-size:12px;color:#8aa3b8;cursor:pointer;margin-top:4px}
+.act-funnel ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}.act-funnel-row{display:flex;justify-content:space-between;gap:8px;font-size:13px}.act-funnel small{font-size:11px;color:#9fb1c8}
+.act-funnel-track{display:block;height:8px;border-radius:4px;background:#17324a;overflow:hidden;margin:3px 0}.act-funnel-track i{display:block;height:100%;background:#3987e5;border-radius:4px}
+.act-dist-row{display:grid;grid-template-columns:90px 1fr 36px;gap:8px;align-items:center;font-size:13px;margin:4px 0}.act-dist-row strong{text-align:right}
+.act-settings{font-size:13px;color:#d7e6f2;margin:6px 0 10px}.act-current th,.act-current td{background:rgba(57,135,229,.16)}
+@media (max-width:520px){.analytics-activity .act-filters select{max-width:120px}.act-dist-row{grid-template-columns:70px 1fr 30px}}
+.analytics-activity .admin-kpi small{display:block;margin-top:3px;font-size:11px;color:#9fb1c8}
+#adminCockpit[data-analytics-current="activity"] .admin-cockpit-period{display:none}
