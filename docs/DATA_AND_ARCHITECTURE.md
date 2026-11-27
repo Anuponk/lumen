@@ -571,6 +571,14 @@ desired choice.
 
 ## Cloud persistence contract
 
+Adventure ranking #974 uses the owner-approved 20/50/30 scale. Derived quest
+points read the existing official time and durable badge authorities, including
+reset precedence; no snapshot, receipt, badge, currency or entitlement is rewritten.
+The additive score migration rebuilds only private ranking aggregates and keeps
+their existing erasure/export rules. [Ranking provenance and rollout](HIGHSCORE_ROLLOUT.md#classement-général-par-aventure-974)
+defines legacy/canonical badge sources, unknown history, concurrent updates and
+rollback. Restoration and pending command rules remain unchanged.
+
 Private push rehearsal (#1034) stores only separate delivery reservations in
 `lumen_commands.push_test_dispatches`, with RLS, account erasure and seven-day
 retention. The server-only `daily_push_preview` capability gates enrollment and

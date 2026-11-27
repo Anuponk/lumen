@@ -134,6 +134,7 @@ import {buildFeedbackJournal,createAutoIncidentReporter} from "../persistence/fe
 import {createSound} from "./sound.js";
 import {claimFirstWelcome,createFirstWelcome} from './first-welcome.js';
 
+import {civilDay, dailyPresentation, seasonalCopy, seasonalMessageKey} from '../campaign/seasonal-events.js';
 import {ACCOUNT_LOCALE_FIELD,createTranslator} from './i18n.js';
 import {guidedConflictCopy} from './guided-conflict-copy.js';
 import {adventureDisplayName} from './adventure-copy.js';
@@ -144,7 +145,29 @@ export function startGameScreen({localePreference,t:initialTranslation=localePre
 let badgeJourney=null;
 let localeWrite=null;
 let translate=initialTranslation;
-const t=(key,params,options)=>translate(key,params,options);
+let seasonalDay=civilDay(),seasonalClockOffset=0;
+const t=(key,params,options)=>seasonalCopy(translate(key,params,options),key,seasonalDay,localePreference?.locale??'fr');
+function refreshSeasonalSkin(day=seasonalDay){
+ seasonalDay=day;
+ const presentation=dailyPresentation(day,localePreference?.locale??'fr');
+ const skin=presentation.event?.skin;
+ document.body.dataset.seasonal=skin?.id??'';
+ document.body.style.setProperty('--seasonal-accent',skin?.accent??'currentColor');
+ document.body.style.setProperty('--seasonal-decoration',JSON.stringify(skin?.decoration??''));
+ // Update only seasonal labels. A full translation pass would overwrite dynamic
+ // daily status (already played, pending result) with its fallback copy.
+ for(const [attribute,dataset,target] of [['data-game-text','gameText',null],['data-game-label','gameLabel','aria-label'],['data-game-title','gameTitle','title']]){
+  for(const node of document.querySelectorAll('['+attribute+']')){
+   const key=node.dataset[dataset];if(!seasonalMessageKey(key))continue;
+   if(target)node.setAttribute(target,t(key));else node.textContent=t(key);
+  }
+ }
+}
+// Local clock only, no additional daily discovery or Supabase requests. Server
+// discovery below supplies the authoritative day; an active run retains its day.
+let seasonalClockDay=civilDay();
+setInterval(()=>{const day=civilDay(new Date(Date.now()+seasonalClockOffset));if(day!==seasonalClockDay){seasonalClockDay=day;refreshSeasonalSkin(day)}},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){seasonalClockDay=civilDay(new Date(Date.now()+seasonalClockOffset));refreshSeasonalSkin(seasonalClockDay)}});
 function translateGameCopy(){
  const manifest=document.querySelector('link[rel="manifest"]');
  if(manifest){
@@ -166,7 +189,7 @@ function translateGameCopy(){
   link.href=locale==='en'?link.dataset.gameHrefEn:locale==='es'?(link.dataset.gameHrefEs??link.dataset.gameHrefEn):link.dataset.gameHrefFr;
  }
 }
-translateGameCopy();
+translateGameCopy();refreshSeasonalSkin();
 document.getElementById('accountSwitchHold')?.classList.remove('localizing');
 setSecondaryStarsLabel((lit,count)=>t('sky.secondaryStars',{lit,count}));
 // #748: the presentation page links to /?install=1. Read once and removed from the URL
@@ -2612,6 +2635,10 @@ function fitDailyQuestBanner(){
 }
 window.addEventListener('resize',()=>{if(document.getElementById('dailyQuestBanner')?.dataset.fits)fitDailyQuestBanner()});
 function renderDailyChip(today,owner){
+ if(today?.day){
+  const server=Date.parse(today.server_now);if(Number.isFinite(server))seasonalClockOffset=server-Date.now();
+  refreshSeasonalSkin(today.day);
+ }
  const chip=document.getElementById('dailyChip');if(!chip)return;
  const enabled=!!today?.enabled&&!socialChallenge;chip.hidden=!enabled;if(!enabled)return;
  const state=dailyChipState(today.day,owner),label=document.getElementById('dailyChipState');
@@ -2655,6 +2682,7 @@ async function refreshDailyEntry(){
  }
 }
 function renderDailyBanner(){
+ if(socialChallenge?.daily)refreshSeasonalSkin(socialChallenge.day);
  const banner=document.getElementById('dailyBanner');if(!banner||!socialChallenge?.daily)return;
  banner.hidden=false;document.getElementById('dailyBannerDate').textContent=dailyDate(socialChallenge.day);
  const left=Date.parse(socialChallenge.closes_at)-Date.now()-(socialChallenge.clockSkewMs||0);
@@ -2670,6 +2698,7 @@ function showDailyResult({run=null,board=null,training=false,pending=false,offic
  const modal=document.getElementById('dailyResultModal'),note=document.getElementById('dailyResultNote');
  const status=run?.status,score=run?.score??official;
  document.getElementById('dailyResultTitle').textContent=t(training?'daily.trainingComplete':status==='abandoned'?'daily.abandoned':'daily.complete');
+ document.getElementById('dailyResultTitle').title=status==='completed'?dailyPresentation(run?.day??socialChallenge?.day??seasonalDay,dailyLocale()).celebration:'';
  document.getElementById('dailyResultTime').textContent=status==='abandoned'?t('daily.unranked'):score!=null?formatDuration(score):'';
  note.textContent=training?t('daily.trainingNote'):pending?t('daily.pendingNote'):status==='completed'?t('daily.officialNote'):'';
  const boards=document.getElementById('dailyBoards');boards.hidden=!board;
@@ -2928,12 +2957,12 @@ function capturedTiming(){return qaActive||officialTimingSupported(lumenSupabase
 const rankingContext=()=>({owner:lumenUser?.id,client:lumenSupabase,nickname:lumenNickname,qa:qaActive});
 const rankingClient=createRankingClient({storage:localStorage,getContext:rankingContext,currentGridRevision:id=>{const q=canonicalQuestById(id);return q?q.gridRevision??0:null}});
 const rankingView=createRankingView({client:rankingClient,getContext:rankingContext,format:seconds=>formatDuration(seconds),onUpdate:update=>renderVictoryRank(update),onGroups:(quest,origin)=>openGroupRanking(quest,origin),t});
-// #974: constellation and adventure rankings (materialized server aggregates, read on open).
+// #974: the only general ranking exposed is the adventure ranking.
 let groupRanking=null;
 function openGroupRanking(quest,origin){
- if(!quest?.constellationId||!quest?.packId)return;
- const entry=CONTENT_CONSTELLATIONS.find(c=>c.id===quest.constellationId),pack=CONTENT_PACKS.find(p=>p.id===quest.packId);
- groupRanking?.open({constellationId:quest.constellationId,adventureId:quest.packId,constellationName:entry?skyNavigation.displayName(entry):null,adventureName:pack?adventureDisplayName(pack,t):null,origin});
+ if(!quest?.packId)return;
+ const pack=CONTENT_PACKS.find(p=>p.id===quest.packId);
+ groupRanking?.open({adventureId:quest.packId,adventureName:pack?adventureDisplayName(pack,t):null,origin});
 }
 let nicknameOnboardingOwner=null;
 let nicknameOnboardingBusy=false;

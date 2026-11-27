@@ -149,7 +149,7 @@ if [[ ! -d "$RELEASE" ]]; then
    git archive "$SHA" "$dir" | tar -xf - -C "$TMP"
  done
  # #1057: public mini-puzzle pages; older revisions omit them.
- for dir in mini; do
+ for dir in mini d studio; do
    if git cat-file -e "$SHA:$dir" 2>/dev/null; then git archive "$SHA" "$dir" | tar -xf - -C "$TMP"; fi
  done
  # Stamp the immutable release version in the staged HTML only.
@@ -207,6 +207,14 @@ done
 [[ ! -L "$TARGET/mini" ]] || { echo "Refusing symlinked mini" >&2; false; }
 rm -rf -- "$TARGET/mini"
 if [[ -d "$RELEASE/mini" ]]; then cp -Rp "$RELEASE/mini" "$TARGET/mini"; fi
+# Dated links and the static Studio are reviewed public assets, never server scripts.
+for dir in d studio; do
+ [[ ! -L "$TARGET/$dir" ]] || { echo "Refusing symlinked $dir" >&2; false; }
+ if [[ -d "$RELEASE/$dir" ]]; then
+  rm -rf -- "$TARGET/$dir"
+  cp -Rp "$RELEASE/$dir" "$TARGET/$dir"
+ fi
+done
 for file in index.html build-info.json sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
  cp -p "$RELEASE/$file" "$TARGET/$file"
 done

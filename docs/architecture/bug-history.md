@@ -1,5 +1,13 @@
 # Verified historical causes
 
+#974 mobile expansion: the full-list request started at offset 0 after rendering
+the first three entries as a podium, so those entries appeared twice. Regression
+tests fail against the previous controller and pass when expansion starts after
+the cached podium. Collapsing/reopening keeps loaded pages without new reads;
+real-DOM mobile coverage retains personal highlighting and three podium colors.
+The concurrent owner decision changes general rankings to adventure-only and
+20/50/30; that is a product evolution, separate from the duplicated-row defect.
+
 Analytics #708, reproduced at `d4d914b`: the collector permission defaults off
 and the UI supplies no provider, so a successful empty RPC was rendered as zero
 player activity. Receipt-only activity is independent evidence. Node regressions
@@ -398,3 +406,15 @@ appui → rendu : 20–45 ms en émulation (pas de délai intrinsèque). Les blo
 pendant un conflit guidé actif restent voulus (#533) ; validation sur appareil
 Android réel à faire en recette.
 
+
+## #1056 / #1057 / #1064 - Native seasonal event source
+
+At 360×640, appending the full seasonal celebration to the victory heading
+added 56 px of scroll in FR/EN/ES. Keep the event name in the short heading and
+the celebration in its tooltip. verifySeasonalVictory compares themed and
+ordinary results with the same pinned grid and one begin/finish; it fails on
+the long-heading implementation before the fix. A success glyph also grew the
+heading line box from 28 to 32 px on Windows Chrome; using only the event name
+keeps the same 17 px general-board overflow as the ordinary result in FR/EN/ES.
+
+Seasonal labels must refresh only seasonal message keys: a full translation pass after daily discovery overwrites the computed already-played state with fallback copy. The daily browser journey reproduces this and remains the regression. The daily browser cloud fixture now persists CAS payloads and returns their real digest, matching the server contract; immutable mock profiles caused a background full re-read during the no-rehydration handoff assertion. Production cloud persistence was not changed.

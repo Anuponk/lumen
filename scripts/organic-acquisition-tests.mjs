@@ -26,7 +26,7 @@ import { campaignUrl, playerShareUrlFor, readDiscoveryCampaign } from '../src/an
 import { buildPlan } from './marketing/social-posts.mjs';
 import { boardSvg } from './marketing/social-visuals.mjs';
 
-const read = (file) => fs.readFileSync(file, 'utf8');
+const read = (file) => fs.readFileSync(file, 'utf8').replace(/\r\n/g,'\n');
 const calendar = JSON.parse(read('content/generated/mini-calendar.json'));
 const schedule = JSON.parse(read('content/generated/daily-schedule.json'));
 const dailyIds = new Set(schedule.days.map((d) => d.questId));
@@ -78,21 +78,13 @@ assert.equal(isSolved(reg0, [[0, 0]]), false);
 
 // Pages: one per day, data without the missing Guardians, OG preview, scripts.
 for (const entry of calendar.days) {
-  const html = read('mini/' + entry.day + '.html');
-  const data = JSON.parse(html.match(/<script type="application\/json" id="mini-data">(.*?)<\/script>/s)[1]);
-  assert.equal(data.day, entry.day);
-  assert.equal(data.given.length + data.missing, 6);
-  assert.ok(!/"sol"/.test(html), 'No solution in ' + entry.day);
-  const missing = new Set(entry.missingRows);
-  assert.ok(data.given.every(([r]) => !missing.has(r)), 'Missing rows stay empty');
-  assert.ok(html.includes('<link rel="canonical" href="https://lumen.nopuna.fr/mini/' + entry.day + '.html">'));
-  const image = html.match(/property="og:image" content="([^"]+)"/)[1];
-  assert.ok(fs.existsSync(image.replace('https://lumen.nopuna.fr/', '')), 'OG image exists: ' + image);
-  assert.ok(html.includes('src="/src/acquisition/mini-game.js"'));
-  assert.ok(data.constellation.names.fr && data.constellation.names.en && data.constellation.names.es, entry.day);
-  assert.ok(data.constellation.figure.pts.length >= 2);
+ const html=read('mini/'+entry.day+'.html');
+ assert.ok(html.includes('id="daily-link"'));
+ assert.ok(html.includes('data-day="'+entry.day+'"'));
+ assert.ok(!/"(?:reg|sol|given)"/.test(html),'Legacy link never embeds a board');
+ assert.ok(html.includes('/src/acquisition/daily-link.js'));
 }
-assert.ok(read('mini/index.html').includes('id="mini-calendar-data"'));
+assert.ok(read('mini/index.html').includes('id="daily-link"'));
 assert.equal(fs.readFileSync('mini/t.gif').subarray(0, 6).toString('latin1'), 'GIF89a');
 
 // Advent calendar view: doors open on the Paris date only; a paused calendar opens nothing.
@@ -158,8 +150,7 @@ assert.equal(new Set(plan.posts.map((p) => p.key)).size, plan.posts.length);
 for (const post of plan.posts) {
   assert.equal(post.key, 'facebook:' + post.day);
   assert.equal(post.publishAt, '08:00');
-  if (adventDoor(post.day)) assert.equal(post.kind, 'mini', post.day);
-  else assert.equal(post.kind, Number(post.day.slice(8)) % 2 ? 'official' : 'mini', post.day);
+  assert.equal(post.kind, 'official', post.day);
   const url = new URL(post.link);
   assert.equal(url.searchParams.get('utm_source'), 'facebook_daily');
   assert.ok(post.message.includes(post.link));
@@ -168,13 +159,13 @@ for (const post of plan.posts) {
   if (post.kind === 'official') {
     const daily = schedule.days.find((d) => d.day === post.day);
     assert.ok(daily, 'Official post on a scheduled day');
-    assert.equal(url.searchParams.get('daily'), '1');
+    assert.equal(url.pathname, '/d/'+post.day+'/');
     assert.ok(post.message.includes(canonicalQuestAtGridRevision(daily.questId, daily.gridRevision).size + '×'));
   } else assert.equal(url.pathname, '/mini/' + post.day + '.html');
 }
 assert.equal(postKind('2026-12-27', { miniDays: new Set(), officialDays: new Set(['2026-12-27']) }), 'official');
 assert.equal(buildPost('2026-12-25', { mini: null, official: null }), null);
-const fallback = buildPost('2026-12-02', { mini: { day: '2026-12-02', missing: 1 }, official: null, imageExists: () => false });
+const fallback = buildPost('2026-12-02', { official: {day:'2026-12-02',size:6}, imageExists: () => false });
 assert.equal(fallback.image, null, 'Without a visual: a plain link post');
 // Metricool calendar import: exact template columns, one Facebook photo post per row.
 const parseCsv = (text) => {
@@ -227,6 +218,14 @@ assert.equal(col(rows[31], 'Text'), 'a "b"\nc', 'Quotes and line breaks survive'
 assert.equal(col(rows[31], 'Picture Url 1'), '', 'No visual: no picture');
 const [, draftRow] = parseCsv(metricoolCsv(december.slice(0, 1), { draft: true }).slice(1));
 assert.equal(col(draftRow, 'Draft'), 'true', 'Rehearsal rows are drafts');
+for(const [file,month,draft] of [
+ ['lumen-metricool-test-brouillon.csv','2026-12',true],
+ ['lumen-metricool-decembre-2026.csv','2026-12',false],
+ ['lumen-metricool-janvier-2027.csv','2027-01',false],
+]){
+ const posts=plan.posts.filter(p=>p.day.startsWith(month));
+ assert.equal(fs.readFileSync('docs/marketing/exports/'+file,'utf8'),metricoolCsv(draft?posts.slice(0,1):posts,{draft}),'Committed CSV matches native source');
+}
 
 // Visuals: the official board shows territories only, the mini board the given Guardians only.
 assert.ok(!boardSvg(reg0, []).includes('✦'));
@@ -234,7 +233,7 @@ const firstPuzzle = miniPuzzle(calendar.days[0], canonicalQuestById(calendar.day
 assert.equal((boardSvg(firstPuzzle.reg, firstPuzzle.given).match(/✦/g) || []).length, firstPuzzle.given.length);
 
 // Release packaging: both o2switch paths publish mini/, the cron checks it.
-assert.ok(read('scripts/o2switch-safe-release.sh').includes('for dir in mini; do\n    if [[ -d "$dir" ]]; then cp -R "$dir" "$TMP/$dir"; fi'));
+assert.ok(read('scripts/o2switch-safe-release.sh').includes('for dir in mini d studio; do\n    if [[ -d "$dir" ]]; then cp -R "$dir" "$TMP/$dir"; fi'));
 const cron = read('scripts/o2switch-cron-publish.sh');
 assert.ok(cron.includes('git archive "$SHA" "$dir" | tar -xf - -C "$TMP"; fi'));
 assert.ok(cron.includes('cp -Rp "$RELEASE/mini" "$TARGET/mini"'));

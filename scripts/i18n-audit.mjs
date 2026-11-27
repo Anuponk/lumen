@@ -6,6 +6,27 @@ import { pathToFileURL } from 'node:url';
 import { parse } from 'acorn';
 import { parseFragment } from 'parse5';
 import { locales } from '../src/ui/i18n.js';
+import {SEASONAL_EVENTS,DAILY_NAMES} from '../src/campaign/seasonal-events.js';
+
+// Shared Node/Deno catalogues cannot import the entire UI translation registry.
+// Validate their language coverage instead of adding strings to historical debt.
+export function seasonalCatalogueIssues(events=SEASONAL_EVENTS,names=DAILY_NAMES){
+  const issues=[];
+  for(const event of [...events,{id:'ordinary-daily',labels:Object.fromEntries(Object.entries(names).map(([locale,title])=>[locale,{title}]))}]){
+    const labels=event.labels??{},keys=Object.keys(labels.fr??{}).sort();
+    if(!keys.length)issues.push(event.id+': missing French labels');
+    for(const locale of ['fr','en','es']){
+      const copy=labels[locale];
+      if(!copy||JSON.stringify(Object.keys(copy).sort())!==JSON.stringify(keys)){issues.push(event.id+': incomplete '+locale);continue}
+      for(const key of keys){
+        const value=copy[key],base=labels.fr[key];
+        if(typeof value!=='string'||!value.trim()||typeof base!=='string'||placeholders(value)!==placeholders(base))issues.push(event.id+': invalid '+locale+'.'+key);
+      }
+    }
+  }
+  return issues;
+}
+const seasonalStrings=new Set([...Object.values(DAILY_NAMES),...SEASONAL_EVENTS.flatMap(event=>Object.values(event.labels).flatMap(Object.values))].map(value=>value.replace(/\s+/g,' ').trim()));
 
 const sourceRoots = ['src/ui', 'src/game', 'src/campaign', 'src/privacy', 'src/landing'];
 const debtPath = 'scripts/i18n-visible-baseline.json';
@@ -112,7 +133,7 @@ export function inventory(reference = () => {}, onProtectedCopy = () => {}) {
     file, visibleCandidates(readFileSync(file, 'utf8'), file, key => reference(key, file),
       (copy, scope) => {
         if (translatedScopes[file]?.includes(scope)) onProtectedCopy(file, scope, copy);
-      }),
+      }).filter(copy=>file!=='src/campaign/seasonal-events.js'||!seasonalStrings.has(copy)),
   ]).filter(([, list]) => list.length));
 }
 export function inventoryHashes(entries) {
@@ -213,7 +234,7 @@ async function main(args) {
   }
   if (args.length && (args.length !== 1 || args[0] !== '--prune')) throw Error('Usage: i18n-audit.mjs [--list | --prune | --review KEY...]');
 
-  const issues = [...catalogueIssues(fr, en, reviewed), ...await domainIssues(fr, en), ...missingKeys, ...protectedCopy];
+  const issues = [...catalogueIssues(fr, en, reviewed), ...await domainIssues(fr, en), ...seasonalCatalogueIssues(), ...missingKeys, ...protectedCopy];
   const base = process.env.LUMEN_I18N_BASE;
   if (base) {
     if (!/^[a-f0-9]{40}$/.test(base)) throw Error('Invalid i18n comparison SHA');
