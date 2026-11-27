@@ -185,6 +185,7 @@ export const nodeSuites=[
  "auth-email-hook-integration-tests.mjs",
  "analytics-tests.mjs",
  "acquisition-tests.mjs",
+ "organic-acquisition-tests.mjs",
  "lumen-share-tests.mjs",
  "module-structure-tests.mjs",
  "responsive-architecture-tests.mjs",

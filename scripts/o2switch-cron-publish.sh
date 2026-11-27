@@ -148,6 +148,10 @@ if [[ ! -d "$RELEASE" ]]; then
    git cat-file -e "$SHA:$dir" || { echo "Missing verified directory $dir"; exit 1; }
    git archive "$SHA" "$dir" | tar -xf - -C "$TMP"
  done
+ # #1057: public mini-puzzle pages; older revisions omit them.
+ for dir in mini; do
+   if git cat-file -e "$SHA:$dir" 2>/dev/null; then git archive "$SHA" "$dir" | tar -xf - -C "$TMP"; fi
+ done
  # Stamp the immutable release version in the staged HTML only.
  # Narrow administration rewrite, independent of the root hosting configuration.
  if git cat-file -e "$SHA:admin/.htaccess" 2>/dev/null; then
@@ -199,6 +203,10 @@ for dir in src content; do
  # explicitly public 755/644 release modes rather than inheriting that mask.
  cp -Rp "$RELEASE/$dir" "$TARGET/$dir"
 done
+# #1057: the public mini-puzzle pages follow the release (absent in older ones).
+[[ ! -L "$TARGET/mini" ]] || { echo "Refusing symlinked mini" >&2; false; }
+rm -rf -- "$TARGET/mini"
+if [[ -d "$RELEASE/mini" ]]; then cp -Rp "$RELEASE/mini" "$TARGET/mini"; fi
 for file in index.html build-info.json sw.js manifest.webmanifest icon.svg icon-maskable.svg; do
  cp -p "$RELEASE/$file" "$TARGET/$file"
 done
@@ -243,6 +251,9 @@ for asset in src/main.js src/ui/game-screen.js src/ui/styles.css; do
 done
 if [[ -f "$RELEASE/admin/.htaccess" ]]; then
  curl -fsS --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/admin/analytics?release=$SHA" | cmp -s - "$RELEASE/index.html"
+fi
+if [[ -f "$RELEASE/mini/index.html" ]]; then
+ curl -fsSL --max-redirs 2 --connect-timeout 5 --max-time 20 "https://lumen.nopuna.fr/mini/?release=$SHA" | cmp -s - "$RELEASE/mini/index.html"
 fi
 for page in "${PUBLIC_PAGES[@]}"; do
  if [[ -f "$RELEASE/$page" ]]; then

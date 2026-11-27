@@ -118,7 +118,8 @@ jobs:
 
       - name: Validate o2switch release script syntax
         run: |
-          for script in scripts/o2switch-{safe-release,cron-publish,deploy-monitor,ssh-deploy,runner-firewall,webhook-worker,install-webhook}.sh; do bash -n "$script"; done
+          for script in scripts/o2switch-{safe-release,cron-publish,deploy-monitor,ssh-deploy,runner-firewall,webhook-worker,install-webhook,social-post}.sh; do bash -n "$script"; done
+          python3 -B scripts/lumen_social_post_tests.py
           python3 scripts/o2switch-deploy-tests.py
           php -l scripts/o2switch-deploy-hook.php
           python3 scripts/o2switch-https-tests.py

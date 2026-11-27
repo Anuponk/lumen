@@ -74,6 +74,10 @@ if [[ "$MODE" != "--rollback" ]]; then
     [[ -d "$dir" ]] || { echo "Missing $dir"; exit 1; }
     cp -R "$dir" "$TMP/$dir"
   done
+  # #1057: public mini-puzzle pages; older revisions omit them.
+  for dir in mini; do
+    if [[ -d "$dir" ]]; then cp -R "$dir" "$TMP/$dir"; fi
+  done
   printf '%s\n' "$SHA" > "$TMP/.lumen-release-sha"
   find "$TMP" -type d -exec chmod 755 {} +
   find "$TMP" -type f -exec chmod 644 {} +
