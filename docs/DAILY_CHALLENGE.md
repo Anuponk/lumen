@@ -274,6 +274,10 @@ La CI SQL la rejoue deux fois, teste les égalités, la clôture, les lectures
 répétées, le filigrane multi-appareils et l'effacement. Son application en
 production et la recette physique des clôtures nécessitent leurs preuves propres.
 
+## 6 quinquies. Publication sociale (#1056)
+
+Le post Facebook de 08h00 (désactivé par défaut, voir [acquisition organique](marketing/ACQUISITION_ORGANIQUE.md)) invite au défi par `/?daily=1` avec des UTM. Son visuel montre la grille initiale du jour, avec ses territoires et sans aucun Gardien, sur décision du propriétaire du 27/11/2026. Risque accepté : un joueur peut étudier la grille avant de lancer son chrono, comme le permettait déjà l'entraînement invité (§5). Les règles officielles, la tentative, le classement et l'authentification ne changent pas.
+
 ## 7. Tests et retour arrière
 
 - Navigateur : `daily-challenge-browser.mjs` (dans la suite de rejeu canonique) : mode désactivé, entrée Mon ciel, invité en entraînement, tentative officielle à 360/390/1440 px, grille figée et cases inchangées, cadre et bandeau visibles, deux classements, reprise sur autre appareil, introduction ouverte pendant le passage de minuit (rechargement sur le jour serveur), résultat figé puis entraînement, envoi différé hors ligne, bilan de la semaine (7 jours, provisoire, aucune donnée d'un autre joueur, aucune collecte `lumen_track_event`). `daily-view-tests.mjs` (rendu et client), `daily-week-tests.mjs` (résumé, navigation, partage, rendu).

@@ -1,0 +1,572 @@
+{
+ "schema": "lumen-mini-calendar-v1",
+ "start": "2026-12-01",
+ "timeZone": "Europe/Paris",
+ "enabled": true,
+ "pool": {
+  "packId": "base-real-sky",
+  "label": "Facile",
+  "size": 6,
+  "count": 51
+ },
+ "days": [
+  {
+   "day": "2026-12-01",
+   "questId": "base-q016",
+   "constellationId": "real-03",
+   "missingRows": [
+    5
+   ]
+  },
+  {
+   "day": "2026-12-02",
+   "questId": "base-q022",
+   "constellationId": "real-04",
+   "missingRows": [
+    3
+   ]
+  },
+  {
+   "day": "2026-12-03",
+   "questId": "base-q011",
+   "constellationId": "real-02",
+   "missingRows": [
+    2
+   ]
+  },
+  {
+   "day": "2026-12-04",
+   "questId": "base-q027",
+   "constellationId": "real-04",
+   "missingRows": [
+    0
+   ]
+  },
+  {
+   "day": "2026-12-05",
+   "questId": "base-q056",
+   "constellationId": "real-08",
+   "missingRows": [
+    1
+   ]
+  },
+  {
+   "day": "2026-12-06",
+   "questId": "base-q026",
+   "constellationId": "real-04",
+   "missingRows": [
+    5
+   ]
+  },
+  {
+   "day": "2026-12-07",
+   "questId": "base-q074",
+   "constellationId": "real-10",
+   "missingRows": [
+    1
+   ]
+  },
+  {
+   "day": "2026-12-08",
+   "questId": "base-q053",
+   "constellationId": "real-08",
+   "missingRows": [
+    1
+   ]
+  },
+  {
+   "day": "2026-12-09",
+   "questId": "base-q042",
+   "constellationId": "real-06",
+   "missingRows": [
+    0,
+    2
+   ]
+  },
+  {
+   "day": "2026-12-10",
+   "questId": "base-q060",
+   "constellationId": "real-08",
+   "missingRows": [
+    3,
+    5
+   ]
+  },
+  {
+   "day": "2026-12-11",
+   "questId": "base-q043",
+   "constellationId": "real-06",
+   "missingRows": [
+    0,
+    5
+   ]
+  },
+  {
+   "day": "2026-12-12",
+   "questId": "base-q034",
+   "constellationId": "real-05",
+   "missingRows": [
+    1,
+    2
+   ]
+  },
+  {
+   "day": "2026-12-13",
+   "questId": "base-q039",
+   "constellationId": "real-06",
+   "missingRows": [
+    2,
+    4
+   ]
+  },
+  {
+   "day": "2026-12-14",
+   "questId": "base-q033",
+   "constellationId": "real-05",
+   "missingRows": [
+    2,
+    3
+   ]
+  },
+  {
+   "day": "2026-12-15",
+   "questId": "base-q037",
+   "constellationId": "real-06",
+   "missingRows": [
+    2,
+    5
+   ]
+  },
+  {
+   "day": "2026-12-16",
+   "questId": "base-q035",
+   "constellationId": "real-05",
+   "missingRows": [
+    3,
+    5
+   ]
+  },
+  {
+   "day": "2026-12-17",
+   "questId": "base-q024",
+   "constellationId": "real-04",
+   "missingRows": [
+    0,
+    1,
+    2
+   ]
+  },
+  {
+   "day": "2026-12-18",
+   "questId": "base-q069",
+   "constellationId": "real-09",
+   "missingRows": [
+    2,
+    3,
+    4
+   ]
+  },
+  {
+   "day": "2026-12-19",
+   "questId": "base-q036",
+   "constellationId": "real-06",
+   "missingRows": [
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "day": "2026-12-20",
+   "questId": "base-q077",
+   "constellationId": "real-10",
+   "missingRows": [
+    0,
+    1,
+    2
+   ]
+  },
+  {
+   "day": "2026-12-21",
+   "questId": "base-q040",
+   "constellationId": "real-06",
+   "missingRows": [
+    0,
+    1,
+    4
+   ]
+  },
+  {
+   "day": "2026-12-22",
+   "questId": "base-q047",
+   "constellationId": "real-07",
+   "missingRows": [
+    1,
+    2,
+    4
+   ]
+  },
+  {
+   "day": "2026-12-23",
+   "questId": "base-q062",
+   "constellationId": "real-09",
+   "missingRows": [
+    0,
+    2,
+    4
+   ]
+  },
+  {
+   "day": "2026-12-24",
+   "questId": "base-q049",
+   "constellationId": "real-07",
+   "missingRows": [
+    0,
+    3,
+    5
+   ]
+  },
+  {
+   "day": "2026-12-25",
+   "questId": "base-q023",
+   "constellationId": "real-04",
+   "missingRows": [
+    4,
+    5
+   ]
+  },
+  {
+   "day": "2026-12-26",
+   "questId": "base-q019",
+   "constellationId": "real-03",
+   "missingRows": [
+    0,
+    5
+   ]
+  },
+  {
+   "day": "2026-12-27",
+   "questId": "base-q029",
+   "constellationId": "real-05",
+   "missingRows": [
+    1,
+    4
+   ]
+  },
+  {
+   "day": "2026-12-28",
+   "questId": "base-q013",
+   "constellationId": "real-02",
+   "missingRows": [
+    0,
+    1
+   ]
+  },
+  {
+   "day": "2026-12-29",
+   "questId": "base-q021",
+   "constellationId": "real-04",
+   "missingRows": [
+    1,
+    2
+   ]
+  },
+  {
+   "day": "2026-12-30",
+   "questId": "base-q015",
+   "constellationId": "real-03",
+   "missingRows": [
+    0,
+    4
+   ]
+  },
+  {
+   "day": "2026-12-31",
+   "questId": "base-q010",
+   "constellationId": "real-02",
+   "missingRows": [
+    2,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-01",
+   "questId": "base-q052",
+   "constellationId": "real-07",
+   "missingRows": [
+    0,
+    2
+   ]
+  },
+  {
+   "day": "2027-01-02",
+   "questId": "base-q071",
+   "constellationId": "real-10",
+   "missingRows": [
+    2,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-03",
+   "questId": "base-q067",
+   "constellationId": "real-09",
+   "missingRows": [
+    0,
+    5
+   ]
+  },
+  {
+   "day": "2027-01-04",
+   "questId": "base-q032",
+   "constellationId": "real-05",
+   "missingRows": [
+    1,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-05",
+   "questId": "base-q050",
+   "constellationId": "real-07",
+   "missingRows": [
+    0,
+    1
+   ]
+  },
+  {
+   "day": "2027-01-06",
+   "questId": "base-q054",
+   "constellationId": "real-08",
+   "missingRows": [
+    4,
+    5
+   ]
+  },
+  {
+   "day": "2027-01-07",
+   "questId": "base-q009",
+   "constellationId": "real-02",
+   "missingRows": [
+    1,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-08",
+   "questId": "base-q030",
+   "constellationId": "real-05",
+   "missingRows": [
+    0,
+    1
+   ]
+  },
+  {
+   "day": "2027-01-09",
+   "questId": "base-q063",
+   "constellationId": "real-09",
+   "missingRows": [
+    4,
+    5
+   ]
+  },
+  {
+   "day": "2027-01-10",
+   "questId": "base-q028",
+   "constellationId": "real-05",
+   "missingRows": [
+    1,
+    4
+   ]
+  },
+  {
+   "day": "2027-01-11",
+   "questId": "base-q065",
+   "constellationId": "real-09",
+   "missingRows": [
+    0,
+    4
+   ]
+  },
+  {
+   "day": "2027-01-12",
+   "questId": "base-q058",
+   "constellationId": "real-08",
+   "missingRows": [
+    2,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-13",
+   "questId": "base-q041",
+   "constellationId": "real-06",
+   "missingRows": [
+    0,
+    1
+   ]
+  },
+  {
+   "day": "2027-01-14",
+   "questId": "base-q020",
+   "constellationId": "real-03",
+   "missingRows": [
+    2,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-15",
+   "questId": "base-q059",
+   "constellationId": "real-08",
+   "missingRows": [
+    0,
+    1
+   ]
+  },
+  {
+   "day": "2027-01-16",
+   "questId": "base-q014",
+   "constellationId": "real-03",
+   "missingRows": [
+    3,
+    5
+   ]
+  },
+  {
+   "day": "2027-01-17",
+   "questId": "base-q046",
+   "constellationId": "real-07",
+   "missingRows": [
+    0,
+    1
+   ]
+  },
+  {
+   "day": "2027-01-18",
+   "questId": "base-q017",
+   "constellationId": "real-03",
+   "missingRows": [
+    2,
+    4
+   ]
+  },
+  {
+   "day": "2027-01-19",
+   "questId": "base-q055",
+   "constellationId": "real-08",
+   "missingRows": [
+    3,
+    4
+   ]
+  },
+  {
+   "day": "2027-01-20",
+   "questId": "base-q045",
+   "constellationId": "real-07",
+   "missingRows": [
+    0,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-21",
+   "questId": "base-q016",
+   "constellationId": "real-03",
+   "missingRows": [
+    1,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-22",
+   "questId": "base-q022",
+   "constellationId": "real-04",
+   "missingRows": [
+    2,
+    4
+   ]
+  },
+  {
+   "day": "2027-01-23",
+   "questId": "base-q011",
+   "constellationId": "real-02",
+   "missingRows": [
+    1,
+    2
+   ]
+  },
+  {
+   "day": "2027-01-24",
+   "questId": "base-q027",
+   "constellationId": "real-04",
+   "missingRows": [
+    1,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-25",
+   "questId": "base-q056",
+   "constellationId": "real-08",
+   "missingRows": [
+    3,
+    5
+   ]
+  },
+  {
+   "day": "2027-01-26",
+   "questId": "base-q026",
+   "constellationId": "real-04",
+   "missingRows": [
+    0,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-27",
+   "questId": "base-q074",
+   "constellationId": "real-10",
+   "missingRows": [
+    1,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-28",
+   "questId": "base-q053",
+   "constellationId": "real-08",
+   "missingRows": [
+    2,
+    3
+   ]
+  },
+  {
+   "day": "2027-01-29",
+   "questId": "base-q042",
+   "constellationId": "real-06",
+   "missingRows": [
+    1,
+    2
+   ]
+  },
+  {
+   "day": "2027-01-30",
+   "questId": "base-q060",
+   "constellationId": "real-08",
+   "missingRows": [
+    1,
+    2
+   ]
+  },
+  {
+   "day": "2027-01-31",
+   "questId": "base-q043",
+   "constellationId": "real-06",
+   "missingRows": [
+    2,
+    5
+   ]
+  }
+ ]
+}

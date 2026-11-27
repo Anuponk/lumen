@@ -98,3 +98,7 @@ Hors périmètre : amis, classement hebdomadaire, parrainage, publication de cam
 | T5 — Fin de constellation et d’aventure | Android puis desktop | Terminer la dernière quête d’une constellation puis d’une aventure, « Partager ma réussite » : titre « Constellation rallumée » / « Aventure accomplie », carte avec la figure de la constellation, aucune donnée personnelle. « Constellation suivante » / « Admirer mon ciel » reste l’action principale. | À tester sur appareil |
 | T6 — Nouveau joueur par défi | Second appareil en navigation privée | Ouvrir un lien de défi sans jamais avoir joué : résumé des règles, « Voir les règles », retour à l’intro, puis « Relever le défi ». Dans l’aide pendant la partie, aucun « Rejouer l’apprentissage ». | À tester sur appareil |
 | T4 — Hors connexion et reprise | PWA Android déjà ouverte et téléchargée | Couper le réseau, ouvrir l’invitation et copier le lien. La partie en cours reste accessible. Vérifier qu’une victoire en attente ne peut pas être partagée avant confirmation. | À tester sur appareil |
+
+## Acquisition organique (#1056, #1057)
+
+Les campagnes `facebook_daily` (post de 08h00) et `mini_puzzle` (appels à l'action du mini-puzzle public) s'ajoutent à la liste autorisée de `campaignUrl`, qui accepte désormais un `utm_campaign` et conserve les indicateurs publics revus (`install=1`, `daily=1`). Les campagnes existantes ne changent pas. Détails : [acquisition organique](ACQUISITION_ORGANIQUE.md).

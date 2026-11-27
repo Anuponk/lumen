@@ -1,10 +1,11 @@
-// #736/#744/#758: the presentation and « Comment jouer » pages in a real browser at three viewports. Runs in the full
+// #736/#744/#758/#1057: the presentation, the public mini-puzzle and « Comment jouer » pages in a real browser at three viewports. Runs in the full
 // quality gate and alone in the landing-only CI scope.
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import {connectBrowser,closeBrowser,navigateAndWait} from './cdp-client.mjs';
 import {verifyLanding,verifyHowToPlay,verifyLearnConstellations,verifyConstellationDirectory} from './landing-browser.mjs';
+import {verifyMini} from './mini-browser.mjs';
 
 const url=new URL(process.env.LUMEN_TEST_URL||'http://127.0.0.1:8000/');
 const {send,evaluate,errors}=await connectBrowser();
@@ -31,7 +32,8 @@ try{
    fs.writeFileSync(path.join(screenshotDir,filename),Buffer.from(data,'base64'));
   }
   Object.assign(viewportResult,await verifyConstellationDirectory({send,evaluate},url,{locale:'en'}),
-   await verifyConstellationDirectory({send,evaluate},url,{locale:'es'}),await verifyLearnConstellations({send,evaluate},url,'es'));
+   await verifyConstellationDirectory({send,evaluate},url,{locale:'es'}),await verifyLearnConstellations({send,evaluate},url,'es'),
+   await verifyMini({send,evaluate},url));
  }
  await send('Page.navigate',{url:new URL('/decouvrir.html',url).href});
  await waitForDiscovery('/decouvrir.html');
