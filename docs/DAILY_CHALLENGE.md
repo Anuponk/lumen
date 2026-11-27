@@ -127,6 +127,14 @@ RLS active partout, aucun droit direct ; accès uniquement par RPC
 
 ### Tentative invitée depuis un lien daté
 
+Arbitrage acquisition du 27 novembre, après recette propriétaire. La victoire
+depuis un lien marketing invite désormais à continuer via Google Play ou
+LUMEN Web sur iPhone. La création de compte et le rattachement ne sont plus
+proposés dans ce parcours et aucune nouvelle tentative invitée éligible n’y
+est réservée. Les mécanismes ci-dessous restent compatibles avec les reçus
+déjà conservés et les comptes. La qualification des joueurs authentifiés
+continue de suivre son parcours existant.
+
 L’arrivée marketing ouvre la grille commune et le premier geste initialise la
 tentative. Le navigateur conserve une clé aléatoire de 256 bits par jour. Le
 serveur ne stocke que son empreinte et réserve la première tentative pour

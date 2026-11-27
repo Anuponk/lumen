@@ -35,7 +35,7 @@ export async function verifyMini({send,evaluate},baseUrl){
  await evaluate(`${preview}.lumenStudioView('victory')`);
  await waitFor(`!${preview}.document.getElementById('dailyResultModal').hidden`);
  assert.equal(await evaluate(`${preview}.document.getElementById('dailyBoards').hidden`),true,'Demo does not show real ranks');
- assert.equal(await evaluate(`${preview}.document.getElementById('dailyDiscoverySignup').hidden`),false,'Demo conversion is visible');
+ assert.equal(await evaluate(`${preview}.document.getElementById('dailyAppOffer').hidden`),false,'Demo app invitation is visible');
  await evaluate("document.getElementById('date').value='2026-12-25';document.getElementById('date').dispatchEvent(new Event('change'))");
  await waitFor(ready('2026-12-25'));
  assert.equal(await evaluate(`${preview}.document.body.dataset.seasonal`),'');

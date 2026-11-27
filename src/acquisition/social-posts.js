@@ -35,7 +35,7 @@ export function buildPost(day,{official,imageExists=()=>true,privateMedia=false}
  return {key:CHANNEL+':'+day,channel:CHANNEL,day,publishAt:PUBLISH_AT,kind:'official',eventId:p.event?.id??null,
   message:[(p.event?'🎄 ':'✨ ')+p.title+' LUMEN'+(p.dayLabel?' · '+p.dayLabel:''),
    hooks[index]+' Une grille '+official.size+'×'+official.size+' à découvrir.',
-   '🏆 Joue gratuitement, sans inscription, et tente de rejoindre le classement !',
+   '✨ Joue gratuitement, sans inscription, puis continue l’aventure dans l’application !',
    '👉 À toi de jouer : '+link,p.hashtags].join('\n\n'),
   link,image:hasImage?SITE+'/'+image:null,privateImage:privateMedia?file:null,
   imageAlt:hasImage||privateMedia?p.title+' LUMEN : grille initiale complète, territoires de couleur, aucun Gardien placé':null};

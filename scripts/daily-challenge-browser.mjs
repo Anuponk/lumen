@@ -93,16 +93,31 @@ export async function verifyGuestAcquisition(cdp,url){
  assert.deepEqual(await evaluate('lumenDiagnostics.snapshot().puz.reg'),quest.reg);
  assert.equal((await calls(evaluate,'lumen_daily_guest_begin')).length,0,'Clock does not start on loading');
  await evaluate("document.querySelector('#board .cell').click()");
- await until(evaluate,"window.__dailyCalls.some(c=>c.name==='lumen_daily_guest_begin')",'first gesture reserves the attempt');
  await evaluate(solve);
- await until(evaluate,"!document.getElementById('dailyDiscoverySignup').hidden",'verified result can be saved');
- const [finish]=await calls(evaluate,'lumen_daily_guest_event');
- assert.equal(finish.args.p_action,'finish');assert.deepEqual(finish.args.p_columns,quest.sol);
- assert.equal((await calls(evaluate,'lumen_daily_begin')).length,0,'Guests never write the account attempt directly');
- await evaluate("document.getElementById('dailyDiscoverySignup').click()");
- assert.equal(await evaluate("!document.getElementById('accountOptin').hidden"),true);
- assert.equal(await evaluate("JSON.parse(localStorage.getItem('lumenDailyGuestV1:2026-12-01')).claimRequested"),true);
- return {realGrid:true,clockOnGesture:true,verifiedReceipt:true,signupAfterVictory:true};
+ await until(evaluate,"!document.getElementById('dailyAppOffer').hidden",'app invitation after victory');
+ assert.equal((await calls(evaluate,'lumen_daily_guest_begin')).length,0,'Acquisition does not reserve a guest ranking receipt');
+ assert.equal((await calls(evaluate,'lumen_daily_guest_event')).length,0);
+ assert.equal((await calls(evaluate,'lumen_daily_begin')).length,0);
+ assert.equal(await evaluate("document.getElementById('dailyDiscoverySignup').hidden&&document.getElementById('dailyDiscoveryLogin').hidden&&document.getElementById('dailyContinue').hidden"),true);
+ assert.equal(await evaluate("document.getElementById('accountOptin').hidden"),true);
+ assert.equal(await evaluate("new URL(document.getElementById('dailyAppPlay').href).searchParams.get('id')"),'com.nopuna.lumen');
+ assert.equal(await evaluate("new URL(document.getElementById('dailyAppWeb').href).origin"),'https://lumen.nopuna.fr');
+ for(const [agent,webVisible] of [
+  ['Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile [FBAN/FBIOS]',true],
+  ['Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/131 Mobile [FBAN/FB4A]',false],
+ ]){
+  await send('Network.setUserAgentOverride',{userAgent:agent});
+  await open(cdp,target,{signedIn:false,seasonalDay:'2026-12-01'});
+  await until(evaluate,'document.querySelectorAll("#board .cell").length>0','mobile acquisition grid');
+  await evaluate(solve);
+  await until(evaluate,"!document.getElementById('dailyAppOffer').hidden",'mobile app invitation');
+  assert.equal(await evaluate("!document.getElementById('dailyAppWeb').hidden"),webVisible);
+  assert.equal(await evaluate("!document.getElementById('dailyAppPlay').hidden"),!webVisible);
+  assert.equal(await evaluate("!document.getElementById('dailyAppIosHelp').hidden"),webVisible);
+ }
+ await send('Network.setUserAgentOverride',{userAgent:'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36'});
+ return {realGrid:true,appInvitation:true,accountPrompt:false,platforms:2};
+
 }
 export async function verifySeasonalVictory({send,evaluate},url){
  await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});

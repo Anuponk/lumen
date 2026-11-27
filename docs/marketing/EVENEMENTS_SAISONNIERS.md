@@ -9,8 +9,16 @@ ordinaire revient automatiquement, sans configuration ni livraison.
 Le catalogue ne change ni identifiants, grilles, tentatives, aides, chronomètres,
 badges, récompenses ou classements. Le serveur garde l'autorité du vrai défi
 quotidien. Les liens datés ouvrent cette grille directement pour les invités.
-Une victoire vérifiée peut rejoindre le même classement après authentification.
-Le contrat du rattachement est décrit dans [Défi du jour](../DAILY_CHALLENGE.md#tentative-invitée-depuis-un-lien-daté).
+Après la victoire invitée, une célébration et le temps réalisé précèdent
+l’invitation à continuer dans l’application. Sur Android, le bouton ouvre
+Google Play pour le package publié `com.nopuna.lumen`. Sur iPhone et iPad,
+le lien ouvre LUMEN Web et rappelle l’ajout à l’écran d’accueil depuis Safari.
+Sur ordinateur, les deux liens sont proposés. Les liens s’ouvrent dans un
+nouveau contexte navigateur, dont le comportement final dépend de Facebook
+et du système. La recette physique vérifie cette sortie du navigateur intégré.
+Cette étape ne propose plus de compte, de classement ou de retour Mon ciel
+dans Facebook. Le parcours invité ne réserve plus de reçu de qualification.
+Les joueurs connectés conservent leur fin de défi et leurs classements natifs.
 L'événement ne dépend ni de Facebook ni de Metricool. Aucun autre événement
 n'est implémenté dans ce chantier.
 
@@ -30,7 +38,7 @@ résultats ordinaires et saisonniers en FR/EN/ES à 360×640.
 
 `/studio/` charge les composants natifs dans un cadre avec une grille
 d’initiation et un stockage en mémoire. On peut afficher le jeu, Mon ciel,
-la victoire et le formulaire d’inscription en FR/EN/ES. Les formats mobile,
+la victoire et l’invitation à installer en FR/EN/ES. Les formats mobile,
 paysage et ordinateur et la date sont configurables. Le Studio ne crée pas
 de client Supabase et bloque les connexions externes. Le Video Studio utilise
 ce même écran pour capturer des gestes et la victoire saisonnière.
