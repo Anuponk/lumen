@@ -6867,7 +6867,7 @@ bootGame();
 setupBetaFeedback();
 const manualCrossTipOk=document.getElementById("manualCrossTipOk");if(manualCrossTipOk)manualCrossTipOk.onclick=closeManualCrossTip;
 const guidedAck=document.getElementById("guidedAck");if(guidedAck)guidedAck.onclick=closeGuidedConflict;
-const originalHintHandler=document.getElementById("hint").onclick;
+const originalHintHandler=applyHint;
 const verifyBtn=document.getElementById("verify");
 if(verifyBtn)verifyBtn.onclick=()=>{
  if(celebrated||guidedPending||verifyPending||scriptedLearningActive())return;
