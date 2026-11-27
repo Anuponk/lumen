@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { catalogueIssues, inventoryHashes, newlyVisible, translationDigest, visibleCandidates } from './i18n-audit.mjs';
+import { catalogueIssues, inventoryHashes, newlyVisible, translationDigest, visibleCandidates,seasonalCatalogueIssues } from './i18n-audit.mjs';
+import {SEASONAL_EVENTS,DAILY_NAMES} from '../src/campaign/seasonal-events.js';
+
+test('native seasonal catalogue requires FR/EN/ES, exact keys and placeholder parity',()=>{
+ assert.deepEqual(seasonalCatalogueIssues(),[]);
+ const missing=structuredClone(SEASONAL_EVENTS);delete missing[0].labels.es;
+ assert.match(seasonalCatalogueIssues(missing).join(','),/incomplete es/);
+ const bad=structuredClone(SEASONAL_EVENTS);bad[0].labels.en.day='Day {wrong}';
+ assert.match(seasonalCatalogueIssues(bad).join(','),/invalid en.day/);
+ assert.ok(seasonalCatalogueIssues(SEASONAL_EVENTS,{fr:DAILY_NAMES.fr,en:DAILY_NAMES.en}).length);
+});
 
 test('the game shell catches copy and accessible labels while allowing keyed HTML fallbacks', () => {
   const source = '<button title="Fermer">OK</button><span data-game-text="menu.save">Enregistrer</span><img alt="Board marker"><p aria-label="Raw name" data-game-label="menu.label">✦</p>';

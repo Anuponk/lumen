@@ -20,7 +20,7 @@ test('private test delivery uses isolated authorization and never reserves a dai
  assert.deepEqual(calls,[{reservationId:id},'sent']);
  assert.equal(sent[0][1].type,'daily-challenge-test');
  assert.equal(sent[0][1].testId,id);
- assert.equal(sent[0][1].title,'Prueba · Desafío del día');
+ assert.equal(sent[0][1].title,'Prueba · Reto del día');
  assert.equal((await dispatcher(req('?action=test'))).status,400);
  assert.equal((await dispatcher(new Request('https://edge.example/dispatch?action=test',{method:'POST',body:JSON.stringify({reservationId:id})}))).status,401);
 });
@@ -62,11 +62,22 @@ test('deduplicates authorization and sends a localized expiring payload with no 
  assert.equal(subscription.endpoint,valid.subscription.endpoint);
  assert.equal(payload.type,'daily-challenge');
  assert.equal(payload.day,'2026-11-25');
- assert.equal(payload.title,'Desafío del día');
+ assert.equal(payload.title,'Reto del día');
  assert.equal(payload.expiresAt,time+480_000);
  assert.equal(ttl,480);
  assert.deepEqual(Object.keys(payload).sort(),['body','day','expiresAt','title','type']);
  assert.deepEqual(f.settled,[['a','sent']]);
+});
+
+test('daily push title follows the challenge day, not the device or marketing channel',async()=>{
+ for(const [day,title] of [['2026-12-01','Reto de Adviento'],['2026-12-24','Reto de Adviento'],['2026-12-25','Reto del día']]){
+  const f=setup({deliveries:{a:{...valid,challengeDay:day}}});
+  await f.dispatch(req());
+  assert.equal(f.sent[0][1].title,title);
+  assert.equal(f.sent[0][1].day,day);
+  assert.equal(f.sent[0][1].type,'daily-challenge');
+  assert.deepEqual(f.settled,[['a','sent']]);
+ }
 });
 
 test('skips invalid, revoked or rotated destinations and never retries a provider outcome',async()=>{

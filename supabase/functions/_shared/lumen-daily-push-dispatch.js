@@ -4,10 +4,12 @@ const encode=new TextEncoder();
 const BATCH_LIMIT=20;
 const PARALLEL_SENDS=4;
 const providers=new Set(['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com']);
+import {dailyPresentation} from '../../../src/campaign/seasonal-events.js';
+
 const copy={
  fr:{title:'Défi du jour',body:'Une nouvelle grille t’attend dans Lumen.'},
  en:{title:'Daily Challenge',body:'A new puzzle is waiting for you in Lumen.'},
- es:{title:'Desafío del día',body:'Te espera una nueva cuadrícula en Lumen.'}
+ es:{title:'Reto del día',body:'Te espera una nueva cuadrícula en Lumen.'}
 };
 const reply=(status,body)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
 
@@ -66,7 +68,7 @@ export function dailyPushDispatcher({secret,configured,publicKey,reserve,start,s
      if(vapidPublicKey!==publicKey||!approvedEndpoint(subscription?.endpoint)||!Number.isFinite(ttl)||ttl<=0||
         !/^\d{4}-\d{2}-\d{2}$/.test(day)||!Object.hasOwn(copy,locale))outcome='rejected';
      else{
-      const payload={type:'daily-challenge',day,expiresAt:expiry,...copy[locale]};
+      const payload={type:'daily-challenge',day,expiresAt:expiry,...copy[locale],title:dailyPresentation(day,locale).title};
       if(testOnly){payload.type='daily-challenge-test';payload.testId=claim.reservationId;payload.title=({fr:'Test · ',en:'Test · ',es:'Prueba · '})[locale]+payload.title}
       const status=await send(subscription,payload,Math.min(3600,ttl));
       outcome=status===404||status===410?'expired':status>=200&&status<300?'sent':'ambiguous';

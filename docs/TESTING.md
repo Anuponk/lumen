@@ -2875,7 +2875,11 @@ Run `python -B scripts/lumen_critical_monitor_tests.py` and `python -B scripts/l
 
 ## Organic acquisition (#1056 #1057)
 
-- Node: `organic-acquisition-tests.mjs` (quality gate) runs `scripts/mini-calendar.mjs --check` and `scripts/marketing/social-posts.mjs --check`, re-solves every mini-puzzle with the game engine, and checks pages, copy, campaign links, the post plan and release packaging.
-- Browser: `mini-browser.mjs`, called by `landing-browser-tests.mjs` at 360/390/1440 px (locked door, Paris midnight, taps, conflict, victory and CTAs, local flag, EN/ES, Advent calendar, no Supabase request).
+- Node: `organic-acquisition-tests.mjs` (quality gate) runs `scripts/mini-calendar.mjs --check` and `scripts/marketing/social-posts.mjs --check`, retains archived mini helper solver tests, and checks real-daily landing pages, copy, campaign links, the post plan, committed CSV exports and release packaging.
+- Browser: `mini-browser.mjs`, called by `landing-browser-tests.mjs` at 360/390/1440 px (dated and legacy links to the real daily, future/expired states, FR/EN/ES, no separate board or local completion write, isolated skin preview). The former public mini-game contract is superseded by #1057; pure legacy mini helper tests remain.
 - Python: `python3 -B scripts/lumen_social_post_tests.py` in the o2switch step of `quality.yml` (publisher modes, kill switch, Paris window, idempotence, ambiguity, retries, dry-run, validation, access-log counts). The o2switch scripts stay compatible with Python 3.6, the server's `python3`: the Paris clock follows the EU summer-time rule without `zoneinfo`, and the suite parses them with the 3.6 grammar.
 - Not automated: Facebook in-app browser, real Page post, Open Graph preview in the sharing debugger, cron mail alert. See the acceptance table in [acquisition organique](marketing/ACQUISITION_ORGANIQUE.md#recette-à-faire).
+
+## Native seasonal events - #1056 / #1057 / #1064
+
+Run node scripts/seasonal-events-tests.mjs, node scripts/organic-acquisition-tests.mjs, daily view/challenge and push-dispatch tests. The canonical replay journey includes seasonal dates in three languages for guests and accounts; the landing journey covers dated and legacy links plus the isolated Studio preview. See [the owning contract](marketing/EVENEMENTS_SAISONNIERS.md). Android installed, iPhone PWA and Facebook in-app remain physical acceptance scenarios; Chrome simulation is not that evidence.

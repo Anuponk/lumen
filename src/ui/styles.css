@@ -1961,3 +1961,10 @@ html body .game-core .actions>#new.action-reset .action-top{color:#ffb38a}
 .group-ranking-podium [data-position="1"] .ranking-place{color:#f2c96b}
 .group-ranking-podium [data-position="2"] .ranking-place{color:#dceaf6}
 .group-ranking-podium [data-position="3"] .ranking-place{color:#c79564}
+
+/* Seasonal presentation: inset decoration never changes layout or board colors. */
+body[data-seasonal="winter-stars"] #dailyIntro,
+body[data-seasonal="winter-stars"] #dailyBanner,
+body[data-seasonal="winter-stars"] #dailyQuestBanner { box-shadow: inset 0 0 0 1px var(--seasonal-accent); }
+body[data-seasonal="winter-stars"] #dailyChip { box-shadow: inset 0 0 0 1px var(--seasonal-accent); }
+body[data-seasonal="winter-stars"] #dailyIntro h2::after { content: var(--seasonal-decoration); color: var(--seasonal-accent); margin-inline-start: .35em; }

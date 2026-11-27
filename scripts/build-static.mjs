@@ -6,7 +6,7 @@ const count = Number(execFileSync("git",["rev-list","--first-parent","--count",s
 if (!Number.isSafeInteger(count) || count<1) throw new Error("Invalid commit count");
 const version = `1.11.1+${count}`;
 mkdirSync("dist",{recursive:true});
-for (const item of ["src","content","sw.js","manifest.webmanifest","icon.svg","icon-maskable.svg"]) cpSync(item,`dist/${item}`,{recursive:true});
+for (const item of ["src","content","mini","d","studio","sw.js","manifest.webmanifest","icon.svg","icon-maskable.svg"]) cpSync(item,`dist/${item}`,{recursive:true});
 let html=readFileSync("index.html","utf8");
 html=html.replace(/(<meta name="lumen-build" content=")[^"]*(")/, `$1${version} · ${sha.slice(0,7)}$2`);
 writeFileSync("dist/index.html",html);

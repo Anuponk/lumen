@@ -10,7 +10,7 @@ export default Object.freeze({
   'social.myChallenges': "Mis retos",
   'social.myChallengesHint': "Retos recibidos, enviados y resultados",
   'social.rankings': "Clasificaciones",
-  'social.rankingsHint': "Aventuras y Desafío del día",
+  'social.rankingsHint': "Aventuras y Reto del día",
   'social.friends': "Mis amigos",
   'social.friendsHint': "Amigos, solicitudes y retos entre amigos",
   'social.notifications': "Notificaciones",

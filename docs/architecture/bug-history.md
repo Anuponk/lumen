@@ -406,3 +406,7 @@ appui → rendu : 20–45 ms en émulation (pas de délai intrinsèque). Les blo
 pendant un conflit guidé actif restent voulus (#533) ; validation sur appareil
 Android réel à faire en recette.
 
+
+## #1056 / #1057 / #1064 - Native seasonal event source
+
+Seasonal labels must refresh only seasonal message keys: a full translation pass after daily discovery overwrites the computed already-played state with fallback copy. The daily browser journey reproduces this and remains the regression. The daily browser cloud fixture now persists CAS payloads and returns their real digest, matching the server contract; immutable mock profiles caused a background full re-read during the no-rehydration handoff assertion. Production cloud persistence was not changed.

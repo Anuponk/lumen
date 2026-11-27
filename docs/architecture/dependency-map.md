@@ -320,3 +320,5 @@ review model → generation-guarded ranking/record reads. The gesture never ente
 persistence or starts a board. Offer counts join delivered canonical grids with
 current pack accessibility and the real-sky product scope; entitlement loading
 keeps counts unknown. No purchase/restore or server contract changes.
+
+Native seasonal presentation (#1056/#1057/#1064): static campaign/seasonal-events.js -> game labels and private push title; same module -> initial-grid creative -> dated OG pages + native post plan -> Metricool CSV. Marketing Studio imports the pinned native module. No reverse dependency from Metricool, no new profile field, query or competition.

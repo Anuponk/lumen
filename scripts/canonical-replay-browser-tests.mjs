@@ -6,7 +6,7 @@ import {canonicalQuestList} from '../src/campaign/canonical-quests.js';
 import {verifyVictoryChallenge} from './victory-challenge-browser.mjs';
 import {verifyChallengeRecipient} from './challenge-recipient-browser.mjs';
 import {verifyFriends} from './friends-browser.mjs';
-import {verifyDailyChallenge} from './daily-challenge-browser.mjs';
+import {verifyDailyChallenge,verifySeasonalDaily} from './daily-challenge-browser.mjs';
 import {verifySocialHub} from './social-hub-browser.mjs';
 import {verifyDuels} from './duel-browser.mjs';
 const {send,evaluate,errors}=await connectBrowser();
@@ -226,7 +226,7 @@ try{
  results.push({victoryChallenges:await verifyVictoryChallenge({send,evaluate},url)});
  results.push({challengeRecipients:await verifyChallengeRecipient({send,evaluate},url)});
  results.push({friends:await verifyFriends({send,evaluate},url)});
- results.push({dailyChallenge:await verifyDailyChallenge({send,evaluate},url)});
+ results.push({dailyChallenge:await verifyDailyChallenge({send,evaluate},url)}); results.push({seasonal:await verifySeasonalDaily({send,evaluate},url)});
  results.push({socialHub:await verifySocialHub({send,evaluate},url)});
  results.push({duels:await verifyDuels({send,evaluate},url)});
  assert.deepEqual(errors,[]);

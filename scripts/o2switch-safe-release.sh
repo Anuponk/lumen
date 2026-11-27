@@ -75,7 +75,7 @@ if [[ "$MODE" != "--rollback" ]]; then
     cp -R "$dir" "$TMP/$dir"
   done
   # #1057: public mini-puzzle pages; older revisions omit them.
-  for dir in mini; do
+  for dir in mini d studio; do
     if [[ -d "$dir" ]]; then cp -R "$dir" "$TMP/$dir"; fi
   done
   printf '%s\n' "$SHA" > "$TMP/.lumen-release-sha"

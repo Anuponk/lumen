@@ -186,6 +186,7 @@ export const nodeSuites=[
  "analytics-tests.mjs",
  "acquisition-tests.mjs",
  "organic-acquisition-tests.mjs",
+ "seasonal-events-tests.mjs",
  "lumen-share-tests.mjs",
  "module-structure-tests.mjs",
  "responsive-architecture-tests.mjs",

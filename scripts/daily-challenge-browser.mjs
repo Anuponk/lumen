@@ -20,7 +20,7 @@ const board=(me)=>({day:DAY,final:false,closes_at:'2026-11-23T23:00:00Z',my_run:
  general:{participants:12,top:[{nickname:'Ana',score:95,rank:1,mine:false},{nickname:'Bo',score:95,rank:1,mine:false},{nickname:'Cy',score:120,rank:3,mine:false}],me:me?.status==='completed'?{rank:5,score:me.score}:null},
  friends:{participants:1,top:me?.status==='completed'?[{nickname:'Moi',score:me.score,rank:1,mine:true}]:[],me:me?.status==='completed'?{rank:1,score:me.score}:null}});
 
-function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr',handoff=false}){
+function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginResume=false,finishFails=false,beginDay=DAY,locale='fr',handoff=false,seasonalDay=null}){
  return `
   localStorage.clear();
   sessionStorage.clear();
@@ -31,9 +31,10 @@ function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginR
   localStorage.setItem('lumenPushChoice','off');
   ${signedIn?`localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(OWNER)});`:''}
   ${done?`localStorage.setItem('lumenDailyDoneV1',${JSON.stringify(JSON.stringify({day:DAY,owner:OWNER}))});`:''}
+  let storedProfile=${JSON.stringify(profile)};
   window.__dailyCalls=[];let run=${JSON.stringify(run)};let finishFails=${finishFails};
   const now=()=>new Date().toISOString(),closes=new Date(Date.now()+5*3600000).toISOString();
-  let serverDay;window.__setDailyServerDay=(day,serverNow,closesAt)=>{serverDay={day,server_now:serverNow,closes_at:closesAt}};
+  let serverDay=${JSON.stringify(seasonalDay?{day:seasonalDay}:null)};window.__setDailyServerDay=(day,serverNow,closesAt)=>{serverDay={day,server_now:serverNow,closes_at:closesAt}};
   const DAY=${JSON.stringify(DAY)};const boardOf=${board.toString()};
   window.__setFinishFails=v=>{finishFails=v};
   window.supabase={createClient:()=>({auth:{
@@ -54,10 +55,16 @@ function fixture({signedIn,enabled=true,done=false,preview=false,run=null,beginR
     if(name==='lumen_daily_finish'){if(finishFails)return {data:null,error:{message:'Failed to fetch'}};
      if(run.status==='started')run={...run,status:args.p_status,seconds:args.p_seconds,score:args.p_seconds+args.p_hint*15+(args.p_verify+args.p_guided)*5};return {data:run}}
     if(name==='lumen_ranking_account')return {data:{nicknameRequired:false,withdrawn:false,participating:true}};
-    if(name==='lumen_restore_profile')return {data:${JSON.stringify(profile)}};
+    if(name==='lumen_restore_profile')return {data:structuredClone(storedProfile)};
+    if(name==='lumen_profile_digest')return {data:{version:1,sha256:await (await import('/src/persistence/jsonb-digest.js')).jsonbDigest(storedProfile)}};
+    if(name==='lumen_cas_profile_digest'){
+     const sha=await (await import('/src/persistence/jsonb-digest.js')).jsonbDigest(storedProfile);
+     const matched=sha===args.p_expected_sha256;if(matched)storedProfile=structuredClone(args.p_payload);
+     return {data:{version:1,matched,applied:matched}};
+    }
     if(name==='lumen_get_progress')return {data:Array.from({length:10},(_,i)=>({puzzle_id:i+1}))};
     if(name==='lumen_get_engagement')return {data:[{rewarded_days:{}}]};
-    if(name==='lumen_cas_profile')return {data:true};
+    if(name==='lumen_cas_profile'){storedProfile=structuredClone(args.p_payload);return {data:true}};
     if(name==='lumen_canonical_command_version'||name==='lumen_legacy_command_version')return {error:{code:'PGRST202'},status:404};
     return {data:[]};
    }})};`;
@@ -74,6 +81,22 @@ async function open({send,evaluate},url,options,{width=390,height=844,daily=true
 }
 const solve=`(()=>{const s=lumenDiagnostics.snapshot();lumenDiagnostics.setBoard(s.puz.sol.map(c=>Array.from({length:s.n},(_,i)=>i===c?2:0)))})()`;
 const calls=async(evaluate,name)=>(await evaluate('window.__dailyCalls')).filter(c=>c.name===name);
+export async function verifySeasonalDaily({send,evaluate},url){
+ await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*supabase*']});
+ for(const seasonalDay of ['2026-12-01','2026-12-24','2026-12-25']){
+  for(const locale of ['fr','en','es'])for(const signedIn of [false,true]){
+   await open({send,evaluate},url,{signedIn,enabled:true,locale,seasonalDay},{daily:false,width:360,height:740});
+   await until(evaluate,"!document.getElementById('dailyChip').hidden",'seasonal public chip');
+   const actual=await evaluate(`({skin:document.body.dataset.seasonal,label:document.getElementById('dailyChip').getAttribute('aria-label'),scroll:document.documentElement.scrollWidth>innerWidth})`);
+   assert.equal(actual.skin,seasonalDay<'2026-12-25'?'winter-stars':'');
+   assert.equal(actual.scroll,false,'compact seasonal header');
+   if(seasonalDay<'2026-12-25')assert.match(actual.label,locale==='fr'?/Avent/:locale==='en'?/Advent/:/Adviento/);
+   else assert.doesNotMatch(actual.label,/Avent|Advent|Adviento/);
+   assert.equal((await calls(evaluate,'lumen_daily_begin')).length,0,'presentation never creates an attempt');
+  }
+ }
+ return {seasonal:true,dates:3,locales:3,guestAndAccount:true};
+}
 const clockSeconds=async evaluate=>(await evaluate(`document.getElementById('time').textContent`)).trim().split(':').map(Number).reduce((t,p)=>t*60+p,0);
 
 export async function verifyDailyChallenge({send,evaluate},url,{captureDir=process.env.LUMEN_DAILY_CAPTURES||null}={}){

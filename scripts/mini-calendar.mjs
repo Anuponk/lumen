@@ -5,6 +5,7 @@
 // Append-only: a day already in content/generated/mini-calendar.json is never
 // rewritten. Pool: free 6×6 « Facile » quests of the first sky, never a Défi du
 // jour grid (checked against the whole content/generated/daily-schedule.json).
+import {renderDailyLinkPage} from './daily-pages.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { canonicalQuestById, canonicalQuestList } from '../src/campaign/canonical-quests.js';
@@ -218,8 +219,8 @@ export async function buildCalendar({ existing, until: lastDay = DEFAULT_UNTIL }
 
 export function renderAll(calendar) {
   const files = new Map();
-  for (const entry of calendar.days) files.set('mini/' + entry.day + '.html', renderDayPage(pageData(calendar, entry)));
-  files.set('mini/index.html', renderIndexPage(calendar));
+  for (const entry of calendar.days) files.set('mini/' + entry.day + '.html', renderDailyLinkPage(entry.day));
+  files.set('mini/index.html', renderDailyLinkPage(null));
   return files;
 }
 
