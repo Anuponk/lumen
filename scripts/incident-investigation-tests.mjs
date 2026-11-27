@@ -77,7 +77,9 @@ test('cockpit refuses non-admin requests and ignores an in-flight result after a
   document:{getElementById:()=>({textContent:'',value:'7'})},mountSupportLookup:(_host,options)=>{lookupOptions=options}});
  vm.runInContext(functionSource(source,'loadAdminCockpit')+';globalThis.load=loadAdminCockpit',context);
  await context.load();assert.equal(calls.length,0);assert.equal(lookupOptions,undefined,'Non-admins cannot mount a reference lookup');
- context.hasInternalCapability=()=>true;const pending=context.load();assert.equal(calls.length,10);
+ context.hasInternalCapability=()=>true;const pending=context.load();
+ // #1020: the 250-row feedback dump left the parallel batch; the paged inbox reads its own page.
+ assert.equal(calls.length,9);
  assert(calls.some(([name,args])=>name==='lumen_admin_health_snapshot'&&args.p_days===7),'The health snapshot shares the guarded cockpit load and period');
  context.lumenUser={id:'different-account'};context.document.getElementById=()=>{throw Error('stale result reached DOM')};
  assert.equal(lookupOptions.authorized(),false,'Reference lookup shares the live account guard');

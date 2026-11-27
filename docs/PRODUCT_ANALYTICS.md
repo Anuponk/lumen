@@ -412,3 +412,7 @@ content or filter values. No RPC, schema, collection or aggregate changes.
 
 ### Shared Supabase auth isolation (#112)
 Lumen shares the SoldeZen Supabase project but not application membership. `lumen.users` is the source of truth for authenticated accounts that actually used Lumen; the admin directory joins `auth.users` through that registry, so SoldeZen-only accounts are excluded. Existing membership is backfilled only from Lumen-owned profile, progress, or authenticated analytics data. Google sign-in initiated by Lumen uses the canonical production return URL `https://lumen-xi-seven.vercel.app/` at both sign-in entry points.
+
+## Player health and observed versions (#708, #848 — chantier E)
+
+`lumen_admin_player_health` (one bounded read) feeds the dense player table: health is the last known state of each device, freshness is a separate column, and last activity is the last completed quest receipt. The stopped analytics collection and the oldest-device rule are no longer used for it. The Web version comes from `outbox_health.app_version`; the Android native version comes only from the launcher fragment (`native_version`). Definitions, limits and tests: [assistance chantier E](ASSISTANCE_CHANTIER_E.md#3-cockpit--santé-des-joueurs-708-tests-3-et-4).

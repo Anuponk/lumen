@@ -630,3 +630,5 @@ Chantier 3 (#847, #851, #828, #830, #829): `offline-network-browser-tests.mjs`
 `attempt-engine-tests.mjs`, `official-time-tests.mjs`, `quest-review-tests.mjs`.
 Harnesses running game-screen excerpts get new dependencies from
 `scripts/fixtures/network-context.mjs`.
+
+Chantier E / transverse UX: see [TESTING](../TESTING.md#chantier-e-and-transverse-ux-959-960-1020-708-848-974-1049) for the SQL fixtures, unit suites (`native-version`, `report-snapshot`, `player-health`, `group-ranking`) and browser suites (`assistance-browser`, `cockpit-browser`, `beta-feedback-browser-tests`, `daily-challenge-browser`).

@@ -35,18 +35,19 @@ export function createSupportSession({context,capture,onChange=()=>{},storage,no
   catch{if(valid(c,g))emit('failed')}
   finally{if(valid(c,g))busy=false}
  }
- async function prepare(code='manual',approved=false){
+ async function prepare(code='manual',approved=false,id=null){
   const c=bind();if(!c||!active()||busy)return;
   if(pending){void flush();return}
   if(code!=='manual'&&last&&now()-last<900000)return;
   const g=++generation;emit('preparing');busy=true;
   try{const copy=await capture(c,code);const payload=validateSupportCapture({...copy,events:[...events]});if(!valid(c,g)||!active())return;
-   pending={id:uuid(),caseId:dossier.id,payload,at:now(),attempts:0,approved};emit(approved?'ready':'review');
+   pending={id:typeof id==='string'&&/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)?id:uuid(),caseId:dossier.id,payload,at:now(),attempts:0,approved};emit(approved?'ready':'review');
   }catch{if(valid(c,g))emit('failed')}
   finally{if(valid(c,g))busy=false}
   if(valid(c,g)&&pending?.approved)void flush();
  }
- async function send(code='manual'){return prepare(code,true)}
+ // #960: a report may fix the capture id first, so it can reference the copy.
+ async function send(code='manual',id=null){return prepare(code,true,id)}
  async function confirm(){const c=bind();if(!c||!active()||busy||!pending)return;pending.approved=true;return flush()}
  function discard(){bind();if(pending&&!pending.approved&&!busy){pending=null;emit(active()?'ready':'disabled')}}
  async function flush(){

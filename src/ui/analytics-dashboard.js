@@ -1,5 +1,5 @@
 import {createTranslator} from './i18n.js';
-import {playerSyncStatus} from './cockpit-dates.js';
+import {playerHealth} from './player-health.js';
 import {buildIncidentInvestigation} from './incident-investigation.js';
 import {registeredPlayers} from './cockpit-sessions.js';
 
@@ -70,8 +70,9 @@ export function buildAnalyticsDashboard({product=null,quests=null,health=null,pl
  }
  journey.sort((a,b)=>b.signals.length-a.signals.length||(b.started??-1)-(a.started??-1)||a.ordinal-b.ordinal);
  const population=rows(players).filter(p=>p?.player_type==='authenticated'&&typeof p.player_key==='string'&&p.player_key.startsWith('u:'));
- const playerStates=population.map(player=>{const status=playerSyncStatus(observations?.players?.[player.player_key],{now});return {key:player.player_key,label:player.display_name||player.player_label||'Joueur inscrit',state:status.state,icon:status.icon,statusLabel:status.label}});
- const priority=playerStates.filter(p=>['failure','pending'].includes(p.state)).sort((a,b)=>(a.state==='failure'?0:1)-(b.state==='failure'?0:1));
+ // #708: last known health per player (lumen_admin_player_health), freshness apart.
+ const playerStates=population.map(player=>{const status=playerHealth(observations?.players?.[player.player_key],{now});return {key:player.player_key,label:player.display_name||player.player_label||'Joueur inscrit',state:status.state,icon:status.icon,statusLabel:status.label,reason:status.reasons[0],freshness:status.freshness}});
+ const priority=playerStates.filter(p=>['trouble','pending'].includes(p.state)).sort((a,b)=>(a.state==='trouble'?0:1)-(b.state==='trouble'?0:1));
  const incidentModel=buildIncidentInvestigation(health?.diagnostics);
  return {
   days,healthDays:Math.min(90,Math.max(1,observedCount(days)??7)),now,productAvailable:!!product,questsAvailable:!!quests,healthAvailable:!!health,
@@ -204,11 +205,11 @@ export function renderAnalyticsDashboard(hosts,model,{authorized=()=>false,onAct
   notice(queues,'État envoyé par les appareils, pouvant être ancien. Ces alertes ne donnent pas l’identité du compte ; aucun rapprochement avec un joueur n’est inventé.');
   const players=group(technical,'Joueurs à examiner');
   if(!model.technical.observationsAvailable)notice(players,'Les observations individuelles sont indisponibles.');
-  else if(!model.technical.priority.length)notice(players,'Aucun problème récent ou attente récente dans cet annuaire borné. Ce constat ne couvre pas tous les joueurs ni les appareils hors ligne.');
-  for(const player of model.technical.priority.slice(0,12))action(players,player.label+' · '+player.icon+' '+player.statusLabel,{type:'player',key:player.key},options);
-  notice(players,number(model.technical.observedPlayers)+' inscrit(s) dans l’annuaire chargé · '+number(model.technical.unknownPlayers)+' état(s) ancien(s) ou inconnu(s).');
+  else if(!model.technical.priority.length)notice(players,adminT('admin.dashboard.noPriority'));
+  for(const player of model.technical.priority.slice(0,12))action(players,adminT('admin.dashboard.priority',{label:player.label,icon:player.icon,state:player.statusLabel,reason:player.reason||'',freshness:player.freshness}),{type:'player',key:player.key},options);
+  notice(players,adminT('admin.dashboard.observed',{count:number(model.technical.observedPlayers),unknown:number(model.technical.unknownPlayers)}));
   action(players,'Voir les joueurs en attente',{type:'players',state:'pending'},options);
-  action(players,'Voir les problèmes signalés',{type:'players',state:'failure'},options);
+  action(players,adminT('admin.dashboard.trouble'),{type:'players',state:'trouble'},options);
   const split=element(technical.ownerDocument,'div',undefined,'analytics-columns');technical.append(split);
   bars(group(split,'Causes d’échec enregistrées'),model.technical.reasons,model.healthAvailable?'Aucune cause enregistrée dans la réponse disponible.':'Causes indisponibles.');
   bars(group(split,'Échecs enregistrés par version'),model.technical.versions,model.healthAvailable?'Aucune version renseignée dans la réponse disponible.':'Versions indisponibles.');

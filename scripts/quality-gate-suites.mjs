@@ -98,6 +98,7 @@ export const nodeSuites=[
  'cloud-sync-presentation-tests.mjs',
  'cloud-victory-notification-tests.mjs',
  'cloud-outbox-health-tests.mjs',
+ 'native-version-tests.mjs',
  'cloud-pending-navigation-tests.mjs',
 
  'board-feedback-tests.mjs',
@@ -203,6 +204,9 @@ export const nodeSuites=[
  "i18n-es-tests.mjs",
   "beta-feedback-tests.mjs",
   "feedback-journal-tests.mjs",
+  "report-snapshot-tests.mjs",
+  "player-health-tests.mjs",
+  "group-ranking-tests.mjs",
   "production-isolation-tests.mjs",
  "support-quick-send-tests.mjs",
  "performance-badge-tests.mjs",

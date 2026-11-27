@@ -308,6 +308,14 @@ jobs:
             -f supabase/migrations/20261123000000_ranking_finish_reason_962.sql \
             -f scripts/fixtures/official-time.sql
           python3 scripts/official-time-concurrency.py
+      - name: Verify constellation and adventure rankings, incremental points and rebuild (#974)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          node scripts/ranking-groups-fixtures.mjs --check
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1             -f supabase/migrations/20261126200100_constellation_rankings_974.sql             -f supabase/migrations/20261126200100_constellation_rankings_974.sql             -f scripts/fixtures/rankings-974.sql
+          python3 scripts/rankings-concurrency.py
       - name: Verify the 1 MiB profile ceiling and preserved function definitions
         env:
           PGPASSWORD: isolated-test-only
@@ -563,6 +571,14 @@ jobs:
             -c "alter default privileges in schema public revoke execute on functions from anon,authenticated" \
             -f scripts/fixtures/beta-feedback-960.sql \
             -f scripts/fixtures/feedback-journal-960.sql
+      - name: Verify the assistance loop, linked diagnostics, player health and native versions (chantier E)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          # #959 #960 #1020 #708 #848: applies the migration twice, then RPC access,
+          # cross-account refusal, idempotency, read state, capture references and versions.
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/assistance-loop-chantier-e.sql
       - name: Verify Analytics acquisition & engagement aggregates and their access (#708)
         env:
           PGPASSWORD: isolated-test-only

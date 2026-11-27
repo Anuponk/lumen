@@ -96,6 +96,7 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  // Open to everyone: the header chip is visible on the main screen without
  // opening Mon ciel or Social, keeps the header on one row and leaves the grid
  // untouched; one read serves the chip, Mon ciel and Social.
+ let questBannerSeen=false;
  for(const [width,height] of [[320,640],[360,740],[390,844],[1280,800]]){
   for(const signedIn of [false,true]){
    await open({send,evaluate},url,{signedIn,enabled:true},{daily:false,width,height});
@@ -108,6 +109,17 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
    assert.equal(await evaluate("document.getElementById('dailyChip').dataset.state"),'open');
    // #1013: monochrome header-icon charter, no permanent yellow; a cyan dot marks « to play ».
    assert.deepEqual(await evaluate(`(()=>{const c=getComputedStyle(document.getElementById('dailyChip')),h=getComputedStyle(document.getElementById('openSocial'));return {color:c.color===h.color,border:c.borderTopColor===h.borderTopColor,background:c.backgroundColor===h.backgroundColor,emoji:/🏆/.test(document.getElementById('dailyChip').textContent),svg:!!document.querySelector('#dailyChip svg.daily-icon')}})()`),{color:true,border:true,background:true,emoji:false,svg:true},'daily chip uses the header-icon palette');
+   // #1049: the same entry under the quest actions while today's challenge is open; it
+   // only shows when it fits below the actions, never resizing the board or scrolling.
+   const quest=await evaluate(`(()=>{const b=document.getElementById('dailyQuestBanner'),board=document.getElementById('board');
+    const shown=!b.hidden,rect=b.getBoundingClientRect(),boardWith=board.getBoundingClientRect().width;
+    b.hidden=true;const boardWithout=board.getBoundingClientRect().width;b.hidden=!shown;
+    return {shown,fits:b.dataset.fits,inside:!shown||rect.bottom<=innerHeight+0.5,sameBoard:Math.abs(boardWith-boardWithout)<0.5,scrollY:document.documentElement.scrollHeight>innerHeight+1,label:b.getAttribute('aria-label')||''}})()`);
+   assert(quest.fits==='yes'||quest.fits==='no','fit measured '+JSON.stringify(quest));
+   assert(quest.inside&&quest.sameBoard&&!quest.scrollY,'banner never clips, scrolls or shrinks the board '+width+'x'+height+' '+JSON.stringify(quest));
+   if(height>=800)assert.equal(quest.shown,true,'room below the actions: the banner is shown '+width+'x'+height);
+   if(quest.shown)assert.match(quest.label,/Défi du jour/);
+   questBannerSeen=questBannerSeen||quest.shown;
    await evaluate("document.getElementById('openSky').click()");await sleep(300);
    assert.equal(await evaluate("document.getElementById('openDaily').hidden"),false,'Mon ciel keeps its entry');
    assert.equal((await calls(evaluate,'lumen_daily_today')).length,1,'chip and Mon ciel share one read');
@@ -120,6 +132,8 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await until(evaluate,"!document.getElementById('dailyChip').hidden",'done chip');
  assert.equal(await evaluate("document.getElementById('dailyChip').dataset.state"),'done');
  assert.match(await evaluate("document.getElementById('dailyChip').getAttribute('aria-label')"),/déjà joué/);
+ assert.equal(questBannerSeen,true,'#1049 banner shown on at least one layout');
+ assert.equal(await evaluate("document.getElementById('dailyQuestBanner').hidden"),true,'#1049: hidden once today is played');
  // #898: Mon ciel and Social show the same « already played » state (Social mirrors Mon ciel).
  await evaluate("document.getElementById('openSky').click()");
  await until(evaluate,"/déjà joué/.test(document.getElementById('dailyEntryState').textContent)",'Mon ciel done state');
@@ -137,6 +151,7 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
   document.dispatchEvent(new Event('visibilitychange'));
  })()`);
  await until(evaluate,"document.getElementById('dailyChip').dataset.state==='open'",'next daily on foreground return');
+ await until(evaluate,"!document.getElementById('dailyQuestBanner').hidden||document.getElementById('dailyQuestBanner').dataset.fits==='no'",'#1049: back with the next daily');
  assert.equal(await evaluate("window.__sameDailyPage===performance.timeOrigin&&window.__sameDailyBoard===document.getElementById('board')"),true,'same document and board across midnight');
  assert.equal((await calls(evaluate,'lumen_daily_today')).length,2,'one new daily discovery after expiry');
  assert.equal(await evaluate("document.getElementById('dailyIntro').hidden&&document.getElementById('dailyBanner').hidden"),true);
