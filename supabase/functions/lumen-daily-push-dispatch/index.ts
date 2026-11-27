@@ -28,6 +28,8 @@ Deno.serve(dailyPushDispatcher({
  reserve:(limit:number)=>rpc('lumen_reserve_daily_push_v1',{p_limit:limit}),
  start:(claim:Reservation)=>rpc('lumen_authorize_daily_push_v1',{p_reservation_id:claim.reservationId}),
  settle:(claim:Reservation,outcome:string)=>rpc('lumen_finish_daily_push_v1',{p_reservation_id:claim.reservationId,p_outcome:outcome}),
+ startTest:(claim:Reservation)=>rpc('lumen_authorize_test_push_v1',{p_reservation_id:claim.reservationId}),
+ settleTest:(claim:Reservation,outcome:string)=>rpc('lumen_finish_test_push_v1',{p_reservation_id:claim.reservationId,p_outcome:outcome}),
  cleanup:()=>rpc('lumen_cleanup_daily_push_v1'),
  send:async(subscription:Subscription,payload:Record<string,unknown>,ttl:number)=>{
   try{

@@ -1,4 +1,8 @@
 export default Object.freeze({
+  'daily.pushTest': "Envoyer ou vérifier le test",
+  'daily.pushTestPending': "Test demandé. Reclique dans quelques secondes pour vérifier son envoi. Un seul test par appareil et par jour.",
+  'daily.pushTestSent': "Le fournisseur a accepté le test. Vérifie sa réception sur cet appareil. Un seul test par jour.",
+  'daily.pushTestFailed': "Test non envoyé ou résultat incertain. Vérifie les autorisations et la connexion de cet appareil.",
   'daily.weekRanking': "Classement de la semaine",
   'daily.weekPoints': "{count} points",
   'daily.weekOwnPoints': "Tes points : {points} · hors classement général",

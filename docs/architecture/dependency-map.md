@@ -1,5 +1,11 @@
 # Dependencies and data flow
 
+Push rehearsal #1034: verified account session → server `daily_push_preview`
+capability → available account settings → explicit device consent → separate
+`push_test_dispatches` ticket → Vault/pg_net → job-authenticated Edge worker →
+one-time service authorization → provider. No client secret or automatic test send.
+The scheduled reminder uses the same account gate with its own daily ledger.
+
 Google Play review #796: private grant/revoke events → account-bound
 `lumen_can_use_play_review` → `play-review-navigation.js` → Mon ciel quest
 selection. The catalogue and existing entitlement access remain required.
