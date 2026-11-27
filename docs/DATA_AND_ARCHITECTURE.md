@@ -571,6 +571,14 @@ desired choice.
 
 ## Cloud persistence contract
 
+Private push rehearsal (#1034) stores only separate delivery reservations in
+`lumen_commands.push_test_dispatches`, with RLS, account erasure and seven-day
+retention. The server-only `daily_push_preview` capability gates enrollment and
+is revalidated with consent before test/reminder delivery. A test never consumes
+the reminder ledger or writes campaign, wallet, purchases or entitlements.
+The [push contract](DAILY_PUSH_1032.md) defines the one-time authorization and
+owner-only commissioning procedure; global availability remains off by default.
+
 Daily-challenge weekly aggregates and recap watermarks (#1015) live in private
 `lumen_commands.daily_week_standings`, `daily_week_friends`, `daily_week_finalized`
 and `daily_recap_seen`. They derive from official daily results and grant no
