@@ -308,14 +308,6 @@ jobs:
             -f supabase/migrations/20261123000000_ranking_finish_reason_962.sql \
             -f scripts/fixtures/official-time.sql
           python3 scripts/official-time-concurrency.py
-      - name: Verify constellation and adventure rankings, incremental points and rebuild (#974)
-        env:
-          PGPASSWORD: isolated-test-only
-          LUMEN_SQL_FIXTURE: '1'
-        run: |
-          node scripts/ranking-groups-fixtures.mjs --check
-          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1             -f supabase/migrations/20261126200100_constellation_rankings_974.sql             -f supabase/migrations/20261126200100_constellation_rankings_974.sql             -f scripts/fixtures/rankings-974.sql
-          python3 scripts/rankings-concurrency.py
       - name: Verify the 1 MiB profile ceiling and preserved function definitions
         env:
           PGPASSWORD: isolated-test-only
@@ -632,3 +624,27 @@ jobs:
             -f supabase/migrations/20261126161419_daily_weekly_recaps_1015.sql \
             -f supabase/migrations/20261126161419_daily_weekly_recaps_1015.sql \
             -f scripts/fixtures/daily-weekly-recaps-1015.sql
+      - name: Verify constellation and adventure rankings in production order, after #1015 (#974)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          node scripts/ranking-groups-fixtures.mjs --check
+          # Production order: #1015 is already installed when #974 wraps the erasure policy.
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -At -c "do \$\$begin
+            if to_regprocedure('lumen_privacy.policy_before_daily_recaps_1015()') is null then raise exception '#1015 must be installed before #974'; end if;
+            if to_regprocedure('lumen_privacy.policy_before_rankings_974()') is not null then raise exception '#974 must not be installed yet'; end if;
+          end \$\$"
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261126200100_constellation_rankings_974.sql \
+            -f supabase/migrations/20261126200100_constellation_rankings_974.sql \
+            -f scripts/fixtures/rankings-974.sql
+          python3 scripts/rankings-concurrency.py
+          # The #974 wrapper sits on top of the #1015 policy and keeps its rules.
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -At -c "do \$\$begin
+            if (select count(*) from lumen_privacy.policy_before_rankings_974() where rel in ('daily_week_finalized','daily_week_standings','daily_week_friends','daily_recap_seen'))<>4 then raise exception '#974 must wrap the #1015 erasure policy'; end if;
+            if (select count(*) from lumen_privacy.policy() where rel in ('daily_week_finalized','daily_week_standings','daily_week_friends','daily_recap_seen'))<>4 then raise exception '#1015 erasure rules lost'; end if;
+            if (select count(*) from lumen_privacy.policy() where rel in ('ranking_groups','ranking_quest_points','ranking_constellation_totals','ranking_adventure_totals'))<>4 then raise exception '#974 erasure rules missing'; end if;
+          end \$\$"
+          # #1015 keeps working once the #974 triggers are installed.
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/daily-weekly-recaps-1015.sql

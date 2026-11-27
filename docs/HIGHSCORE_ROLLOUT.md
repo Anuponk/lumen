@@ -141,9 +141,10 @@ Le barème a été validé par le propriétaire le 24/11/2026. Migration : `2026
   - stockage ≈ (scores visibles) + 88 × participants + 9 × participants lignes de quelques dizaines d'octets ;
   - aucun travail périodique.
 - **Amis et cercles (#928)** : même agrégat, filtré par la liste des amis ou des membres, plus tard. Aucun changement de schéma n'est prévu pour cela.
-- **Rollback** : supprimer les déclencheurs, les fonctions et les quatre tables (données dérivées seulement), puis restaurer `lumen_privacy.policy_before_rankings_974`.
+- **Rollback** : supprimer les déclencheurs, les fonctions et les quatre tables (données dérivées seulement), puis restaurer `lumen_privacy.policy_before_rankings_974`. Ne jamais rejouer à la main la migration #1015 après #974 : son `create or replace lumen_privacy.policy()` retirerait les règles de #974.
 - **Tests** :
   - `scripts/fixtures/rankings-974.sql` : barème, ex aequo, nouveau record, retrait, compte supprimé, révision de grille, reconstruction, pagination, privilèges ;
   - `scripts/rankings-concurrency.py` ;
+  - ordre de la production : l'étape CI #974 s'exécute après celle de #1015 (migration `daily_weekly_recaps_1015`, déjà en production), vérifie que la politique d'effacement de #974 enveloppe celle de #1015 sans perdre ses règles, puis rejoue la fixture #1015 avec les déclencheurs #974 ;
   - `group-ranking-tests` ;
   - navigateur `assistance-browser` (dialogue de classement).

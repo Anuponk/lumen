@@ -2852,6 +2852,7 @@ Run `python -B scripts/lumen_critical_monitor_tests.py` and `python -B scripts/l
 - SQL (canonical-ledger CI, migrations applied twice):
   - `scripts/fixtures/assistance-loop-chantier-e.sql`;
   - `scripts/fixtures/rankings-974.sql`, `scripts/rankings-concurrency.py`;
+  - production order: the #974 step runs after the #1015 step, asserts that #974 wraps the #1015 erasure policy and keeps its four rules, then replays `scripts/fixtures/daily-weekly-recaps-1015.sql` with the #974 triggers installed;
   - `node scripts/ranking-groups-fixtures.mjs --check`.
 - Unit suites: `native-version-tests`, `report-snapshot-tests`, `player-health-tests`, `group-ranking-tests`, `beta-feedback-tests`, `cockpit-dates-tests`, `analytics-dashboard-tests`, `admin-recent-players-tests`.
 - Browser suites:
