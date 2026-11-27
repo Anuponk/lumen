@@ -166,6 +166,14 @@ the server catalogue price charged by Stripe. Stripe refuses another tier
 (`offer_changed`); on Play, an upgrade paid for an outdated tier is neither recorded nor
 acknowledged, so Google refunds it automatically. Runbook: [SHOP_865](SHOP_865.md).
 
+### LUMEN Premium (#1030, not yet active)
+
+A separate Premium right (no daily quota) is derived from the same purchase ledger:
+`lumen-premium`, `real-sky-all`, a sky upgrade or five distinct unit Adventures, or a
+traced administrative whole-sky grant. Mastery unlocks, badges and existing rights are
+unchanged; a mastery-only sky is not Premium. Daily quotas apply only after the
+threshold constellation, behind owner switches. See [PREMIUM_1030](PREMIUM_1030.md).
+
 ## Bonus quests
 After the reviewed historical-command migration, authenticated victories apply
 the existing `legacy-victory.js` rules on the server. Guests and explicitly older

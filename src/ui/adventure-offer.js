@@ -31,7 +31,9 @@ export function mainSkyOffer(skyProgress,{boughtSingle=false}={}){
  const priceCents=product&&skyProgress.sky_offer_currency==='EUR'&&Number.isInteger(skyProgress.sky_offer_price_cents)&&skyProgress.sky_offer_price_cents>0?skyProgress.sky_offer_price_cents:null;
  return {known:true,product,priceCents,purchased:skyProgress.purchased};
 }
-export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,accounts=true,purchasesAvailable=false,boughtSingle=false,skyProgress=null,prices={},pricesRequired=false,priceStatus='idle',priceErrors=[],masteryStatus='ready',masteryConfirmed=false,t=french}){
+// #1030: premium={product,priceCents} replaces every new unit/whole-sky sale with the
+// single LUMEN Premium offer (shop_premium switch). Mastery unlocks are unchanged.
+export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,accounts=true,purchasesAvailable=false,boughtSingle=false,skyProgress=null,prices={},pricesRequired=false,priceStatus='idle',priceErrors=[],masteryStatus='ready',masteryConfirmed=false,premium=null,t=french}){
  const ordered=[...(packs||[])].sort((a,b)=>a.order-b.order);
  const index=ordered.findIndex(p=>p.id===pack.id),previous=index>0?ordered[index-1]:null;
  const previousQuests=previous?(quests||[]).filter(q=>q.packId===previous.id):[];
@@ -61,7 +63,9 @@ export function adventureOfferModel({pack,packs,quests,progress,signedIn=false,a
  const webSkyPrice=sky.known?(sky.priceCents?formatEuros(sky.priceCents):null):formatEuros(SKY_PRICE_CENTS);
  return {id:pack.id,title:adventureDisplayName(pack,t)||t('sky.adventure'),unitCount,skyCount,skyConstellationCount,skyAdventureCount,pricesRequired,priceStatus,priceErrors,unitPriceKnown:!pricesRequired||!!prices[pack.id],skyPriceKnown:pricesRequired?!!prices[skyProduct]:!!webSkyPrice,unitPrice:prices[pack.id]||(pricesRequired?missingPrice:formatEuros(ADVENTURE_PRICE_CENTS)),skyPrice:prices[skyProduct]||(pricesRequired?missingPrice:webSkyPrice||t('store.priceUnavailable')),
   unitProduct:pack.id,skyProduct,showSky:!!sky.product,skyUpgrade,skyPurchased:sky.purchased,
-  signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery};
+  signedIn:!!signedIn,accounts:!!accounts,purchasesAvailable:!!purchasesAvailable,mastery,
+  premium:premium?.product?{product:premium.product,price:prices[premium.product]||(pricesRequired?missingPrice:Number.isInteger(premium.priceCents)?formatEuros(premium.priceCents):t('store.priceUnavailable')),
+   priceKnown:pricesRequired?!!prices[premium.product]:Number.isInteger(premium.priceCents)}:null};
 }
 
 export function purchaseProgressMessage(progress,t=french){
@@ -130,6 +134,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   onBuy(product,{setStatus,setBusy,waiver:{accepted:true,text:WAIVER_TEXT,at:new Date().toISOString()}})};return b};
  const unitAvailable=model.purchasesAvailable&&model.unitCount>0&&model.unitPriceKnown;
  const skyAvailable=model.purchasesAvailable&&model.showSky&&model.skyCount>0&&model.skyPriceKnown;
+ const premiumAvailable=model.purchasesAvailable&&!!model.premium?.priceKnown;
  let waiver=null,waiverLabel=null,waiverError=null;
  // #863: no payment, a visible red message under the box, focus on it; cleared once ticked.
  const showWaiverError=()=>{
@@ -138,7 +143,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   waiver.setAttribute('aria-invalid','true');waiverLabel.className='adventure-offer-consent is-invalid';
   waiver.focus();waiverLabel.scrollIntoView?.({block:'nearest'});
  };
- if(model.signedIn&&(unitAvailable||skyAvailable)){
+ if(model.signedIn&&(model.premium?premiumAvailable:(unitAvailable||skyAvailable))){
   // Consent stays before the purchase buttons (express request before ordering).
   waiverLabel=el('label',{className:'adventure-offer-consent'});
   waiver=el('input',{type:'checkbox',checked:false});waiver.dataset.offer='waiver';
@@ -176,7 +181,16 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   return card;
  };
  const offers=el('div',{className:'adventure-offer-cards'});
- if(model.showSky){
+ if(model.premium){
+  // #1030: one offer, LUMEN Premium, for every locked Adventure.
+  const card=el('section',{className:['adventure-offer-card','adventure-offer-card--premium'].join(' ')});
+  const copy=el('div',{className:'adventure-offer-card-copy'}),action=el('div',{className:'adventure-offer-card-action'});
+  copy.append(el('h3',{},t('premium.plus')),el('p',{},t('premium.offerCopy')),el('p',{className:'adventure-offer-extent'},t('premium.free')));
+  const label=t('premium.buy',{price:model.premium.price}),button=buy('premium',label,model.premium.product);
+  button.setAttribute('aria-label',label);
+  if(!premiumAvailable){buttons.splice(buttons.indexOf(button),1);button.disabled=true}
+  action.append(el('strong',{className:'adventure-offer-price'},model.premium.price),button);card.append(copy,action);offers.append(card);
+ }else if(model.showSky){
   // #865: one personalised offer only, never the list of tiers.
   let note=null;
   if(model.skyUpgrade){
@@ -186,7 +200,7 @@ export function mountAdventureOffer(host,model,{onBuy=async()=>{},onSignIn=()=>{
   }
   offers.append(offerCard('sky',t('store.wholeSky'),model.skyPrice,model.skyCount,model.skyProduct,note));
  }
- offers.append(offerCard('unit',t('store.singleAdventure'),model.unitPrice,model.unitCount,model.unitProduct));
+ if(!model.premium)offers.append(offerCard('unit',t('store.singleAdventure'),model.unitPrice,model.unitCount,model.unitProduct));
  offers.dataset.offerCards='';
  root.append(offers,el('p',{className:'adventure-offer-terms-summary'},t('store.oneTime')));
  const purchaseProgress=el('p',{className:'adventure-offer-cap',hidden:true});

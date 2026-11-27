@@ -63,7 +63,7 @@ public class PaymentActivity extends Activity implements BillingWrapper.Listener
         }
         // Lumen only sells these non-consumable products. Reject before contacting
         // Play when the verified account binding was omitted by the web client.
-        if (!mMethodData.sku.matches("real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4]")
+        if (!mMethodData.sku.matches("real_adventure_0[2-9]|real_sky_all|real_sky_upgrade_[1-4]|lumen_premium")
                 || mMethodData.obfuscatedAccountId == null
                 || !mMethodData.obfuscatedAccountId.matches("[0-9a-f]{64}")
                 || mMethodData.isPriceChangeConfirmation || mMethodData.oldSku != null

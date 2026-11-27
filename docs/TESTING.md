@@ -2883,3 +2883,19 @@ Run `python -B scripts/lumen_critical_monitor_tests.py` and `python -B scripts/l
 ## Native seasonal events - #1056 / #1057 / #1064
 
 Run node scripts/seasonal-events-tests.mjs, node scripts/organic-acquisition-tests.mjs, daily view/challenge and push-dispatch tests. The canonical replay journey includes seasonal dates in three languages for guests and accounts; the landing journey covers dated and legacy links plus the isolated Studio preview. See [the owning contract](marketing/EVENEMENTS_SAISONNIERS.md). Android installed, iPhone PWA and Facebook in-app remain physical acceptance scenarios; Chrome simulation is not that evidence.
+
+## LUMEN Premium foundation (#1030)
+
+- `scripts/premium-quota-tests.mjs` (Node): commerce defaults off, catalogue threshold
+  (4th constellation = `base-q021`), new/replay kinds, decisions and exemptions, one
+  count per attempt identity, midnight imputation, time-zone guard against a double
+  reset, DST, offline and multi-device reconciliation, monotonic activation, bounded
+  storage, Free-first client (no account read or sync while off, failed read keeps
+  rights) and the `ensureAttemptStarted` wiring.
+- `scripts/fixtures/premium-foundation-1030.sql` (canonical-ledger CI, migration applied
+  twice with hosted default grants): privileges, typed settings and the undecided
+  quota gate, Premium derivation and refunds, traced backfill of administrative whole
+  skies only, quota ledger validation and dedup, Stripe Premium guard, Premium circle
+  creation with free joining, archives limited to past days, paginated statistics,
+  calibration access and erasure. The step then replays the #929 and #865 fixtures.
+- Recette: [PREMIUM_1030 § 10](PREMIUM_1030.md#10-recette).

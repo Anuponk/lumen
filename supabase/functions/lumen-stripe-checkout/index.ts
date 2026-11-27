@@ -13,19 +13,19 @@ import { LUMEN_ORIGIN, stripeKey, sessionIdPattern, stripeRequest, syncStripeSes
 
 const checkoutCopy = {
   fr: {
-    sky: 'Tout le vrai ciel', upgrade: 'Tout le vrai ciel (prix ajusté)', adventure: 'Aventure',
+    sky: 'Tout le vrai ciel', premium: 'LUMEN Premium', upgrade: 'Tout le vrai ciel (prix ajusté)', adventure: 'Aventure',
     waiver: 'Accès immédiat demandé : tu as renoncé à ton droit de rétractation de 14 jours pour ce contenu numérique.',
     description: 'contenu numérique, accès immédiat.',
     footer: date => 'Accès immédiat demandé et renonciation au droit de rétractation de 14 jours acceptée le ' + date + ' (art. L221-28, 13° du Code de la consommation). TVA non applicable, art. 293 B du CGI.',
   },
   en: {
-    sky: 'The entire real sky', upgrade: 'The entire real sky (adjusted price)', adventure: 'Adventure',
+    sky: 'The entire real sky', premium: 'LUMEN Premium', upgrade: 'The entire real sky (adjusted price)', adventure: 'Adventure',
     waiver: 'You requested immediate access and waived your 14-day right of withdrawal for this digital content.',
     description: 'digital content, immediate access.',
     footer: date => 'Immediate access requested and waiver of the 14-day right of withdrawal accepted on ' + date + ' (Art. L221-28, 13° of the French Consumer Code). VAT does not apply under Art. 293 B of the French General Tax Code.',
   },
   es: {
-    sky: 'Todo el cielo real', upgrade: 'Todo el cielo real (precio ajustado)', adventure: 'Aventura',
+    sky: 'Todo el cielo real', premium: 'LUMEN Premium', upgrade: 'Todo el cielo real (precio ajustado)', adventure: 'Aventura',
     waiver: 'Has solicitado el acceso inmediato y has renunciado a tu derecho de desistimiento de 14 días para este contenido digital.',
     description: 'contenido digital, acceso inmediato.',
     footer: date => 'Acceso inmediato solicitado y renuncia al derecho de desistimiento de 14 días aceptada el ' + date + ' (art. L221-28, apartado 13.º, del Código de Consumo francés). IVA no aplicable conforme al art. 293 B del Código General de Impuestos francés.',
@@ -33,6 +33,7 @@ const checkoutCopy = {
 };
 
 function productLabel(productId, kind, copy) {
+  if (kind === 'premium') return copy.premium;
   if (kind === 'sky') return 'Lumen · ' + copy.sky;
   if (kind === 'sky_upgrade') return 'Lumen · ' + copy.upgrade;
   const n = /^real-adventure-(\d{1,3})$/.exec(productId);
