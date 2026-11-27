@@ -3341,7 +3341,8 @@ function showQuotaLimit(gate){
  lumenConfirm().open({title:t(replay?'premium.replayLimitTitle':'premium.newLimitTitle'),copy:t(replay?'premium.replayLimitCopy':'premium.newLimitCopy',{limit:gate.limit}),
   cancel:t(offer?'premium.later':'premium.ok'),confirm:offer?t('premium.discover'):t('premium.ok'),onConfirm:()=>{if(offer)openPremiumOffer()}});
 }
-function openPremiumOffer(){openJourneyMap(true)}
+// #1030 owner report 27/11: the limit dialog must land on the shop, not on Mon ciel.
+function openPremiumOffer(){openJourneyMap(true);skyNavigation.showPremiumOffer?.()}
 // Premium-only entries: shown to Premium accounts, in QA preview, or once the free
 // player has reached the threshold (never during the discovery phase).
 function premiumActivated(){

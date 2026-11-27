@@ -310,3 +310,10 @@ test('wiring: archives replay past days only as training, stats behind Premium s
   const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /id="premiumStatsBtn"[^>]*hidden/, 'hidden by default');
 });
+
+test('« Découvrir Premium » opens the shop on the first locked Adventure, not only Mon ciel', () => {
+  const src = fs.readFileSync(new URL('../src/ui/game-screen.js', import.meta.url), 'utf8');
+  assert.match(src, /function openPremiumOffer\(\)\{openJourneyMap\(true\);skyNavigation\.showPremiumOffer\?\.\(\)\}/);
+  const sky = fs.readFileSync(new URL('../src/ui/sky-navigation.js', import.meta.url), 'utf8');
+  assert.match(sky, /function showPremiumOffer\(origin\)\{[^}]*!p\.accessible[^}]*showLocked\(pack,origin\)/);
+});

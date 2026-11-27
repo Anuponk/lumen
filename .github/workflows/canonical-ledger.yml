@@ -696,3 +696,12 @@ jobs:
             -f supabase/migrations/20261128090000_premium_mixed_sky_1030.sql \
             -f supabase/migrations/20261128090000_premium_mixed_sky_1030.sql \
             -f scripts/fixtures/premium-mixed-sky-1030.sql
+      - name: Verify historical records proven on the current grid join the rankings (#974)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261127240000_ranking_reset_proven_records_974.sql \
+            -f supabase/migrations/20261127240000_ranking_reset_proven_records_974.sql \
+            -f scripts/fixtures/ranking-reset-proven-974.sql
