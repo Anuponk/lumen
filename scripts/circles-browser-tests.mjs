@@ -200,12 +200,13 @@ try {
     await until(`!!document.querySelector('[data-circle-action=accept]')`, 'back to list');
     await click('[data-circle-action=accept]');
     await until(
-      `document.getElementById('circlesTitle').textContent==='Collègues'&&/Place 1/.test(document.getElementById('circleBoard')?.textContent||'')`,
+      `document.getElementById('circlesTitle').textContent==='Collègues'&&!!document.querySelector('#circleBoard .lumen-podium li')`,
       'board',
     );
     assert.match(
       await evaluate(`document.getElementById('circleBoard').textContent`),
-      /Place 1Ben929.*Place 2Moi929 \(toi\)/s,
+      // #974 shared podium (2 – 1 – 3): Moi929 on step 2, Ben929 on step 1.
+      /22Moi929 \(toi\).*11Ben929/s,
     );
     assert.match(await text(), /1 membre sans temps sur cette quête/);
     if (width === 360)

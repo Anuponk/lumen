@@ -98,4 +98,32 @@ const publisher=JSON.parse(read('content/legal/publisher.json'));
 assert.equal(publisher.consumerMediatorOwnerDeclaration.plannedProvider,'CM2C');
 assert(!evaluatePlayReadiness(publisher).blockers.includes('consumer.mediator'));
 assert(!evaluatePlayReadiness(publisher).blockers.includes('monetization.review'),'Paid Adventures without ads is a reviewed model');
+// #1029 compact Premium offer: one CTA, sign-in only at purchase, waiver at the
+// purchase moment, never a disabled purchase button, discreet terms and restore.
+{
+ const premiumModel={...model,premium:{product:'lumen-premium',price:'4,99 €',priceKnown:true},mastery:{previousName:'Au-delà de l’horizon',mastered:false,confirmed:false,missingQuests:3,missingBadges:2,status:'ready'}};
+ const buys=[];const signIns=[];
+ const premium=mountAdventureOffer(new Node('div'),premiumModel,{onBuy:async(product,ctx)=>buys.push({product,ctx}),onSignIn:()=>signIns.push(1),onRestorePlay:()=>'',onRetry:()=>{}});
+ const all=premium.all(),by=kind=>all.find(n=>n.dataset.offer===kind);
+ assert(premium.dataset.premiumOffer!==undefined,'Premium renderer when the offer is active');
+ assert.equal(all.filter(n=>n.dataset.offer==='premium-start').length,1,'one commercial CTA');
+ assert.equal(by('premium-start').textContent,'Passer à Premium · 4,99 €');
+ assert(!all.some(n=>n.dataset.offer==='unit'||n.dataset.offer==='sky'),'no unit or whole-sky card');
+ assert.equal(all.filter(n=>n.textContent==='Achat unique · Sans abonnement · Sans publicité').length,1,'one guarantee line');
+ assert.equal(all.find(n=>n.dataset.offerConsent!==undefined).hidden,true,'the waiver waits for the purchase intent');
+ by('premium-start').onclick();
+ assert.equal(all.find(n=>n.dataset.offerConsent!==undefined).hidden,false);
+ by('premium').onclick();assert.equal(buys.length,0,'no payment before the waiver box');
+ by('waiver').checked=true;by('premium').onclick();
+ assert.equal(buys[0].product,'lumen-premium');assert.equal(buys[0].ctx.waiver.accepted,true);
+ assert(by('progress')&&all.find(n=>n.dataset.offerMastery!==undefined).hidden,'mastery details behind « Voir ma progression »');
+ assert(by('terms')&&by('restore-play'),'terms and restore stay available, discreetly');
+ const guest=mountAdventureOffer(new Node('div'),{...premiumModel,signedIn:false},{onSignIn:()=>signIns.push(1)}).all();
+ guest.find(n=>n.dataset.offer==='premium-start').onclick();
+ assert.equal(signIns.length,1,'sign-in only once the purchase is triggered');
+ assert(!guest.some(n=>n.dataset.offer==='signin'),'no premature account creation button');
+ const off=mountAdventureOffer(new Node('div'),{...premiumModel,purchasesAvailable:false}).all();
+ assert(!off.some(n=>n.dataset.offer==='premium-start'),'no disabled purchase CTA when payment is unavailable');
+ assert(off.some(n=>n.textContent==='Le paiement n’est pas disponible pour le moment.'));
+}
 console.log('sales-terms-tests: waiver gate, sales terms, legal notice, privacy, release lists and readiness OK');

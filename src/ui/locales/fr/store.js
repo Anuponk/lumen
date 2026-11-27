@@ -127,4 +127,14 @@ export default Object.freeze({
   'premium.archiveReplay': "Rejouer ce défi (entraînement)",
   'premium.archiveUnavailable': "Ce défi n’est plus disponible.",
   'premium.archiveRequired': "Rejouer les anciens défis fait partie de LUMEN Premium.",
+  // #1029 compact Premium offer.
+  'premiumShop.title': "Explore tout le ciel",
+  'premiumShop.subtitle': "LUMEN Premium — Joue sans limites.",
+  'premiumShop.benefitSky': "Toutes les aventures du ciel principal et leurs extensions",
+  'premiumShop.benefitLimit': "Aucune limite quotidienne",
+  'premiumShop.pay': "Confirmer et payer · {price}",
+  'premiumShop.unavailable': "Le paiement n’est pas disponible pour le moment.",
+  'premiumShop.free': "Ou débloque-la gratuitement en maîtrisant « {name} » à 100 %.",
+  'premiumShop.freeGeneric': "Ou débloque-la gratuitement en maîtrisant l’aventure précédente à 100 %.",
+  'premiumShop.progress': "Voir ma progression",
 });

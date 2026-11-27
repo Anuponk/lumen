@@ -1,3 +1,4 @@
+import {createPodium} from './podium.js';
 import { createTranslator } from './i18n.js';
 
 const fr = createTranslator().t;
@@ -42,14 +43,9 @@ export function createRankingView({client,getContext,format,document=globalThis.
   root.dataset.state='ready';delete root.dataset.sync;failures=0;root.replaceChildren();
   // Old backends return a window: never infer missing leaders or a total.
   const top=(data.top??data.rows??[]).filter(r=>r.position<=3),mine=data.personal??data.rows?.find(r=>r.mine);
-  const list=element('ol','ranking-podium','');list.setAttribute('aria-label',t('ranking.top'));
-  for(const row of top){
-   const li=element('li','ranking-row ranking-step-'+row.position+(row.mine?' ranking-mine':''),'');li.dataset.position=row.position;
-   li.append(element('span','ranking-crown','♛'),element('span','ranking-place',String(row.place)),element('span','ranking-name',row.nickname),element('span','ranking-time',format(row.score)));li.title=row.nickname;
-   if(row.virtual)li.append(element('small','ranking-virtual',t('ranking.echo')));
-   if(row.mine)li.append(element('small','ranking-you',t('ranking.you')));
-   list.append(li);
-  }
+  // #974: shared LUMEN podium (2–1–3 steps, celestial medallions), compact on the victory screen.
+  const list=createPodium(document,[...top].sort((a,b)=>a.position-b.position),{value:row=>format(row.score),t});
+  for(const li of list.children){const row=top.find(r=>String(r.position)===li.dataset.position);if(row?.virtual)li.append(element('small','ranking-virtual',t('ranking.echo')))}
   root.append(list);
   const card=element('div','ranking-personal','');
   if(mine&&mine.position>3){card.classList.add('ranking-mine');card.dataset.position=mine.position;card.append(element('strong','',t('ranking.yourPlace',{place:t('ranking.ordinal',{count:mine.place},{type:'ordinal'})})),element('span','ranking-time',format(mine.score)));

@@ -195,9 +195,12 @@ Le podium chronométrique et la position personnelle de fin de quête sont conse
 sans accès à une liste complète par quête. Le Défi du jour garde ses classements,
 son barème, ses récapitulatifs et ses récompenses.
 
-- Ouverture : une RPC `lumen_group_ranking('adventure', id)`, top 3 et ma position.
-- Dépliage : une page de dix à partir de l'offset 3, puis pages suivantes à la
-  demande. Les lignes du podium ne sont pas ajoutées à nouveau.
+- Ouverture : une RPC `lumen_group_ranking('adventure', id)`, podium 2 – 1 – 3 et ma
+  position (maquette validée du 27/11, `lumen-marketing/maquettes/974-classement-aventure.png`).
+- « Voir autour de ma position » : une RPC bornée à 11 lignes centrées sur le joueur
+  (20e → rangs 15 à 25) ; sur le podium ou non classé : rangs 4 à 13. « Voir avant » /
+  « Voir après » : blocs de 10 contigus, ancre de lecture conservée, boutons masqués aux
+  bornes. Les lignes du podium ne sont jamais ajoutées à nouveau ; repli sans relecture.
 - Une page ne relit ni ne renvoie le podium ou le résumé personnel déjà chargés.
   Repliage/réouverture des pages chargées : zéro RPC. Aucun polling ou Realtime.
 - Le marqueur `scoringVersion=2` évite d'expliquer le nouveau barème sur un ancien

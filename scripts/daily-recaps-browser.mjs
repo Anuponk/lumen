@@ -15,7 +15,7 @@ export async function verifyDailyRecaps({send,evaluate}) {
         formatDuration:s=>s+' s',openBoard:r=>opened.push(r.day)});
       await recap.wake();const before=reads;safe=true;await recap.wake();await recap.wake();
       const dialog=document.querySelector('.daily-recap');
-      const escaped=dialog.querySelector('.daily-board-name').textContent==='<Ana>';
+      const escaped=dialog.querySelector('.lumen-podium .ranking-step-1 .ranking-name').textContent==='<Ana>';
       const points=dialog.textContent.includes('56');
       const focus=dialog.contains(document.activeElement);
       const bounds=dialog.querySelector('.daily-celebration-card').getBoundingClientRect();

@@ -27,7 +27,7 @@ export function createForegroundRecovery({run,now=()=>Date.now(),minIntervalMs=6
  };
 }
 // Play Console disallows hyphens in product IDs. Internal pack IDs remain unchanged.
-export function toPlayProductId(id){return /^(real-adventure-0[2-9]|real-sky-all|real-sky-upgrade-[1-4])$/.test(id)?id.replaceAll('-','_'):id}
+export function toPlayProductId(id){return /^(real-adventure-0[2-9]|real-sky-all|real-sky-upgrade-[1-4]|lumen-premium)$/.test(id)?id.replaceAll('-','_'):id}
 
 
 export async function getPlayPurchaseService(win=globalThis,onDiagnostic=()=>{}){

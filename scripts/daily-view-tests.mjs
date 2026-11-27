@@ -16,8 +16,9 @@ assert.match(dailyErrorMessage('anything'),/indisponible/);
 const fmt=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
 const general={participants:12,top:[{nickname:'Ana',score:95,rank:1},{nickname:'Bo<b>',score:95,rank:1},{nickname:'Cy',score:120,rank:3}],me:{rank:5,score:150}};
 const html=renderDailyBoard(general,{formatDuration:fmt});
-assert.match(html,/1er<\/span><span class="daily-board-name">Ana.*1er<\/span><span class="daily-board-name">Bo&lt;b&gt;.*3e<\/span>/s,'ties share a rank, names escaped');
-assert.match(html,/Ta position : <strong>5e<\/strong> · 2:30/,'my position outside the top 3');
+// #974: shared LUMEN podium (2 – 1 – 3), ties keep their shared rank, names escaped.
+assert.match(html,/ranking-step-2[^>]*><span class="lumen-medal"[^>]*><span class="lumen-medal-rank">1<\/span>.*Bo&lt;b&gt;.*ranking-step-1.*>1<\/span>.*Ana.*ranking-step-3.*>3<\/span>.*Cy/s,'ties share a rank, names escaped');
+assert.match(html,/lumen-my-position.*Ta position.*lumen-rank">5<.*2:30/s,'my position outside the top 3');
 assert.match(html,/12 participants/);
 assert.doesNotMatch(renderDailyBoard({...general,me:{rank:2,score:95},top:[{nickname:'Ana',score:95,rank:1},{nickname:'Moi',score:95,rank:1,mine:true}]},{formatDuration:fmt}),/Ta position/,'no duplicate line when I am in the top 3');
 assert.match(renderDailyBoard({participants:3,top:[{nickname:'Ana',score:95,rank:1}],me:{rank:null,score:90}},{formatDuration:fmt}),/hors classement général/,'opted-out players are told why');
@@ -43,4 +44,4 @@ const english = {t:createTranslator({locale:'en'}).t,locale:'en'};
 assert.match(formatDailyDate('2026-11-23',english.locale),/Monday.*November/);
 assert.equal(formatRank(11,english.t),'11th');
 assert.match(dailyErrorMessage('account_required',english.t),/Sign in/);
-assert.match(renderDailyBoard(general,{...english,formatDuration:fmt}),/Bo&lt;b&gt;.*Your rank: <strong>5th<\/strong> · 2:30.*12 participants/s);
+assert.match(renderDailyBoard(general,{...english,formatDuration:fmt}),/Bo&lt;b&gt;.*Your position.*>5<.*2:30.*12 participants/s);
