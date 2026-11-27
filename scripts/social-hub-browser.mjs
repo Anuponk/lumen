@@ -148,10 +148,12 @@ export async function verifySocialHub({send,evaluate},url,{captureDir=process.en
   const focusStart=await evaluate('document.activeElement.id');
   for(let i=0;i<12;i++)await key(send,'Tab','Tab',9);
   assert.equal(await evaluate(`document.getElementById('socialHub').contains(document.activeElement)`),true,'Focus trapped in the panel (from '+focusStart+')');
-  // Rankings: campaign and daily kept apart.
+  // #974: adventure totals and the existing daily boards remain distinct.
   await evaluate(`document.getElementById('socialRankings').click()`);
   assert.equal(await evaluate(`document.getElementById('socialHubTitle').textContent`),'Classements');
-  assert.match(await evaluate(`document.getElementById('socialRankingsView').textContent`),/Classements des quêtes.*Défi du jour · Général et Mes amis/s);
+  const rankingCopy=await evaluate(`document.getElementById('socialRankingsView').textContent`);
+  assert.match(rankingCopy,/Classement par aventure.*Défi du jour · Général et Mes amis/s);
+  assert.doesNotMatch(rankingCopy,/Classements des quêtes|Classement par constellation/,'No retired constellation ranking entry');
   assert.equal(await evaluate(`!document.getElementById('socialDailyRanking').hidden`),true);
   await capture(send,captureDir,'social-hub-rankings-'+width);
   // Notifications (PR B): one row per event, unread marked, read on viewing.
