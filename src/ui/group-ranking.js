@@ -21,6 +21,7 @@ export function createGroupRanking({
   t,
   rpc,
   signedIn,
+  nickname = () => '',
   onOpen = () => {},
   onClose = () => {},
 }) {
@@ -51,6 +52,9 @@ export function createGroupRanking({
     if (r.mine) li.append(el('small', 'ranking-you', t('ranking.you')));
     return li;
   };
+  // #974 recette 27/11: my line looks like every other ranking line. On the
+  // podium, that line is enough; off the podium it follows the podium after a
+  // discreet separator and hides while the loaded list already shows it.
   function render(data) {
     body.replaceChildren();
     const top = data.top || [],
@@ -58,20 +62,33 @@ export function createGroupRanking({
     podium.setAttribute('aria-label', t('ranking.top'));
     top.forEach((r, index) => podium.append(row(r, index + 1)));
     body.append(top.length ? podium : el('p', 'ranking-note', t('groupRanking.empty')));
-    const me = el('p', 'group-ranking-me' + (data.personal ? ' ranking-mine' : ''));
-    me.textContent = data.personal
-      ? t('groupRanking.mine', {
+    const onPodium = top.some((r) => r.mine);
+    let personal = null;
+    if (data.personal && !onPodium) {
+      personal = el('ol', 'group-ranking-personal');
+      personal.start = data.personal.place;
+      personal.append(
+        row({
           place: data.personal.place,
-          participants: data.participants,
+          nickname: nickname() || t('ranking.you'),
           points: data.personal.points,
           quests: data.personal.quests,
-          total: data.questTotal,
-        })
-      : data.participating
-        ? t('groupRanking.notRanked', { total: data.questTotal })
-        : t('ranking.account');
+          mine: true,
+        }),
+      );
+      body.append(personal);
+    } else if (!data.personal) {
+      body.append(
+        el(
+          'p',
+          'group-ranking-me',
+          data.participating
+            ? t('groupRanking.notRanked', { total: data.questTotal })
+            : t('ranking.account'),
+        ),
+      );
+    }
     body.append(
-      me,
       el(
         'p',
         'ranking-note',
@@ -85,7 +102,7 @@ export function createGroupRanking({
       t('groupRanking.all', { count: data.participants }),
     );
     const list = el('ol', 'group-ranking-list'),
-      next = el('button', 'group-ranking-next', t('groupRanking.next'));
+      next = el('button', 'group-ranking-next');
     toggle.type = next.type = 'button';
     toggle.setAttribute('aria-expanded', 'false');
     list.id = 'groupRankingRemainder';
@@ -95,8 +112,23 @@ export function createGroupRanking({
       expanded = false,
       loaded = false,
       loading = false,
-      hasMore = true;
+      failed = false,
+      hasMore = true,
+      listHasMine = false;
     const seen = new Set(top.map((r) => r.nickname));
+    const remaining = () => Math.max(0, data.participants - offset);
+    function sync() {
+      list.hidden = !expanded;
+      next.hidden = !expanded || !hasMore;
+      next.textContent = failed
+        ? t('groupRanking.retry')
+        : t('groupRanking.more', { count: remaining() });
+      if (personal) personal.hidden = expanded && listHasMine;
+      toggle.setAttribute('aria-expanded', String(expanded));
+      toggle.textContent = t(expanded ? 'groupRanking.less' : 'groupRanking.all', {
+        count: data.participants,
+      });
+    }
     async function page() {
       if (loading || !hasMore) return;
       loading = true;
@@ -117,28 +149,24 @@ export function createGroupRanking({
           if (!seen.has(r.nickname)) {
             list.append(row(r));
             seen.add(r.nickname);
+            if (r.mine) listHasMine = true;
           }
         }
         offset += (page.rows || []).length;
         hasMore = !!page.more && !!page.rows?.length;
         loaded = true;
-        next.textContent = t('groupRanking.next');
+        failed = false;
       } catch {
-        if (token === generation) next.textContent = t('groupRanking.retry');
+        if (token === generation) failed = true;
       } finally {
         loading = false;
         next.disabled = false;
-        next.hidden = !expanded || !hasMore;
+        if (token === generation) sync();
       }
     }
     toggle.onclick = async () => {
       expanded = !expanded;
-      list.hidden = !expanded;
-      toggle.setAttribute('aria-expanded', String(expanded));
-      toggle.textContent = t(expanded ? 'groupRanking.less' : 'groupRanking.all', {
-        count: data.participants,
-      });
-      next.hidden = !expanded || !hasMore;
+      sync();
       if (expanded && !loaded) await page();
     };
     next.onclick = page;

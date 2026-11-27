@@ -204,6 +204,12 @@ son barème, ses récapitulatifs et ses récompenses.
   backend. Les réponses initiales exposent aussi le maximum dérivé du catalogue.
 - Les pseudos restent du texte, la surbrillance personnelle et les trois couleurs
   du podium sont conservées. FR/EN/ES et largeur mobile vérifiés en navigateur simulé.
+- Recette propriétaire du 27/11 : sur le podium, ma ligne surlignée suffit (pas de
+  bloc « Ta place »). Hors podium, ma position est une ligne de classement comme les
+  autres (rang, pseudo, points, quêtes), après un séparateur discret, sans médaille ;
+  elle est masquée quand la liste chargée la contient déjà et réapparaît au repli.
+  Tant qu'il reste des joueurs, un bouton explicite « Voir plus (N restant(s)) » charge
+  la page suivante ; les tests couvrent 6, 13 et 14 participants et le dernier lot.
 
 Coût du recalcul : O(N log N) pour les rangs de la quête modifiée, jointures indexées
 sur les sources de badges et propagation aux seuls totaux modifiés. Pas de lecture

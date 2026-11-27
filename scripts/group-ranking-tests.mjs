@@ -104,6 +104,12 @@ class Node {
   }
 }
 function find(node, selector) {
+  // Minimal descendant combinator: '.a .b' finds .b inside each .a.
+  const parts = selector.trim().split(/\s+/);
+  if (parts.length > 1) {
+    const [first, ...rest] = parts;
+    return [...new Set(find(node, first).flatMap((n) => find(n, rest.join(' '))))];
+  }
   const match = (n) =>
     selector.startsWith('.') ? n.className.split(' ').includes(selector.slice(1)) : false;
   return node.children.flatMap((child) => [
@@ -170,6 +176,7 @@ function fixture({
     t: (k, p) => k + (p ? JSON.stringify(p) : ''),
     rpc,
     signedIn: () => owner.signed,
+    nickname: () => 'Moi',
   });
   const open = async (options = {}) => {
     view.open({
@@ -189,9 +196,15 @@ test('adventure opens without a constellation and only reads top three plus my p
   assert.equal(f.calls.length, 1);
   assert.equal(f.calls[0].p_kind, 'adventure');
   assert(!f.calls[0].p_limit);
-  assert.equal(f.nodes('.group-ranking-row').length, 3);
-  assert.equal(f.nodes('.group-ranking-me')[0].className, 'group-ranking-me ranking-mine');
-  assert.match(f.nodes('.group-ranking-me')[0].textContent, /"place":14/);
+  assert.equal(f.nodes('.group-ranking-podium .group-ranking-row').length, 3);
+  // #974 recette 27/11: off the podium, my line is a ranking row (place, name,
+  // points), after a discreet separator, never a separate text block.
+  const mine = f.nodes('.group-ranking-personal .group-ranking-row');
+  assert.equal(mine.length, 1);
+  assert.equal(mine[0].className, 'group-ranking-row ranking-mine');
+  assert.equal(mine[0].children[0].textContent, '14');
+  assert.equal(mine[0].children[1].textContent, 'Moi');
+  assert.equal(f.nodes('.group-ranking-me').length, 0);
   assert.equal(f.nodes('.group-ranking-list')[0].hidden, true);
   assert.equal(f.ids.get('groupRankingName').textContent, 'Ciel réel');
 });
@@ -205,16 +218,21 @@ test('expansion starts at offset three, pages without duplicate podium rows and 
   assert.equal(f.calls[1].p_offset, 3);
   assert.equal(f.calls[1].p_limit, 10);
   assert.equal(list.children.length, 10);
-  assert.equal(f.nodes('.group-ranking-row').length, 13);
+  assert.equal(f.nodes('.group-ranking-list .group-ranking-row').length, 10);
+  assert.equal(next.hidden, false, 'an explicit button while players remain');
+  assert.match(next.textContent, /groupRanking\.more\{"count":5\}/);
+  assert.equal(f.nodes('.group-ranking-personal')[0].hidden, false, 'rank 14 not loaded yet');
   assert.equal(list.children[0].children[1].textContent, 'Player 4');
   await next.onclick();
   assert.equal(f.calls[2].p_offset, 13);
   assert.equal(list.children.length, 15);
   assert.equal(next.hidden, true);
-  assert.equal(f.nodes('.group-ranking-row').length, 18);
+  assert.equal(f.nodes('.group-ranking-podium .group-ranking-row').length + list.children.length, 18);
   assert.equal(find(list, '.ranking-mine').length, 1);
+  assert.equal(f.nodes('.group-ranking-personal')[0].hidden, true, 'no repeated personal line');
   await toggle.onclick();
   assert.equal(list.hidden, true);
+  assert.equal(f.nodes('.group-ranking-personal')[0].hidden, false, 'found again after collapsing');
   assert.equal(toggle.attrs['aria-expanded'], 'false');
   await toggle.onclick();
   assert.equal(list.hidden, false);
@@ -227,8 +245,10 @@ test('zero, one and three participants need no expansion; own podium row stays h
     assert.equal(f.nodes('.group-ranking-row').length, participants);
     assert.equal(f.nodes('.group-ranking-more').length, 0);
     assert.equal(f.calls.length, 1);
-    if (participants)
-      assert.equal(f.nodes('.ranking-mine').length, 2, 'one podium row and the personal summary');
+    if (participants) {
+      assert.equal(f.nodes('.ranking-mine').length, 1, 'on the podium, my podium line is enough');
+      assert.equal(f.nodes('.group-ranking-personal').length, 0);
+    }
   }
 });
 test('a pending page stays collapsed, stale pages do not replace another adventure, and failures retry', async () => {
@@ -249,7 +269,8 @@ test('a pending page stays collapsed, stale pages do not replace another adventu
   await f.open();
   f.delayed.shift()();
   await stale;
-  assert.equal(f.nodes('.group-ranking-row').length, 3);
+  assert.equal(f.nodes('.group-ranking-podium .group-ranking-row').length, 3);
+  assert.equal(f.nodes('.group-ranking-list .group-ranking-row').length, 0, 'the stale page was dropped');
   const retry = fixture({ failPage: true });
   await retry.open();
   await retry.nodes('.group-ranking-more')[0].onclick();
@@ -268,4 +289,32 @@ test('guests and old scoring backends cannot show a misleading new scale', async
   await legacy.open();
   assert.equal(legacy.nodes('.group-ranking-row').length, 0);
   assert.equal(legacy.ids.get('groupRankingStatus').textContent, 'ranking.unavailable');
+});
+
+test('recette 27/11: 6 and 14 participants show every rank once, ties and the last page', async () => {
+  for (const [participants, own] of [[6, 5], [14, 2], [13, 13]]) {
+    const f = fixture({ participants, own });
+    await f.open();
+    const toggle = f.nodes('.group-ranking-more')[0],
+      list = f.nodes('.group-ranking-list')[0],
+      next = f.nodes('.group-ranking-next')[0];
+    await toggle.onclick();
+    while (!next.hidden) await next.onclick();
+    const names = [
+      ...f.nodes('.group-ranking-podium .ranking-name'),
+      ...find(list, '.ranking-name'),
+    ].map((n) => n.textContent);
+    assert.equal(names.length, participants, participants + ' rows, none omitted');
+    assert.equal(new Set(names).size, participants, 'no duplicate');
+    assert.equal(find(list, '.ranking-mine').length + f.nodes('.group-ranking-podium .ranking-mine').length, 1);
+    if (own > 3) assert.equal(f.nodes('.group-ranking-personal')[0].hidden, true);
+  }
+});
+test('no medal off the podium and nobody unranked gets a fake line', async () => {
+  const f = fixture({ participants: 8, own: 99 });
+  await f.open();
+  assert.equal(f.nodes('.group-ranking-personal').length, 0);
+  assert.equal(f.nodes('.group-ranking-me').length, 1, 'not ranked yet is still explained');
+  await f.nodes('.group-ranking-more')[0].onclick();
+  assert.ok(f.nodes('.group-ranking-list .group-ranking-row').every((li) => li.dataset?.position === undefined));
 });
