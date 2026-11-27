@@ -16,8 +16,8 @@ de recette l'accorde séparément aux seuls comptes nommément autorisés, dont 
 propriétaire. Le drapeau public reste désactivé. Le lot de 18 h revalide cette même
 autorisation pour chaque destinataire avant d'envoyer.
 
-Après une mise à jour de Lumen, se connecter au compte autorisé, ouvrir **Compte →
-Notifications**, puis choisir **Activer sur cet appareil** et accepter la permission
+Après une mise à jour de Lumen, se connecter au compte autorisé, ouvrir **Mon espace →
+À propos → Notifications**, puis choisir **Activer sur cet appareil** et accepter la permission
 du navigateur. Sur iPhone, ouvrir la PWA installée sur l'écran d'accueil avec un
 système compatible Web Push. Une permission refusée se rétablit dans les réglages
 du navigateur ou du système. Le menu indique les appareils non compatibles.
