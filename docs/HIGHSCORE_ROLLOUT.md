@@ -210,6 +210,12 @@ son barème, ses récapitulatifs et ses récompenses.
   elle est masquée quand la liste chargée la contient déjà et réapparaît au repli.
   Tant qu'il reste des joueurs, un bouton explicite « Voir plus (N restant(s)) » charge
   la page suivante ; les tests couvrent 6, 13 et 14 participants et le dernier lot.
+- Correctif serveur (27/11) : une demande de page (`p_limit>0`) lisait un
+  enregistrement personnel jamais affecté ; sur une connexion dont le plan PL/pgSQL
+  n'avait pas encore vu l'ouverture, la RPC échouait (« record v_mine is not assigned
+  yet ») et le dépliage restait sur « Réessayer ». Migration
+  `20261127230000_ranking_page_fix_974` (variables scalaires, même résultat) et
+  test `fixtures/ranking-page-fix-974.sql` exécuté dans une session neuve.
 
 Coût du recalcul : O(N log N) pour les rangs de la quête modifiée, jointures indexées
 sur les sources de badges et propagation aux seuls totaux modifiés. Pas de lecture

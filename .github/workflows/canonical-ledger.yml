@@ -674,3 +674,13 @@ jobs:
             -f scripts/fixtures/premium-foundation-1030.sql \
             -f scripts/fixtures/private-circles-929.sql \
             -f scripts/fixtures/sky-upgrade-offers.sql
+      - name: Verify adventure ranking pages on a fresh connection (#974 hotfix)
+        env:
+          PGPASSWORD: isolated-test-only
+          LUMEN_SQL_FIXTURE: '1'
+        run: |
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20261127230000_ranking_page_fix_974.sql \
+            -f supabase/migrations/20261127230000_ranking_page_fix_974.sql
+          # Separate session: the page is the first ranking call (fresh plan), as in production.
+          psql -h localhost -U postgres -d lumen_test -v ON_ERROR_STOP=1 -f scripts/fixtures/ranking-page-fix-974.sql

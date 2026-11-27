@@ -655,3 +655,5 @@ Harnesses running game-screen excerpts get new dependencies from
 Chantier E / transverse UX: see [TESTING](../TESTING.md#chantier-e-and-transverse-ux-959-960-1020-708-848-974-1049) for the SQL fixtures, unit suites (`native-version`, `report-snapshot`, `player-health`, `group-ranking`) and browser suites (`assistance-browser`, `cockpit-browser`, `beta-feedback-browser-tests`, `daily-challenge-browser`).
 
 LUMEN Premium foundation (#1030): `premium-quota-tests.mjs`, `fixtures/premium-foundation-1030.sql` (canonical-ledger CI, then the #929/#865 fixtures) and `adventure-offer-tests.mjs` (SKU parity); full gate. See [TESTING](../TESTING.md#lumen-premium-foundation-1030).
+
+#974 hotfix: `scripts/fixtures/ranking-page-fix-974.sql` (canonical-ledger CI, own psql session) calls an adventure ranking page as the first call of a fresh connection, then checks the last page, ties and that every rank appears once.
