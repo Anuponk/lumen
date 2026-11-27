@@ -97,9 +97,12 @@ export function mountMiniGame(root, { data, win = globalThis.window, now = () =>
   })();
   const locale = miniLocale({ storage, navigator: win.navigator, search: win.location?.search || '' });
   const t = miniTranslator(locale);
-  const today = parisDay(now());
+  // Owner acceptance before the Paris date: ?preview=1 opens the board and sends no hit.
+  const preview = new URLSearchParams(win.location?.search || '').get('preview') === '1';
+  const today = preview ? data.day : parisDay(now());
   doc.documentElement.lang = locale;
   const hit = (event) => {
+    if (preview) return;
     try {
       const img = new win.Image();
       img.src = hitUrl(event, { day: data.day, locale, search: win.location?.search || '' });

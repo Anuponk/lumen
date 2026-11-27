@@ -36,6 +36,7 @@ Chantier du 27/11/2026, coordonné avec le studio vidéo [#1046](https://github.
   - Chaque lien porte `utm_source=mini_puzzle` et `utm_campaign=mini_AAAA-MM-JJ`.
 - **Sans compte ni installation** : la page n'utilise ni Supabase ni service worker. Elle n'écrit que l'indicateur local `lumenMiniDoneV1`, la liste des jours résolus. Une case dont la date de Paris n'est pas arrivée affiche « Cette case s'ouvre le … ».
 - **Langues** : le français par défaut. La page suit sinon le choix enregistré dans Lumen (`lumen.locale`), puis la langue du navigateur, en anglais ou en espagnol. Les textes sont dans `src/acquisition/locales.js` : le catalogue de l'application (540 Ko) est trop lourd pour une page d'acquisition mobile.
+- **Aperçu propriétaire** : ajouter `?preview=1` à une page datée pour jouer avant sa date, par exemple `https://lumen.nopuna.fr/mini/2026-12-01.html?preview=1`. Ce mode n'envoie aucun pixel de mesure.
 - **URL stables** : `https://lumen.nopuna.fr/mini/AAAA-MM-JJ.html`, avec un aperçu Open Graph propre à chaque date. `https://lumen.nopuna.fr/mini/` présente le calendrier de l'Avent et les jours précédents.
 
 ### Publication quotidienne (#1056)

@@ -127,6 +127,15 @@ export async function verifyMini({ send, evaluate }, baseUrl) {
   assert.equal(calendar.lang, 'es');
   assert.equal(calendar.overflow, false);
 
+  // Owner preview before the Paris date: board open, no hit sent.
+  await open({ send, evaluate }, page.replace('?', '?preview=1&'), { now: '2026-11-27T10:00:00Z' });
+  const preview = await evaluate(
+    `new Promise(r=>setTimeout(()=>r({state:document.getElementById('mini').dataset.state,cells:document.querySelectorAll('.mini-cell').length,
+      hits:performance.getEntriesByType('resource').filter(e=>e.name.includes('/mini/t.gif')).length}),150))`,
+    true,
+  );
+  assert.deepEqual(preview, { state: 'playing', cells: 36, hits: 0 });
+
   // Without the test clock the real page boots by itself (production path).
   await open({ send, evaluate }, page);
   const boot = await evaluate(`document.getElementById('mini').dataset.state`);
