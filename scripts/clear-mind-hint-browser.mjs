@@ -17,6 +17,8 @@ export async function verifyClearMindHint(browser,baseUrl){
  assert.ok(target,'a Clear-mind quest exists in the campaign');
  const url=new URL(baseUrl);url.searchParams.set('qa','new');
  const results={};
+ // Restore the language exactly afterwards: later suites assert French copy.
+ const savedLocale=await evaluate(`JSON.stringify(Object.fromEntries(Object.keys(localStorage).filter(k=>k.startsWith('lumen.locale')).map(k=>[k,localStorage.getItem(k)])))`);
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,mobile:true,deviceScaleFactor:1});
  for(const locale of ['fr','en','es']){
   const prior=quests.filter(q=>q.ordinal<target.ordinal);
@@ -47,7 +49,9 @@ export async function verifyClearMindHint(browser,baseUrl){
   results[locale]={msg:after.msg};
  }
  // A normal quest: the hint is given as usual (card shown).
- await evaluate(`localStorage.setItem('lumen.locale','fr')`);
+ await evaluate(`(()=>{for(const k of Object.keys(localStorage))if(k.startsWith('lumen.locale'))localStorage.removeItem(k);for(const [k,v] of Object.entries(${savedLocale}))localStorage.setItem(k,v)})()`);
+ await navigateAndWait(browser,'Page.navigate',{url:String(url)});
+ await acknowledgeLearningMilestones(evaluate);
  await evaluate(`lumenDiagnostics.setupQuest(2)`);
  await acknowledgeLearningMilestones(evaluate);
  await evaluate(`document.getElementById('hint').click()`);
