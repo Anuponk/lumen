@@ -89,13 +89,18 @@ Description longue (maximum Console 4 000 caractères) :
 > Avec son univers de lumière et ses règles accessibles, Lumen invite à
 > prendre le temps de réfléchir, seul ou en famille.
 >
-> Découvre gratuitement les 100 premières quêtes de Lumen, sans publicité.
+> LUMEN Gratuit — Jouez chaque jour. Les 100 premières quêtes, le Défi du jour,
+> les duels entre amis et les badges sont gratuits, sans publicité.
+>
+> LUMEN Premium — Jouez sans limites. Un achat unique, sans abonnement : tout
+> le ciel principal, aucune limite quotidienne de quêtes, des statistiques
+> avancées, les anciens défis à rejouer et la création de cercles privés.
 
-La dernière phrase reprend les 100 quêtes gratuites de l'Aventure 1 décidées
-le 4 novembre (#170). La TWA affiche les tarifs localisés de Google Play
-pour les aventures 2 à 9 et « Tout le vrai ciel ». Après un achat unitaire,
-l’offre globale est masquée. Le seuil historique de déblocage côté serveur
-est indépendant du montant facturé par Play.
+Mise à jour #1030 (27/11/2026) : la fiche décrit l'offre Gratuit / Premium. La
+TWA affiche le prix localisé Google Play du produit `lumen_premium` ; les ventes
+d'aventures à l'unité et de « Tout le vrai ciel » sont arrêtées (produits
+conservés dans la Console pour les restaurations et remboursements). Description
+courte inchangée.
 Les droits acquis des joueurs restent protégés.
 Avant soumission, accorder la fiche aux fonctions réellement actives et au prix
 localisé fourni par le canal de paiement. Play Billing, droits serveur et
