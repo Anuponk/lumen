@@ -3481,9 +3481,8 @@ function showVerificationErrors(errors){
  document.getElementById("verifyCopy").textContent=verificationErrorCopy(errors);
  document.getElementById("scriptedLearn").hidden=true;showAssistCard("verifyCard");board.setAttribute("aria-disabled","true");
 }
-function runVerification(guestAcknowledged=false){
+function runVerification(){
  if(celebrated||guidedPending||verifyPending||scriptedLearningActive())return;
- if(guestAcknowledged!==true&&guestDailyAssistance('verify',()=>runVerification(true)))return;
  clearHintDisplay();
  showLearningTip("verify",'tipVerify');
  verifyUsesThisGame++;
@@ -5374,7 +5373,7 @@ function recordHintUse(){
 function guardiansCompleteAndValid(){
  try{const {placed,rows,cols,regs,nonTouching}=validateGuardians();return placed.length===n&&rows.size===n&&cols.size===n&&regs.size===n&&nonTouching}catch{return false}
 }
-document.getElementById("hint").onclick=(guestAcknowledged=false)=>{
+document.getElementById("hint").onclick=()=>{
  if(celebrated||guidedPending||verifyPending||scriptedLearningActive())return;
  if(guardiansCompleteAndValid()){
   // No hint is counted: nothing remains to deduce.
@@ -5382,7 +5381,10 @@ document.getElementById("hint").onclick=(guestAcknowledged=false)=>{
   if(!celebrated&&!pendingVictoryView)showHintMessage(()=>t("hint.title"),()=>t(authSessionPending?"hint.completePending":"hint.complete"));
   return;
  }
- if(guestAcknowledged!==true&&guestDailyAssistance('hint',()=>document.getElementById('hint').onclick(true)))return;
+ if(!guestDailyAssistance('hint',applyHint))applyHint();
+};
+function applyHint(){
+ if(celebrated||guidedPending||verifyPending||guardiansCompleteAndValid())return;
  if(activeQuestOrdinal()===2&&hintUsesThisGame===0)showLearningTip("hint-learning",'tipHint');
  recordHintUse();
  hi=null; hiCells=[];
@@ -5516,7 +5518,7 @@ document.getElementById("hint").onclick=(guestAcknowledged=false)=>{
  // catalogue is audited (hint-catalogue-audit-tests.mjs); keep a bounded trace.
  recordCloudDiagnostic('hint_unavailable',{questId:String(activeQuest()?.id||'unknown').slice(0,64),placed:state.flat().filter(v=>v===2).length,size:n});
  showHintMessage(()=>t("hint.title"),()=>t("hint.unavailable"));
-};
+}
 
 const testModel={
 get n(){return n},set n(value){n=value},
@@ -6866,7 +6868,12 @@ setupBetaFeedback();
 const manualCrossTipOk=document.getElementById("manualCrossTipOk");if(manualCrossTipOk)manualCrossTipOk.onclick=closeManualCrossTip;
 const guidedAck=document.getElementById("guidedAck");if(guidedAck)guidedAck.onclick=closeGuidedConflict;
 const originalHintHandler=document.getElementById("hint").onclick;
-const verifyBtn=document.getElementById("verify");if(verifyBtn)verifyBtn.onclick=runVerification;const verifyFix=document.getElementById("verifyFix");if(verifyFix)verifyFix.onclick=fixVerificationErrors;
+const verifyBtn=document.getElementById("verify");
+if(verifyBtn)verifyBtn.onclick=()=>{
+ if(celebrated||guidedPending||verifyPending||scriptedLearningActive())return;
+ if(!guestDailyAssistance('verify',runVerification))runVerification();
+};
+const verifyFix=document.getElementById("verifyFix");if(verifyFix)verifyFix.onclick=fixVerificationErrors;
 const nicknameSave=document.getElementById("nicknameSave");if(nicknameSave)nicknameSave.onclick=async()=>{const input=document.getElementById("nicknameInput"),result=await saveLumenNickname(input?.value);if(result.ok)showRewardToast("Pseudo enregistré ✦");else showRewardToast(result.reason==="length"?"Pseudo : 3 à 20 caractères":result.reason==="unavailable"?"Ce pseudo est déjà utilisé":"Ce pseudo n’est pas valide")};
 const guidedErrors=document.getElementById("guidedErrors");if(guidedErrors)guidedErrors.onchange=()=>{if(questLearningRules(activeQuestOrdinal()).forcedGuided&&!replayMode){guidedErrors.checked=true;return}localStorage.setItem("lumenGuidedErrors",guidedErrors.checked?"on":"off")};
 const accountOptinEnable=document.getElementById("accountOptinEnable"),accountOptinLater=document.getElementById("accountOptinLater");if(accountOptinEnable)accountOptinEnable.onclick=acceptAccountOffer;if(accountOptinLater)accountOptinLater.onclick=dismissAccountOffer;const passwordSubmit=document.getElementById("accountPasswordSubmit");
