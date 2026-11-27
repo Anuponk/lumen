@@ -58,6 +58,25 @@ def has_required_pr_job(run, name, fetch):
                     and job.get("conclusion") == "success" for job in jobs))
 
 
+def tested_tree_includes_advanced_base(commit, base, parent, head, fetch):
+    """A historical PR base is safe only with identical tested contents/ancestry."""
+    if not all(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{40}", value)
+               for value in (base, parent, head)):
+        return False
+    tree = ((commit.get("commit") or {}).get("tree") or {}).get("sha")
+    if not isinstance(tree, str) or not re.fullmatch(r"[0-9a-f]{40}", tree):
+        return False
+    reviewed = fetch(f"{REPOSITORY_API}/commits/{head}")
+    if ((reviewed.get("commit") or {}).get("tree") or {}).get("sha") != tree:
+        return False
+    # main must contain the historical base; the tested head must already
+    # contain that actual main parent. No untested merge resolution is allowed.
+    for older, newer in ((base, parent), (parent, head)):
+        if older != newer and fetch(f"{REPOSITORY_API}/compare/{older}...{newer}").get("status") != "ahead":
+            return False
+    return True
+
+
 def validated_merged_pr(sha, fetch):
     """Reuse successful PR checks only for a verified squash or regular merge."""
     commit = fetch(f"{REPOSITORY_API}/commits/{sha}")
@@ -80,7 +99,9 @@ def validated_merged_pr(sha, fetch):
         # A regular merge must connect the reviewed base and exact PR head.
         # For a squash merge the only parent must be the reviewed base.
         parent_shas = [parent.get("sha") for parent in parents]
-        if not base or parent_shas != ([base] if len(parents) == 1 else [base, head]):
+        if not base or (len(parents) == 2 and parent_shas[1] != head):
+            continue
+        if parent_shas[0] != base and not tested_tree_includes_advanced_base(commit, base, parent_shas[0], head, fetch):
             continue
         runs = fetch(f"{REPOSITORY_API}/actions/runs?head_sha={head}&per_page=100").get("workflow_runs", [])
         latest = {}
