@@ -205,6 +205,25 @@ test('launch or QA preview reads the account state once; failures keep confirmed
   assert.equal(client.state.premium,true,'a failed read is not a revocation');
 });
 
+// Owner report 28/11: a refunded and revoked Premium stayed visible while the 6 h
+// cache was fresh. The account state is re-read once per session, then cached.
+test('a refund or revocation is seen at the next session despite the config TTL',async()=>{
+  let active=true;const storage=memoryStorage(),ledgers=new Map(),now=()=>at('2026-12-10T10:00:00Z');
+  const ledgerFor=o=>{if(!ledgers.has(o))ledgers.set(o,createQuotaLedger({storage,owner:o,now,timeZone:'UTC'}));return ledgers.get(o)};
+  const handlers={lumen_get_commerce_config:()=>({data:{premiumEnabled:true}}),
+    lumen_get_commerce_state:()=>({data:{premium:active?{active:true,source:'premium_purchase'}:{active:false},preview:false,counts:null}})};
+  const first=createCommerceClient({rpc:fakeRpc(handlers),ledgerFor,now});
+  await first.refresh({owner:'u9',signedIn:true});
+  assert.equal(first.state.premium,true);
+  await first.refresh({owner:'u9',signedIn:true});
+  active=false; // refunded on the server
+  const rpc=fakeRpc(handlers),next=createCommerceClient({rpc,ledgerFor,now}); // reopened app, cache still fresh
+  await next.refresh({owner:'u9',signedIn:true});
+  assert.equal(next.state.premium,false,'the refund is not hidden by the cache');
+  await next.refresh({owner:'u9',signedIn:true});
+  assert.equal(rpc.calls.filter(c=>c.name==='lumen_get_commerce_state').length,1,'once per session, then cached');
+});
+
 test('guests never read an account state; preview needs a signed-in capability',async()=>{
   const {client,rpc}=clientWith({lumen_get_commerce_config:()=>({data:{premiumEnabled:true}})});
   await client.refresh({owner:'guest',signedIn:false,previewCapability:true});

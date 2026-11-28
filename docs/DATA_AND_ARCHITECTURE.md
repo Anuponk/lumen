@@ -2593,6 +2593,8 @@ costs and activation/rollback: [PREMIUM_1030](PREMIUM_1030.md).
 
 #1030 lot 2: `20261128090000_premium_mixed_sky_1030.sql` adds the `admin_mixed_full_sky` grant source (owner decision 27/11: whole main sky from administrative grants plus confirmed unit purchases, no mastery) to the traced backfill; nothing is granted by the migration. Advanced statistics (`src/ui/premium-stats.js`) and playable archives read `lumen_premium_stats` / `lumen_daily_archive` on demand only; an archive replay is a training run and writes no daily run, standing or ranking. See [PREMIUM_1030](PREMIUM_1030.md).
 
+#1030 (28/11): `persistence/commerce.js` keeps the public commerce config cached for 6 h, but re-reads a signed-in account's Premium state once per page session when Premium is live or cached, so a refunded or revoked Premium is no longer displayed at the next opening (owner report, Anup14). Local cache only; no new persisted field.
+
 ## Analytics activity, Premium limits and shop conversion (#1044)
 
 #1044 (28/11, updated description): `20261128150100_admin_activity_phases_1044.sql` replaces `lumen_admin_activity` by a 4-argument version (`p_discovery_quests` from the client catalogue order, like the #1030 simulation): replay distribution, behaviour per phase (free discovery / free past the threshold / Premium) and distinct quests per day, still one bounded aggregate read.
