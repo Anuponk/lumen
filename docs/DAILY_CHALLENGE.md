@@ -218,7 +218,7 @@ calendrier dans `daily_puzzles`.
   (`lumen_daily_*`) et l'horloge (temps officiel avec pénalités) diffèrent.
   La grille est la révision figée du jour, jouable gratuitement même si elle
   vient d'une aventure non achetée.
-- **Introduction** : date, temps restant, « 1 tentative officielle », règles.
+- **Introduction** : date, temps restant, une seule ligne « 1 seul essai · Même grille pour tous » (#1076, 28/11/2026 : les trois puces de règles sont retirées ; règles, reprise et pénalités inchangées).
   Invité ou joueur sans pseudonyme : explication et entraînement non classé
   uniquement. Compte : « Relever le défi » (ou « Reprendre ma tentative » ;
   autre appareil = chrono au temps serveur écoulé ; minuit franchi pendant

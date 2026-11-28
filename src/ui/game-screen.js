@@ -4396,7 +4396,7 @@ async function loadActivityCockpit({force=false}={}){
  const discovery=discoveryQuestIds(quests,threshold);
  const safe=promise=>Promise.resolve(promise).catch(()=>({error:true}));
  const [activity,conversion,simulation]=await Promise.all([
-  safe(client.rpc('lumen_admin_activity',{p_days:filters.days,p_include_internal:filters.includeInternal,p_segment:filters.segment})),
+  safe(client.rpc('lumen_admin_activity',{p_days:filters.days,p_include_internal:filters.includeInternal,p_segment:filters.segment,p_discovery_quests:discovery.length?discovery:null})),
   safe(client.rpc('lumen_admin_conversion',{p_days:filters.days,p_include_internal:filters.includeInternal,p_channel:filters.channel,p_window_days:filters.windowDays})),
   discovery.length?safe(client.rpc('lumen_admin_quota_simulation',{p_days:filters.days,p_discovery_quests:discovery,p_quotas:SIMULATED_QUOTAS,p_replay_quota:Number(commerce.state.config.replayDaily)||5})):{error:true}]);
  if(!authorized())return;

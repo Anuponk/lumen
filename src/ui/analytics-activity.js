@@ -25,7 +25,7 @@ export function buildActivityModel(activity,conversion,simulation){
   const covered=!!dataStart&&d.day>=dataStart,players=num(d.players),timedPlayers=num(d.timedPlayers);
   const v=x=>covered?num(x):null;
   return {day:d.day,partial:d.day===today,covered,players:v(players),finishers:v(d.finishers),
-   started:v(d.started),startedNew:v(d.startedNew),startedReplay:v(d.startedReplay),
+   started:v(d.started),startedNew:v(d.startedNew),startedReplay:v(d.startedReplay),questsDistinct:v(d.questsDistinct),
    completed:v(d.completed),completedNew:v(d.completedNew),completedReplay:v(d.completedReplay),
    avgStarted:covered?round1(ratio(d.started,players)):null,avgCompleted:covered?round1(ratio(d.completed,players)):null,
    minutes:covered?round1(num(d.seconds)/60):null,
@@ -102,6 +102,7 @@ export function funnelView(title,steps,{note='',t=french,locale='fr'}={}){
   +'</ol>'+(note?contract(note):'')+'</figure>';
 }
 const ORIGIN_KEYS={locked_adventure:'originLocked',quota_new:'originQuotaNew',quota_replay:'originQuotaReplay',voluntary:'originVoluntary',premium_feature:'originFeature',other:'originOther',unattributed:'originNone'};
+const PHASE_ORDER=['free_discovery','free_after_threshold','free','premium'],PHASE_KEYS={free_discovery:'phaseDiscovery',free_after_threshold:'phaseAfter',free:'phaseFree',premium:'phasePremium'};
 const SEGMENT_KEYS={all:'segAll',free:'segFree',premium:'segPremium'},CHANNEL_KEYS={all:'segAll',web:'chWeb',play:'chPlay'};
 
 function filters(f,tr){
@@ -128,20 +129,24 @@ export function renderActivityCockpit(host,{activity,conversion,simulation,filte
   +chart('actPlayers','chartPlayers',m.days,[{key:'players',labelKey:'players',tone:'a'}])
   +chart('actStarted','chartStarted',m.days,[{key:'startedNew',labelKey:'new',tone:'a'},{key:'startedReplay',labelKey:'replays',tone:'b'}])
   +chart('actCompleted','chartCompleted',m.days,[{key:'completedNew',labelKey:'new',tone:'a'},{key:'completedReplay',labelKey:'replays',tone:'b'}])
+  +chart('actDistinct','chartDistinct',m.days,[{key:'questsDistinct',labelKey:'distinctQuests',tone:'a'}])
   +chart('actAvgStarted','chartAvgStarted',m.days,[{key:'avgStarted',labelKey:'mean',tone:'a'}])
   +chart('actAvgCompleted','chartAvgCompleted',m.days,[{key:'avgCompleted',labelKey:'mean',tone:'a'}])
   +'</div>'+contract(tr('activityDefinition')+' '+tr('scopeNote',{start:m.dataStart||'—'})));
  const b=m.behaviour||{},dist=(b.distribution||[]).filter(x=>x.bucket!=='0'),zero=(b.distribution||[]).find(x=>x.bucket==='0');
- const total=dist.reduce((sum,x)=>sum+(x.count||0),0)||1;
+ const distView=(title,rows)=>{const sum=rows.reduce((acc,x)=>acc+(x.count||0),0)||1;return '<figure class="act-dist"><figcaption><strong>'+esc(title)+'</strong></figcaption>'
+  +rows.map(x=>{const [from,to]=String(x.bucket).split('-');return '<div class="act-dist-row"><span>'+esc(x.bucket==='31+'?tr('bucketOver'):x.bucket==='0'?'0':tr('bucketRange',{from,to}))+'</span><span class="act-funnel-track"><i style="width:'+Math.round(100*(x.count||0)/sum)+'%"></i></span><strong>'+esc(fmt(x.count))+'</strong></div>'}).join('')+'</figure>'};
+ const phases=Object.entries(b.phases||{}).sort(([a],[c])=>PHASE_ORDER.indexOf(a)-PHASE_ORDER.indexOf(c));
  const timeBlock=section('timeTitle','<div class="act-grid">'
   +chart('actMinutes','chartMinutes',m.days,[{key:'minutes',labelKey:'minutes',tone:'a'}],tr('minUnit'))
   +chart('actAvgMinutes','chartAvgMinutes',m.days,[{key:'avgMinutes',labelKey:'mean',tone:'a'}],tr('minUnit'))
   +'</div>'+contract(tr('timeDefinition',{timed:fmt(m.coverage.timed),completed:fmt(m.coverage.completed),rate:pctText(m.coverage.rate)}))
   +'<h4>'+esc(tr('behaviourTitle'))+'</h4><div class="admin-kpis">'+kpi(tr('mean'),fmt(b.mean))+kpi(tr('median'),fmt(b.median))+kpi('P75',fmt(b.p75))+kpi('P90',fmt(b.p90))+kpi('P95',fmt(b.p95))
   +kpi(tr('meanNew'),fmt(b.meanNew))+kpi(tr('meanReplay'),fmt(b.meanReplay))+kpi(tr('playerDays'),fmt(b.playerDays),tr('playersCount',{count:fmt(b.players)}))+'</div>'
-  +'<figure class="act-dist"><figcaption><strong>'+esc(tr('distTitle'))+'</strong></figcaption>'
-  +dist.map(x=>{const [from,to]=String(x.bucket).split('-');return '<div class="act-dist-row"><span>'+esc(x.bucket==='31+'?tr('bucketOver'):tr('bucketRange',{from,to}))+'</span><span class="act-funnel-track"><i style="width:'+Math.round(100*(x.count||0)/total)+'%"></i></span><strong>'+esc(fmt(x.count))+'</strong></div>'}).join('')
-  +'</figure>'+contract(tr('distNote',{count:fmt(zero?.count)})));
+  +'<div class="act-grid">'+distView(tr('distTitle'),dist)+distView(tr('distReplayTitle'),b.distributionReplay||[])+'</div>'+contract(tr('distNote',{count:fmt(zero?.count)}))
+  +(phases.length?'<h4>'+esc(tr('phasesTitle'))+'</h4>'+table([tr('phase'),tr('playerDays'),tr('mean'),tr('median'),'P75','P90','P95',tr('meanNew'),tr('meanReplay')],
+    phases.map(([k,v])=>({cells:[tr(PHASE_KEYS[k]||'phaseFree'),fmt(num(v.playerDays)),fmt(num(v.mean)),fmt(num(v.median)),fmt(num(v.p75)),fmt(num(v.p90)),fmt(num(v.p95)),fmt(num(v.meanNew)),fmt(num(v.meanReplay))]})))
+   +contract(tr('phasesNote')):''));
  const o=m.premium.observed||{},l=m.limits||{},ba=m.premium.beforeAfter||{},sim=m.simulation?.simulation||[];
  const quotaBlock=section('quotaTitle',
   '<p class="act-settings">'+esc(tr('settings',{state:tr(s.quotas_enabled===true?'quotasOn':'quotasOff'),newLimit:fmt(newLimit),replayLimit:fmt(replayLimit),threshold:fmt(threshold),
