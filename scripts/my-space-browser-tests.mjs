@@ -26,19 +26,22 @@ const profile = (n) => ({
   daily: { dates: {}, rewards: {} },
   challenges: {},
 });
-function fixture(signedIn, locale) {
+function fixture(signedIn, locale, labGrant) {
   const p = profile(signedIn ? 12 : 2);
   return `localStorage.clear();localStorage.setItem('lumen.locale',${JSON.stringify(locale)});localStorage.setItem('lumenPushChoice','off');
+  window.labGrant=${labGrant};
   localStorage.setItem('lumenProgressV1',${JSON.stringify(JSON.stringify(p))});for(const k of ['lumenTutorialSeen','lumenTutorialCompletedV1','lumenSkyTourSeen'])localStorage.setItem(k,'1');
   ${signedIn ? `localStorage.setItem('lumenCloudOwnerId',${JSON.stringify(OWNER)});` : ''}
   window.supabase={createClient:()=>({auth:{getSession:async()=>(${signedIn}?{data:{session:{user:{id:${JSON.stringify(OWNER)}}}}}:{data:{session:null}}),
    getUser:async()=>({data:{user:${signedIn ? `{id:${JSON.stringify(OWNER)}}` : 'null'}}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
    rpc:async(name)=>{if(name==='lumen_ranking_account')return {data:{nicknameRequired:false,withdrawn:false,participating:true}};
+    if(name==='lumen_get_internal_capabilities')return {data:${labGrant ? "['ux_v2_preview']" : '[]'}};
+    if(name==='lumen_ux_v2_access')return {data:window.labGrant};
     if(name==='lumen_restore_profile')return {data:${JSON.stringify(p)}};if(name==='lumen_get_progress')return {data:Array.from({length:${signedIn ? 12 : 2}},(_,i)=>({puzzle_id:i+1}))};
     if(name==='lumen_get_engagement')return {data:[{rewarded_days:{}}]};if(name==='lumen_cas_profile')return {data:true};
     if(name==='lumen_canonical_command_version'||name==='lumen_legacy_command_version')return {error:{code:'PGRST202'},status:404};return {data:[]}}})};`;
 }
-async function open({ width, height, signedIn, locale = 'fr' }) {
+async function open({ width, height, signedIn, locale = 'fr', labGrant = false }) {
   await send('Emulation.setDeviceMetricsOverride', {
     width,
     height,
@@ -46,7 +49,7 @@ async function open({ width, height, signedIn, locale = 'fr' }) {
     deviceScaleFactor: 1,
   });
   const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: fixture(signedIn, locale),
+    source: fixture(signedIn, locale, labGrant),
   });
   await navigateAndWait({ send, evaluate }, 'Page.navigate', { url: BASE });
   await send('Page.removeScriptToEvaluateOnNewDocument', { identifier });
@@ -121,6 +124,11 @@ try {
         'language, help and report are in Mon espace',
       );
       assert.equal(menu.account, signedIn, 'account section only for signed-in players');
+      assert.equal(
+        await evaluate("document.getElementById('uxLabPreference').closest('fieldset').hidden"),
+        true,
+        'normal players and guests never see LUMEN Lab',
+      );
       assert.equal(menu.primary, !signedIn, 'guests get sign-in as the primary action');
       assert(
         menu.longest <= 80,
@@ -208,6 +216,33 @@ try {
     /^My space · /,
   );
   results.push({ english: true });
+  await open({ width: 390, height: 844, signedIn: true, labGrant: true });
+  await evaluate("document.getElementById('mobileAccount').click()");
+  await sleep(100);
+  assert.equal(
+    await evaluate("document.getElementById('uxLabPreference').closest('fieldset').hidden"),
+    false,
+  );
+  await evaluate(`(()=>{
+    const preference=document.getElementById('uxLabPreference');
+    preference.value='v2';
+    preference.dispatchEvent(new Event('change',{bubbles:true}));
+  })()`);
+  await sleep(100);
+  assert.equal(
+    await evaluate(`localStorage.getItem('lumenUxVariantV1:'+${JSON.stringify(OWNER)})`),
+    'v2',
+  );
+  await evaluate(
+    `window.labGrant=false;const button=document.getElementById('mobileAccount');button.click();button.click()`,
+  );
+  await sleep(100);
+  assert.equal(
+    await evaluate("document.getElementById('uxLabPreference').closest('fieldset').hidden"),
+    true,
+    'a fresh server denial hides the Lab even with a stored V2 preference',
+  );
+  results.push({ labAccess: true, labRevocation: true });
   assert.deepEqual(errors, []);
   if (process.argv[2])
     fs.writeFileSync(process.argv[2], JSON.stringify({ results, physicalDevice: false }, null, 2));

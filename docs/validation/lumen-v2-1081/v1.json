@@ -1,0 +1,139 @@
+{
+  "scope": "v1",
+  "values": [
+    {
+      "w": 320,
+      "h": 568,
+      "i": 0,
+      "domReadyMs": 1303,
+      "frameMs": 241,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 320,
+      "h": 568,
+      "i": 1,
+      "domReadyMs": 788,
+      "frameMs": 119,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 320,
+      "h": 568,
+      "i": 2,
+      "domReadyMs": 2348,
+      "frameMs": 291,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 360,
+      "h": 640,
+      "i": 0,
+      "domReadyMs": 6922,
+      "frameMs": 170,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 360,
+      "h": 640,
+      "i": 1,
+      "domReadyMs": 2815,
+      "frameMs": 218,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 360,
+      "h": 640,
+      "i": 2,
+      "domReadyMs": 4588,
+      "frameMs": 163,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "i": 0,
+      "domReadyMs": 3684,
+      "frameMs": 209,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "i": 1,
+      "domReadyMs": 3285,
+      "frameMs": 124,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "i": 2,
+      "domReadyMs": 2685,
+      "frameMs": 213,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 1280,
+      "h": 800,
+      "i": 0,
+      "domReadyMs": 4431,
+      "frameMs": 141,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 1280,
+      "h": 800,
+      "i": 1,
+      "domReadyMs": 1801,
+      "frameMs": 132,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 1280,
+      "h": 800,
+      "i": 2,
+      "domReadyMs": 2631,
+      "frameMs": 194,
+      "visible": true,
+      "cards": 6,
+      "htmlOverflow": 0,
+      "overlong": 0
+    }
+  ],
+  "interactive": null,
+  "errors": []
+}

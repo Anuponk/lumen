@@ -1,5 +1,12 @@
 # Feature map
 
+LUMEN Lab (#1087): `ui/ux-lab.js` owns the scoped interface preference and
+the read guard for owner changes, offline and active attempts. The account
+menu supplies the existing authenticated context. `lumen_ux_v2_access()`
+requires the private flag and an unexpired account capability. The lab
+currently stores the preference while the application renders V1. See
+[LUMEN V2 QA](../LUMEN_V2_QA.md).
+
 Google Play review #796: `game-screen.js` uses the standard catalogue
 decisions in Mon ciel and rechecks `play-review-navigation.js` before direct
 selection. The private review events and account-scoped RPC own the right.

@@ -43,6 +43,7 @@ import {createVictoryPresentation} from './victory-presentation.js';
 import {CELEBRATION_CONFIG,createCelebration,rewardSlots,remarkableRewards,rankSummary,celebrationLevel} from './victory-celebration.js';
 import {streakVisual,lostStreak} from "../campaign/streak-visual.js";
 import {DAILY_LIGHT_STREAK_ENABLED} from "../campaign/feature-flags.js";
+import {mountUxLab} from "./ux-lab.js";
 import {learningStep, dragLearningStep, learningAllows, territoryNumbersVisible} from "../game/learning.js";
 import {createAnalytics,attemptAnalyticsProperties} from "../analytics/events.js";
 import {setupCredits} from "./credits.js";
@@ -1862,7 +1863,9 @@ function cloudReconciliationMessage(failure){
 function renderAuthUserCopy(node=document.getElementById('authUser')){
  if(node)node.textContent=lumenUser?(lumenNickname||(cloudProfileReady&&!cloudProfileDirty&&!cloudProfileFailure&&!canonicalOutboxNotice?t('sync.synced'):t('sync.pending'))):t('account.localProgress');
 }
+let uxLab;
 function updateAuthUI(){
+ uxLab?.syncScope();
 
  const purchaseNotice=document.getElementById('purchaseStatus');
  if(purchaseNotice?.dataset?.purchaseOwner&&purchaseNotice.dataset.purchaseOwner!==lumenUser?.id)showPurchaseStatus('');
@@ -2000,7 +2003,14 @@ function setupDailyInfo(){
 function setupMobileAuth(){
  const menu=document.getElementById("mobileAuthPopover"),account=document.getElementById("mobileAccount"),action=document.getElementById("mobileAuthAction");
  if(!menu||!account||!action)return;
- account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden;account.setAttribute("aria-expanded",String(!menu.hidden));if(!menu.hidden){dailyPushSettings?.accountOpened();void myReports?.check()}};
+ uxLab=mountUxLab({
+  host:menu.querySelector('#mySpaceAccount .my-space-body'),storage:localStorage,t,
+  getContext:()=>!qaActive&&navigator.onLine!==false&&lumenUser?.id&&lumenSupabase&&hasInternalCapability('ux_v2_preview')
+   ?{owner:lumenUser.id,client:lumenSupabase}:null,
+  busy:()=>!!liveAbandonableAttempt()
+ });
+ window.addEventListener('offline',()=>uxLab?.reset());
+ account.onclick=(e)=>{e.stopPropagation();const d=document.getElementById("dailyInfoPopover");if(d)d.hidden=true;menu.hidden=!menu.hidden;account.setAttribute("aria-expanded",String(!menu.hidden));if(!menu.hidden){dailyPushSettings?.accountOpened();void myReports?.check();void uxLab?.refresh()}};
  menu.onclick=(e)=>{if(e.target.closest("[data-closes-menu]")){menu.hidden=true;account.setAttribute("aria-expanded","false")}e.stopPropagation()};
  // #959: Escape closes Mon espace (after any open tip) and returns focus to its button.
  menu.addEventListener("keydown",e=>{if(e.key!=="Escape"||menu.hidden)return;menu.hidden=true;account.setAttribute("aria-expanded","false");account.focus()});
@@ -3260,6 +3270,7 @@ function campaignAccessAttempt(){
  }catch{return null}
 }
 function updateAttemptUI(){
+ uxLab?.render();
  const a=attemptEngine.snapshot(),mask=document.getElementById("attemptMask"),pause=document.getElementById("attemptPause"),abandon=document.getElementById("attemptAbandon");
  if(!mask)return;
  const ready=a?.state===ATTEMPT_STATES.READY,paused=a?.state===ATTEMPT_STATES.PAUSED;

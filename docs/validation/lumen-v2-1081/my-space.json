@@ -1,0 +1,48 @@
+{
+  "results": [
+    {
+      "width": 360,
+      "signedIn": false,
+      "longestFirstLevel": 40,
+      "menuBottom": 501
+    },
+    {
+      "width": 360,
+      "signedIn": true,
+      "longestFirstLevel": 74,
+      "menuBottom": 578
+    },
+    {
+      "width": 390,
+      "signedIn": false,
+      "longestFirstLevel": 40,
+      "menuBottom": 501
+    },
+    {
+      "width": 390,
+      "signedIn": true,
+      "longestFirstLevel": 74,
+      "menuBottom": 578
+    },
+    {
+      "width": 1440,
+      "signedIn": false,
+      "longestFirstLevel": 40,
+      "menuBottom": 501
+    },
+    {
+      "width": 1440,
+      "signedIn": true,
+      "longestFirstLevel": 74,
+      "menuBottom": 578
+    },
+    {
+      "english": true
+    },
+    {
+      "labAccess": true,
+      "labRevocation": true
+    }
+  ],
+  "physicalDevice": false
+}

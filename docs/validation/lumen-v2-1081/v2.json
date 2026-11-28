@@ -1,0 +1,161 @@
+{
+  "scope": "v2",
+  "values": [
+    {
+      "w": 320,
+      "h": 568,
+      "i": 0,
+      "domReadyMs": 525,
+      "frameMs": 29,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 320,
+      "h": 568,
+      "i": 1,
+      "domReadyMs": 893,
+      "frameMs": 17,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 320,
+      "h": 568,
+      "i": 2,
+      "domReadyMs": 421,
+      "frameMs": 23,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 360,
+      "h": 640,
+      "i": 0,
+      "domReadyMs": 420,
+      "frameMs": 22,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 360,
+      "h": 640,
+      "i": 1,
+      "domReadyMs": 382,
+      "frameMs": 21,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 360,
+      "h": 640,
+      "i": 2,
+      "domReadyMs": 334,
+      "frameMs": 26,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "i": 0,
+      "domReadyMs": 326,
+      "frameMs": 14,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "i": 1,
+      "domReadyMs": 324,
+      "frameMs": 28,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "i": 2,
+      "domReadyMs": 477,
+      "frameMs": 17,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 1280,
+      "h": 800,
+      "i": 0,
+      "domReadyMs": 313,
+      "frameMs": 17,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 1280,
+      "h": 800,
+      "i": 1,
+      "domReadyMs": 314,
+      "frameMs": 29,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    },
+    {
+      "w": 1280,
+      "h": 800,
+      "i": 2,
+      "domReadyMs": 356,
+      "frameMs": 28,
+      "visible": true,
+      "cards": 10,
+      "htmlOverflow": 0,
+      "overlong": 0
+    }
+  ],
+  "interactive": {
+    "states": 50,
+    "initial": 10,
+    "finale": 8,
+    "before": 10,
+    "after": 6,
+    "perRow": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "hiding": true,
+    "podium": 3,
+    "ranks": 4,
+    "external": 0
+  },
+  "errors": []
+}

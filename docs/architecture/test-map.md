@@ -1,5 +1,11 @@
 # Existing verification map
 
+LUMEN Lab #1087: `ux-lab-tests.mjs` covers default V1, account changes,
+network failure, stale replies and blocking a preference change during an
+attempt. `my-space-browser-tests.mjs` covers the real account menu and
+server revocation with a fixture. `fixtures/ux-lab-1087.sql` covers the
+roles, owner, expiry and global flag on a disposable database.
+
 Adventure ranking #974 (27/11): `group-ranking-tests.mjs` checks 20/50/30, an
 adventure-only entry, cached expansion after row three, small populations and
 stale/error responses. `assistance-browser.mjs` checks actual mobile layout,

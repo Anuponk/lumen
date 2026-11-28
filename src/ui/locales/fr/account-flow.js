@@ -1,4 +1,8 @@
 export default Object.freeze({
+  'uxLab.title': 'LUMEN Lab',
+  'uxLab.preference': "Interface préférée",
+  'uxLab.activeAttempt': "Termine ta tentative avant de changer d’interface.",
+  'uxLab.previewPending': "Cette version utilise V1. La préférence sera prise en compte lorsque V2 sera disponible.",
   'account.passwordTooShort': "Utilise au moins 12 caractères.",
   'account.passwordMismatch': "Les deux mots de passe ne correspondent pas. Corrige la confirmation.",
   'account.passwordSame': "Choisis un mot de passe différent de l’ancien.",

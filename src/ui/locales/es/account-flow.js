@@ -1,5 +1,9 @@
 // #945 Español · cuenta, contraseña, sincronización y compras.
 export default Object.freeze({
+  'uxLab.title': 'Laboratorio LUMEN',
+  'uxLab.preference': "Interfaz preferida",
+  'uxLab.activeAttempt': "Termina el intento antes de cambiar de interfaz.",
+  'uxLab.previewPending': "Esta versión usa V1. Tu preferencia se aplicará cuando V2 esté disponible.",
   'account.passwordTooShort': "Usa al menos 12 caracteres.",
   'account.passwordMismatch': "Las dos contraseñas no coinciden. Corrige la confirmación.",
   'account.passwordSame': "Elige una contraseña diferente de la anterior.",
