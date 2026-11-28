@@ -1,6 +1,6 @@
 # LUMEN V2 · Dossier de conception
 
-[Audit et référence V1](LUMEN_V2_AUDIT.md) · [Matrice des 50 états et 14 parcours](LUMEN_V2_MATRIX.md) · [Recette isolée et retour V1](LUMEN_V2_QA.md)
+[Audit et référence V1](LUMEN_V2_AUDIT.md) · [Matrice des 50 états et 14 parcours](LUMEN_V2_MATRIX.md) · [Recette isolée et retour V1](LUMEN_V2_QA.md) · [Journal des décisions](LUMEN_V2_DECISIONS.md) · [Fiche de reprise](LUMEN_V2_HANDOFF.md)
 
 ## Ouvrir le prototype
 
