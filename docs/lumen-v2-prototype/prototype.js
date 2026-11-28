@@ -30,6 +30,8 @@ import { deriveSocialEvents } from '../../src/ui/social-notifications.js';
 import { createPlayPreview } from './play-preview.js';
 import { adventureOfferModel, mountPremiumOffer } from '../../src/ui/adventure-offer.js';
 import { storyboard, destinations, names, referenceCaptures } from './storyboard.js';
+import { performanceAttempt } from '../../src/campaign/performance.js';
+import { rewardSlots } from '../../src/ui/victory-celebration.js';
 
 const { t } = createTranslator({ locale: 'fr' });
 const screen = document.querySelector('#screen');
@@ -73,10 +75,12 @@ let badgeView = false;
 let swipeStart;
 let suppressClick = false;
 let playRoute = 'E11';
+let lastVictory = null;
 const playPreview = createPlayPreview({
   screen,
   t,
   go,
+  onVictory: (quest, run) => registerVictory(quest, run),
   back: () => {
     if (['E12', 'E13'].includes(state) && !history.state?.depth) go(playRoute, { replace: true });
     else back();
@@ -329,6 +333,11 @@ function adventure() {
     percent +
     '"></progress>' +
     (badgeView ? counts(quests, stats) : '') +
+    (state === 'E06'
+      ? '<button type="button" class="victory-share" data-sheet="adventure">' +
+        esc(t('share.shareResult')) +
+        '</button>'
+      : '') +
     '</section><div class="sky-actions">' +
     (pack().accessible
       ? continueQuest()
@@ -495,9 +504,32 @@ function play() {
 let rankingMode = 'adventure';
 let rankingScope = 'general';
 let rankingAround = false;
-const rivals = ['Loutre', 'Anupon', 'Badoune', 'Léna', 'Van', 'Axelle', 'Tom', 'Ama', 'Celine', 'Rocky45',
-  'Fanab', 'Nono77', 'Rrrrrr', 'Nopuna2', 'Frodimus', 'Renomyke', 'Anup14', 'Nopuna-l1', 'Mia', 'Hugo',
-  'Zoé', 'Lucas', 'Inès', 'Noé'];
+const rivals = [
+  'Loutre',
+  'Anupon',
+  'Badoune',
+  'Léna',
+  'Van',
+  'Axelle',
+  'Tom',
+  'Ama',
+  'Celine',
+  'Rocky45',
+  'Fanab',
+  'Nono77',
+  'Rrrrrr',
+  'Nopuna2',
+  'Frodimus',
+  'Renomyke',
+  'Anup14',
+  'Nopuna-l1',
+  'Mia',
+  'Hugo',
+  'Zoé',
+  'Lucas',
+  'Inès',
+  'Noé',
+];
 function adventureBoard() {
   const friends = rankingScope === 'friends';
   const names = friends ? ['Loutre', 'Léna', 'Tom'] : rivals;
@@ -506,8 +538,13 @@ function adventureBoard() {
   const rows = [];
   for (let place = 1, n = 0; place <= total; place++) {
     const mine = place === mePlace;
-    rows.push({ place, position: place, mine, nickname: mine ? t('ranking.you') : names[n++],
-      value: (4340 - (place - 1) * 175).toLocaleString('fr-FR') + ' pts' });
+    rows.push({
+      place,
+      position: place,
+      mine,
+      nickname: mine ? t('ranking.you') : names[n++],
+      value: (4340 - (place - 1) * 175).toLocaleString('fr-FR') + ' pts',
+    });
   }
   const html = htmlDocument();
   let out = createPodium(html, rows.slice(0, 3), { t }).outerHTML;
@@ -517,47 +554,110 @@ function adventureBoard() {
   if (rankingAround) {
     const { offset, limit } = rankWindow({ place: mePlace, total });
     out +=
-      '<ol class="lumen-rank-list" start="' + (offset + 1) + '">' +
-      rows.slice(offset, offset + limit).map((row) => createRankRow(html, row, { t }).outerHTML).join('') +
-      '</ol><button type="button" class="subtle-action" data-rank-around="0">' + esc(t('groupRanking.less')) + '</button>';
+      '<ol class="lumen-rank-list" start="' +
+      (offset + 1) +
+      '">' +
+      rows
+        .slice(offset, offset + limit)
+        .map((row) => createRankRow(html, row, { t }).outerHTML)
+        .join('') +
+      '</ol><button type="button" class="subtle-action" data-rank-around="0">' +
+      esc(t('groupRanking.less')) +
+      '</button>';
   } else if (total > 3) {
-    out += '<button type="button" class="subtle-action" data-rank-around="1">' +
-      esc(t(mePlace > 3 ? 'groupRanking.around' : 'groupRanking.rest')) + '</button>';
+    out +=
+      '<button type="button" class="subtle-action" data-rank-around="1">' +
+      esc(t(mePlace > 3 ? 'groupRanking.around' : 'groupRanking.rest')) +
+      '</button>';
   }
-  return out + '<p class="daily-board-count">' + esc(total + (friends ? ' amis classés' : ' joueurs classés')) + '</p>';
+  return (
+    out +
+    '<p class="daily-board-count">' +
+    esc(total + (friends ? ' amis classés' : ' joueurs classés')) +
+    '</p>'
+  );
 }
 function dailyBoard() {
   const friends = rankingScope === 'friends';
   const part = friends
-    ? { participants: 4, top: [
-        { rank: 1, nickname: 'Loutre', score: 41 },
-        { rank: 2, nickname: 'Moi', score: 49, mine: true },
-        { rank: 3, nickname: 'Léna', score: 58 }], me: { rank: 2, score: 49 } }
-    : { participants: 15, top: [
-        { rank: 1, nickname: 'Loutre', score: 38 },
-        { rank: 2, nickname: 'Anupon', score: 41 },
-        { rank: 3, nickname: 'Badoune', score: 44 }], me: { rank: 6, score: 49 } };
-  return renderDailyBoard(part, { scope: rankingScope, t, formatDuration: (seconds) => seconds + ' s' });
+    ? {
+        participants: 4,
+        top: [
+          { rank: 1, nickname: 'Loutre', score: 41 },
+          { rank: 2, nickname: 'Moi', score: 49, mine: true },
+          { rank: 3, nickname: 'Léna', score: 58 },
+        ],
+        me: { rank: 2, score: 49 },
+      }
+    : {
+        participants: 15,
+        top: [
+          { rank: 1, nickname: 'Loutre', score: 38 },
+          { rank: 2, nickname: 'Anupon', score: 41 },
+          { rank: 3, nickname: 'Badoune', score: 44 },
+        ],
+        me: { rank: 6, score: 49 },
+      };
+  return renderDailyBoard(part, {
+    scope: rankingScope,
+    t,
+    formatDuration: (seconds) => seconds + ' s',
+  });
 }
 function rankTabs(name, items, current) {
   return (
     '<div class="daily-tabs" role="tablist">' +
-    items.map(([value, label]) =>
-      '<button type="button" role="tab" data-' + name + '="' + value + '" aria-selected="' + (value === current) + '">' + esc(label) + '</button>',
-    ).join('') + '</div>'
+    items
+      .map(
+        ([value, label]) =>
+          '<button type="button" role="tab" data-' +
+          name +
+          '="' +
+          value +
+          '" aria-selected="' +
+          (value === current) +
+          '">' +
+          esc(label) +
+          '</button>',
+      )
+      .join('') +
+    '</div>'
   );
 }
 function rankings() {
   const daily = rankingMode === 'daily';
   return (
     '<section class="preview-panel preview-rankings"><h1>Classements</h1>' +
-    rankTabs('rank-mode', [['adventure', 'Aventure'], ['daily', 'Défi du jour']], rankingMode) +
-    rankTabs('rank-scope', [['general', t('daily.general')], ['friends', t('daily.friends')]], rankingScope) +
+    rankTabs(
+      'rank-mode',
+      [
+        ['adventure', 'Aventure'],
+        ['daily', 'Défi du jour'],
+      ],
+      rankingMode,
+    ) +
+    rankTabs(
+      'rank-scope',
+      [
+        ['general', t('daily.general')],
+        ['friends', t('daily.friends')],
+      ],
+      rankingScope,
+    ) +
     (daily
-      ? '<div class="screen-heading"><h2>Défi du jour</h2></div><div class="daily-board-panel">' + dailyBoard() + '</div>' +
-        '<div class="preview-cta">' + link('E19', 'Jouer au Défi') + link('E22', 'Ma semaine') + '</div>'
-      : '<div class="screen-heading"><h2>' + esc(adventureDisplayName(packs[rankingIndex], t)) + '</h2>' +
-        arrows(rankingIndex, 'Aventure du classement') + '</div>' + adventureBoard()) +
+      ? '<div class="screen-heading"><h2>Défi du jour</h2></div><div class="daily-board-panel">' +
+        dailyBoard() +
+        '</div>' +
+        '<div class="preview-cta">' +
+        link('E19', 'Jouer au Défi') +
+        link('E22', 'Ma semaine') +
+        '</div>'
+      : '<div class="screen-heading"><h2>' +
+        esc(adventureDisplayName(packs[rankingIndex], t)) +
+        '</h2>' +
+        arrows(rankingIndex, 'Aventure du classement') +
+        '</div>' +
+        adventureBoard()) +
     '</section>'
   );
 }
@@ -621,39 +721,155 @@ function questPodium(mine) {
     { nickname: 'Léna', seconds: mine + 6 },
     { nickname: 'Tom', seconds: mine + 14 },
   ].sort((a, b) => a.seconds - b.seconds);
-  const rows = times.map((row, index) => ({ ...row, place: index + 1, position: index + 1, value: row.seconds + ' s' }));
+  const rows = times.map((row, index) => ({
+    ...row,
+    place: index + 1,
+    position: index + 1,
+    value: row.seconds + ' s',
+  }));
   const html = htmlDocument();
   const me = rows.find((row) => row.mine);
   return (
-    '<h2>' + esc(t('ranking.top')) + '</h2>' +
+    '<h2>' +
+    esc(t('ranking.top')) +
+    '</h2>' +
     createPodium(html, rows.slice(0, 3), { t }).outerHTML +
     (me.place > 3 ? createMyPosition(html, me, { t }).outerHTML : '') +
-    '<p class="daily-board-count">' + esc(rows.length + ' joueurs classés sur cette quête') + '</p>'
+    '<p class="daily-board-count">' +
+    esc(rows.length + ' joueurs classés sur cette quête') +
+    '</p>'
+  );
+}
+
+const formatSeconds = (seconds) =>
+  Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+
+// A victory updates the simulated account like a confirmed save would: solved quest,
+// merged badges (never lost) and best time. Reward states come from the production
+// rewardSlots (new / owned / missing); « first-try mastery » as in #remarkableChallenge.
+function registerVictory(quest, { seconds, assistanceUsed = false, mistakeCommitted = false }) {
+  const prior = histories.get(quest.id);
+  const run = performanceAttempt({ questIndex: 0, seconds, assistanceUsed, mistakeCommitted });
+  const packWasDone = packQuestsOf(quest.packId).every((item) => histories.has(item.id));
+  const badges = Object.fromEntries(
+    badgeKeys.map((key) => [key, !!(prior?.badges[key] || run[key])]),
+  );
+  const record = {
+    version: 2,
+    badges,
+    bestSeconds: prior ? Math.min(prior.bestSeconds, seconds) : seconds,
+  };
+  histories.set(quest.id, record);
+  if (quest.legacyIndex === null) seed.canonicalQuestState[quest.id] = { ...record, solved: true };
+  else {
+    seed.solved[quest.legacyIndex] = true;
+    seed.performances[quest.legacyIndex] = record;
+  }
+  const packDone = packQuestsOf(quest.packId).every((item) => histories.has(item.id));
+  const packMastered =
+    packDone && packQuestsOf(quest.packId).every((item) => histories.get(item.id).badges.mastery);
+  lastVictory = {
+    questId: quest.id,
+    fresh: !prior,
+    seconds,
+    prior,
+    newRecord: !prior || seconds < prior.bestSeconds,
+    slots: rewardSlots(
+      {
+        stars: prior ? 0 : 1,
+        badges: run,
+        qualifying: true,
+        prior: prior?.badges ?? {},
+        completed: !!prior,
+      },
+      t,
+    ),
+    remarkable: !prior && run.mastery,
+    // #932: « Partager ma réussite » only for the victory completing or mastering an adventure.
+    share: packMastered ? 'mastered' : packDone && !packWasDone ? 'adventure' : null,
+  };
+}
+const packQuestsOf = (packId) => catalogue.filter((quest) => quest.packId === packId);
+
+function victoryRewards(slots) {
+  return (
+    '<div class="victory-rewards-row" role="list" aria-label="' +
+    esc(t('victory.rewards')) +
+    '">' +
+    slots
+      .map(
+        (slot) =>
+          '<span role="listitem" class="victory-slot is-' +
+          slot.state +
+          '"><span aria-hidden="true">' +
+          esc(slot.icon) +
+          '</span><small>' +
+          esc(slot.label) +
+          '</small><em>' +
+          esc(slot.state === 'new' ? 'Nouveau' : slot.state === 'owned' ? 'Acquis' : '—') +
+          '</em></span>',
+      )
+      .join('') +
+    '</div>'
+  );
+}
+
+function recordLine(victory) {
+  const best = histories.get(victory.questId).bestSeconds;
+  if (victory.newRecord)
+    return (
+      '<p class="victory-record is-new">' +
+      esc(t('results.newRecord') + ' · ' + t('results.record', { time: formatSeconds(best) })) +
+      '</p>'
+    );
+  const gap = victory.seconds - best;
+  return (
+    '<p class="victory-record">' +
+    esc(
+      t('results.record', { time: formatSeconds(best) }) +
+        ' · ' +
+        (gap === 0
+          ? t('results.equalRecord')
+          : t('results.recordGap', { time: '+' + formatSeconds(gap) })),
+    ) +
+    '</p>'
   );
 }
 
 // Production sky reveal (#skyReveal): a first victory lights the next star of the
 // constellation (starBirth + lineBirth); a replay or a review shows it already lit.
-function victorySky(quest, record) {
+function victorySky(quest, victory) {
   const entry = packs
     .flatMap((item) => item.constellations)
     .find((item) => item.id === quest.constellationId);
   if (!entry) return '';
   const quests = catalogue.filter((item) => item.constellationId === entry.id);
-  const solved = quests.filter((item) => histories.has(item.id)).length;
-  const fresh = !record;
-  const lit = Math.min(quests.length, solved + (fresh ? 1 : 0));
+  const lit = quests.filter((item) => histories.has(item.id)).length;
+  const fresh = !!victory?.fresh;
   const name = entry.label ?? entry.id;
-  const svg = figure(entry, { completed: lit, total: quests.length }, 'victory-sky-svg', fresh ? solved : null);
+  const svg = figure(
+    entry,
+    { completed: lit, total: quests.length },
+    'victory-sky-svg',
+    fresh ? lit - 1 : null,
+  );
   return (
-    '<section class="preview-panel victory-sky' + (fresh ? ' is-new' : '') + '">' +
-    '<p class="victory-sky-kicker">' + esc(t(fresh ? 'victory.newStar' : 'victory.questDone')) + '</p>' +
-    '<h1>' + esc(fresh ? t('victory.newStarTitle') : name) + '</h1>' +
+    '<section class="preview-panel victory-sky' +
+    (fresh ? ' is-new' : '') +
+    '">' +
+    '<p class="victory-sky-kicker">' +
+    esc(t(fresh ? 'victory.newStar' : 'victory.questDone')) +
+    '</p>' +
+    '<h1>' +
+    esc(fresh ? t('victory.newStarTitle') : name) +
+    '</h1>' +
     '<p class="victory-sky-name">' +
     esc(fresh ? t('map.star', { number: lit }) + ' · ' + name : t('victory.badges')) +
     '</p>' +
     svg +
-    '<p class="victory-sky-progress">' + esc(t('victory.progress', { lit, count: quests.length })) + '</p>' +
+    '<p class="victory-sky-progress">' +
+    esc(t('victory.progress', { lit, count: quests.length })) +
+    '</p>' +
     '</section>'
   );
 }
@@ -661,27 +877,147 @@ function victorySky(quest, record) {
 function result() {
   const quest = selectedQuest;
   const record = histories.get(quest.id);
+  const victory = lastVictory?.questId === quest.id ? lastVictory : null;
   const next = filteredJourney
     ? nextIncompleteBadgeQuest(catalogue, quest, seed, readyQuest)
     : catalogue.find((item) => item.ordinal === quest.ordinal + 1 && readyQuest(item));
+  const nextButton = next
+    ? '<button type="button" class="preview-primary" data-next="' +
+      esc(next.id) +
+      '">' +
+      esc(t('victory.next')) +
+      '</button>'
+    : '';
+  const secondary =
+    '<div class="preview-cta">' +
+    link(filteredJourney ? 'E09' : 'E07', 'Retour à la constellation') +
+    '</div><div class="preview-cta">' +
+    link('E15') +
+    link('E16') +
+    '</div>';
+  if (victory) {
+    return (
+      victorySky(quest, victory) +
+      '<section class="preview-panel victory-performance"><h2>' +
+      esc(t('victory.performance')) +
+      '</h2>' +
+      victoryRewards(victory.slots) +
+      '<p class="victory-time"><small>' +
+      esc(t('victory.finalTime')) +
+      '</small><strong>' +
+      esc(formatSeconds(victory.seconds)) +
+      '</strong></p>' +
+      recordLine(victory) +
+      (victory.remarkable
+        ? '<p class="victory-remarkable"><strong>' +
+          esc(t('success.remarkableTitle')) +
+          '</strong><span>' +
+          esc(t('success.remarkableCopy')) +
+          '</span></p>'
+        : '') +
+      '</section>' +
+      '<section class="preview-panel quest-ranking">' +
+      questPodium(victory.seconds) +
+      '</section>' +
+      '<div class="victory-actions">' +
+      nextButton +
+      '<button type="button" data-sheet="challenge">' +
+      esc(t('victory.challenge')) +
+      '</button>' +
+      '<button type="button" data-replay>' +
+      esc(t('results.replay')) +
+      '</button>' +
+      (victory.share
+        ? '<button type="button" class="victory-share" data-sheet="' +
+          victory.share +
+          '">' +
+          esc(t('share.shareResult')) +
+          '</button>'
+        : '') +
+      '</div>' +
+      secondary
+    );
+  }
   return (
-    victorySky(quest, record) +
+    victorySky(quest, null) +
     '<section class="preview-panel"><h2>Quête ' +
     quest.ordinal +
     (record ? ' · ' + record.bestSeconds + ' secondes' : '') +
     '</h2>' +
     questBadges(record) +
     '</section>' +
-    (record ? '<section class="preview-panel quest-ranking">' + questPodium(record.bestSeconds) + '</section>' : '') +
-    '<div class="preview-cta">' +
-    (record ? link('E11', 'Rejouer') : '') +
-    (next ? '<button type="button" data-next="' + esc(next.id) + '">Quête suivante</button>' : '') +
-    link(filteredJourney ? 'E09' : 'E07', 'Retour à la constellation') +
-    '</div><div class="preview-cta">' +
-    link('E15') +
-    link('E16') +
-    '</div>'
+    (record
+      ? '<section class="preview-panel quest-ranking">' +
+        questPodium(record.bestSeconds) +
+        '</section>'
+      : '') +
+    '<div class="victory-actions">' +
+    nextButton +
+    '<button type="button" data-sheet="challenge">' +
+    esc(t('victory.challenge')) +
+    '</button>' +
+    (record ? '<button type="button" data-replay>' + esc(t('results.replay')) + '</button>' : '') +
+    '</div>' +
+    secondary
   );
+}
+
+// Share sheets (production lumenShareDialog / challenge share): content only,
+// the native share sheet and the clipboard are not simulated beyond a status line.
+function openSheet(kind) {
+  const quest = selectedQuest;
+  const adventure = packs.find((item) => item.id === quest.packId);
+  const adventureName = adventureDisplayName(adventure, t) || '';
+  const sheets = {
+    lumen: [t('share.lumen'), t('share.inviteText'), []],
+    challenge: [
+      t('share.challengeTitle'),
+      'Quête ' +
+        quest.ordinal +
+        (lastVictory?.questId === quest.id
+          ? ' · ' + t('share.finalTime', { time: formatSeconds(lastVictory.seconds) })
+          : '') +
+        ' · ' +
+        t('share.yourTurn'),
+      ['Envoyer à un ami'],
+    ],
+    adventure: [
+      t('share.adventureTitle'),
+      t('share.adventureHeadline', { adventure: adventureName, constellation: '' }).replace(
+        / · $/,
+        '',
+      ),
+      [],
+    ],
+    mastered: [
+      t('share.masteredTitle'),
+      t('share.masteredHeadline', { adventure: adventureName }),
+      [],
+    ],
+  };
+  const [title, text, extra] = sheets[kind] ?? sheets.lumen;
+  let dialog = document.querySelector('#preview-sheet');
+  if (!dialog) {
+    dialog = document.createElement('dialog');
+    dialog.id = 'preview-sheet';
+    dialog.className = 'preview-sheet';
+    document.body.append(dialog);
+  }
+  dialog.innerHTML =
+    '<h2></h2><p class="preview-sheet-text"></p><div class="preview-sheet-actions">' +
+    ['Partager', t('share.copyLink'), ...extra]
+      .map((label) => '<button type="button" data-sheet-action>' + esc(label) + '</button>')
+      .join('') +
+    '<button type="button" data-sheet-close>' +
+    esc(t('share.close')) +
+    '</button></div><p class="preview-sheet-status" role="status"></p>';
+  dialog.querySelector('h2').textContent = title;
+  dialog.querySelector('.preview-sheet-text').textContent = text;
+  try {
+    dialog.showModal();
+  } catch {
+    dialog.setAttribute('open', '');
+  }
 }
 
 const notes = {
@@ -721,6 +1057,11 @@ function reference() {
         '"><p class="preview-meta">Capture de référence V1</p>'
       : '') +
     '</section>' +
+    (state === 'E18'
+      ? '<button type="button" class="victory-share" data-sheet="mastered">' +
+        esc(t('share.shareResult')) +
+        '</button>'
+      : '') +
     (state === 'E12' || state === 'E13'
       ? '<button type="button" class="preview-primary" data-back>Reprendre la partie</button>'
       : navLinks(state))
@@ -733,6 +1074,7 @@ function accountOrSocial() {
     ? [
         ['Compte', ['E36', 'E37', 'E38']],
         ['Services', ['E39', 'E40', 'E49']],
+        ['Partager', []],
       ]
     : [
         ['Amis', ['E28', 'E29']],
@@ -749,7 +1091,9 @@ function accountOrSocial() {
           '<section class="preview-panel"><h2>' +
           esc(label) +
           '</h2><div class="preview-menu">' +
-          items.map((route) => link(route)).join('') +
+          (items.length
+            ? items.map((route) => link(route)).join('')
+            : '<button type="button" data-sheet="lumen">' + esc(t('share.lumen')) + '</button>') +
           '</div></section>',
       )
       .join('')
@@ -878,8 +1222,7 @@ function render() {
   else if (state === 'E25' || state === 'E26') {
     if (state === 'E26') rankingMode = 'daily';
     screen.innerHTML = rankings();
-  }
-  else if (state === 'E33') screen.innerHTML = notificationInbox();
+  } else if (state === 'E33') screen.innerHTML = notificationInbox();
   else if (openedNotification && notificationDestinations[openedNotification.kind][0] === state) {
     screen.innerHTML = notificationAction(openedNotification);
   } else if (state === 'E27' || state === 'E35') screen.innerHTML = accountOrSocial();
@@ -896,12 +1239,14 @@ function render() {
       label: daily ? 'Défi du jour' : 'Quête ' + quest.ordinal,
       subtitle: daily ? 'Défi commun' : (entry?.label ?? adventureDisplayName(adventure, t)),
     });
-  } else if (state === 'E14') screen.innerHTML = result();
-  else if (state === 'E40') {
+  } else if (state === 'E14') {
+    if (lastVictory?.questId !== selectedQuest.id && !histories.has(selectedQuest.id))
+      registerVictory(selectedQuest, { seconds: 47 });
+    screen.innerHTML = result();
+  } else if (state === 'E40') {
     screen.innerHTML = shopFrame();
     mountShop();
-  }
-  else screen.innerHTML = reference();
+  } else screen.innerHTML = reference();
 }
 
 function go(route, { replace = false, focus, scroll = true } = {}) {
@@ -978,6 +1323,26 @@ document.addEventListener('click', (event) => {
   if (!button) return;
   if (button.hasAttribute('data-back')) {
     back();
+    return;
+  }
+  if (button.dataset.sheet) {
+    openSheet(button.dataset.sheet);
+    return;
+  }
+  if (button.hasAttribute('data-sheet-close')) {
+    button.closest('dialog')?.close();
+    return;
+  }
+  if (button.hasAttribute('data-sheet-action')) {
+    button.closest('dialog').querySelector('.preview-sheet-status').textContent =
+      'Prototype : la feuille de partage du téléphone et le presse-papiers ne sont pas simulés.';
+    return;
+  }
+  if (button.hasAttribute('data-replay')) {
+    playPreview.forget(selectedQuest);
+    resumeQuest = selectedQuest;
+    lastVictory = null;
+    go('E11');
     return;
   }
   if (button.hasAttribute('data-badges')) {
@@ -1061,8 +1426,10 @@ document.addEventListener('click', (event) => {
     }
     filteredJourney = filtered === 'true';
     selectedQuest = target;
-    if (histories.has(quest)) go('E14');
-    else {
+    if (histories.has(quest)) {
+      lastVictory = null;
+      go('E14');
+    } else {
       resumeQuest = selectedQuest;
       go('E11');
     }

@@ -842,3 +842,108 @@
     stroke-dashoffset: 0;
   }
 }
+/* Victory: performance, rewards (production states new / owned / missing), actions. */
+.victory-performance h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+.victory-rewards-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+.victory-slot {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  padding: 0.35rem 0.1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  font-size: 1.05rem;
+  opacity: 0.38;
+}
+.victory-slot small {
+  font-size: 0.62rem;
+  text-align: center;
+  line-height: 1.15;
+}
+.victory-slot em {
+  font-style: normal;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+.victory-slot.is-owned {
+  opacity: 0.85;
+}
+.victory-slot.is-new {
+  opacity: 1;
+  border-color: #ffbd59;
+  box-shadow: 0 0 10px rgba(255, 189, 89, 0.35);
+}
+.victory-slot.is-new em {
+  color: #ffbd59;
+}
+.victory-time {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0.5rem 0 0;
+}
+.victory-time strong {
+  font-size: 1.5rem;
+  color: #effaff;
+}
+.victory-record {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+}
+.victory-record.is-new {
+  color: #ffd36b !important;
+  font-weight: 800;
+}
+.victory-remarkable {
+  display: grid;
+  margin: 0.5rem 0 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(255, 189, 89, 0.5);
+  border-radius: 0.6rem;
+}
+.victory-remarkable strong {
+  color: #ffbd59;
+}
+.victory-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+.victory-actions .preview-primary,
+.victory-actions .victory-share {
+  grid-column: 1 / -1;
+}
+.victory-share {
+  border-color: #ffbd59;
+  color: #ffd36b;
+}
+.preview-sheet {
+  width: min(92vw, 380px);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  color: inherit;
+}
+.preview-sheet::backdrop {
+  background: rgba(2, 7, 13, 0.7);
+}
+.preview-sheet h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+}
+.preview-sheet-actions {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+.preview-sheet-status {
+  min-height: 1.2em;
+  font-size: 0.78rem;
+}

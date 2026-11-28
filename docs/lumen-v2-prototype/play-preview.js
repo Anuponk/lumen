@@ -15,7 +15,7 @@ const formatTime = (seconds) =>
   Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
 const emptyBoard = (size) => Array.from({ length: size }, () => Array(size).fill(0));
 
-export function createPlayPreview({ screen, t, go, back }) {
+export function createPlayPreview({ screen, t, go, back, onVictory }) {
   const sessions = new Map();
   let current;
   let timer;
@@ -146,7 +146,10 @@ export function createPlayPreview({ screen, t, go, back }) {
             guardians() === quest.size &&
             quest.sol.every((column, row) => board[row][column] === 2)
           ) {
+            const { assistanceUsed, mistakeCommitted } = engine.snapshot();
+            const seconds = engine.officialSeconds();
             engine.complete();
+            if (!daily) onVictory?.(quest, { seconds, assistanceUsed, mistakeCommitted });
             go(daily ? 'E21' : 'E14');
           }
         });
@@ -331,5 +334,10 @@ export function createPlayPreview({ screen, t, go, back }) {
     }
   }
 
-  return { show, leave };
+  // « Rejouer » starts a new attempt instead of reopening the completed one.
+  function forget(quest) {
+    sessions.delete(quest.id);
+  }
+
+  return { show, leave, forget };
 }
