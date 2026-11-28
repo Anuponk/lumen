@@ -14,7 +14,7 @@ Première version issue de [l’EPIC #1081](https://github.com/Anuponk/project-m
 | E08 | Fiche, tracé et identité astronomiques | Mon ciel / détail | Accès fiche depuis la constellation | #856 | astronomical-reference-svg, astronomical-rendering-browser | À recetter |
 | E09 | À compléter, Quête suivante et maintien du filtre | Mes quêtes et victoire | Détail et victoire dans le même parcours filtré | #985, #784 | sky-navigation-browser, sky-return-browser | À recetter |
 | E10 | Reprise, identification de la quête, prochaine éligible | Plateau / Mon ciel | Jouer, Continuer, sélection unique | #1082, #1083 | owned-adventure-browser, offline-owner-resume | À recetter |
-| E11 | Grille et gestes, gardiens, gomme, undo, drag et annulation | Plateau | Même plateau sans barre, même échelle et gestes | #1082 | browser, tap-jitter-browser | À recetter |
+| E11 | Grille et gestes, gardiens, gomme, undo, drag et annulation | Plateau | Grille sans barre de navigation, chrono et Gardiens au-dessus, Annuler, Effacer, Vérifier et Indice en dessous. Gestes à préserver lors de l’intégration | #1082 | browser, tap-jitter-browser | À recetter |
 | E12 | Aides guidées, indices, vérification et pénalités | Plateau | Mêmes commandes et règles, compteur et surcoûts visibles | #1052 | group-hint, hint-assistance-badge-regression | À recetter |
 | E13 | Pause, reprise, reset, sortie et abandon du Défi | Menu, masque et confirmations | Mêmes commandes et cycle de tentative | #1082, #1087 | abandon-attempt-browser, menu-pause-browser | À recetter |
 | E14 | Victoire, chrono officiel, podium, actions secondaires | Résultat unifié | Résultat et actions existants, aucun doublon | #661, #682 | victory-layout-browser, victory-clock-freeze | À recetter |

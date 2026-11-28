@@ -21,6 +21,7 @@ import { adventureDisplayName } from '../../src/ui/adventure-copy.js';
 import { renderDailyWeek } from '../../src/ui/daily-view.js';
 import { createPodium, createRankRow, htmlDocument } from '../../src/ui/podium.js';
 import { deriveSocialEvents } from '../../src/ui/social-notifications.js';
+import { createPlayPreview } from './play-preview.js';
 import { storyboard, destinations, names, referenceCaptures } from './storyboard.js';
 
 const { t } = createTranslator({ locale: 'fr' });
@@ -64,7 +65,16 @@ let filteredJourney = false;
 let badgeView = false;
 let swipeStart;
 let suppressClick = false;
-const previewMarks = new Map();
+let playRoute = 'E11';
+const playPreview = createPlayPreview({
+  screen,
+  t,
+  go,
+  back: () => {
+    if (['E12', 'E13'].includes(state) && !history.state?.depth) go(playRoute, { replace: true });
+    else back();
+  },
+});
 const notifications = deriveSocialEvents({
   friends: [{ nickname: 'Camille', state: 'incoming', since: '2026-11-28T08:00:00Z' }],
   received: [{ challenge_id: 'demo-duel', sender: 'Alex', created_at: '2026-11-28T09:00:00Z' }],
@@ -463,58 +473,6 @@ function play() {
   );
 }
 
-function board() {
-  const label = state === 'E20' ? 'Défi du jour' : 'Quête ' + selectedQuest.ordinal;
-  return (
-    '<section class="preview-panel"><div class="screen-heading"><h1>' +
-    label +
-    '</h1>' +
-    link('E13', 'Pause') +
-    '</div><div class="preview-board" aria-label="Grille du catalogue"></div>' +
-    '<div class="preview-grid-actions">' +
-    link('E12', 'Aides et indices') +
-    link(state === 'E20' ? 'E21' : 'E14', 'Afficher le résultat de recette') +
-    '</div></section>'
-  );
-}
-
-function drawBoard() {
-  const boardElement = screen.querySelector('.preview-board');
-  const dailyBoard = state === 'E20';
-  const quest = dailyBoard ? catalogue[6] : selectedQuest;
-  const key = (dailyBoard ? 'daily:' : '') + quest.id;
-  if (!previewMarks.has(key)) previewMarks.set(key, new Set());
-  const marks = previewMarks.get(key);
-  const palette = [
-    '#2e536b',
-    '#355f53',
-    '#572f51',
-    '#69563e',
-    '#373c69',
-    '#63586d',
-    '#3a6875',
-    '#6b4745',
-    '#4b5d42',
-    '#545469',
-  ];
-  boardElement.style.gridTemplateColumns = 'repeat(' + quest.size + ', 1fr)';
-  quest.reg.forEach((row, r) =>
-    row.forEach((territory, c) => {
-      const cell = document.createElement('button');
-      cell.type = 'button';
-      cell.style.setProperty('--territory', palette[territory % palette.length]);
-      cell.setAttribute('aria-label', 'Ligne ' + (r + 1) + ', colonne ' + (c + 1));
-      const coordinate = r + ':' + c;
-      cell.textContent = marks.has(coordinate) ? '✦' : '';
-      cell.addEventListener('click', () => {
-        if (!marks.delete(coordinate)) marks.add(coordinate);
-        cell.textContent = marks.has(coordinate) ? '✦' : '';
-      });
-      boardElement.append(cell);
-    }),
-  );
-}
-
 function rankings() {
   const ordered = Array.from({ length: 7 }, (_, index) => ({
     nickname: 'Joueur ' + String.fromCharCode(65 + index),
@@ -731,8 +689,11 @@ function notificationAction(item) {
 
 function render() {
   const inSky = overview.has(state) || detail.has(state) || state === 'E08';
+  const playing = questScreens.has(state);
   screen.classList.toggle('is-adventure', overview.has(state) || state === 'E25');
-  nav.hidden = questScreens.has(state);
+  nav.hidden = playing;
+  document.querySelector('.preview-header').hidden = playing;
+  if (!playing) playPreview.leave();
   document.getElementById('preview-brand-title').textContent = overview.has(state)
     ? 'Mon ciel'
     : 'LUMEN';
@@ -770,9 +731,19 @@ function render() {
   else if (openedNotification && notificationDestinations[openedNotification.kind][0] === state) {
     screen.innerHTML = notificationAction(openedNotification);
   } else if (state === 'E27' || state === 'E35') screen.innerHTML = accountOrSocial();
-  else if (state === 'E11' || state === 'E20') {
-    screen.innerHTML = board();
-    drawBoard();
+  else if (playing) {
+    const daily = playRoute === 'E20';
+    const quest = daily ? catalogue[6] : selectedQuest;
+    const adventure = packs.find((item) => item.id === quest.packId);
+    const entry = adventure?.constellations.find((item) => item.id === quest.constellationId);
+    playPreview.show({
+      quest,
+      daily,
+      panel: state === playRoute ? undefined : state,
+      prefilled: !daily && quest.id === catalogue[34].id,
+      label: daily ? 'Défi du jour' : 'Quête ' + quest.ordinal,
+      subtitle: daily ? 'Défi commun' : (entry?.label ?? adventureDisplayName(adventure, t)),
+    });
   } else if (state === 'E14') screen.innerHTML = result();
   else screen.innerHTML = reference();
 }
@@ -780,6 +751,7 @@ function render() {
 function go(route, { replace = false, focus, scroll = true } = {}) {
   if (!routes.has(route)) return;
   state = route;
+  if (route === 'E11' || route === 'E20') playRoute = route;
   const depth = history.state?.preview ? history.state.depth : 0;
   history[replace ? 'replaceState' : 'pushState'](
     {
@@ -791,6 +763,7 @@ function go(route, { replace = false, focus, scroll = true } = {}) {
       constellationIndex,
       questId: selectedQuest.id,
       notificationId: openedNotification?.id,
+      playRoute,
       filteredJourney,
       badgeView,
     },
@@ -961,6 +934,7 @@ function restore(entry) {
       filteredJourney,
       badgeView,
     } = entry);
+    playRoute = entry.playRoute ?? (state === 'E20' ? 'E20' : 'E11');
     selectedQuest = catalogue.find((item) => item.id === entry.questId) ?? resumeQuest;
     openedNotification = notifications.find((item) => item.id === entry.notificationId);
     render();

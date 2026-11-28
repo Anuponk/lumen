@@ -1,0 +1,48 @@
+{
+  "viewports": [
+    {
+      "width": 390,
+      "height": 844,
+      "count": 49,
+      "square": true,
+      "toolsVisible": true,
+      "pageFits": true,
+      "navHidden": true
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "count": 49,
+      "square": true,
+      "toolsVisible": true,
+      "pageFits": true,
+      "navHidden": true
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "count": 49,
+      "square": true,
+      "toolsVisible": true,
+      "pageFits": true,
+      "navHidden": true
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "count": 49,
+      "square": true,
+      "toolsVisible": true,
+      "pageFits": true,
+      "navHidden": true
+    }
+  ],
+  "checks": [
+    "first placement cycle and undo",
+    "official +5 s Verify and +15 s Hint",
+    "pause and board restoration",
+    "erase retains official time",
+    "rules, return to Sky and Daily"
+  ],
+  "storyboardStates": 50
+}

@@ -22,6 +22,7 @@ l’application avec un backend isolé.
 | Mon ciel | Six constellations par page, rails aventure et sélection de ciel, pourcentages de badges. | Les constellations sont visibles ensemble. Chaque carte porte un pourcentage et un état identifié par un symbole, un libellé et une teinte. Le bandeau Aventure affiche la complétion globale, les quêtes et les badges. Le bouton Badges affiche les compteurs par catégorie. |
 | Détail constellation | Navigation et cartes de quête avec état et badges. | Les flèches à côté du nom d’aventure ouvrent la première constellation de l’aventure choisie. Les commandes dans le bas de la page parcourent les constellations de l’aventure active. La fiche, le filtre et la prochaine quête restent accessibles selon les droits. |
 | Jouer et Défi | Plateau et retour à Mon ciel. « Ma semaine » déjà dans le Défi, avec raccourci Social. | Reprise en un geste depuis Mon ciel. Jouer donne accès à la reprise et au Défi. Historique et semaine restent dans le Défi. |
+| Résolution | Territoires colorés, Gardiens, chrono et aides. | En-tête de quête avec Retour et Pause, chrono officiel et compteur au-dessus de la grille, Annuler, Effacer, Vérifier et Indice directement en dessous. Les frontières de territoire ressortent et la barre de navigation laisse la place à la grille. |
 | Classements | Podium et listes de classement. La liste complète est présente sur le `main` de départ (#1079). | Podium existant, liste complète et swipe aventure. Défi quotidien global et amis. |
 | Social, compte, boutique | Composants et contrats déjà disponibles. | Les notifications sont accessibles depuis la cloche en haut à droite, avec compteur, et depuis Social. Chaque notification ouvre le duel, la demande d’ami ou le résultat concerné. La boutique reste accessible depuis le compte et les limites. |
 | Fidélisation | Records, tableaux de progression, célébrations et Ma semaine. | Donner un accès explicite aux acquis existants. Étudier le bilan E49 avec faits du compte et le déclenchement ponctuel E50 après une action pertinente. |
@@ -70,5 +71,7 @@ des étapes guidées seront recettés contre leur destination V2.
 Les [captures de Mon ciel et des notifications](validation/lumen-v2-1081/sky-review/README.md)
 complètent le [dossier de preuves initial](validation/lumen-v2-1081/README.md).
 Voir également les [cas d’accès et de navigation depuis une constellation](validation/lumen-v2-1081/access-review/README.md).
+Les [captures de l’écran de jeu](validation/lumen-v2-1081/play-review/README.md)
+montrent la quête simulée, la pause, les règles, la vérification et le Défi.
 Passer au jalon 4 après accord explicite sur la conception, puis recetter V1 et V2
 avant activation privée.
