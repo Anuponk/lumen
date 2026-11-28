@@ -14,8 +14,11 @@
   socle Lab #1087 (non appliqué en production).
 - **Décisions** : voir [LUMEN_V2_DECISIONS.md](LUMEN_V2_DECISIONS.md) (D1–D13 et arbitrages ouverts).
 - **En cours** : aucune modification à moitié faite.
-- **Prochaine action** : recueillir les arbitrages ouverts du jalon 4 (navigation entre
-  aventures, bilan E49, découvertes E50, formules de %), puis itérer sur le prototype.
+- **Décisions du 28/11 après relais** : D14 flèches en haut, D15 % quêtes + badges à égalité,
+  D16 bilan E49 différé, D17 découvertes une fois au premier usage.
+- **Prochaine action** : prototyper D17 (bulles de découverte au premier usage, fermables,
+  persistées par compte) et retirer E49 du périmètre ; puis faire valider D1, D2, D7, D9,
+  D11 et D12 par essai du prototype.
 
 ## Lancer et vérifier
 
