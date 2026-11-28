@@ -41,6 +41,8 @@ remboursé, sans impact UX).
 | D26 | 28/11 | Sons | « Les sons dans réglage. » | Le bouton Sons quitte l'en-tête : réglage dans Mon espace › Langue et son (E37), y compris pendant la partie. | Décidé | E37 |
 | D27 | 28/11 | Partager Lumen | « L'icône partager tu la mets dans Mon espace. » | Mon espace › Partager › « Partager Lumen » ouvre la feuille de partage (texte d'invitation de production). | Décidé, fait | E35 |
 | D28 | 28/11 | Parité de la victoire | « Comble les manques, globalement sur le proto. » | E14 après victoire : temps final, record (nouveau / égalé / écart), récompenses de production `rewardSlots` (Nouveau / Acquis / manquant), « Maîtrise du premier coup », podium, Quête suivante, ➤ Défier, ↻ Rejouer (nouvelle tentative), « Partager ma réussite » à la fin ou maîtrise d'aventure (#932, aussi sur E06 et E18). La victoire met à jour la progression simulée. Revue d'une quête résolue : inchangée, avec Défier. | Fait, à valider | prototype E14, E06, E18, E35 |
+| D29 | 28/11 | Signal du Défi du jour | « Il faut que l'user sache qu'il a un défi à jouer. » | **Pastille dorée sur l'onglet Jouer** tant que le Défi est ouvert et non joué ; **carte Défi** à côté de « Reprendre » dans Mon ciel et Jouer : « À jouer · 1 essai » → Défi ; « Défi joué · temps · rang » → classement du Défi ; « Revient demain » si indisponible. Pas de 5ᵉ onglet (320 px), pas dans la cloche (réservée au social), rappel hors appli = push #1032. Remplace la puce Défi de l'en-tête V1. | Fait, à valider | Panneau Prototype › Défi du jour (3 états) |
+| D30 | 28/11 | Règle d'or : pas de défilement | « Le proto ne respecte pas toujours la règle d'or de ne pas devoir scroller. » | Chaque écran tient sans défilement vertical en 360×640 et 390×844 (#705). Contrôle automatisé des 50 états : 18 dépassaient (fiches V1 avec capture, victoire, détail de constellation). Corrigé : captures V1 bornées à la hauteur, victoire compacte (podium compact de production, actions sur deux lignes, liens de storyboard retirés), lignes de quête resserrées sous 700 px. Restant : aucun (la boutique E40 est une modale qui tient à l'écran). | Fait | — |
 | D13 | 28/11 09:04 | Passage de relais | Consigner les décisions et les dernières maquettes dans le ticket ; poursuivre le prototype avec Claude. | Ce journal + `LUMEN_V2_HANDOFF.md` ; récapitulatif posté sur #1081 (la mise à jour de Codex a été interrompue). | Décidé | #1081 |
 
 ## Contrôle de parité V1 · écrans refaits (28/11)
@@ -62,15 +64,14 @@ sans décision explicite.
 | Victoire E14 | « ✦ Mon ciel » | Onglet Mon ciel (barre du bas) | Déplacé, cohérent avec D6 |
 | En-tête | « Partager Lumen » (`shareLumen`, `mapShareLumen`) | Mon espace › Partager | Déplacé, décidé (D27) |
 | En-tête | Bouton Sons en un geste (`soundToggle`) | Dans Réglages (E37) | Déplacé, décidé (D26) |
-| En-tête | Puce « Défi du jour » (`dailyChip`) | Jouer › Défi du jour | Déplacé (dossier de conception), à confirmer |
+| En-tête | Puce « Défi du jour » (`dailyChip`) | Pastille sur Jouer + carte Défi | Remplacé, décidé (D29) |
 | Jeu E11 | Pause, Quitter/Abandonner, Règles, Annuler, Effacer, Vérifier, Indice, contrôle guidé | Présents (abandon dans la pause) | Conforme |
 | Jeu E11 | Sons pendant la partie | Réglages (E37) | Décidé (D26) |
 | Mon ciel E04 | Visite guidée de Mon ciel (`skyTour`) | Non illustrée | À recetter (ordre conservé selon le dossier de conception) |
 | Classements E25 | Podium, « Ta position », liste complète, Général/Mes amis du Défi | Alignés sur la production (D21, D22) | Conforme |
 | Détail E07 | Quête suivante d'une quête terminée, règles des badges, délai de rejeu (E48) | Présents ou en fiche V1 | Conforme, à recetter |
 
-Reste ouvert : la puce « Défi du jour » de l'en-tête V1, accessible dans le prototype par Jouer ›
-Défi du jour (à confirmer par le propriétaire).
+Tous les écarts relevés sont comblés ou arbitrés (D26–D29).
 
 ## Arbitrages encore ouverts (jalon 4)
 

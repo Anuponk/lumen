@@ -234,7 +234,36 @@ function arrows(index, scope) {
   );
 }
 
-const daily = () => link('E19', 'Défi du jour');
+// D29: the player must know a Daily Challenge awaits. Gold dot on the Jouer tab while
+// open and unplayed; a Défi card next to « Reprendre » shows the state (open / played
+// with result and rank / unavailable). Same slot as before: no extra height.
+let dailyStatus = 'open';
+const dailyResult = { seconds: 49, rank: 6, participants: 15 };
+const daily = () => {
+  if (dailyStatus === 'played')
+    return (
+      '<button type="button" class="daily-card is-played" data-go="E26" aria-label="' +
+      esc(t('daily.chipDoneLabel', { date: 'aujourd’hui' })) +
+      '"><strong>Défi joué</strong><small>' +
+      esc(
+        Math.floor(dailyResult.seconds / 60) +
+          ':' +
+          String(dailyResult.seconds % 60).padStart(2, '0') +
+          ' · ' +
+          dailyResult.rank +
+          'e / ' +
+          dailyResult.participants,
+      ) +
+      '</small></button>'
+    );
+  if (dailyStatus === 'closed')
+    return '<button type="button" class="daily-card is-closed" data-go="E19"><strong>Défi du jour</strong><small>Revient demain</small></button>';
+  return (
+    '<button type="button" class="daily-card is-open" data-go="E19" aria-label="' +
+    esc(t('daily.chipOpenLabel', { date: 'aujourd’hui' })) +
+    '"><strong><span class="daily-dot" aria-hidden="true"></span>Défi du jour</strong><small>À jouer · 1 essai</small></button>'
+  );
+};
 const continueQuest = () =>
   '<button type="button" class="preview-primary" data-resume>Reprendre la quête ' +
   resumeQuest.ordinal +
@@ -816,23 +845,20 @@ function victoryRewards(slots) {
 
 function recordLine(victory) {
   const best = histories.get(victory.questId).bestSeconds;
-  if (victory.newRecord)
-    return (
-      '<p class="victory-record is-new">' +
-      esc(t('results.newRecord') + ' · ' + t('results.record', { time: formatSeconds(best) })) +
-      '</p>'
-    );
   const gap = victory.seconds - best;
+  const text = victory.newRecord
+    ? t('results.newRecord')
+    : t('results.record', { time: formatSeconds(best) }) +
+      ' · ' +
+      (gap === 0
+        ? t('results.equalRecord')
+        : t('results.recordGap', { time: '+' + formatSeconds(gap) }));
   return (
-    '<p class="victory-record">' +
-    esc(
-      t('results.record', { time: formatSeconds(best) }) +
-        ' · ' +
-        (gap === 0
-          ? t('results.equalRecord')
-          : t('results.recordGap', { time: '+' + formatSeconds(gap) })),
-    ) +
-    '</p>'
+    '<span class="victory-record' +
+    (victory.newRecord ? ' is-new' : '') +
+    '">' +
+    esc(text) +
+    '</span>'
   );
 }
 
@@ -881,84 +907,77 @@ function result() {
   const next = filteredJourney
     ? nextIncompleteBadgeQuest(catalogue, quest, seed, readyQuest)
     : catalogue.find((item) => item.ordinal === quest.ordinal + 1 && readyQuest(item));
-  const nextButton = next
-    ? '<button type="button" class="preview-primary" data-next="' +
-      esc(next.id) +
-      '">' +
-      esc(t('victory.next')) +
-      '</button>'
-    : '';
-  const secondary =
-    '<div class="preview-cta">' +
-    link(filteredJourney ? 'E09' : 'E07', 'Retour à la constellation') +
-    '</div><div class="preview-cta">' +
-    link('E15') +
-    link('E16') +
-    '</div>';
-  if (victory) {
-    return (
-      victorySky(quest, victory) +
-      '<section class="preview-panel victory-performance"><h2>' +
-      esc(t('victory.performance')) +
-      '</h2>' +
-      victoryRewards(victory.slots) +
-      '<p class="victory-time"><small>' +
-      esc(t('victory.finalTime')) +
-      '</small><strong>' +
-      esc(formatSeconds(victory.seconds)) +
-      '</strong></p>' +
-      recordLine(victory) +
-      (victory.remarkable
-        ? '<p class="victory-remarkable"><strong>' +
-          esc(t('success.remarkableTitle')) +
-          '</strong><span>' +
-          esc(t('success.remarkableCopy')) +
-          '</span></p>'
-        : '') +
-      '</section>' +
-      '<section class="preview-panel quest-ranking">' +
-      questPodium(victory.seconds) +
-      '</section>' +
-      '<div class="victory-actions">' +
-      nextButton +
-      '<button type="button" data-sheet="challenge">' +
-      esc(t('victory.challenge')) +
-      '</button>' +
-      '<button type="button" data-replay>' +
-      esc(t('results.replay')) +
-      '</button>' +
-      (victory.share
-        ? '<button type="button" class="victory-share" data-sheet="' +
-          victory.share +
-          '">' +
-          esc(t('share.shareResult')) +
-          '</button>'
-        : '') +
-      '</div>' +
-      secondary
-    );
-  }
-  return (
-    victorySky(quest, null) +
-    '<section class="preview-panel"><h2>Quête ' +
-    quest.ordinal +
-    (record ? ' · ' + record.bestSeconds + ' secondes' : '') +
-    '</h2>' +
-    questBadges(record) +
-    '</section>' +
-    (record
-      ? '<section class="preview-panel quest-ranking">' +
-        questPodium(record.bestSeconds) +
-        '</section>'
-      : '') +
+  // Golden rule: the whole victory fits 360×640 without scrolling (as #705 in production).
+  // Back (header) returns to the constellation; Mon ciel is the tab.
+  const actions =
     '<div class="victory-actions">' +
-    nextButton +
+    (next
+      ? '<button type="button" class="preview-primary" data-next="' +
+        esc(next.id) +
+        '">' +
+        esc(t('victory.next')) +
+        '</button>'
+      : '') +
+    '<div class="victory-secondary">' +
     '<button type="button" data-sheet="challenge">' +
     esc(t('victory.challenge')) +
     '</button>' +
     (record ? '<button type="button" data-replay>' + esc(t('results.replay')) + '</button>' : '') +
-    '</div>' +
-    secondary
+    (victory?.share
+      ? '<button type="button" class="victory-share" data-sheet="' +
+        victory.share +
+        '">' +
+        esc(t('share.shareResult')) +
+        '</button>'
+      : '') +
+    '</div></div>';
+  if (victory) {
+    return (
+      '<div class="victory-screen">' +
+      victorySky(quest, victory) +
+      '<section class="preview-panel victory-performance" aria-label="' +
+      esc(t('victory.performance')) +
+      '">' +
+      victoryRewards(victory.slots) +
+      '<div class="victory-time"><small>' +
+      esc(t('victory.finalTime')) +
+      '</small><strong>' +
+      esc(formatSeconds(victory.seconds)) +
+      '</strong>' +
+      recordLine(victory) +
+      '</div>' +
+      (victory.remarkable
+        ? '<p class="victory-remarkable"><strong>' +
+          esc(t('success.remarkableTitle')) +
+          '</strong> ' +
+          esc(t('success.remarkableCopy')) +
+          '</p>'
+        : '') +
+      '</section>' +
+      '<section class="preview-panel quest-ranking is-compact">' +
+      questPodium(victory.seconds) +
+      '</section>' +
+      actions +
+      '</div>'
+    );
+  }
+  return (
+    '<div class="victory-screen">' +
+    victorySky(quest, null) +
+    '<section class="preview-panel victory-performance"><div class="victory-time"><small>Quête ' +
+    quest.ordinal +
+    '</small><strong>' +
+    (record ? esc(formatSeconds(record.bestSeconds)) : '—') +
+    '</strong></div>' +
+    questBadges(record) +
+    '</section>' +
+    (record
+      ? '<section class="preview-panel quest-ranking is-compact">' +
+        questPodium(record.bestSeconds) +
+        '</section>'
+      : '') +
+    actions +
+    '</div>'
   );
 }
 
@@ -1209,6 +1228,15 @@ function render() {
       : /^E(2[7-9]|3[0-4])$/.test(state)
         ? 'E27'
         : state;
+  if (state === 'E21') dailyStatus = 'played';
+  const playTab = nav.querySelector('[data-go="E10"]');
+  playTab.classList.toggle('has-daily', dailyStatus === 'open');
+  playTab.setAttribute(
+    'aria-label',
+    dailyStatus === 'open' ? 'Jouer, Défi du jour à jouer' : 'Jouer',
+  );
+  const dailySelect = document.querySelector('#daily-status');
+  if (dailySelect) dailySelect.value = dailyStatus;
   nav.querySelectorAll('button').forEach((button) => {
     if (button.dataset.go === tab) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
@@ -1469,6 +1497,10 @@ screen.addEventListener('pointerup', (event) => {
 const select = document.querySelector('#scenario');
 for (const [key, label] of Object.entries(names)) select.add(new Option(key + ' · ' + label, key));
 select.addEventListener('change', () => go(select.value));
+document.querySelector('#daily-status').addEventListener('change', (event) => {
+  dailyStatus = event.target.value;
+  go(state, { replace: true, scroll: false });
+});
 function restore(entry) {
   if (entry?.preview) {
     ({

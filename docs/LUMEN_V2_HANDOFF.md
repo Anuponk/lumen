@@ -24,7 +24,8 @@
 - **Ensuite** : D23 classement de quête dans la victoire / revue ; D24 étoile qui s'allume à la victoire.
 - **D25** : règle de portée du prototype et contrôle de parité V1 (voir le journal).
 - **D26–D28** : Sons dans les réglages, Partager Lumen dans Mon espace, parité de la victoire comblée.
-- **Prochaine action** : faire confirmer la place de la puce Défi du jour ; puis prototyper D17 (bulles de découverte au premier usage, fermables,
+- **D29–D30** : signal du Défi (pastille Jouer + carte), règle d'or sans défilement vérifiée sur les 50 états (360×640, 390×844).
+- **Prochaine action** : prototyper D17 (bulles de découverte au premier usage, fermables,
   persistées par compte) et retirer E49 du périmètre ; puis faire valider D1, D2, D7, D9,
   D11 et D12 par essai du prototype.
 
