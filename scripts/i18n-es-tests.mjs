@@ -15,6 +15,7 @@ const placeholders = (v) => [...new Set(text(v).match(/\{\w+\}/g) || [])].sort()
 const SAME_AS_FRENCH = new Set([
   // #1044: product, channel and unit names identical in Spanish.
   'admin.activity.channel',
+  'admin.activity.phasePremium',
   'admin.activity.segPremium',
   'admin.activity.chWeb',
   'admin.activity.chPlay',
