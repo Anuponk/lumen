@@ -610,6 +610,28 @@ function dailyScreen(withWeek) {
   );
 }
 
+// D23 (28/11): the quest ranking lives in the quest (victory and review), as in
+// production: podium of the 3 best official times + « Ta position » when off it.
+function questPodium(mine) {
+  const times = [
+    { nickname: 'Loutre', seconds: Math.max(18, mine - 9) },
+    { nickname: 'Anupon', seconds: Math.max(20, mine - 5) },
+    { nickname: 'Badoune', seconds: Math.max(22, mine - 2) },
+    { nickname: t('ranking.you'), seconds: mine, mine: true },
+    { nickname: 'Léna', seconds: mine + 6 },
+    { nickname: 'Tom', seconds: mine + 14 },
+  ].sort((a, b) => a.seconds - b.seconds);
+  const rows = times.map((row, index) => ({ ...row, place: index + 1, position: index + 1, value: row.seconds + ' s' }));
+  const html = htmlDocument();
+  const me = rows.find((row) => row.mine);
+  return (
+    '<h2>' + esc(t('ranking.top')) + '</h2>' +
+    createPodium(html, rows.slice(0, 3), { t }).outerHTML +
+    (me.place > 3 ? createMyPosition(html, me, { t }).outerHTML : '') +
+    '<p class="daily-board-count">' + esc(rows.length + ' joueurs classés sur cette quête') + '</p>'
+  );
+}
+
 function result() {
   const quest = selectedQuest;
   const record = histories.get(quest.id);
@@ -622,7 +644,9 @@ function result() {
     (record ? ' · ' + record.bestSeconds + ' secondes' : '') +
     '</p>' +
     questBadges(record) +
-    '</section><div class="preview-cta">' +
+    '</section>' +
+    (record ? '<section class="preview-panel quest-ranking">' + questPodium(record.bestSeconds) + '</section>' : '') +
+    '<div class="preview-cta">' +
     (record ? link('E11', 'Rejouer') : '') +
     (next ? '<button type="button" data-next="' + esc(next.id) + '">Quête suivante</button>' : '') +
     link(filteredJourney ? 'E09' : 'E07', 'Retour à la constellation') +

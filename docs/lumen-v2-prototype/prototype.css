@@ -780,3 +780,16 @@
   padding: 0.1rem 0.6rem;
   font-size: 0.82rem;
 }
+/* Victory / review panel: the four badges on one compact row (the app grid is sized for quest cards). */
+.preview-panel > .performance-grid {
+  height: auto;
+  width: auto;
+  grid-template-columns: repeat(4, 2.6rem);
+  grid-template-rows: 2.6rem;
+  justify-content: start;
+  margin-top: 0.4rem;
+}
+.quest-ranking h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
+}

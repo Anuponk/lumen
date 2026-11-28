@@ -8,3 +8,4 @@ D21/D22 : un seul écran Classements, composants de production (`createPodium`, 
 - `classement-defi-general-390.png` : Défi du jour · Général, tableau de production (podium, Ta position 6e, 15 participants), accès Jouer au Défi et Ma semaine. « Classements du Défi » (E26) ouvre ce même écran.
 
 Vérification Chromium 390 × 844 : bascules, dépliage, amis, Défi depuis l'écran Défi ; aucun débordement ni erreur console. Données fictives.
+- `classement-quete-390.png` : D23, classement de la quête dans l'écran de victoire / revue (podium des 3 meilleurs temps officiels, « Ta position » 4e), badges sur une ligne compacte.
