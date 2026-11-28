@@ -10,7 +10,7 @@ Versions à intégrer dans Play Console : [English](store-listing-en.md) et [Esp
 - Package : `fr.nopuna.lumen`
 - Catégorie : Jeu / Réflexion
 - Langue : français
-- Téléchargement gratuit, sans publicité ; achat unique 4,99 € envisagé pour les aventures supplémentaires (Google Play Billing à intégrer avant publication).
+- Téléchargement gratuit, sans publicité. LUMEN Premium à 4,99 € en achat unique, sans abonnement. Vérifier la disponibilité effective de Premium dans le paquet candidat avant soumission.
 
 ## Description courte
 
@@ -39,7 +39,9 @@ Pas besoin de connaissances en astronomie : Lumen est avant tout un jeu de logiq
 
 **Commence gratuitement**
 
-Découvre la première aventure gratuitement et explore les mystères du ciel. Les aventures supplémentaires peuvent être débloquées par un achat unique.
+LUMEN Gratuit — Jouez chaque jour. Après le seuil de découverte, profitez de 15 nouvelles quêtes et de 5 rejeux par jour, selon les paramètres effectifs.
+
+LUMEN Premium — Jouez sans limites. Un achat unique de 4,99 € donne accès au ciel principal et supprime la limite quotidienne. Sans publicité, sans abonnement. Les anciens achats restent acquis et peuvent être restaurés.
 
 Prêt à faire briller les constellations ?
 

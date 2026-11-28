@@ -20,7 +20,11 @@ What if every constellation held a puzzle? Explore the night sky in Lumen. Study
 
 You don't need to know astronomy. Every puzzle has one solution you can work out by logic.
 
-Play the first adventure for free, with no ads. Unlock more adventures with a one-time purchase.
+LUMEN Free — Play every day. After the discovery threshold, enjoy 15 new quests and 5 replays per day, according to the active settings.
+
+LUMEN Premium — Play without limits. A one-time purchase of €4.99 unlocks the main sky and removes the daily limit. No ads, no subscription. Previous purchases remain available and can be restored.
+
+Prepared copy. Check Premium availability and the local price in the candidate build before submission.
 
 Ready to make the constellations shine again?
 

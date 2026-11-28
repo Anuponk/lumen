@@ -20,7 +20,11 @@ Explora las constelaciones con puzles de lógica y deducción.
 
 No necesitas saber astronomía. Cada puzle tiene una única solución que puedes encontrar por deducción.
 
-Juega la primera aventura gratis y sin anuncios. Desbloquea más aventuras con un pago único.
+LUMEN Gratis — Juega cada día. Tras el umbral de descubrimiento, disfruta de 15 misiones nuevas y 5 repeticiones al día, según los ajustes activos.
+
+LUMEN Premium — Juega sin límites. Un pago único de 4,99 € desbloquea el cielo principal y elimina el límite diario. Sin anuncios ni suscripciones. Las compras anteriores se conservan y se pueden restaurar.
+
+Texto preparado. Comprueba la disponibilidad de Premium y el precio local en la versión candidata antes de enviarlo.
 
 ¿Todo listo para volver a iluminar las constelaciones?
 

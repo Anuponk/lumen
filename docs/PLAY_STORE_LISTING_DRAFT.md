@@ -24,11 +24,16 @@ Description longue :
 > tes performances. Les aides permettent de comprendre la grille quand tu
 > en as besoin.
 >
-> Lumen est prévu pour une première publication gratuite, sans publicité
-> ni achats intégrés.
+> LUMEN Gratuit — Jouez chaque jour. Après le seuil de découverte, profitez
+> de 15 nouvelles quêtes et de 5 rejeux par jour, selon les paramètres effectifs.
+> LUMEN Premium — Jouez sans limites. Premium à 4,99 € en achat unique donne
+> accès au ciel principal et supprime la limite quotidienne. Sans publicité,
+> sans abonnement. Les anciens achats restent acquis et peuvent être restaurés.
 
-La formulation « prévu » est propre à ce brouillon : adapter la phrase au
-paquet réellement publié. Ne pas annoncer de compte enfant activé, de
+Vérifier la disponibilité effective de Premium dans le paquet candidat et le
+prix local avant soumission. Les versions FR/EN/ES sont dans
+[les fiches localisées](google-play/store-listing-fr.md).
+Ne pas annoncer de compte enfant activé, de
 classification d'âge, de disponibilité Android ou de synchronisation native
 avant leur validation. Éviter les nombres de quêtes susceptibles de dériver.
 
