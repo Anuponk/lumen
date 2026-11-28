@@ -22,6 +22,7 @@ import { renderDailyWeek } from '../../src/ui/daily-view.js';
 import { createPodium, createRankRow, htmlDocument } from '../../src/ui/podium.js';
 import { deriveSocialEvents } from '../../src/ui/social-notifications.js';
 import { createPlayPreview } from './play-preview.js';
+import { adventureOfferModel, mountPremiumOffer } from '../../src/ui/adventure-offer.js';
 import { storyboard, destinations, names, referenceCaptures } from './storyboard.js';
 
 const { t } = createTranslator({ locale: 'fr' });
@@ -139,7 +140,14 @@ const questAccess = (quest) =>
   });
 const readyQuest = (quest) => questAccess(quest).status === 'ready';
 
-const lockedAdventureAction = () => link('E40', 'Voir l’accès');
+// Owner decision 28/11 (D18): showing a locked adventure opens the shop directly.
+let shopPack;
+const lockedAdventureAction = () =>
+  '<button type="button" data-shop-pack="' + esc(pack().id) + '">Voir l’accès</button>';
+function openShop(target) {
+  shopPack = target;
+  go('E40');
+}
 
 function badgeTotal(stats) {
   return (
@@ -271,7 +279,9 @@ function adventure() {
         (pack().accessible ? '' : '" data-pack-locked="true') +
         '" data-state="' +
         code +
-        '"><span class="card-symbol">' +
+        '" style="--card-progress:' +
+        parseInt(cardPercent, 10) +
+        '%"><span class="card-symbol">' +
         (badgeView ? badgeTotal(value) : figure(entry, value, 'figure')) +
         '</span><span class="card-copy"><strong class="card-name">' +
         esc(entry.label) +
@@ -687,6 +697,39 @@ function notificationAction(item) {
   );
 }
 
+// D18 + D19: the shop is the production offer (#1029), rendered by the real component
+// in the same frame as the app (title, adventure kicker, single offer, free exit).
+function shopFrame() {
+  return (
+    '<div id="adventureNotice" class="adventure-notice preview-shop" role="dialog" aria-modal="true" aria-labelledby="adventureNoticeTitle">' +
+    '<div><strong id="adventureNoticeTitle" tabindex="-1">' +
+    esc(t('premiumShop.title')) +
+    '</strong><div id="preview-shop-offer"></div>' +
+    '<button type="button" id="adventureNoticeClose" data-shop-close>' +
+    esc(t('store.continueFree')) +
+    '</button></div></div>'
+  );
+}
+function mountShop() {
+  const target = shopPack ?? packs.find((item) => !item.accessible) ?? pack();
+  const model = adventureOfferModel({
+    pack: target,
+    packs,
+    quests: catalogue,
+    progress: seed,
+    signedIn: true,
+    purchasesAvailable: true,
+    premium: { product: 'lumen-premium', priceCents: 499 },
+    t,
+  });
+  mountPremiumOffer(screen.querySelector('#preview-shop-offer'), model, {
+    t,
+    locale: 'fr',
+    onBuy: () => go('E42'),
+    onContinue: () => back(),
+  });
+}
+
 function render() {
   const inSky = overview.has(state) || detail.has(state) || state === 'E08';
   const playing = questScreens.has(state);
@@ -745,6 +788,10 @@ function render() {
       subtitle: daily ? 'Défi commun' : (entry?.label ?? adventureDisplayName(adventure, t)),
     });
   } else if (state === 'E14') screen.innerHTML = result();
+  else if (state === 'E40') {
+    screen.innerHTML = shopFrame();
+    mountShop();
+  }
   else screen.innerHTML = reference();
 }
 
@@ -782,7 +829,10 @@ function advance(delta) {
   const next = Math.min(packs.length - 1, Math.max(0, index + delta));
   if (next === index) return false;
   if (ranking) rankingIndex = next;
-  else {
+  else if (!packs[next].accessible) {
+    openShop(packs[next]);
+    return true;
+  } else {
     packIndex = next;
     constellationIndex = 0;
   }
@@ -850,6 +900,14 @@ document.addEventListener('click', (event) => {
     screen.focus({ preventScroll: true });
     return;
   }
+  if (button.dataset.shopPack) {
+    openShop(packs.find((item) => item.id === button.dataset.shopPack));
+    return;
+  }
+  if (button.dataset.shopClose !== undefined) {
+    back();
+    return;
+  }
   const {
     go: route,
     step,
@@ -866,6 +924,10 @@ document.addEventListener('click', (event) => {
     }
   } else if (step) advance(Number(step));
   else if (constellation !== undefined) {
+    if (!pack().accessible) {
+      openShop(pack());
+      return;
+    }
     constellationIndex = Number(constellation);
     go('E07');
   } else if (constellationStep) {
