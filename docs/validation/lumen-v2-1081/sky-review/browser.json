@@ -1,0 +1,53 @@
+{
+  "viewports": [
+    {
+      "width": 320,
+      "height": 568,
+      "count": 10,
+      "allVisible": true,
+      "countsHidden": true
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "count": 10,
+      "allVisible": true,
+      "countsHidden": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "count": 10,
+      "allVisible": true,
+      "countsHidden": true
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "count": 10,
+      "allVisible": true,
+      "countsHidden": true
+    }
+  ],
+  "scenarios": [
+    "direct resume, pause, marks and return",
+    "detail, facts and return to same adventure and filter",
+    "independent Sky and rankings selection",
+    "touch swipe over a card without opening it",
+    "daily pause and back to original Sky",
+    "notifications target exact item and update count when handled"
+  ],
+  "overview": {
+    "states": [
+      "mastered",
+      "complete",
+      "active",
+      "new"
+    ],
+    "allMastery": true,
+    "completed": 74,
+    "completion": 28,
+    "title": "Mon ciel"
+  },
+  "storyboardStates": 50
+}

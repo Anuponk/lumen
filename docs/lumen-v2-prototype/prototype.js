@@ -19,6 +19,7 @@ import { createTranslator } from '../../src/ui/i18n.js';
 import { adventureDisplayName } from '../../src/ui/adventure-copy.js';
 import { renderDailyWeek } from '../../src/ui/daily-view.js';
 import { createPodium, createRankRow, htmlDocument } from '../../src/ui/podium.js';
+import { deriveSocialEvents } from '../../src/ui/social-notifications.js';
 import { storyboard, destinations, names, referenceCaptures } from './storyboard.js';
 
 const { t } = createTranslator({ locale: 'fr' });
@@ -62,6 +63,33 @@ let badgeView = false;
 let swipeStart;
 let suppressClick = false;
 const previewMarks = new Map();
+const notifications = deriveSocialEvents({
+  friends: [{ nickname: 'Camille', state: 'incoming', since: '2026-11-28T08:00:00Z' }],
+  received: [{ challenge_id: 'demo-duel', sender: 'Alex', created_at: '2026-11-28T09:00:00Z' }],
+  sent: [
+    {
+      challenge_id: 'demo-result',
+      unread_count: 1,
+      participants: [{ name: 'Lou', status: 'completed', completed_at: '2026-11-28T10:00:00Z' }],
+    },
+  ],
+  t,
+});
+const notificationDestinations = {
+  'friend-request': ['E29', 'Voir la demande'],
+  'challenge-received': ['E31', 'Voir le duel'],
+  'challenge-result': ['E32', 'Voir le résultat'],
+};
+const readNotifications = new Set();
+const decisions = new Map();
+let openedNotification;
+
+function completion(scope) {
+  const available = scope.total + scope.possible;
+  if (!available) return 0;
+  if (celestialMastered(scope)) return 100;
+  return Math.min(99, Math.floor((100 * (scope.completed + scope.earned)) / available));
+}
 
 const esc = (value) =>
   String(value ?? '').replace(
@@ -196,6 +224,7 @@ function adventure() {
     }
   }
   const stats = celestialScope(progress, quests);
+  const percent = completion(stats);
   const cards = pack()
     .constellations.map((entry, index) => {
       const items = questsOf(entry);
@@ -213,6 +242,8 @@ function adventure() {
         active: 'En cours',
         new: 'À découvrir',
       }[code];
+      const mark = { mastered: '✦', complete: '✓', active: '◐', new: '○' }[code];
+      const cardPercent = completion(value);
       return (
         '<button type="button" data-constellation="' +
         index +
@@ -220,12 +251,18 @@ function adventure() {
         code +
         '"><span class="card-symbol">' +
         (badgeView ? badgeTotal(value) : figure(entry, value, 'figure')) +
-        '</span><span><strong class="card-name">' +
+        '</span><span class="card-copy"><strong class="card-name">' +
         esc(entry.label) +
         '</strong><span class="card-state">' +
+        '<span aria-hidden="true">' +
+        mark +
+        '</span> ' +
         label +
-        (badgeView ? '' : ' · ' + value.completed + '/' + value.total) +
-        '</span></span>' +
+        '</span></span><strong class="card-percent" aria-label="' +
+        cardPercent +
+        ' pour cent de complétion">' +
+        cardPercent +
+        ' %</strong>' +
         (badgeView ? counts(items, value, false) : '') +
         '</button>'
       );
@@ -236,14 +273,20 @@ function adventure() {
     esc(adventureDisplayName(pack(), t)) +
     '</h1>' +
     arrows(packIndex, 'Aventure') +
-    '</div><p class="preview-meta">' +
+    '</div><div class="adventure-totals"><span>' +
     stats.completed +
     '/' +
     stats.total +
-    ' quêtes résolues</p><progress aria-label="Progression de l’aventure" max="' +
-    stats.total +
-    '" value="' +
-    stats.completed +
+    ' quêtes · ' +
+    stats.earned +
+    '/' +
+    stats.possible +
+    ' badges</span><strong aria-label="' +
+    percent +
+    ' pour cent de complétion globale">' +
+    percent +
+    ' %</strong></div><progress aria-label="Complétion globale de l’aventure" max="100" value="' +
+    percent +
     '"></progress>' +
     (badgeView ? counts(quests, stats) : '') +
     '</section><div class="sky-actions">' +
@@ -600,10 +643,70 @@ function accountOrSocial() {
   );
 }
 
+function notificationInbox() {
+  return (
+    '<h1>Notifications</h1><ul class="preview-inbox">' +
+    notifications
+      .map((item) => {
+        const [, label] = notificationDestinations[item.kind];
+        const done = readNotifications.has(item.id);
+        return (
+          '<li class="preview-panel"><button type="button" class="notification-row" data-notification="' +
+          esc(item.id) +
+          '"><strong>' +
+          esc(item.text) +
+          '</strong><span>' +
+          esc(done ? 'Traitée · ' + label : label) +
+          ' ›</span></button></li>'
+        );
+      })
+      .join('') +
+    '</ul>'
+  );
+}
+
+function notificationAction(item) {
+  const decision = decisions.get(item.id);
+  if (item.kind === 'challenge-result') {
+    return (
+      '<section class="preview-panel"><h1>Résultat du duel</h1><p>' +
+      esc(item.text) +
+      '</p></section>'
+    );
+  }
+  return (
+    '<section class="preview-panel"><h1>' +
+    esc(names[state]) +
+    '</h1><p>' +
+    esc(item.text) +
+    '</p>' +
+    (decision
+      ? '<p role="status">' +
+        esc(decision === 'accept' ? 'Invitation acceptée.' : 'Invitation refusée.') +
+        '</p>'
+      : '<div class="preview-cta notification-actions"><button type="button" data-decision="accept" class="preview-primary">Accepter</button>' +
+        '<button type="button" data-decision="decline">Refuser</button></div>') +
+    '</section>'
+  );
+}
+
 function render() {
   const inSky = overview.has(state) || detail.has(state) || state === 'E08';
   screen.classList.toggle('is-adventure', overview.has(state) || state === 'E25');
   nav.hidden = questScreens.has(state);
+  document.getElementById('preview-brand-title').textContent = overview.has(state)
+    ? 'Mon ciel'
+    : 'LUMEN';
+  const notificationButton = document.querySelector('.preview-header [data-go="E33"]');
+  const count = notifications.filter((item) => !readNotifications.has(item.id)).length;
+  const badge = document.getElementById('notification-count');
+  notificationButton.hidden = questScreens.has(state);
+  badge.hidden = !count;
+  badge.textContent = count;
+  notificationButton.setAttribute(
+    'aria-label',
+    count ? 'Notifications, ' + count + ' à consulter ou traiter' : 'Notifications',
+  );
   document.querySelector('.context-back').hidden =
     overview.has(state) || ['E10', 'E25', 'E27'].includes(state);
   const tab = inSky
@@ -624,7 +727,10 @@ function render() {
   else if (state === 'E10') screen.innerHTML = play();
   else if (state === 'E19' || state === 'E22') screen.innerHTML = dailyScreen(state === 'E22');
   else if (state === 'E25') screen.innerHTML = rankings();
-  else if (state === 'E27' || state === 'E35') screen.innerHTML = accountOrSocial();
+  else if (state === 'E33') screen.innerHTML = notificationInbox();
+  else if (openedNotification && notificationDestinations[openedNotification.kind][0] === state) {
+    screen.innerHTML = notificationAction(openedNotification);
+  } else if (state === 'E27' || state === 'E35') screen.innerHTML = accountOrSocial();
   else if (state === 'E11' || state === 'E20') {
     screen.innerHTML = board();
     drawBoard();
@@ -645,6 +751,7 @@ function go(route, { replace = false, focus, scroll = true } = {}) {
       rankingIndex,
       constellationIndex,
       questId: selectedQuest.id,
+      notificationId: openedNotification?.id,
       filteredJourney,
       badgeView,
     },
@@ -695,11 +802,6 @@ document.addEventListener(
 );
 
 document.addEventListener('click', (event) => {
-  if (event.target.closest('.preview-brand')) {
-    event.preventDefault();
-    if (!overview.has(state)) go('E04');
-    return;
-  }
   const button = event.target.closest('button');
   if (!button) return;
   if (button.hasAttribute('data-back')) {
@@ -721,6 +823,20 @@ document.addEventListener('click', (event) => {
     go('E23');
     return;
   }
+  if (button.dataset.notification) {
+    openedNotification = notifications.find((item) => item.id === button.dataset.notification);
+    if (openedNotification.kind === 'challenge-result')
+      readNotifications.add(openedNotification.id);
+    go(notificationDestinations[openedNotification.kind][0]);
+    return;
+  }
+  if (button.dataset.decision && openedNotification) {
+    decisions.set(openedNotification.id, button.dataset.decision);
+    readNotifications.add(openedNotification.id);
+    render();
+    screen.focus({ preventScroll: true });
+    return;
+  }
   const {
     go: route,
     step,
@@ -731,7 +847,10 @@ document.addEventListener('click', (event) => {
     next,
   } = button.dataset;
   if (route) {
-    if (state !== route) go(route);
+    if (state !== route) {
+      openedNotification = undefined;
+      go(route);
+    }
   } else if (step) advance(Number(step));
   else if (constellation !== undefined) {
     constellationIndex = Number(constellation);
@@ -796,6 +915,7 @@ function restore(entry) {
       badgeView,
     } = entry);
     selectedQuest = catalogue.find((item) => item.id === entry.questId) ?? resumeQuest;
+    openedNotification = notifications.find((item) => item.id === entry.notificationId);
     render();
     (overview.has(state)
       ? (screen.querySelector('[data-constellation="' + constellationIndex + '"]') ?? screen)

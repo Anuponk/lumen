@@ -17,10 +17,34 @@
     <div class="preview-shell">
       <header class="preview-header">
         <button type="button" class="context-back" data-back aria-label="Retour" hidden>‹</button>
-        <a href="#e04" class="preview-brand"
-          ><img src="../../icon.svg" alt="" width="26" height="26" /> LUMEN</a
-        >
-        <button type="button" data-go="E35">Mon espace</button>
+        <div class="preview-brand">
+          <img src="../../icon.svg" alt="" width="26" height="26" />
+          <span id="preview-brand-title">Mon ciel</span>
+        </div>
+        <div class="preview-header-actions">
+          <button
+            type="button"
+            class="header-icon"
+            data-go="E33"
+            aria-label="Notifications"
+            title="Notifications"
+          >
+            <span class="notification-icon" aria-hidden="true">🔔</span>
+            <span id="notification-count" aria-hidden="true" hidden></span>
+          </button>
+          <button
+            type="button"
+            class="header-icon"
+            data-go="E35"
+            aria-label="Mon espace"
+            title="Mon espace"
+          >
+            <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="8.3" r="3.9" fill="currentColor" />
+              <path d="M4.3 20.2c.8-4.2 3.9-6.5 7.7-6.5s6.9 2.3 7.7 6.5z" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
       </header>
       <main id="screen" tabindex="-1"></main>
       <nav id="primary" aria-label="Navigation principale">

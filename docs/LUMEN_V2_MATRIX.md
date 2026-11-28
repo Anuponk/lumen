@@ -36,7 +36,7 @@ Première version issue de [l’EPIC #1081](https://github.com/Anuponk/project-m
 | E30 | Création de duel, restrictions et options | Social / défis | Même sélection et droits | #898 | social-challenge-ui, social-hub-browser | À recetter |
 | E31 | Duel reçu, acceptation, reprise et refus | Social / défis et liens | Même plateau dédié et lien direct | #898 | social-challenge, social-hub-browser | À recetter |
 | E32 | Résultat duel, historique et revanche | Social / défis | Même résultat et actions | #898 | social-challenge-ui, victory-challenge-browser | À recetter |
-| E33 | Centre de notifications, non lues, rappels et résultats | Social, liens et compte | Social/compte et entrées spécifiques | #898, #1032, #1034 | social-notifications, daily-push | À recetter |
+| E33 | Centre de notifications, non lues, rappels et résultats | Social, liens et compte | Cloche et compteur dans l’en-tête hors jeu, accès conservé depuis Social, ouverture de l’élément précis | #898, #1032, #1034 | social-notifications, daily-push | À recetter |
 | E34 | Partage de réussites, invitation et absence de partage du Défi | Victoire et Social | Mêmes droits et points d’accès | #1013, #898 | victory-challenge-browser, social-hub-browser | À recetter |
 | E35 | Compte, session, déconnexion et accès boutique | Menu compte | Bouton Compte depuis les vues principales | #959, #1082 | account-session-browser | À recetter |
 | E36 | Profil, pseudo, récupération et suppression | Compte / profil | Même parcours compte | #959 | account-email-login, account-deletion-request-journey | À recetter |
@@ -59,7 +59,7 @@ Première version issue de [l’EPIC #1081](https://github.com/Anuponk/project-m
 | T03 | Accessibilité, responsive et traductions | Toutes surfaces | Focus visible/restauré, clavier, zoom, tailles, libellés FR/EN/ES | #1081 | lumen-dialog-browser, es-journeys-browser ; contrôles V2 à créer | À recetter |
 | T04 | Publication et actifs, cache, rechargement différé et PWA | Service worker et mise à jour | Même cycle, code de prototype exclu du paquet | #1087, #948 | service-worker-cache, app-updates | À recetter |
 | T05 | Modes directs particuliers, retour Stripe, liens avec provenance, acquisition et campagnes | Démarrage, auth, défis, achat | Priorité conservée avant l’arrivée normale Mon ciel | #898, #1030, #1082 | daily-challenge-browser, account-session-browser, stripe-checkout-client | À recetter |
-| T06 | Agrégats de badges, total et complétion | Résumé et détail Mon ciel | Quatre compteurs et total exact du catalogue dans le mode Badges de l’aventure et dans le détail de constellation | #985, #1083 | celestial-ux-browser ; assertions V2 à ajouter | À recetter |
+| T06 | Agrégats de badges, total et complétion | Résumé et détail Mon ciel | Pourcentages de constellation et d’aventure calculés à partir des quêtes et badges. Les quatre compteurs de badges et leur total sont disponibles en détail | #985, #1083 | celestial-ux-browser ; prototype vérifié, assertions intégrées à ajouter | À recetter |
 
 ## Parcours de bout en bout
 
