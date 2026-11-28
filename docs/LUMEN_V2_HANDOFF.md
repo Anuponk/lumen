@@ -19,7 +19,9 @@
 - **Fait ensuite** : D18 aventure verrouillée → boutique, D19 boutique de production, D20 code
   couleur froid → chaud (proposé). Serveur Claude : port **10888** (le port 10887 peut être
   occupé par le serveur de la copie Codex `Screenshots/lumen-v2-1081`).
-- **Prochaine action** : faire valider D20, puis prototyper D17 (bulles de découverte au premier usage, fermables,
+- **Ensuite** : D20 validé ; D21 bascule Général/Mes amis ; D22 classements alignés sur la production
+  (aventure et Défi, E26 inclus).
+- **Prochaine action** : prototyper D17 (bulles de découverte au premier usage, fermables,
   persistées par compte) et retirer E49 du périmètre ; puis faire valider D1, D2, D7, D9,
   D11 et D12 par essai du prototype.
 

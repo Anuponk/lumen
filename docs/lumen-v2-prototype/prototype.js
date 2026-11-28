@@ -18,8 +18,14 @@ import {
 } from '../../src/ui/astronomical-reference-svg.js';
 import { createTranslator } from '../../src/ui/i18n.js';
 import { adventureDisplayName } from '../../src/ui/adventure-copy.js';
-import { renderDailyWeek } from '../../src/ui/daily-view.js';
-import { createPodium, createRankRow, htmlDocument } from '../../src/ui/podium.js';
+import { renderDailyWeek, renderDailyBoard } from '../../src/ui/daily-view.js';
+import {
+  createPodium,
+  createRankRow,
+  createMyPosition,
+  htmlDocument,
+  rankWindow,
+} from '../../src/ui/podium.js';
 import { deriveSocialEvents } from '../../src/ui/social-notifications.js';
 import { createPlayPreview } from './play-preview.js';
 import { adventureOfferModel, mountPremiumOffer } from '../../src/ui/adventure-offer.js';
@@ -483,27 +489,76 @@ function play() {
   );
 }
 
-function rankings() {
-  const ordered = Array.from({ length: 7 }, (_, index) => ({
-    nickname: 'Joueur ' + String.fromCharCode(65 + index),
-    position: index + 1,
-    place: index + 1,
-    value: 3410 - index * 210 + ' pts',
-  }));
+// D21/D22 (28/11): one Classements screen, production components. Two toggles:
+// Aventure / Défi du jour, then Général / Mes amis. Adventure: podium, « Ta position »,
+// « Voir autour de ma position » (±5, rankWindow). Défi: the production daily board.
+let rankingMode = 'adventure';
+let rankingScope = 'general';
+let rankingAround = false;
+const rivals = ['Loutre', 'Anupon', 'Badoune', 'Léna', 'Van', 'Axelle', 'Tom', 'Ama', 'Celine', 'Rocky45',
+  'Fanab', 'Nono77', 'Rrrrrr', 'Nopuna2', 'Frodimus', 'Renomyke', 'Anup14', 'Nopuna-l1', 'Mia', 'Hugo',
+  'Zoé', 'Lucas', 'Inès', 'Noé'];
+function adventureBoard() {
+  const friends = rankingScope === 'friends';
+  const names = friends ? ['Loutre', 'Léna', 'Tom'] : rivals;
+  const mePlace = friends ? 3 : 14;
+  const total = names.length + 1;
+  const rows = [];
+  for (let place = 1, n = 0; place <= total; place++) {
+    const mine = place === mePlace;
+    rows.push({ place, position: place, mine, nickname: mine ? t('ranking.you') : names[n++],
+      value: (4340 - (place - 1) * 175).toLocaleString('fr-FR') + ' pts' });
+  }
   const html = htmlDocument();
-  const podium = createPodium(html, ordered, { t });
-  const rest = ordered.slice(3).map((item) => createRankRow(html, item, { t }).outerHTML);
+  let out = createPodium(html, rows.slice(0, 3), { t }).outerHTML;
+  const me = rows[mePlace - 1];
+  // As in production (#1067): hidden while the unfolded list already shows my row.
+  if (mePlace > 3 && !rankingAround) out += createMyPosition(html, me, { t }).outerHTML;
+  if (rankingAround) {
+    const { offset, limit } = rankWindow({ place: mePlace, total });
+    out +=
+      '<ol class="lumen-rank-list" start="' + (offset + 1) + '">' +
+      rows.slice(offset, offset + limit).map((row) => createRankRow(html, row, { t }).outerHTML).join('') +
+      '</ol><button type="button" class="subtle-action" data-rank-around="0">' + esc(t('groupRanking.less')) + '</button>';
+  } else if (total > 3) {
+    out += '<button type="button" class="subtle-action" data-rank-around="1">' +
+      esc(t(mePlace > 3 ? 'groupRanking.around' : 'groupRanking.rest')) + '</button>';
+  }
+  return out + '<p class="daily-board-count">' + esc(total + (friends ? ' amis classés' : ' joueurs classés')) + '</p>';
+}
+function dailyBoard() {
+  const friends = rankingScope === 'friends';
+  const part = friends
+    ? { participants: 4, top: [
+        { rank: 1, nickname: 'Loutre', score: 41 },
+        { rank: 2, nickname: 'Moi', score: 49, mine: true },
+        { rank: 3, nickname: 'Léna', score: 58 }], me: { rank: 2, score: 49 } }
+    : { participants: 15, top: [
+        { rank: 1, nickname: 'Loutre', score: 38 },
+        { rank: 2, nickname: 'Anupon', score: 41 },
+        { rank: 3, nickname: 'Badoune', score: 44 }], me: { rank: 6, score: 49 } };
+  return renderDailyBoard(part, { scope: rankingScope, t, formatDuration: (seconds) => seconds + ' s' });
+}
+function rankTabs(name, items, current) {
   return (
-    '<section class="preview-panel"><div class="screen-heading"><h1>Classements</h1>' +
-    arrows(rankingIndex, 'Aventure du classement') +
-    '</div><p>' +
-    esc(adventureDisplayName(packs[rankingIndex], t)) +
-    '</p>' +
-    podium.outerHTML +
-    '<ol class="lumen-rank-list" start="4">' +
-    rest.join('') +
-    '</ol></section>' +
-    link('E26')
+    '<div class="daily-tabs" role="tablist">' +
+    items.map(([value, label]) =>
+      '<button type="button" role="tab" data-' + name + '="' + value + '" aria-selected="' + (value === current) + '">' + esc(label) + '</button>',
+    ).join('') + '</div>'
+  );
+}
+function rankings() {
+  const daily = rankingMode === 'daily';
+  return (
+    '<section class="preview-panel preview-rankings"><h1>Classements</h1>' +
+    rankTabs('rank-mode', [['adventure', 'Aventure'], ['daily', 'Défi du jour']], rankingMode) +
+    rankTabs('rank-scope', [['general', t('daily.general')], ['friends', t('daily.friends')]], rankingScope) +
+    (daily
+      ? '<div class="screen-heading"><h2>Défi du jour</h2></div><div class="daily-board-panel">' + dailyBoard() + '</div>' +
+        '<div class="preview-cta">' + link('E19', 'Jouer au Défi') + link('E22', 'Ma semaine') + '</div>'
+      : '<div class="screen-heading"><h2>' + esc(adventureDisplayName(packs[rankingIndex], t)) + '</h2>' +
+        arrows(rankingIndex, 'Aventure du classement') + '</div>' + adventureBoard()) +
+    '</section>'
   );
 }
 
@@ -769,7 +824,10 @@ function render() {
   else if (state === 'E08') screen.innerHTML = facts();
   else if (state === 'E10') screen.innerHTML = play();
   else if (state === 'E19' || state === 'E22') screen.innerHTML = dailyScreen(state === 'E22');
-  else if (state === 'E25') screen.innerHTML = rankings();
+  else if (state === 'E25' || state === 'E26') {
+    if (state === 'E26') rankingMode = 'daily';
+    screen.innerHTML = rankings();
+  }
   else if (state === 'E33') screen.innerHTML = notificationInbox();
   else if (openedNotification && notificationDestinations[openedNotification.kind][0] === state) {
     screen.innerHTML = notificationAction(openedNotification);
@@ -898,6 +956,13 @@ document.addEventListener('click', (event) => {
     readNotifications.add(openedNotification.id);
     render();
     screen.focus({ preventScroll: true });
+    return;
+  }
+  if (button.dataset.rankMode || button.dataset.rankScope || button.dataset.rankAround) {
+    if (button.dataset.rankMode) rankingMode = button.dataset.rankMode;
+    if (button.dataset.rankScope) rankingScope = button.dataset.rankScope;
+    rankingAround = button.dataset.rankAround === '1';
+    go(state, { replace: true, scroll: false });
     return;
   }
   if (button.dataset.shopPack) {
