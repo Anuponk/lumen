@@ -148,6 +148,7 @@ continuent gratuitement.
 | Situation | Coût |
 |---|---|
 | Tout désactivé (aujourd'hui) | ≤ 1 lecture `lumen_get_commerce_config` (≈ 400 o) par joueur et par 6 h, aucune écriture |
+| Compte connecté, Premium actif (28/11) | l'état Premium du compte (`lumen_get_commerce_state`) est relu **une fois par session**, même si la configuration est encore en cache : un remboursement ou une révocation est visible à la réouverture suivante |
 | Lancement, joueur Premium ou en découverte | + 1 `lumen_get_commerce_state` à l'hydratation |
 | Lancement, gratuit au-delà du seuil | + ≈ 1 `lumen_quota_sync` pour 3 tentatives ; ≈ 120 o par tentative stockée, purge à 45 jours |
 | Statistiques / archives | à la demande, bornées, pagination par curseur |

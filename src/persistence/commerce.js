@@ -12,6 +12,9 @@ export const COMMERCE_CONFIG_TTL_MS=6*3600*1000;
 export function createCommerceClient({rpc,ledgerFor,now=()=>Date.now(),onChange=()=>{}}={}){
  let current={owner:null,config:COMMERCE_DEFAULTS,premium:false,premiumSource:null,preview:false,ready:false};
  let flight=null,syncing=null,generation=0;
+ // Account state read in THIS page session: a refund or a revocation made since the
+ // last visit is seen at the next opening, even within the config TTL.
+ const readThisSession=new Set();
  const set=next=>{current={...current,...next};onChange(current);return current};
 
  function fromCache(owner){
@@ -23,7 +26,8 @@ export function createCommerceClient({rpc,ledgerFor,now=()=>Date.now(),onChange=
  async function refresh({owner,signedIn=false,previewCapability=false,force=false}={}){
   const id=++generation, ledger=ledgerFor(owner), cached=fromCache(owner);
   set({...cached,preview:signedIn?previewCapability:false,ready:true});
-  if(!force&&cached.cachedAt&&now()-cached.cachedAt<COMMERCE_CONFIG_TTL_MS&&!(signedIn&&previewCapability))return current;
+  const accountUnread=signedIn&&!!owner&&!readThisSession.has(owner)&&(cached.config.premiumEnabled||cached.premium);
+  if(!force&&cached.cachedAt&&now()-cached.cachedAt<COMMERCE_CONFIG_TTL_MS&&!(signedIn&&previewCapability)&&!accountUnread)return current;
   if(flight)return flight;
   flight=(async()=>{
    try{
@@ -36,7 +40,7 @@ export function createCommerceClient({rpc,ledgerFor,now=()=>Date.now(),onChange=
      if(id!==generation)return current;
      if(st.error||!st.data)throw st.error||Error('commerce_state_invalid');
      const premium=st.data.premium||{active:false};
-     ledger.cacheCommerce({config,premium,preview:!!st.data.preview});
+     ledger.cacheCommerce({config,premium,preview:!!st.data.preview});readThisSession.add(owner);
      ledger.acknowledge({counts:st.data.counts||null,activatedAt:st.data.activatedAt||null});
      return set({owner,config,premium:!!premium.active,premiumSource:premium.source??null,preview:!!st.data.preview});
     }
