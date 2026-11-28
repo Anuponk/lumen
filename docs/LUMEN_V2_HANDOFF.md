@@ -25,6 +25,7 @@
 - **D25** : règle de portée du prototype et contrôle de parité V1 (voir le journal).
 - **D26–D28** : Sons dans les réglages, Partager Lumen dans Mon espace, parité de la victoire comblée.
 - **D29–D30** : signal du Défi (pastille Jouer + carte), règle d'or sans défilement vérifiée sur les 50 états (360×640, 390×844).
+- **D31–D33** : 10 quêtes max par constellation, pas de mesure V1/V2, développement en quatre PR derrière `ux_preview`.
 - **Prochaine action** : prototyper D17 (bulles de découverte au premier usage, fermables,
   persistées par compte) et retirer E49 du périmètre ; puis faire valider D1, D2, D7, D9,
   D11 et D12 par essai du prototype.
