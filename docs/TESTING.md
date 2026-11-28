@@ -2906,6 +2906,10 @@ Run node scripts/seasonal-events-tests.mjs, node scripts/organic-acquisition-tes
 
 ## Analytics activity and Premium conversion (#1044)
 
+- `scripts/fixtures/admin-activity-phases-1044.sql`: phases (discovery / past the threshold / Premium), replay distribution, attempts vs distinct quests vs wins, single function signature.
+- `scripts/fixtures/ranking-participation-1077.sql` (#1077): legacy resolution without time → participation (20 + durable badge, no place, no invented time) while the timed player is unchanged; opted-out and scoped-reset cases excluded; late resolution through the trigger; a later official time replaces the participation row (no double points); history imported on joining (traced); withdrawal and rejoin; idempotent rebuild; audit at 0 and detecting a resolution without points; cockpit access.
+- `daily-challenge-browser.mjs` (#1076): the launch window shows the single rule line and no bullet list.
+
 - `scripts/fixtures/admin-activity-1044.sql` (canonical-ledger CI, hosted-default grants): permissions and bounds; reset = same attempt; receipts deduplicated; replay after the first win; 10 + 20 + 30 min = 60 min and 20 min per timed player; midnight start day; internal accounts excluded/included; Premium segment from the purchase instant; quota reached from the effective settings history; journal validation, idempotent retries, future/invalid events skipped, daily budget; blocked vs shown; funnels in chronological order; same-day vs 7-day attribution; channel filter; J+1/J+7 retention with complete follow-up only; aggregates only.
 - `scripts/commerce-journal-tests.mjs` (Node): one visit per display, CTA/close attached to the visit, batching (20), retry after a network error, settled on 22023, per-account queues, bounded offline queue, price parsing.
 - `scripts/analytics-activity-tests.mjs` (Node): unmeasured days never 0, incomplete day, measured denominators, funnel rates, simulation highlighting the quota in force, escaping, unavailable sources.

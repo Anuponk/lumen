@@ -463,6 +463,7 @@ Phase 2: `npm run test:affected` / `node scripts/test-affected.mjs` selects the 
 | Analytics release comparison (#708 D) | `analytics-versions-tests.mjs`, `fixtures/admin-version-health-708.sql` (ledger CI), `analytics-admin-browser-tests.mjs` | Full gate |
 | Analytics acquisition & engagement (#708 C) | `analytics-engagement-tests.mjs`, `fixtures/admin-engagement-708.sql` (ledger CI), `analytics-admin-browser-tests.mjs` | Full gate |
 | Analytics activity, Premium limits and conversion (#1044) | `analytics-activity-tests.mjs`, `commerce-journal-tests.mjs`, `fixtures/admin-activity-1044.sql` (ledger CI), `sky-navigation-browser-tests.mjs` (visits) | Full gate |
+| Adventure ranking exhaustiveness (#1077) | `fixtures/ranking-participation-1077.sql` (ledger CI) | Full gate |
 | Clear-mind hint feedback (#1052) | `clear-mind-hint-browser.mjs` in `browser-tests.mjs` | Full gate |
 | Friend duels (#896) | `duel-view-tests.mjs`, `duel-browser.mjs` in the canonical replay suite | Full gate |
 | Espace social (#898) | `social-hub-tests.mjs` (badge sum, ids kept once, order), `social-notifications-tests.mjs` (derivation, read state, baseline, expiry, offline), `social-hub-browser.mjs` in the canonical replay suite (guest 360×640, signed-in 390/1440, keyboard, focus trap, Escape, counters, rankings split, daily route, captures) | Full gate |

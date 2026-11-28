@@ -291,7 +291,9 @@ export async function verifyDailyChallenge({send,evaluate},url,{captureDir=proce
  await until(evaluate,`!document.getElementById('dailyIntro').hidden`,'guest intro');
  assert.equal(await evaluate(`document.body.classList.contains('daily-mode')`),true,'distinct daily skin');
  assert.match(await evaluate(`document.getElementById('dailyIntroDate').textContent`),/lundi 23 novembre/);
- assert.match(await evaluate(`document.getElementById('dailyIntro').textContent`),/1 tentative officielle/);
+ // #1076: one line replaces the three rule bullets.
+ assert.match(await evaluate(`document.getElementById('dailyIntro').textContent`),/1 seul essai · Même grille pour tous/);
+ assert.equal(await evaluate(`document.querySelectorAll('#dailyIntro .daily-rules,#dailyIntro li').length`),0);
  assert.match(await evaluate(`document.getElementById('dailyIntroStatus').textContent`),/Connecte-toi pour être classé/);
  assert.equal(await evaluate(`document.getElementById('dailyStart').hidden`),true,'no official attempt without an account');
  await evaluate(`document.getElementById('dailyTraining').click()`);
