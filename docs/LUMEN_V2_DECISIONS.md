@@ -37,7 +37,38 @@ remboursé, sans impact UX).
 | D22 | 28/11 | Classement du Défi | Depuis Classements, « Défi » ouvrait un écran qui ne montre pas le classement tel que défini aujourd'hui : **aligner**. | Le Défi affiche le tableau de production (`renderDailyBoard` : podium, « Ta position », participants) avec Général/Mes amis, plus Jouer au Défi et Ma semaine ; « Classements du Défi » (E26) ouvre ce même écran. Le classement d'aventure suit la production : podium, « Ta position », « Voir autour de ma position » (±5), carte masquée quand la liste contient sa ligne. | Décidé, fait | `rankings-review/` |
 | D23 | 28/11 | Classement des quêtes | « Où voit-on le classement des quêtes ? » Comme en production, il vit **dans la quête** : écran de victoire et revue d'une quête résolue (toucher la quête dans Mon ciel). Pas d'onglet dédié. | E14 affiche le podium des 3 meilleurs temps officiels (`createPodium`) et « Ta position » hors podium, sous le résultat ; les quatre badges passent sur une ligne compacte. | Fait, à valider | `rankings-review/classement-quete-390.png` |
 | D24 | 28/11 | Étoile de la victoire | « Dans l'écran de victoire il manque la partie où on voit la nouvelle étoile s'allumer. » | E14 reprend la révélation de production (#skyReveal) : « NOUVELLE ÉTOILE », « Une nouvelle étoile s'allume », nom de l'étoile, constellation avec l'étoile qui naît puis ses lignes (starBirth, lineBirth), progression « n / total étoiles ». Rejeu ou revue d'une quête résolue : « QUÊTE ACCOMPLIE », constellation déjà allumée, sans animation. | Fait, à valider | prototype E14 |
+| D25 | 28/11 | Portée du prototype | Le prototype n'est pas exhaustif ; ce qui n'y figure pas n'est pas oublié. | **Règle** : tout état non refait dans le prototype reste identique à la V1 (voir la matrice : E06, E16, E17, E18…). Tout écran refait doit reprendre chaque élément V1, sauf décision contraire consignée ici. Contrôle de parité ci-dessous. | Décidé | [Contrôle de parité](#contrôle-de-parité-v1--écrans-refaits-2811) |
 | D13 | 28/11 09:04 | Passage de relais | Consigner les décisions et les dernières maquettes dans le ticket ; poursuivre le prototype avec Claude. | Ce journal + `LUMEN_V2_HANDOFF.md` ; récapitulatif posté sur #1081 (la mise à jour de Codex a été interrompue). | Décidé | #1081 |
+
+## Contrôle de parité V1 · écrans refaits (28/11)
+
+Méthode : éléments du balisage V1 (`index.html`, `src/ui/game-screen.js`, SHA de départ
+`73e75850`) comparés au prototype (`a95738b` + D24). Comparaison de code, pas de recette
+à l'écran. **Manque** = élément V1 absent sans décision ; **Déplacé** = présent ailleurs,
+sans décision explicite.
+
+| Écran | Élément V1 | Prototype | Écart |
+|---|---|---|---|
+| Victoire E14 | Temps final + record personnel (`skyRevealTime`, `skyRevealRecord`) | Affichés seulement en revue d'une quête déjà résolue | **Manque** après une première victoire |
+| Victoire E14 | Récompenses avec distinction nouveau / déjà acquis (`rewardSlots`, état `new`) | Quatre badges sans distinction | **Manque** |
+| Victoire E14 | Tuile rang à côté du temps (`skyRevealRank`) | Podium + « Ta position » sous le résultat (D23) | Conforme sur le fond, à valider |
+| Victoire E14 | « ➤ Défier » (`skyRevealShare`) | Absent | **Manque** |
+| Victoire E14 | « Partager ma réussite » à la fin ou maîtrise d'aventure (#932) | Absent | **Manque** |
+| Victoire E14 | « ↻ Rejouer » | Seulement en revue | **Manque** après une première victoire |
+| Victoire E14 | Motif du défi remarquable (`successChallengeReason`, « Maîtrise du premier coup ») | Absent | **Manque** |
+| Victoire E14 | « ✦ Mon ciel » | Onglet Mon ciel (barre du bas) | Déplacé, cohérent avec D6 |
+| En-tête | « Partager Lumen » (`shareLumen`, `mapShareLumen`) | Absent de tout le prototype | **Manque** |
+| En-tête | Bouton Sons en un geste (`soundToggle`) | Dans Réglages (E37) | Déplacé, à décider |
+| En-tête | Puce « Défi du jour » (`dailyChip`) | Jouer › Défi du jour | Déplacé (dossier de conception), à confirmer |
+| Jeu E11 | Pause, Quitter/Abandonner, Règles, Annuler, Effacer, Vérifier, Indice, contrôle guidé | Présents (abandon dans la pause) | Conforme |
+| Jeu E11 | Sons pendant la partie | Absent | Lié à l'arbitrage Sons |
+| Mon ciel E04 | Visite guidée de Mon ciel (`skyTour`) | Non illustrée | À recetter (ordre conservé selon le dossier de conception) |
+| Classements E25 | Podium, « Ta position », liste complète, Général/Mes amis du Défi | Alignés sur la production (D21, D22) | Conforme |
+| Détail E07 | Quête suivante d'une quête terminée, règles des badges, délai de rejeu (E48) | Présents ou en fiche V1 | Conforme, à recetter |
+
+Prochaine action : compléter E14 (temps, record, nouveaux badges, Défier, Rejouer, Partager
+ma réussite, motif remarquable) et rétablir « Partager Lumen » ; faire arbitrer Sons et la
+puce Défi par le propriétaire.
 
 ## Arbitrages encore ouverts (jalon 4)
 

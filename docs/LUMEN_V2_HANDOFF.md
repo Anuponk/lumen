@@ -22,7 +22,8 @@
 - **Ensuite** : D20 validé ; D21 bascule Général/Mes amis ; D22 classements alignés sur la production
   (aventure et Défi, E26 inclus).
 - **Ensuite** : D23 classement de quête dans la victoire / revue ; D24 étoile qui s'allume à la victoire.
-- **Prochaine action** : prototyper D17 (bulles de découverte au premier usage, fermables,
+- **D25** : règle de portée du prototype et contrôle de parité V1 (voir le journal).
+- **Prochaine action** : combler les manques de parité de E14 et « Partager Lumen » ; puis prototyper D17 (bulles de découverte au premier usage, fermables,
   persistées par compte) et retirer E49 du périmètre ; puis faire valider D1, D2, D7, D9,
   D11 et D12 par essai du prototype.
 
