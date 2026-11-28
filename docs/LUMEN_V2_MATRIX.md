@@ -59,7 +59,7 @@ Première version issue de [l’EPIC #1081](https://github.com/Anuponk/project-m
 | T03 | Accessibilité, responsive et traductions | Toutes surfaces | Focus visible/restauré, clavier, zoom, tailles, libellés FR/EN/ES | #1081 | lumen-dialog-browser, es-journeys-browser ; contrôles V2 à créer | À recetter |
 | T04 | Publication et actifs, cache, rechargement différé et PWA | Service worker et mise à jour | Même cycle, code de prototype exclu du paquet | #1087, #948 | service-worker-cache, app-updates | À recetter |
 | T05 | Modes directs particuliers, retour Stripe, liens avec provenance, acquisition et campagnes | Démarrage, auth, défis, achat | Priorité conservée avant l’arrivée normale Mon ciel | #898, #1030, #1082 | daily-challenge-browser, account-session-browser, stripe-checkout-client | À recetter |
-| T06 | Agrégats de badges, total et complétion | Résumé et détail Mon ciel | Quatre compteurs sur constellation et aventure, total exact du catalogue | #985, #1083 | celestial-ux-browser ; assertions V2 à ajouter | À recetter |
+| T06 | Agrégats de badges, total et complétion | Résumé et détail Mon ciel | Quatre compteurs et total exact du catalogue dans le mode Badges de l’aventure et dans le détail de constellation | #985, #1083 | celestial-ux-browser ; assertions V2 à ajouter | À recetter |
 
 ## Parcours de bout en bout
 

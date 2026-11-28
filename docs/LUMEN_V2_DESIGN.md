@@ -19,9 +19,9 @@ l’application avec un backend isolé.
 | Surface | V1 observée | V2 proposée |
 | --- | --- | --- |
 | Arrivée et navigation | Grille par défaut. Mon ciel, Social et Compte via les commandes existantes. | Arrivée normale dans Mon ciel. Quatre entrées en bas, Compte en haut, barre masquée en résolution. Entrées spécifiques résolues en priorité. |
-| Mon ciel | Six constellations par page, rails aventure et sélection de ciel, pourcentages de badges. | Toutes les constellations de l’aventure sur le même écran. Swipe et commandes visibles. Compteurs par catégorie plus total sur chacune et sur l’aventure. |
+| Mon ciel | Six constellations par page, rails aventure et sélection de ciel, pourcentages de badges. | Toutes les constellations sur le même écran, avec leur état et leur progression. Le bouton Badges affiche les quatre compteurs et le total pour chaque constellation et pour l’aventure. Swipe et flèches restent disponibles. |
 | Détail constellation | Navigation et cartes de quête avec état et badges. | Ligne de quête avec temps réel disponible, quatre emplacements, fiche, filtre et précédent/suivant. La prochaine quête répond au filtre actif. |
-| Jouer et Défi | Plateau et retour à Mon ciel. « Ma semaine » déjà dans le Défi, avec raccourci Social. | Jouer expose la reprise et le Défi. Mon ciel conserve un encart Défi. Historique et semaine gardent une surface commune. |
+| Jouer et Défi | Plateau et retour à Mon ciel. « Ma semaine » déjà dans le Défi, avec raccourci Social. | Reprise en un geste depuis Mon ciel. Jouer donne accès à la reprise et au Défi. Historique et semaine restent dans le Défi. |
 | Classements | Podium et listes de classement. La liste complète est présente sur le `main` de départ (#1079). | Podium existant, liste complète et swipe aventure. Défi quotidien global et amis. |
 | Social, compte, boutique | Composants et contrats déjà disponibles. | Social devient une entrée principale. Compte reste accessible depuis les vues principales. Boutique via Compte et les limites. |
 | Fidélisation | Records, tableaux de progression, célébrations et Ma semaine. | Donner un accès explicite aux acquis existants. Étudier le bilan E49 avec faits du compte et le déclenchement ponctuel E50 après une action pertinente. |
@@ -38,15 +38,16 @@ des étapes guidées seront recettés contre leur destination V2.
 
 ## Décisions à valider
 
-1. Accepter la densité de la vue à deux colonnes sur petit écran et le libellé
-   actuel « Autonomie » pour le badge correspondant à « sans assistance ».
-   La règle et le symbole restent ceux de LUMEN.
+1. Valider la vue Mon ciel allégée et les compteurs dans le mode Badges.
+   Tester le parcours Mon ciel → reprise → retour ainsi que le passage entre
+   Mon ciel et Classements. Chaque onglet garde sa propre aventure.
 2. Valider l’emplacement du bilan E49 dans Mon espace et sa portée, notamment
    la pertinence d’un bilan sur sept jours en plus de la semaine du Défi.
 3. Valider les indications de première découverte E50 et leur moment
    d’affichage. Le prototype montre la destination. Les règles de fréquence
    et de persistance doivent être validées par parcours.
 
-Les dernières validations sont tracées dans le [dossier de preuves](validation/lumen-v2-1081/README.md).
+Les [captures de la révision](validation/lumen-v2-1081/navigation-review/README.md)
+complètent le [dossier de preuves initial](validation/lumen-v2-1081/README.md).
 Passer au jalon 4 après accord explicite sur la conception, puis recetter V1 et V2
 avant activation privée.

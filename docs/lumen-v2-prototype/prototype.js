@@ -52,11 +52,16 @@ const overview = new Set(['E04', 'E05', 'E06']);
 const detail = new Set(['E07', 'E09']);
 const questScreens = new Set(['E11', 'E12', 'E13', 'E20']);
 let packIndex = 0;
+let rankingIndex = 0;
 let constellationIndex = 0;
 let state = 'E04';
 let selectedQuest = catalogue[34];
+let resumeQuest = selectedQuest;
 let filteredJourney = false;
+let badgeView = false;
 let swipeStart;
+let suppressClick = false;
+const previewMarks = new Map();
 
 const esc = (value) =>
   String(value ?? '').replace(
@@ -140,30 +145,51 @@ function figure(entry, stats, className) {
   );
 }
 
-function arrows(label) {
+function arrows(index, scope) {
   return (
-    '<div class="adventure-controls"><button type="button" data-step="-1" aria-label="Précédent" ' +
-    (packIndex === 0 ? 'disabled' : '') +
-    '>‹</button><span>' +
-    label +
-    '</span><button type="button" data-step="1" aria-label="Suivant" ' +
-    (packIndex === packs.length - 1 ? 'disabled' : '') +
+    '<div class="adventure-controls"><button type="button" data-step="-1" aria-label="' +
+    scope +
+    ' précédente" ' +
+    (index === 0 ? 'disabled' : '') +
+    '>‹</button><span aria-label="Aventure ' +
+    (index + 1) +
+    ' sur ' +
+    packs.length +
+    '">' +
+    (index + 1) +
+    '/' +
+    packs.length +
+    '</span><button type="button" data-step="1" aria-label="' +
+    scope +
+    ' suivante" ' +
+    (index === packs.length - 1 ? 'disabled' : '') +
     '>›</button></div>'
   );
 }
 
 const daily = () => link('E19', 'Défi du jour');
-const continueQuest = () => link('E10', 'Continuer', true);
+const continueQuest = () =>
+  '<button type="button" class="preview-primary" data-resume>Reprendre la quête ' +
+  resumeQuest.ordinal +
+  '</button>';
 
 function adventure() {
   const quests = packQuests();
-  const progress = state === 'E06'
-    ? { ...seed, solved: { ...seed.solved }, canonicalQuestState: { ...seed.canonicalQuestState } }
-    : seed;
+  const progress =
+    state === 'E06'
+      ? {
+          ...seed,
+          solved: { ...seed.solved },
+          canonicalQuestState: { ...seed.canonicalQuestState },
+        }
+      : seed;
   if (state === 'E06') {
     for (const quest of quests) {
       if (quest.legacyIndex === null) {
-        progress.canonicalQuestState[quest.id] = { ...progress.canonicalQuestState[quest.id], solved: true };
+        progress.canonicalQuestState[quest.id] = {
+          ...progress.canonicalQuestState[quest.id],
+          solved: true,
+        };
       } else {
         progress.solved[quest.legacyIndex] = true;
       }
@@ -193,45 +219,44 @@ function adventure() {
         '" data-state="' +
         code +
         '"><span class="card-symbol">' +
-        figure(entry, value, 'figure') +
-        badgeTotal(value) +
-        '</span>' +
-        '<span><strong class="card-name">' +
+        (badgeView ? badgeTotal(value) : figure(entry, value, 'figure')) +
+        '</span><span><strong class="card-name">' +
         esc(entry.label) +
         '</strong><span class="card-state">' +
-        value.completed +
-        '/' +
-        value.total +
-        ' · ' +
         label +
+        (badgeView ? '' : ' · ' + value.completed + '/' + value.total) +
         '</span></span>' +
-        counts(items, value, false) +
+        (badgeView ? counts(items, value, false) : '') +
         '</button>'
       );
     })
     .join('');
   return (
-    '<section class="preview-panel adventure-summary"><div class="screen-heading"><h1>' +
+    '<section class="adventure-summary"><div class="screen-heading"><h1>' +
     esc(adventureDisplayName(pack(), t)) +
     '</h1>' +
-    arrows(packIndex + 1 + '/' + packs.length) +
+    arrows(packIndex, 'Aventure') +
     '</div><p class="preview-meta">' +
     stats.completed +
     '/' +
     stats.total +
-    ' quêtes · ' +
-    pack().constellations.length +
-    ' constellations</p><progress aria-label="Progression de l’aventure" max="' +
+    ' quêtes résolues</p><progress aria-label="Progression de l’aventure" max="' +
     stats.total +
     '" value="' +
     stats.completed +
     '"></progress>' +
-    counts(quests, stats) +
-    '</section><div id="constellations">' +
-    cards +
-    '</div><div class="preview-cta">' +
+    (badgeView ? counts(quests, stats) : '') +
+    '</section><div class="sky-actions">' +
     continueQuest() +
     daily() +
+    '</div><div class="sky-section-heading"><h2>Constellations</h2>' +
+    '<button type="button" class="subtle-action" data-badges aria-pressed="' +
+    badgeView +
+    '">Badges</button></div>' +
+    '<div id="constellations" class="' +
+    (badgeView ? 'show-badges' : '') +
+    '">' +
+    cards +
     '</div>'
   );
 }
@@ -268,17 +293,16 @@ function constellationScreen(filtered) {
   const shown = filtered ? quests.filter((quest) => questHasMissingBadges(seed, quest)) : quests;
   const rows = shown.map((quest) => {
     const record = histories.get(quest.id);
-    const label = record
-      ? record.bestSeconds + ' s'
-      : quest.id === catalogue[34].id
-        ? 'À jouer'
-        : 'À découvrir';
+    const available = record || quest.ordinal <= resumeQuest.ordinal;
+    const label = record ? record.bestSeconds + ' s' : available ? 'À jouer' : 'À découvrir';
     return (
       '<button type="button" class="quest-row" data-quest="' +
       esc(quest.id) +
       '" data-filtered="' +
       filtered +
-      '"><strong>Q' +
+      '"' +
+      (available ? '' : ' disabled') +
+      '><strong>Q' +
       quest.position +
       '</strong><span>' +
       label +
@@ -300,7 +324,6 @@ function constellationScreen(filtered) {
     counts(quests, stats) +
     '</section>' +
     '<div class="detail-tools">' +
-    link('E04', 'Mon ciel') +
     link('E08', 'Fiche astronomique') +
     '<label><input type="checkbox" data-filter ' +
     (filtered ? 'checked' : '') +
@@ -331,22 +354,21 @@ function facts() {
     esc(nameOrigin) +
     '</p><p>' +
     esc(funFact) +
-    '</p></section>' +
-    link(filteredJourney ? 'E09' : 'E07', 'Retour à la constellation')
+    '</p></section>'
   );
 }
 
 function play() {
   const entry = packs
     .flatMap((item) => item.constellations)
-    .find((item) => item.id === selectedQuest.constellationId);
+    .find((item) => item.id === resumeQuest.constellationId);
   return (
     '<section class="preview-panel"><h1>Jouer</h1><p>' +
     esc(entry?.label) +
     ' · Quête ' +
-    selectedQuest.ordinal +
+    resumeQuest.ordinal +
     '</p></section><div class="preview-cta">' +
-    link('E11', 'Continuer', true) +
+    continueQuest() +
     daily() +
     '</div>'
   );
@@ -369,6 +391,11 @@ function board() {
 
 function drawBoard() {
   const boardElement = screen.querySelector('.preview-board');
+  const dailyBoard = state === 'E20';
+  const quest = dailyBoard ? catalogue[6] : selectedQuest;
+  const key = (dailyBoard ? 'daily:' : '') + quest.id;
+  if (!previewMarks.has(key)) previewMarks.set(key, new Set());
+  const marks = previewMarks.get(key);
   const palette = [
     '#2e536b',
     '#355f53',
@@ -381,15 +408,18 @@ function drawBoard() {
     '#4b5d42',
     '#545469',
   ];
-  boardElement.style.gridTemplateColumns = 'repeat(' + selectedQuest.size + ', 1fr)';
-  selectedQuest.reg.forEach((row, r) =>
+  boardElement.style.gridTemplateColumns = 'repeat(' + quest.size + ', 1fr)';
+  quest.reg.forEach((row, r) =>
     row.forEach((territory, c) => {
       const cell = document.createElement('button');
       cell.type = 'button';
       cell.style.setProperty('--territory', palette[territory % palette.length]);
       cell.setAttribute('aria-label', 'Ligne ' + (r + 1) + ', colonne ' + (c + 1));
+      const coordinate = r + ':' + c;
+      cell.textContent = marks.has(coordinate) ? '✦' : '';
       cell.addEventListener('click', () => {
-        cell.textContent = cell.textContent ? '' : '✦';
+        if (!marks.delete(coordinate)) marks.add(coordinate);
+        cell.textContent = marks.has(coordinate) ? '✦' : '';
       });
       boardElement.append(cell);
     }),
@@ -408,9 +438,9 @@ function rankings() {
   const rest = ordered.slice(3).map((item) => createRankRow(html, item, { t }).outerHTML);
   return (
     '<section class="preview-panel"><div class="screen-heading"><h1>Classements</h1>' +
-    arrows(packIndex + 1 + '/' + packs.length) +
+    arrows(rankingIndex, 'Aventure du classement') +
     '</div><p>' +
-    esc(adventureDisplayName(pack(), t)) +
+    esc(adventureDisplayName(packs[rankingIndex], t)) +
     '</p>' +
     podium.outerHTML +
     '<ol class="lumen-rank-list" start="4">' +
@@ -488,6 +518,7 @@ function result() {
     '</p>' +
     questBadges(record) +
     '</section><div class="preview-cta">' +
+    (record ? link('E11', 'Rejouer') : '') +
     (next ? '<button type="button" data-next="' + esc(next.id) + '">Quête suivante</button>' : '') +
     link(filteredJourney ? 'E09' : 'E07', 'Retour à la constellation') +
     '</div><div class="preview-cta">' +
@@ -534,31 +565,54 @@ function reference() {
         '"><p class="preview-meta">Capture de référence V1</p>'
       : '') +
     '</section>' +
-    navLinks(state)
+    (state === 'E12' || state === 'E13'
+      ? '<button type="button" class="preview-primary" data-back>Reprendre la partie</button>'
+      : navLinks(state))
   );
 }
 
 function accountOrSocial() {
   const account = state === 'E35';
   const groups = account
-    ? [['Compte', ['E36', 'E37', 'E38']], ['Services', ['E39', 'E40', 'E49']]]
-    : [['Amis', ['E28', 'E29']], ['Duels', ['E30', 'E31']], ['Activité', ['E33', 'E22']]];
-  return '<h1>' + esc(names[state]) + '</h1>' + groups.map(([label, items]) =>
-    '<section class="preview-panel"><h2>' + esc(label) + '</h2><div class="preview-menu">' +
-    items.map((route) => link(route)).join('') + '</div></section>').join('');
+    ? [
+        ['Compte', ['E36', 'E37', 'E38']],
+        ['Services', ['E39', 'E40', 'E49']],
+      ]
+    : [
+        ['Amis', ['E28', 'E29']],
+        ['Duels', ['E30', 'E31']],
+        ['Activité', ['E33', 'E22']],
+      ];
+  return (
+    '<h1>' +
+    esc(names[state]) +
+    '</h1>' +
+    groups
+      .map(
+        ([label, items]) =>
+          '<section class="preview-panel"><h2>' +
+          esc(label) +
+          '</h2><div class="preview-menu">' +
+          items.map((route) => link(route)).join('') +
+          '</div></section>',
+      )
+      .join('')
+  );
 }
 
 function render() {
+  const inSky = overview.has(state) || detail.has(state) || state === 'E08';
   screen.classList.toggle('is-adventure', overview.has(state) || state === 'E25');
   nav.hidden = questScreens.has(state);
-  const tab =
-    overview.has(state) || detail.has(state) || state === 'E08'
-      ? 'E04'
-      : state === 'E25' || state === 'E26'
-        ? 'E25'
-        : /^E(2[7-9]|3[0-4])$/.test(state)
-          ? 'E27'
-          : state;
+  document.querySelector('.context-back').hidden =
+    overview.has(state) || ['E10', 'E25', 'E27'].includes(state);
+  const tab = inSky
+    ? 'E04'
+    : state === 'E25' || state === 'E26'
+      ? 'E25'
+      : /^E(2[7-9]|3[0-4])$/.test(state)
+        ? 'E27'
+        : state;
   nav.querySelectorAll('button').forEach((button) => {
     if (button.dataset.go === tab) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
@@ -578,26 +632,91 @@ function render() {
   else screen.innerHTML = reference();
 }
 
-function go(route) {
+function go(route, { replace = false, focus, scroll = true } = {}) {
   if (!routes.has(route)) return;
   state = route;
-  history.replaceState(null, '', '#' + route.toLowerCase());
+  const depth = history.state?.preview ? history.state.depth : 0;
+  history[replace ? 'replaceState' : 'pushState'](
+    {
+      preview: true,
+      depth: replace ? depth : depth + 1,
+      route,
+      packIndex,
+      rankingIndex,
+      constellationIndex,
+      questId: selectedQuest.id,
+      filteredJourney,
+      badgeView,
+    },
+    '',
+    '#' + route.toLowerCase(),
+  );
   render();
-  screen.focus({ preventScroll: true });
-  window.scrollTo(0, 0);
+  (focus ? (screen.querySelector(focus) ?? screen) : screen).focus({ preventScroll: true });
+  if (scroll) window.scrollTo(0, 0);
 }
 
 function advance(delta) {
-  const next = Math.min(packs.length - 1, Math.max(0, packIndex + delta));
-  if (next === packIndex) return;
-  packIndex = next;
-  constellationIndex = 0;
-  go(state === 'E25' ? 'E25' : 'E05');
+  const ranking = state === 'E25';
+  const index = ranking ? rankingIndex : packIndex;
+  const next = Math.min(packs.length - 1, Math.max(0, index + delta));
+  if (next === index) return false;
+  if (ranking) rankingIndex = next;
+  else {
+    packIndex = next;
+    constellationIndex = 0;
+  }
+  go(ranking ? 'E25' : 'E05', {
+    replace: true,
+    scroll: false,
+    focus: '[data-step="' + delta + '"]:not(:disabled)',
+  });
+  return true;
 }
 
+function back() {
+  if (history.state?.preview && history.state.depth > 0) history.back();
+  else
+    go(state === 'E08' || state === 'E14' ? (filteredJourney ? 'E09' : 'E07') : 'E04', {
+      replace: true,
+    });
+}
+
+document.addEventListener(
+  'click',
+  (event) => {
+    if (suppressClick && event.detail && screen.contains(event.target)) {
+      suppressClick = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  },
+  true,
+);
+
 document.addEventListener('click', (event) => {
+  if (event.target.closest('.preview-brand')) {
+    event.preventDefault();
+    if (!overview.has(state)) go('E04');
+    return;
+  }
   const button = event.target.closest('button');
   if (!button) return;
+  if (button.hasAttribute('data-back')) {
+    back();
+    return;
+  }
+  if (button.hasAttribute('data-badges')) {
+    badgeView = !badgeView;
+    go(state, { replace: true, scroll: false, focus: '[data-badges]' });
+    return;
+  }
+  if (button.hasAttribute('data-resume')) {
+    selectedQuest = resumeQuest;
+    filteredJourney = false;
+    go('E11');
+    return;
+  }
   if (button.dataset.dailyDay) {
     go('E23');
     return;
@@ -611,18 +730,25 @@ document.addEventListener('click', (event) => {
     filtered,
     next,
   } = button.dataset;
-  if (route) go(route);
-  else if (step) advance(Number(step));
+  if (route) {
+    if (state !== route) go(route);
+  } else if (step) advance(Number(step));
   else if (constellation !== undefined) {
     constellationIndex = Number(constellation);
     go('E07');
   } else if (constellationStep) {
     constellationIndex += Number(constellationStep);
-    go(state);
+    go(state, { replace: true });
   } else if (quest) {
+    const target = catalogue.find((item) => item.id === quest);
+    if (!histories.has(quest) && target.ordinal > resumeQuest.ordinal) return;
     filteredJourney = filtered === 'true';
-    selectedQuest = catalogue.find((item) => item.id === quest);
-    go(histories.has(quest) ? 'E14' : 'E11');
+    selectedQuest = target;
+    if (histories.has(quest)) go('E14');
+    else {
+      resumeQuest = selectedQuest;
+      go('E11');
+    }
   } else if (next) {
     selectedQuest = catalogue.find((item) => item.id === next);
     const nextIndex = pack().constellations.findIndex(
@@ -635,29 +761,50 @@ document.addEventListener('click', (event) => {
 screen.addEventListener('change', (event) => {
   if (event.target.matches('[data-filter]')) {
     filteredJourney = event.target.checked;
-    go(filteredJourney ? 'E09' : 'E07');
+    go(filteredJourney ? 'E09' : 'E07', { replace: true, scroll: false, focus: '[data-filter]' });
   }
 });
 screen.addEventListener('pointerdown', (event) => {
-  if (screen.classList.contains('is-adventure')) swipeStart = [event.clientX, event.clientY];
+  suppressClick = false;
+  if (event.isPrimary && event.button === 0 && screen.classList.contains('is-adventure')) {
+    swipeStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  }
 });
 screen.addEventListener('pointercancel', () => {
   swipeStart = undefined;
 });
 screen.addEventListener('pointerup', (event) => {
-  if (!swipeStart) return;
-  const [x, y] = swipeStart;
+  if (swipeStart?.id !== event.pointerId) return;
+  const { x, y } = swipeStart;
   swipeStart = undefined;
   const dx = event.clientX - x;
-  if (Math.abs(dx) > 55 && Math.abs(dx) > 1.5 * Math.abs(event.clientY - y))
-    advance(Math.sign(-dx));
+  if (Math.abs(dx) > 55 && Math.abs(dx) > 1.5 * Math.abs(event.clientY - y)) {
+    suppressClick = advance(Math.sign(-dx));
+  }
 });
 const select = document.querySelector('#scenario');
 for (const [key, label] of Object.entries(names)) select.add(new Option(key + ' · ' + label, key));
 select.addEventListener('change', () => go(select.value));
-function routeFromHash() {
-  go(location.hash.slice(1).toUpperCase() || 'E04');
+function restore(entry) {
+  if (entry?.preview) {
+    ({
+      route: state,
+      packIndex,
+      rankingIndex,
+      constellationIndex,
+      filteredJourney,
+      badgeView,
+    } = entry);
+    selectedQuest = catalogue.find((item) => item.id === entry.questId) ?? resumeQuest;
+    render();
+    (overview.has(state)
+      ? (screen.querySelector('[data-constellation="' + constellationIndex + '"]') ?? screen)
+      : screen
+    ).focus({ preventScroll: true });
+    return;
+  }
+  const route = location.hash.slice(1).toUpperCase();
+  go(routes.has(route) ? route : 'E04', { replace: true });
 }
-window.addEventListener('hashchange', routeFromHash);
-if (routes.has(location.hash.slice(1).toUpperCase())) routeFromHash();
-else render();
+window.addEventListener('popstate', (event) => restore(event.state));
+restore(history.state);
