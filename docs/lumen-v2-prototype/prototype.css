@@ -793,3 +793,52 @@
   margin: 0 0 0.3rem;
   font-size: 1rem;
 }
+/* Victory: the new star lights up as in the production sky reveal (#skyReveal). */
+.victory-sky {
+  text-align: center;
+  background: radial-gradient(circle at 50% 45%, #102b45 0, #06111e 62%, #02070d 100%);
+  color: #eefaff;
+}
+.victory-sky h1 {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+}
+.victory-sky-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: #ffbd59 !important;
+}
+.victory-sky-name {
+  margin: 0.1rem 0 0;
+  font-weight: 800;
+  color: #68e7ff !important;
+}
+.victory-sky-svg {
+  display: block;
+  width: 100%;
+  height: clamp(130px, 30vh, 220px);
+  margin: 0.4rem 0;
+}
+.victory-sky-progress {
+  margin: 0;
+  font-size: 0.82rem;
+}
+.victory-sky .new-star {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: starBirth 1.25s cubic-bezier(0.15, 1.4, 0.35, 1) both;
+}
+.victory-sky .new-line {
+  stroke-dasharray: 180;
+  stroke-dashoffset: 180;
+  animation: lineBirth 0.9s 0.7s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .victory-sky .new-star,
+  .victory-sky .new-line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

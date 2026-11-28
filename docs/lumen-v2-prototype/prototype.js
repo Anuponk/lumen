@@ -189,7 +189,7 @@ function counts(quests, stats = celestialScope(seed, quests), includeTotal = tru
   );
 }
 
-function figure(entry, stats, className) {
+function figure(entry, stats, className, before = null) {
   const projection = astronomicalIllumination(entry, stats.completed, stats.total);
   if (!projection) return '<span></span>';
   const coords = projection.figure.pts;
@@ -203,7 +203,7 @@ function figure(entry, stats, className) {
     '" viewBox="' +
     [minX, minY, w, h].join(' ') +
     '">' +
-    astronomicalPrimarySvg(entry, stats.completed, stats.total) +
+    astronomicalPrimarySvg(entry, stats.completed, stats.total, before) +
     '</svg>'
   );
 }
@@ -632,6 +632,32 @@ function questPodium(mine) {
   );
 }
 
+// Production sky reveal (#skyReveal): a first victory lights the next star of the
+// constellation (starBirth + lineBirth); a replay or a review shows it already lit.
+function victorySky(quest, record) {
+  const entry = packs
+    .flatMap((item) => item.constellations)
+    .find((item) => item.id === quest.constellationId);
+  if (!entry) return '';
+  const quests = catalogue.filter((item) => item.constellationId === entry.id);
+  const solved = quests.filter((item) => histories.has(item.id)).length;
+  const fresh = !record;
+  const lit = Math.min(quests.length, solved + (fresh ? 1 : 0));
+  const name = entry.label ?? entry.id;
+  const svg = figure(entry, { completed: lit, total: quests.length }, 'victory-sky-svg', fresh ? solved : null);
+  return (
+    '<section class="preview-panel victory-sky' + (fresh ? ' is-new' : '') + '">' +
+    '<p class="victory-sky-kicker">' + esc(t(fresh ? 'victory.newStar' : 'victory.questDone')) + '</p>' +
+    '<h1>' + esc(fresh ? t('victory.newStarTitle') : name) + '</h1>' +
+    '<p class="victory-sky-name">' +
+    esc(fresh ? t('map.star', { number: lit }) + ' · ' + name : t('victory.badges')) +
+    '</p>' +
+    svg +
+    '<p class="victory-sky-progress">' + esc(t('victory.progress', { lit, count: quests.length })) + '</p>' +
+    '</section>'
+  );
+}
+
 function result() {
   const quest = selectedQuest;
   const record = histories.get(quest.id);
@@ -639,10 +665,11 @@ function result() {
     ? nextIncompleteBadgeQuest(catalogue, quest, seed, readyQuest)
     : catalogue.find((item) => item.ordinal === quest.ordinal + 1 && readyQuest(item));
   return (
-    '<section class="preview-panel"><h1>Victoire</h1><p>Quête ' +
+    victorySky(quest, record) +
+    '<section class="preview-panel"><h2>Quête ' +
     quest.ordinal +
     (record ? ' · ' + record.bestSeconds + ' secondes' : '') +
-    '</p>' +
+    '</h2>' +
     questBadges(record) +
     '</section>' +
     (record ? '<section class="preview-panel quest-ranking">' + questPodium(record.bestSeconds) + '</section>' : '') +
