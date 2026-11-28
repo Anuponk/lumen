@@ -1,5 +1,6 @@
 import { contentMapModel } from '../../src/campaign/content.js';
 import { canonicalQuestList } from '../../src/campaign/canonical-quests.js';
+import { catalogueQuestDecision } from '../../src/campaign/catalogue-access.js';
 import {
   constellationFactForId,
   localizedConstellationFact,
@@ -26,7 +27,8 @@ const { t } = createTranslator({ locale: 'fr' });
 const screen = document.querySelector('#screen');
 const nav = document.querySelector('#primary');
 const catalogue = canonicalQuestList();
-const packs = contentMapModel().skies.flatMap((sky) => sky.packs);
+// The preview account owns Horizons lointains. Later adventures show the locked path.
+const packs = contentMapModel(['real-adventure-02']).skies.flatMap((sky) => sky.packs);
 const badgeKeys = ['speed', 'autonomy', 'noError', 'mastery'];
 const symbols = { speed: '⚡', autonomy: '🧠', noError: '✓', mastery: '✦' };
 const badgeLabel = (key) => t('results.' + key);
@@ -119,6 +121,15 @@ const constellation = () => pack().constellations[constellationIndex] ?? pack().
 const questsOf = (entry) =>
   catalogue.filter((quest) => quest.constellationId === entry.id && quest.packId === entry.packId);
 const packQuests = () => catalogue.filter((quest) => quest.packId === pack().id);
+const questAccess = (quest) =>
+  catalogueQuestDecision(quest, seed, catalogue, {
+    packAllowed: packs.find((item) => item.id === quest.packId)?.accessible === true,
+    signedIn: true,
+    cloudReady: true,
+  });
+const readyQuest = (quest) => questAccess(quest).status === 'ready';
+
+const lockedAdventureAction = () => link('E40', 'Voir l’accès');
 
 function badgeTotal(stats) {
   return (
@@ -247,6 +258,7 @@ function adventure() {
       return (
         '<button type="button" data-constellation="' +
         index +
+        (pack().accessible ? '' : '" data-pack-locked="true') +
         '" data-state="' +
         code +
         '"><span class="card-symbol">' +
@@ -255,9 +267,9 @@ function adventure() {
         esc(entry.label) +
         '</strong><span class="card-state">' +
         '<span aria-hidden="true">' +
-        mark +
+        (pack().accessible ? mark : '🔒') +
         '</span> ' +
-        label +
+        (pack().accessible ? label : 'Verrouillée') +
         '</span></span><strong class="card-percent" aria-label="' +
         cardPercent +
         ' pour cent de complétion">' +
@@ -273,7 +285,9 @@ function adventure() {
     esc(adventureDisplayName(pack(), t)) +
     '</h1>' +
     arrows(packIndex, 'Aventure') +
-    '</div><div class="adventure-totals"><span>' +
+    '</div>' +
+    (pack().accessible ? '' : '<span class="access-label">🔒 Verrouillée</span>') +
+    '<div class="adventure-totals"><span>' +
     stats.completed +
     '/' +
     stats.total +
@@ -290,9 +304,12 @@ function adventure() {
     '"></progress>' +
     (badgeView ? counts(quests, stats) : '') +
     '</section><div class="sky-actions">' +
-    continueQuest() +
+    (pack().accessible
+      ? continueQuest()
+      : '<span class="locked-adventure-actions">' + lockedAdventureAction() + '</span>') +
     daily() +
-    '</div><div class="sky-section-heading"><h2>Constellations</h2>' +
+    '</div>' +
+    '<div class="sky-section-heading"><h2>Constellations</h2>' +
     '<button type="button" class="subtle-action" data-badges aria-pressed="' +
     badgeView +
     '">Badges</button></div>' +
@@ -336,25 +353,51 @@ function constellationScreen(filtered) {
   const shown = filtered ? quests.filter((quest) => questHasMissingBadges(seed, quest)) : quests;
   const rows = shown.map((quest) => {
     const record = histories.get(quest.id);
-    const available = record || quest.ordinal <= resumeQuest.ordinal;
-    const label = record ? record.bestSeconds + ' s' : available ? 'À jouer' : 'À découvrir';
+    const access = questAccess(quest);
+    const available = access.status === 'ready';
+    const prerequisite = catalogue.find((item) => item.id === access.questId);
+    const prerequisiteGroup =
+      prerequisite && prerequisite.constellationId !== entry.id
+        ? pack().constellations.find((item) => item.id === prerequisite.constellationId)
+        : null;
+    const label = available ? (record ? record.bestSeconds + ' s' : 'À jouer') : '🔒 Verrouillée';
     return (
       '<button type="button" class="quest-row" data-quest="' +
       esc(quest.id) +
       '" data-filtered="' +
       filtered +
+      '" data-access="' +
+      access.status +
       '"' +
-      (available ? '' : ' disabled') +
+      (prerequisite
+        ? ' aria-controls="quest-lock-' + esc(quest.id) + '" aria-expanded="false"'
+        : '') +
+      (access.status === 'pack-locked' ? ' disabled' : '') +
       '><strong>Q' +
       quest.position +
       '</strong><span>' +
       label +
       '</span>' +
       questBadges(record) +
-      '</button>'
+      '</button>' +
+      (prerequisite
+        ? '<p class="quest-lock-note" id="quest-lock-' +
+          esc(quest.id) +
+          '" hidden>Résous la quête ' +
+          prerequisite.position +
+          (prerequisiteGroup ? ' (' + esc(prerequisiteGroup.label) + ')' : '') +
+          ' pour débloquer celle-ci.</p>'
+        : '')
     );
   });
   return (
+    '<div class="detail-adventure"><div><strong>' +
+    esc(adventureDisplayName(pack(), t)) +
+    '</strong>' +
+    (pack().accessible ? '' : '<span class="access-label">🔒 Verrouillée</span>') +
+    '</div>' +
+    arrows(packIndex, 'Aventure') +
+    '</div>' +
     '<section class="preview-panel"><div class="screen-heading"><div><h1>' +
     esc(entry.label) +
     '</h1><p>' +
@@ -366,6 +409,9 @@ function constellationScreen(filtered) {
     '</div>' +
     counts(quests, stats) +
     '</section>' +
+    (pack().accessible
+      ? ''
+      : '<div class="preview-cta locked-adventure-actions">' + lockedAdventureAction() + '</div>') +
     '<div class="detail-tools">' +
     link('E08', 'Fiche astronomique') +
     '<label><input type="checkbox" data-filter ' +
@@ -545,15 +591,8 @@ function result() {
   const quest = selectedQuest;
   const record = histories.get(quest.id);
   const next = filteredJourney
-    ? nextIncompleteBadgeQuest(
-        catalogue,
-        quest,
-        seed,
-        (item) => item.ordinal <= catalogue[34].ordinal,
-      )
-    : catalogue.find(
-        (item) => item.ordinal === quest.ordinal + 1 && item.ordinal <= catalogue[34].ordinal,
-      );
+    ? nextIncompleteBadgeQuest(catalogue, quest, seed, readyQuest)
+    : catalogue.find((item) => item.ordinal === quest.ordinal + 1 && readyQuest(item));
   return (
     '<section class="preview-panel"><h1>Victoire</h1><p>Quête ' +
     quest.ordinal +
@@ -765,6 +804,7 @@ function go(route, { replace = false, focus, scroll = true } = {}) {
 
 function advance(delta) {
   const ranking = state === 'E25';
+  const inDetail = detail.has(state);
   const index = ranking ? rankingIndex : packIndex;
   const next = Math.min(packs.length - 1, Math.max(0, index + delta));
   if (next === index) return false;
@@ -773,9 +813,9 @@ function advance(delta) {
     packIndex = next;
     constellationIndex = 0;
   }
-  go(ranking ? 'E25' : 'E05', {
-    replace: true,
-    scroll: false,
+  go(ranking || inDetail ? state : 'E05', {
+    replace: !inDetail,
+    scroll: inDetail,
     focus: '[data-step="' + delta + '"]:not(:disabled)',
   });
   return true;
@@ -860,7 +900,14 @@ document.addEventListener('click', (event) => {
     go(state, { replace: true });
   } else if (quest) {
     const target = catalogue.find((item) => item.id === quest);
-    if (!histories.has(quest) && target.ordinal > resumeQuest.ordinal) return;
+    if (!target || !readyQuest(target)) {
+      const reason = document.getElementById(button.getAttribute('aria-controls'));
+      if (reason) {
+        reason.hidden = !reason.hidden;
+        button.setAttribute('aria-expanded', String(!reason.hidden));
+      }
+      return;
+    }
     filteredJourney = filtered === 'true';
     selectedQuest = target;
     if (histories.has(quest)) go('E14');

@@ -190,6 +190,40 @@
   color: var(--gold);
   font-size: 1rem;
 }
+.access-label {
+  color: var(--gold);
+  font-size: 0.72rem;
+}
+.detail-adventure {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+.detail-adventure .access-label {
+  display: block;
+  margin-top: 0.15rem;
+}
+#constellations button[data-pack-locked] {
+  background: #121d2b;
+}
+.prototype .locked-adventure-actions button {
+  color: var(--gold);
+  border-color: #6b5a42;
+}
+.prototype .quest-row[data-access='prerequisite'],
+.prototype .quest-row[data-access='pack-locked'] {
+  color: var(--muted);
+  border-color: #304055;
+}
+.prototype .quest-row[data-access='pack-locked']:disabled {
+  opacity: 0.75;
+}
+.quest-lock-note {
+  padding: 0.42rem 0.6rem;
+  color: #ffdb92;
+  font-size: 0.8rem;
+}
 .adventure-summary progress {
   appearance: none;
   border: 0;
