@@ -182,7 +182,8 @@ begin
  perform public.lumen_quota_sync(free_p,d,'[]');
  assert not exists(select 1 from lumen_commands.quota_attempts where user_id=free_p and attempt_id='attempt-old-000'),'bounded retention';
  r:=public.lumen_get_commerce_state(free_p,d);
- assert r->>'activatedAt' is not null and (r->'counts'->>'new')::int=2,r::text;
+ -- The UTC+14 run counts on day d only when its local date is d (00:00–10:00 UTC).
+ assert r->>'activatedAt' is not null and (r->'counts'->>'new')::int=2+case when (now() at time zone 'Pacific/Kiritimati')::date=d then 1 else 0 end,r::text;
 
  -- Stripe Premium guard: inactive product unknown, then already Premium refused.
  assert public.lumen_stripe_checkout_begin(free_p,'lumen-premium',now(),false)->>'result'='unknown_product';
